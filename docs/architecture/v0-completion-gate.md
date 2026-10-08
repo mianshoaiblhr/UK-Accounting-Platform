@@ -44,9 +44,9 @@ Legend: ✅ met and verified here · ⚠️ met with a stated limitation · ⏳ 
 Unit ✅ · Integration ✅ · API ✅ · Authentication ✅ · Authorisation ✅ · Tenant isolation ✅ · Security ✅ · Regression ✅ (`tests/api/regression.test.ts`, run with `pnpm test:regression`) · Real-infrastructure ✅ (`pnpm test:infra`) · E2E ✅.
 
 ## Documentation
-Architecture (`V0-foundation.md`) ✅ · Database architecture ✅ · Security model ✅ · Deployment runbook ✅ · Migration runbook ✅ · **V0 compliance matrix ⏳ (needs the specs)** · API/OpenAPI ✅.
+Architecture (`V0-foundation.md`) ✅ · Database architecture ✅ · Security model ✅ · Deployment runbook ✅ · Migration runbook ✅ · **V0 compliance matrix ✅ completed (see findings; readiness: CONDITIONAL, remediation awaiting approval)** · API/OpenAPI ✅.
 
 ## Open items before V1
-1. ⏳ Supply the Master Manifest + V0 spec → populate the compliance matrix, resolve any `CONFLICTING` items.
+1. ✅ Compliance matrix populated (`v0-compliance-matrix.md`); ⏳ resolve the 3 `CONFLICTING` items and approve Tranche A before V1.
 2. ⚠️ First real AWS apply in a non-production account (Terraform validated, not applied).
 3. ⚠️ Run `pnpm test:infra` once against **real AWS S3** (staging bucket, `INFRA_ENFORCES_SIGNATURES=1`) before the first production release; CI runs it against moto (S3 protocol) and the official ClamAV image.
