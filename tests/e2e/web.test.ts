@@ -106,7 +106,7 @@ describe('browser journey: practice onboarding with MFA', () => {
     await fill(page, 'Code', totpAt(secret, totpStep()));
     await page.getByRole('button', { name: 'Confirm' }).click();
     await pw(page.getByText('Save these recovery codes now')).toBeVisible();
-    await pw(page.getByText('Enabled')).toBeVisible();
+    await pw(page.locator('p.ok', { hasText: 'Enabled' })).toBeVisible();
 
     // 7. Sign out, then sign in requires the second step
     await page.getByRole('button', { name: 'Sign out' }).click();

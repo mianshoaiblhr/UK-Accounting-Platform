@@ -69,15 +69,17 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
-      - name: Start MinIO
+      - name: Start MinIO (official binary)
         run: |
-          docker run -d --name minio -p 9000:9000 -e MINIO_ROOT_USER=minio -e MINIO_ROOT_PASSWORD=minio-secret \
-            minio/minio server /data
+          set -euxo pipefail
+          curl -sSfLo minio https://dl.min.io/server/minio/release/linux-amd64/minio
+          chmod +x minio
+          MINIO_ROOT_USER=minio MINIO_ROOT_PASSWORD=minio-secret nohup ./minio server "$RUNNER_TEMP/minio-data" --address ":9000" > "$RUNNER_TEMP/minio.log" 2>&1 &
           for i in $(seq 1 30); do
             if curl -sf http://localhost:9000/minio/health/live; then echo "minio ready"; exit 0; fi
             sleep 2
           done
-          docker logs minio || true
+          cat "$RUNNER_TEMP/minio.log" || true
           echo "minio did not become healthy"; exit 1
       - name: Wait for ClamAV (downloads the official signature database on first start)
         run: |
