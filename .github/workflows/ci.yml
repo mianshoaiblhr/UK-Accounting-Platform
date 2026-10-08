@@ -72,8 +72,13 @@ jobs:
       - name: Start MinIO
         run: |
           docker run -d --name minio -p 9000:9000 -e MINIO_ROOT_USER=minio -e MINIO_ROOT_PASSWORD=minio-secret \
-            quay.io/minio/minio server /data
-          for i in $(seq 1 30); do curl -sf http://localhost:9000/minio/health/live && break; sleep 2; done
+            minio/minio server /data
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:9000/minio/health/live; then echo "minio ready"; exit 0; fi
+            sleep 2
+          done
+          docker logs minio || true
+          echo "minio did not become healthy"; exit 1
       - name: Wait for ClamAV (downloads the official signature database on first start)
         run: |
           for i in $(seq 1 90); do
