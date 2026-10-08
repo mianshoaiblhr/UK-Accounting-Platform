@@ -55,6 +55,10 @@ jobs:
       clamav:
         image: clamav/clamav:stable
         ports: ["3310:3310"]
+      s3:
+        # MinIO no longer publishes community binaries/images (HTTP 410), so the S3 protocol is served by moto.
+        image: motoserver/moto:latest
+        ports: ["5000:5000"]
     env:
       TEST_PG_ADMIN: postgres:postgres
       PGPASSWORD: postgres
@@ -69,18 +73,13 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
-      - name: Start S3-compatible server (moto)
+      - name: Wait for the S3-compatible server (moto service container)
         run: |
-          set -euxo pipefail
-          # MinIO no longer publishes community binaries/images (HTTP 410), so use moto's S3 implementation.
-          pip install "moto[server]"
-          nohup moto_server -p 5000 > "$RUNNER_TEMP/moto.log" 2>&1 &
           for i in $(seq 1 30); do
-            if curl -sf -o /dev/null http://localhost:5000/moto-api/; then echo "moto ready"; exit 0; fi
+            if curl -s -o /dev/null -w '%{http_code}' http://localhost:5000/ | grep -q '^200$'; then echo "moto ready"; exit 0; fi
             sleep 2
           done
-          cat "$RUNNER_TEMP/moto.log" || true
-          echo "moto did not become healthy"; exit 1
+          echo "moto did not become healthy"; docker ps; exit 1
       - name: Wait for ClamAV (downloads the official signature database on first start)
         run: |
           for i in $(seq 1 90); do
