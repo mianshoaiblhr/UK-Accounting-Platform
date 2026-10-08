@@ -1,0 +1,11 @@
+{
+  "name": "@uk/worker",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": { "build": "tsc -p tsconfig.build.json", "typecheck": "tsc --noEmit -p tsconfig.json", "start": "node dist/main.js" },
+  "dependencies": {
+    "@uk/adapters": "workspace:*", "@uk/contracts": "workspace:*", "@uk/core": "workspace:*",
+    "@uk/db": "workspace:*", "@uk/jobs": "workspace:*"
+  }
+}

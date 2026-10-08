@@ -1,0 +1,427 @@
+// V0 baseline. Hand-written SQL (RLS, grants, triggers, exclusion constraints) lives in
+// prisma/migrations/*_v0_security/migration.sql and MUST be applied with `migrate deploy`.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("MIGRATION_DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+enum OrganisationType {
+  PRACTICE
+  BUSINESS
+}
+enum OrganisationStatus {
+  ACTIVE
+  SUSPENDED
+}
+enum MembershipStatus {
+  ACTIVE
+  SUSPENDED
+  REMOVED
+}
+enum CompanyScope {
+  ALL
+  ASSIGNED
+}
+enum AuthTokenPurpose {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+enum MfaFactorType {
+  TOTP
+}
+enum MfaFactorStatus {
+  PENDING
+  ACTIVE
+  DISABLED
+}
+enum CompanyStatus {
+  ACTIVE
+  ARCHIVED
+}
+enum PeriodStatus {
+  OPEN
+  CLOSED
+  LOCKED
+}
+enum DocumentStatus {
+  ACTIVE
+  ARCHIVED
+}
+enum DocumentVersionStatus {
+  PENDING_UPLOAD
+  UPLOADED
+  SCANNING
+  AVAILABLE
+  QUARANTINED
+  FAILED
+}
+enum JobRecordStatus {
+  QUEUED
+  RUNNING
+  RETRYING
+  COMPLETED
+  FAILED
+  DEAD
+}
+enum AuditOutcome {
+  SUCCESS
+  FAILURE
+  DENIED
+}
+enum IdempotencyStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+// ───────────── Global (not tenant-scoped) ─────────────
+model User {
+  id               String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email            String     @unique
+  displayName      String     @map("display_name")
+  passwordHash     String?    @map("password_hash")
+  emailVerifiedAt  DateTime?  @map("email_verified_at") @db.Timestamptz(3)
+  status           UserStatus @default(ACTIVE)
+  failedLoginCount Int        @default(0) @map("failed_login_count")
+  lockedUntil      DateTime?  @map("locked_until") @db.Timestamptz(3)
+  lockoutLevel     Int        @default(0) @map("lockout_level")
+  lastLoginAt      DateTime?  @map("last_login_at") @db.Timestamptz(3)
+  passwordChangedAt DateTime? @map("password_changed_at") @db.Timestamptz(3)
+  createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  identities    UserIdentity[]
+  sessions      Session[]
+  authTokens    AuthToken[]
+  mfaFactors    MfaFactor[]
+  recoveryCodes MfaRecoveryCode[]
+  challenges    AuthChallenge[]
+  memberships   Membership[]
+
+  @@map("user")
+}
+
+/// External identity links (OIDC/SAML later). `local` provider subject = user id.
+model UserIdentity {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  provider  String
+  subject   String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, subject])
+  @@index([userId])
+  @@map("user_identity")
+}
+
+model Session {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String    @map("user_id") @db.Uuid
+  tokenHash         String    @unique @map("token_hash")
+  authMethod        String    @map("auth_method")
+  mfaVerifiedAt     DateTime? @map("mfa_verified_at") @db.Timestamptz(3)
+  ip                String?
+  userAgent         String?   @map("user_agent")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastSeenAt        DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  idleExpiresAt     DateTime  @map("idle_expires_at") @db.Timestamptz(3)
+  absoluteExpiresAt DateTime  @map("absolute_expires_at") @db.Timestamptz(3)
+  revokedAt         DateTime? @map("revoked_at") @db.Timestamptz(3)
+  revokedReason     String?   @map("revoked_reason")
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model AuthToken {
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  purpose   AuthTokenPurpose
+  tokenHash String           @unique @map("token_hash")
+  expiresAt DateTime         @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime?        @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@map("auth_token")
+}
+
+model MfaFactor {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String          @map("user_id") @db.Uuid
+  type            MfaFactorType   @default(TOTP)
+  secretEncrypted String          @map("secret_encrypted")
+  status          MfaFactorStatus @default(PENDING)
+  lastUsedStep    BigInt?         @map("last_used_step")
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  confirmedAt     DateTime?       @map("confirmed_at") @db.Timestamptz(3)
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("mfa_factor")
+}
+
+model MfaRecoveryCode {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  codeHash  String    @map("code_hash")
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("mfa_recovery_code")
+}
+
+/// Short-lived second-step login challenge issued after the first factor succeeds.
+model AuthChallenge {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  attempts  Int       @default(0)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  ip        String?
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("auth_challenge")
+}
+
+// ───────────── Tenant-scoped (organisation_id, RLS) ─────────────
+model Organisation {
+  id        String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type      OrganisationType
+  name      String
+  status    OrganisationStatus @default(ACTIVE)
+  createdAt DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  roles       Role[]
+  memberships Membership[]
+  companies   Company[]
+
+  @@map("organisation")
+}
+
+model Role {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// NULL = system role visible to every organisation.
+  organisationId String?  @map("organisation_id") @db.Uuid
+  key            String
+  name           String
+  description    String   @default("")
+  permissions    String[]
+  isSystem       Boolean  @default(false) @map("is_system")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  organisation Organisation? @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  memberships  Membership[]
+
+  @@unique([organisationId, key])
+  @@map("role")
+}
+
+model Membership {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String           @map("organisation_id") @db.Uuid
+  userId         String           @map("user_id") @db.Uuid
+  roleId         String           @map("role_id") @db.Uuid
+  status         MembershipStatus @default(ACTIVE)
+  companyScope   CompanyScope     @default(ALL) @map("company_scope")
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organisation Organisation        @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role         Role                @relation(fields: [roleId], references: [id])
+  assignments  CompanyAssignment[]
+
+  @@unique([organisationId, userId])
+  @@unique([organisationId, id])
+  @@index([userId])
+  @@map("membership")
+}
+
+model CompanyAssignment {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  membershipId   String   @map("membership_id") @db.Uuid
+  companyId      String   @map("company_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  membership Membership @relation(fields: [organisationId, membershipId], references: [organisationId, id], onDelete: Cascade)
+  company    Company    @relation(fields: [organisationId, companyId], references: [organisationId, id], onDelete: Cascade)
+
+  @@unique([membershipId, companyId])
+  @@map("company_assignment")
+}
+
+model Invitation {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId  String       @map("organisation_id") @db.Uuid
+  email           String
+  roleId          String       @map("role_id") @db.Uuid
+  companyScope    CompanyScope @default(ALL) @map("company_scope")
+  companyIds      String[]     @map("company_ids") @db.Uuid
+  tokenHash       String       @unique @map("token_hash")
+  invitedByUserId String       @map("invited_by_user_id") @db.Uuid
+  expiresAt       DateTime     @map("expires_at") @db.Timestamptz(3)
+  acceptedAt      DateTime?    @map("accepted_at") @db.Timestamptz(3)
+  revokedAt       DateTime?    @map("revoked_at") @db.Timestamptz(3)
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([organisationId])
+  @@map("invitation")
+}
+
+model Company {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String        @map("organisation_id") @db.Uuid
+  name           String
+  /// Registered number held as plain data only; no Companies House integration in V0.
+  companyNumber  String?       @map("company_number")
+  legalForm      String        @default("LTD") @map("legal_form")
+  status         CompanyStatus @default(ACTIVE)
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organisation Organisation        @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  periods      AccountingPeriod[]
+  assignments  CompanyAssignment[]
+
+  @@unique([organisationId, id])
+  @@index([organisationId])
+  @@map("company")
+}
+
+/// Period shell only: dates + status. No accounting semantics until V1+.
+model AccountingPeriod {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String       @map("organisation_id") @db.Uuid
+  companyId      String       @map("company_id") @db.Uuid
+  startDate      DateTime     @map("start_date") @db.Date
+  endDate        DateTime     @map("end_date") @db.Date
+  status         PeriodStatus @default(OPEN)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  company Company @relation(fields: [organisationId, companyId], references: [organisationId, id], onDelete: Cascade)
+
+  @@unique([organisationId, id])
+  @@index([organisationId, companyId])
+  @@map("accounting_period")
+}
+
+model Document {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId  String         @map("organisation_id") @db.Uuid
+  /// Optional company link; composite FK (organisation_id, company_id) added in raw SQL.
+  companyId       String?        @map("company_id") @db.Uuid
+  name            String
+  documentClass   String         @default("GENERAL") @map("document_class")
+  status          DocumentStatus @default(ACTIVE)
+  retainUntil     DateTime?      @map("retain_until") @db.Date
+  legalHold       Boolean        @default(false) @map("legal_hold")
+  createdByUserId String         @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  versions DocumentVersion[]
+
+  @@unique([organisationId, id])
+  @@index([organisationId, companyId])
+  @@map("document")
+}
+
+model DocumentVersion {
+  id              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId  String                @map("organisation_id") @db.Uuid
+  documentId      String                @map("document_id") @db.Uuid
+  versionNo       Int                   @map("version_no")
+  storageKey      String                @map("storage_key")
+  contentType     String                @map("content_type")
+  sizeBytes       Int                   @map("size_bytes")
+  sha256          String?
+  status          DocumentVersionStatus @default(PENDING_UPLOAD)
+  scanResult      String?               @map("scan_result")
+  createdByUserId String                @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  processedAt     DateTime?             @map("processed_at") @db.Timestamptz(3)
+
+  document Document @relation(fields: [organisationId, documentId], references: [organisationId, id], onDelete: Cascade)
+
+  @@unique([documentId, versionNo])
+  @@index([organisationId])
+  @@map("document_version")
+}
+
+/// Append-only. organisation_id NULL for pre-tenant events (login etc.).
+model AuditEvent {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  occurredAt    DateTime     @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  organisationId String?     @map("organisation_id") @db.Uuid
+  actorUserId   String?      @map("actor_user_id") @db.Uuid
+  action        String
+  entityType    String?      @map("entity_type")
+  entityId      String?      @map("entity_id")
+  outcome       AuditOutcome @default(SUCCESS)
+  ip            String?
+  userAgent     String?      @map("user_agent")
+  correlationId String?      @map("correlation_id")
+  metadata      Json         @default("{}")
+
+  @@index([organisationId, occurredAt(sort: Desc)])
+  @@index([actorUserId, occurredAt(sort: Desc)])
+  @@map("audit_event")
+}
+
+model JobRecord {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId  String?         @map("organisation_id") @db.Uuid
+  createdByUserId String?         @map("created_by_user_id") @db.Uuid
+  queue           String
+  type            String
+  status          JobRecordStatus @default(QUEUED)
+  idempotencyKey  String          @map("idempotency_key")
+  correlationId   String          @map("correlation_id")
+  payload         Json
+  result          Json?
+  error           String?
+  attempts        Int             @default(0)
+  maxAttempts     Int             @map("max_attempts")
+  progress        Int             @default(0)
+  progressMessage String?         @map("progress_message")
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  startedAt       DateTime?       @map("started_at") @db.Timestamptz(3)
+  finishedAt      DateTime?       @map("finished_at") @db.Timestamptz(3)
+  updatedAt       DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([queue, idempotencyKey])
+  @@index([organisationId, createdAt(sort: Desc)])
+  @@index([status, createdAt])
+  @@map("job_record")
+}
+
+model IdempotencyRecord {
+  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String            @map("organisation_id") @db.Uuid
+  key            String
+  requestHash    String            @map("request_hash")
+  status         IdempotencyStatus @default(IN_PROGRESS)
+  responseStatus Int?              @map("response_status")
+  responseBody   Json?             @map("response_body")
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt      DateTime          @map("expires_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, key])
+  @@map("idempotency_record")
+}
