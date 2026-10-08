@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { base32Encode, totpAt, totpStep } from '@uk/core';
+import { totpAt, totpStep } from '@uk/core';
 import { ORIGIN, PASSWORD, bearer, createUser, startStack, uniq, type Stack } from '../helpers/stack';
 import { adminSql } from '../helpers/db';
 

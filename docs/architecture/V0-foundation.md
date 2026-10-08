@@ -19,7 +19,7 @@ packages/core      config (zod env), errors, logger+correlation (AsyncLocalStora
 packages/contracts zod schemas, permission catalogue, queue/job definitions (shared by api/worker/web)
 packages/db        Prisma schema + migrations + tenant-aware client (only place importing @prisma/client)
 packages/jobs      BullMQ infrastructure: producer, consumer runtime, retry/DLQ/progress/idempotency
-packages/storage   StoragePort + S3 + local adapters;  AV scan port (ClamAV/noop)
+packages/adapters  StoragePort (S3/local), AntivirusPort (ClamAV/noop), EmailPort (SES/console/file/memory)
 packages/testing   test DB/Redis bootstrap, factories
 infra/docker       local compose;  infra/terraform  AWS eu-west-2;  infra/db  role bootstrap SQL
 docs/              architecture, ADRs, runbooks

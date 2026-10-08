@@ -25,7 +25,7 @@ export interface Stack {
   stop(): Promise<void>;
 }
 
-export async function startStack(env: Record<string, string> = {}, opts: { worker?: boolean } = {}): Promise<Stack> {
+export async function startStack(env: Record<string, string> = {}): Promise<Stack> {
   const mailDir = mkdtempSync(join(tmpdir(), 'uk-mail-'));
   const config = loadConfig({ ...process.env, EMAIL_DRIVER: 'file', EMAIL_FILE_DIR: mailDir, ...env } as NodeJS.ProcessEnv);
   const app = await createApp(config);

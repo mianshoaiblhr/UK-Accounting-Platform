@@ -26,7 +26,7 @@ export class LocalStorage implements StoragePort {
     if (!p.startsWith(normalize(this.root) + sep)) throw new Error('Invalid storage key'); // path traversal guard
     return p;
   }
-  async putObject(key: string, body: Buffer): Promise<void> {
+  async putObject(key: string, body: Buffer, _contentType?: string): Promise<void> {
     const p = this.path(key);
     await mkdir(dirname(p), { recursive: true });
     await writeFile(p, body);

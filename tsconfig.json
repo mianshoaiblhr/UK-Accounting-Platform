@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": { "noEmit": true, "declaration": false, "types": ["node"], "lib": ["ES2023", "DOM"], "module": "esnext", "moduleResolution": "bundler",
+    "baseUrl": ".", "paths": { "@uk/*": ["packages/*/src/index.ts"] } },
+  "include": ["tests", "vitest.config.ts"]
+}

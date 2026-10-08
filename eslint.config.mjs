@@ -2,7 +2,7 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/.next/**', '**/node_modules/**', '**/generated/**', 'infra/**'] },
+  { ignores: ['**/dist/**', '**/.next/**', '**/node_modules/**', '**/generated/**', 'infra/**', '**/next-env.d.ts'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -13,5 +13,6 @@ export default tseslint.config(
       'no-restricted-imports': ['error', { paths: [{ name: '@prisma/client', message: 'Import from @uk/db instead.' }] }],
     },
   },
+  { files: ['**/*.mjs'], languageOptions: { globals: { process: 'readonly', URL: 'readonly' } } },
   { files: ['packages/db/**'], rules: { 'no-restricted-imports': 'off' } },
 );

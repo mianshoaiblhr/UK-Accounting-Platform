@@ -1,6 +1,6 @@
 # UK Accounting, Tax, Compliance & AI Platform — V0 Architecture Plan
 
-Status: **DRAFT — awaiting approval. No application code has been written.**
+Status: **SUPERSEDED by `V0-foundation.md`** (approved with decisions: AWS UK, built-in auth, Redis+BullMQ, practice-first, Vitest). Kept for history; the ledger structures it proposed are out of V0 scope.
 Scope: V0 technical foundation only. V1+ not started.
 
 > **Input gap:** the *Master Implementation Manifest* and the V0–V12 specifications were not

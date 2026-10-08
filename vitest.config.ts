@@ -6,13 +6,17 @@ const alias = Object.fromEntries(
   ['core', 'contracts', 'db', 'jobs', 'adapters'].map((p) => [`@uk/${p}`, resolve(__dirname, `packages/${p}/src/index.ts`)]),
 );
 
+const PG_HOST = process.env.TEST_PG_HOST ?? 'localhost:5432';
+const PG_ADMIN = process.env.TEST_PG_ADMIN ?? 'postgres'; // user[:password]
+
 // Deterministic test infrastructure (see tests/setup/global.ts, which creates and migrates this DB).
 const testEnv = {
   NODE_ENV: 'test',
   LOG_LEVEL: 'silent',
-  DATABASE_URL: 'postgresql://uk_app:uk_app_test@localhost:5432/uk_test',
-  MIGRATION_DATABASE_URL: 'postgresql://postgres@localhost:5432/uk_test',
-  REDIS_URL: 'redis://localhost:6379/1',
+  DATABASE_URL: `postgresql://uk_app:uk_app_test@${PG_HOST}/uk_test`,
+  MIGRATION_DATABASE_URL: `postgresql://${PG_ADMIN}@${PG_HOST}/uk_test`,
+  TEST_ADMIN_DATABASE_URL: `postgresql://${PG_ADMIN}@${PG_HOST}/postgres`,
+  REDIS_URL: `${process.env.TEST_REDIS ?? 'redis://localhost:6379'}/1`,
   FIELD_ENCRYPTION_KEY: 'MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=',
   APP_BASE_URL: 'http://localhost:3000',
   CORS_ORIGINS: 'http://localhost:3000',
