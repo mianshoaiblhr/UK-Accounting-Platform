@@ -26,13 +26,23 @@ const schema = z.object({
   FIELD_ENCRYPTION_KEY: z.string().min(1),
   SESSION_IDLE_MINUTES: z.coerce.number().default(60),
   SESSION_ABSOLUTE_HOURS: z.coerce.number().default(12),
-  LOGIN_MAX_FAILURES: z.coerce.number().default(5),
+  // Layered login throttling (see docs/architecture/security-architecture.md)
+  LOGIN_DELAY_START: z.coerce.number().default(3), // failures (per IP+account) before progressive delay begins
+  LOGIN_DELAY_BASE_SECONDS: z.coerce.number().default(2), // delay = base * 2^(failures - start); 0 disables delays
+  LOGIN_PAIR_BLOCK_AT: z.coerce.number().default(10), // failures (per IP+account) => temporary block of that pair
+  LOGIN_PAIR_BLOCK_MINUTES: z.coerce.number().default(15),
+  LOGIN_IP_BLOCK_AT: z.coerce.number().default(100), // failures from one IP in 15 min => block that IP
+  LOGIN_IP_DISTINCT_ACCOUNTS: z.coerce.number().default(20), // distinct accounts failed from one IP in 15 min (spraying)
+  LOGIN_IP_BLOCK_MINUTES: z.coerce.number().default(15),
+  LOGIN_ACCOUNT_PRESSURE_AT: z.coerce.number().default(30), // failures in 1h from >=3 distinct IPs => account under attack
+  LOGIN_ACCOUNT_PRESSURE_MINUTES: z.coerce.number().default(30),
   RATE_LIMIT_ENABLED: bool.default('true'),
+  API_DOCS_ENABLED: z.enum(['true', 'false']).optional(), // default: on outside production
   MAX_UPLOAD_BYTES: z.coerce.number().default(25 * 1024 * 1024),
   WORKER_CONCURRENCY: z.coerce.number().default(5),
 });
 
-export type AppConfig = z.infer<typeof schema> & { allowedRegions: string[]; corsOrigins: string[]; isProduction: boolean };
+export type AppConfig = z.infer<typeof schema> & { allowedRegions: string[]; corsOrigins: string[]; isProduction: boolean; apiDocsEnabled: boolean };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const parsed = schema.safeParse(env);
@@ -53,5 +63,5 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     if (c.AV_DRIVER === 'noop') throw new Error('Invalid configuration: production requires AV_DRIVER=clamav');
     if (!c.RATE_LIMIT_ENABLED) throw new Error('Invalid configuration: rate limiting cannot be disabled in production');
   }
-  return { ...c, allowedRegions, corsOrigins: c.CORS_ORIGINS.split(',').map((s) => s.trim()), isProduction };
+  return { ...c, allowedRegions, corsOrigins: c.CORS_ORIGINS.split(',').map((s) => s.trim()), isProduction, apiDocsEnabled: c.API_DOCS_ENABLED ? c.API_DOCS_ENABLED === 'true' : !isProduction };
 }

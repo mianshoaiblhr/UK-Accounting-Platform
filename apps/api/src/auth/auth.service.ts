@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { JobTypes } from '@uk/contracts';
+import { Events, JobTypes } from '@uk/contracts';
+import { publishEvent } from '@uk/platform';
 import type { RegisterInput } from '@uk/contracts';
 import {
   AppError, badRequest, forbidden, generateToken, getContext, sha256Hex, unauthorized, uuidv7, type AppConfig, type Logger,
@@ -12,10 +13,11 @@ import { CONFIG, DB, JOBS, LOGGER, RATE_LIMITER } from '../common/tokens';
 import { IDENTITY_PROVIDERS, type IdentityProvider } from './identity-provider';
 import { MfaService } from './mfa.service';
 import { PasswordHasher } from './password-hasher';
+import { LoginThrottle } from './login-throttle';
 import { SessionService } from './session.service';
 
 const HOUR = 3600_000;
-const GENERIC_LOGIN_ERROR = 'Invalid credentials, or the account is temporarily locked';
+const GENERIC_LOGIN_ERROR = 'Invalid credentials';
 
 export type SignInResult =
   | { mfaRequired: true; challengeToken: string }
@@ -36,6 +38,7 @@ export class AuthService {
     private readonly sessions: SessionService,
     private readonly mfa: MfaService,
     private readonly audit: AuditService,
+    private readonly throttle: LoginThrottle,
   ) {
     this.providers = new Map(providers.map((p) => [p.id, p]));
   }
@@ -68,11 +71,12 @@ export class AuthService {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') return; // lost a race: behave as above
       throw e;
     }
-    const ownerRole = await this.db.prisma.role.findFirstOrThrow({ where: { organisationId: null, key: 'owner' } });
+    const ownerRole = await this.db.asUser(userId, (tx) => tx.role.findFirstOrThrow({ where: { organisationId: null, key: 'owner' } }));
     await this.db.tenant({ organisationId, userId }, async (tx) => {
       await tx.organisation.create({ data: { id: organisationId, type: input.organisationType, name: input.organisationName } });
       const m = await tx.membership.create({ data: { organisationId, userId, roleId: ownerRole.id, companyScope: 'ALL' } });
       await this.audit.record({ action: 'organisation.created', organisationId, actorUserId: userId, entityType: 'organisation', entityId: organisationId, metadata: { type: input.organisationType, membershipId: m.id } }, tx);
+      await publishEvent(tx, Events.userAddedToOrganisation, { aggregateId: m.id, organisationId, actorUserId: userId, payload: { membershipId: m.id, userId, roleKey: 'owner' } });
     });
     await this.audit.record({ action: 'auth.registered', actorUserId: userId });
     await this.sendVerification(userId, input.email);
@@ -113,23 +117,28 @@ export class AuthService {
   // ───────────── Sign-in ─────────────
   async signIn(providerId: string, input: Record<string, unknown>): Promise<SignInResult> {
     const ctx = getContext();
+    const ip = ctx?.ip ?? 'unknown';
+    const email = String(input.email ?? '').toLowerCase();
     const provider = this.providers.get(providerId);
     if (!provider) throw badRequest('Unknown identity provider', 'unknown_provider');
-    const emailKey = sha256Hex(String(input.email ?? '').toLowerCase()).slice(0, 32);
-    await this.limits.enforce(`login:acct:${emailKey}`, 10, 900); // per-account, independent of IP
+    const emailKey = sha256Hex(email).slice(0, 32);
+
+    await this.throttle.check(ip, email); // 429 for blocked/delayed IP+account pairs and IPs (identical for unknown emails)
 
     const result = await provider.authenticate(input);
     const meta = { emailHash: emailKey, provider: providerId };
 
     if (result.status !== 'ok') {
-      if (result.status === 'invalid' && result.userId) await this.registerFailure(result.userId);
-      else await this.audit.record({ action: 'auth.login_failed', outcome: 'FAILURE', metadata: { ...meta, reason: 'unknown_account' } });
+      await this.throttle.recordFailure(ip, email, result.status === 'invalid' ? result.userId : undefined);
+      await this.audit.record({ action: 'auth.login_failed', outcome: 'FAILURE', actorUserId: result.status === 'invalid' ? result.userId : undefined, metadata: meta });
       throw unauthorized(GENERIC_LOGIN_ERROR, 'invalid_credentials');
     }
 
     const user = await this.db.prisma.user.findUniqueOrThrow({ where: { id: result.userId } });
-    if (user.lockedUntil && user.lockedUntil > new Date()) {
-      await this.audit.record({ action: 'auth.login_blocked_locked', outcome: 'DENIED', actorUserId: user.id, metadata: { lockedUntil: user.lockedUntil } });
+    // Distributed attack on this account: refuse sign-ins from IPs that have never succeeded for it (generic error).
+    // The owner's usual locations keep working, so an attacker cannot lock the owner out.
+    if ((await this.throttle.accountUnderPressure(email)) && !(await this.throttle.isTrustedIp(user.id, ip))) {
+      await this.audit.record({ action: 'auth.login_blocked_account_pressure', outcome: 'DENIED', actorUserId: user.id, metadata: meta });
       throw unauthorized(GENERIC_LOGIN_ERROR, 'invalid_credentials');
     }
     if (!user.emailVerifiedAt) {
@@ -144,12 +153,13 @@ export class AuthService {
       await this.audit.record({ action: 'auth.mfa_challenge_issued', actorUserId: user.id });
       return { mfaRequired: true, challengeToken };
     }
-    return this.openSession(user.id, `${providerId}`, false);
+    return this.openSession(user.id, user.email, `${providerId}`, false);
   }
 
   async completeMfa(challengeToken: string, code: string): Promise<SignInResult> {
     const ctx = getContext();
-    await this.limits.enforce(`mfa:ip:${ctx?.ip}`, 30, 900);
+    const ip = ctx?.ip ?? 'unknown';
+    await this.limits.enforce(`mfa:ip:${ip}`, 30, 900);
     const ch = await this.db.prisma.authChallenge.findUnique({ where: { tokenHash: sha256Hex(challengeToken) } });
     const invalid = unauthorized('Invalid or expired verification code', 'invalid_mfa');
     if (!ch || ch.usedAt || ch.expiresAt <= new Date() || ch.attempts >= 5) throw invalid;
@@ -157,32 +167,23 @@ export class AuthService {
     if (!ok) {
       const upd = await this.db.prisma.authChallenge.update({ where: { id: ch.id }, data: { attempts: { increment: 1 } } });
       await this.audit.record({ action: 'auth.mfa_failed', outcome: 'FAILURE', actorUserId: ch.userId, metadata: { attempts: upd.attempts } });
-      if (upd.attempts >= 5) await this.registerFailure(ch.userId);
+      const u = await this.db.prisma.user.findUnique({ where: { id: ch.userId }, select: { email: true } });
+      if (u) await this.throttle.recordFailure(ip, u.email, ch.userId);
       throw invalid;
     }
     const claimed = await this.db.prisma.authChallenge.updateMany({ where: { id: ch.id, usedAt: null }, data: { usedAt: new Date() } });
     if (claimed.count !== 1) throw invalid;
-    return this.openSession(ch.userId, 'local', true);
+    const owner = await this.db.prisma.user.findUniqueOrThrow({ where: { id: ch.userId }, select: { email: true } });
+    return this.openSession(ch.userId, owner.email, 'local', true);
   }
 
-  private async openSession(userId: string, provider: string, mfaVerified: boolean): Promise<SignInResult> {
+  private async openSession(userId: string, email: string, provider: string, mfaVerified: boolean): Promise<SignInResult> {
     const ctx = getContext();
-    await this.db.prisma.user.update({ where: { id: userId }, data: { failedLoginCount: 0, lockedUntil: null, lockoutLevel: 0, lastLoginAt: new Date() } });
+    await this.db.prisma.user.update({ where: { id: userId }, data: { lastLoginAt: new Date() } });
+    await this.throttle.recordSuccess(ctx?.ip ?? 'unknown', email, userId);
     const s = await this.sessions.create(userId, { ip: ctx?.ip, userAgent: ctx?.userAgent, authMethod: mfaVerified ? `${provider}+totp` : provider, mfaVerified });
     await this.audit.record({ action: 'auth.login_succeeded', actorUserId: userId, entityType: 'session', entityId: s.session.id, metadata: { mfa: mfaVerified, provider } });
     return { mfaRequired: false, token: s.token, expiresAt: s.expiresAt, userId };
-  }
-
-  /** 5 consecutive failures => lock with exponential duration (15m, 30m, 60m ... capped at 24h). */
-  private async registerFailure(userId: string): Promise<void> {
-    const u = await this.db.prisma.user.update({ where: { id: userId }, data: { failedLoginCount: { increment: 1 } } });
-    await this.audit.record({ action: 'auth.login_failed', outcome: 'FAILURE', actorUserId: userId, metadata: { failures: u.failedLoginCount } });
-    if (u.failedLoginCount >= this.config.LOGIN_MAX_FAILURES) {
-      const minutes = Math.min(15 * 2 ** u.lockoutLevel, 24 * 60);
-      const lockedUntil = new Date(Date.now() + minutes * 60_000);
-      await this.db.prisma.user.update({ where: { id: userId }, data: { lockedUntil, failedLoginCount: 0, lockoutLevel: { increment: 1 } } });
-      await this.audit.record({ action: 'auth.account_locked', outcome: 'DENIED', actorUserId: userId, metadata: { lockedUntil, minutes } });
-    }
   }
 
   async logout(userId: string, sessionId: string) {
@@ -213,7 +214,7 @@ export class AuthService {
     const passwordHash = await this.hasher.hash(newPassword);
     await this.db.prisma.user.update({
       where: { id: rec.userId },
-      data: { passwordHash, passwordChangedAt: new Date(), failedLoginCount: 0, lockedUntil: null, lockoutLevel: 0, emailVerifiedAt: new Date() },
+      data: { passwordHash, passwordChangedAt: new Date(), emailVerifiedAt: new Date() },
     });
     await this.sessions.revokeAll(rec.userId, 'password_reset');
     await this.db.prisma.authToken.updateMany({ where: { userId: rec.userId, purpose: 'PASSWORD_RESET', usedAt: null }, data: { usedAt: new Date() } });

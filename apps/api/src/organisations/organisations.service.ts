@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { JobTypes, isPermission, PERMISSIONS, type Permission } from '@uk/contracts';
+import { Events, JobTypes, isPermission, PERMISSIONS, type Permission } from '@uk/contracts';
+import { publishEvent } from '@uk/platform';
 import { badRequest, conflict, forbidden, generateToken, notFound, sha256Hex, unprocessable, type AppConfig } from '@uk/core';
 import type { Database, Tx } from '@uk/db';
 import type { JobProducer } from '@uk/jobs';
@@ -169,6 +170,8 @@ export class OrganisationsService {
         await tx.companyAssignment.createMany({ data: valid.map((c) => ({ organisationId: inv.organisationId, membershipId: m.id, companyId: c.id })) });
       }
       await this.audit.record({ action: 'invitation.accepted', organisationId: inv.organisationId, actorUserId: userId, entityType: 'membership', entityId: m.id }, tx);
+      const role = await tx.role.findUniqueOrThrow({ where: { id: inv.roleId } });
+      await publishEvent(tx, Events.userAddedToOrganisation, { aggregateId: m.id, organisationId: inv.organisationId, actorUserId: userId, payload: { membershipId: m.id, userId, roleKey: role.key } });
       return { organisationId: inv.organisationId, membershipId: m.id };
     });
   }

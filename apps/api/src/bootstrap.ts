@@ -8,6 +8,7 @@ import helmet from 'helmet';
 import { loadConfig, type AppConfig } from '@uk/core';
 import { AppModule } from './app.module';
 import { LOGGER } from './common/tokens';
+import { mountApiDocs } from './openapi/build';
 import { requestContextMiddleware } from './common/request-context.middleware';
 
 export async function createApp(config: AppConfig = loadConfig()): Promise<NestExpressApplication> {
@@ -15,11 +16,11 @@ export async function createApp(config: AppConfig = loadConfig()): Promise<NestE
   app.set('trust proxy', config.TRUST_PROXY_HOPS);
   app.disable('x-powered-by');
   app.use(requestContextMiddleware);
-  app.use(helmet({
-    contentSecurityPolicy: { directives: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] } },
-    hsts: config.isProduction ? { maxAge: 31536000, includeSubDomains: true } : false,
-    referrerPolicy: { policy: 'no-referrer' },
-  }));
+  const hsts = config.isProduction ? { maxAge: 31536000, includeSubDomains: true } : false;
+  const strict = helmet({ contentSecurityPolicy: { directives: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] } }, hsts, referrerPolicy: { policy: 'no-referrer' } });
+  // Swagger UI needs inline scripts/styles: relax CSP for the docs path only (never the API itself).
+  const docs = helmet({ contentSecurityPolicy: { directives: { defaultSrc: ["'self'"], scriptSrc: ["'self'", "'unsafe-inline'"], styleSrc: ["'self'", "'unsafe-inline'"], imgSrc: ["'self'", 'data:'], frameAncestors: ["'none'"] } }, hsts, referrerPolicy: { policy: 'no-referrer' } });
+  app.use((req: Request, res: Response, next: NextFunction) => (req.path.startsWith('/api/docs') ? docs : strict)(req, res, next));
   app.enableCors({
     origin: config.corsOrigins, credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
@@ -35,6 +36,7 @@ export async function createApp(config: AppConfig = loadConfig()): Promise<NestE
   app.useLogger({
     log: () => undefined, error: (m: unknown) => app.get(LOGGER).error(m), warn: (m: unknown) => app.get(LOGGER).warn(m),
   });
+  if (config.apiDocsEnabled) mountApiDocs(app);
   app.enableShutdownHooks();
   return app;
 }

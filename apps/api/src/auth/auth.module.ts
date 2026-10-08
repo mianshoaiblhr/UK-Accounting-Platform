@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { IDENTITY_PROVIDERS, LocalPasswordProvider } from './identity-provider';
+import { LoginThrottle } from './login-throttle';
 import { MfaService } from './mfa.service';
 import { PasswordHasher } from './password-hasher';
 import { SessionService } from './session.service';
@@ -10,7 +11,7 @@ import { SessionService } from './session.service';
 @Module({
   controllers: [AuthController],
   providers: [
-    PasswordHasher, SessionService, MfaService, AuthService, LocalPasswordProvider,
+    PasswordHasher, SessionService, MfaService, LoginThrottle, AuthService, LocalPasswordProvider,
     // Register future OIDC/SAML providers here (Entra ID, Google Workspace, Auth0...).
     { provide: IDENTITY_PROVIDERS, useFactory: (local: LocalPasswordProvider) => [local], inject: [LocalPasswordProvider] },
   ],

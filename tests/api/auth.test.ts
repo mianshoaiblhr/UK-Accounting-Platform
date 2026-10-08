@@ -4,7 +4,7 @@ import { ORIGIN, PASSWORD, bearer, createUser, startStack, uniq, type Stack } fr
 import { adminSql } from '../helpers/db';
 
 let s: Stack;
-beforeAll(async () => { s = await startStack(); });
+beforeAll(async () => { s = await startStack({ TRUST_PROXY_HOPS: '1' }); });
 afterAll(() => s.stop());
 
 const post = (path: string, body: unknown, extra: Record<string, string> = {}) => s.api().post(`/api/v1${path}`).set('Origin', ORIGIN).set(extra).send(body as object);
@@ -75,20 +75,14 @@ describe('login, lockout, audit trail', () => {
     expect(wrong.body.code).toBe(unknown.body.code);
     expect(wrong.body.title).toBe(unknown.body.title);
   });
-  it('locks the account after 5 failures, even for the correct password, and unlocks by password reset', async () => {
+  it('repeated failures never lock the real owner out (anti-DoS); see login-throttle.test.ts for layers', async () => {
     const u = await createUser(s);
-    for (let i = 0; i < 5; i++) expect((await login(u.email, 'bad-password-1234')).status).toBe(401);
-    expect(adminSql(`SELECT locked_until IS NOT NULL FROM "user" WHERE email='${u.email}'`)).toBe('t');
-    const blocked = await login(u.email, PASSWORD);
-    expect(blocked.status).toBe(401);
-    expect(blocked.body.code).toBe('invalid_credentials'); // no lock-state oracle
-    const actions = adminSql(`SELECT action FROM audit_event a JOIN "user" x ON x.id=a.actor_user_id WHERE x.email='${u.email}' AND action LIKE 'auth.%'`);
-    expect(actions).toContain('auth.account_locked');
-    expect(actions).toContain('auth.login_blocked_locked');
-    await post('/auth/forgot-password', { email: u.email });
-    const token = s.mail.tokenFrom((await s.mail.waitFor(u.email, /Reset/)).text);
-    expect((await post('/auth/reset-password', { token, newPassword: 'A-brand-new-passphrase-1' })).status).toBe(200);
-    expect((await login(u.email, 'A-brand-new-passphrase-1')).status).toBe(200);
+    for (let i = 0; i < 12; i++) await login(u.email, 'bad-password-1234');
+    // the attacker's own (IP, email) pair is blocked ...
+    expect((await login(u.email, PASSWORD)).status).toBe(429);
+    // ... but the owner signing in from another address is untouched
+    const owner = await s.api().post('/api/v1/auth/login/bearer').set('Origin', ORIGIN).set('X-Forwarded-For', '203.0.113.77').send({ email: u.email, password: PASSWORD });
+    expect(owner.status).toBe(200);
   });
   it('writes a login audit trail visible to the user (success + failure) with no secrets', async () => {
     const u = await createUser(s);

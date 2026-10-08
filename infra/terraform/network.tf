@@ -1,7 +1,7 @@
 data "aws_availability_zones" "this" { state = "available" }
 
 locals {
-  azs = slice(data.aws_availability_zones.this.names, 0, 3)
+  azs  = slice(data.aws_availability_zones.this.names, 0, 3)
   name = "uk-acc-${var.environment}"
 }
 

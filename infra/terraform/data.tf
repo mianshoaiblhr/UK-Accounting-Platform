@@ -127,35 +127,35 @@ resource "aws_db_parameter_group" "pg16" {
 }
 
 resource "aws_db_instance" "main" {
-  identifier                            = local.name
-  engine                                = "postgres"
-  engine_version                        = "16"
-  instance_class                        = var.db_instance_class
-  allocated_storage                     = 100
-  max_allocated_storage                 = 1000
-  storage_type                          = "gp3"
-  storage_encrypted                     = true
-  kms_key_id                            = aws_kms_key.data.arn
-  db_name                               = "uk_accounting"
-  username                              = "uk_migrator" # owns the schema; runs migrations only
-  manage_master_user_password           = true          # secret generated & rotated by AWS Secrets Manager
-  master_user_secret_kms_key_id         = aws_kms_key.data.arn
-  multi_az                              = var.db_multi_az
-  db_subnet_group_name                  = aws_db_subnet_group.main.name
-  vpc_security_group_ids                = [aws_security_group.data.id]
-  parameter_group_name                  = aws_db_parameter_group.pg16.name
-  publicly_accessible                   = false
-  backup_retention_period               = 35 # automated backups + point-in-time recovery
-  backup_window                         = "02:00-03:00"
-  copy_tags_to_snapshot                 = true
-  deletion_protection                   = true
-  skip_final_snapshot                   = false
-  final_snapshot_identifier             = "${local.name}-final"
-  performance_insights_enabled          = true
-  performance_insights_kms_key_id       = aws_kms_key.data.arn
-  enabled_cloudwatch_logs_exports       = ["postgresql", "upgrade"]
-  auto_minor_version_upgrade            = true
-  iam_database_authentication_enabled   = true
+  identifier                          = local.name
+  engine                              = "postgres"
+  engine_version                      = "16"
+  instance_class                      = var.db_instance_class
+  allocated_storage                   = 100
+  max_allocated_storage               = 1000
+  storage_type                        = "gp3"
+  storage_encrypted                   = true
+  kms_key_id                          = aws_kms_key.data.arn
+  db_name                             = "uk_accounting"
+  username                            = "uk_migrator" # owns the schema; runs migrations only
+  manage_master_user_password         = true          # secret generated & rotated by AWS Secrets Manager
+  master_user_secret_kms_key_id       = aws_kms_key.data.arn
+  multi_az                            = var.db_multi_az
+  db_subnet_group_name                = aws_db_subnet_group.main.name
+  vpc_security_group_ids              = [aws_security_group.data.id]
+  parameter_group_name                = aws_db_parameter_group.pg16.name
+  publicly_accessible                 = false
+  backup_retention_period             = 35 # automated backups + point-in-time recovery
+  backup_window                       = "02:00-03:00"
+  copy_tags_to_snapshot               = true
+  deletion_protection                 = true
+  skip_final_snapshot                 = false
+  final_snapshot_identifier           = "${local.name}-final"
+  performance_insights_enabled        = true
+  performance_insights_kms_key_id     = aws_kms_key.data.arn
+  enabled_cloudwatch_logs_exports     = ["postgresql", "upgrade"]
+  auto_minor_version_upgrade          = true
+  iam_database_authentication_enabled = true
 }
 
 # ───────── Redis (queues) ─────────

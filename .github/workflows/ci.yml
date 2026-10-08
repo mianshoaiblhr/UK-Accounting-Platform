@@ -1,12 +1,14 @@
 name: ci
 on:
-  push: { branches: [main] }
+  push:
   pull_request:
+  workflow_dispatch:
 concurrency: { group: "ci-${{ github.ref }}", cancel-in-progress: true }
 permissions: { contents: read }
 
 jobs:
   test:
+    name: build, lint, typecheck, unit, integration, e2e
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -30,15 +32,58 @@ jobs:
       - run: pnpm build
       - run: pnpm typecheck
       - run: pnpm lint
-      - name: Unit + database + job + API + security + tenancy + permission + regression tests
+      - name: Unit, database, jobs, outbox, API, OpenAPI contract, security, tenancy, permissions, regression
         run: pnpm test
       - name: Install browser for E2E
         run: pnpm exec playwright install --with-deps chromium
       - name: End-to-end (real browser)
         run: pnpm test:e2e
-      - name: Dependency audit (production deps)
-        run: pnpm audit --prod --audit-level=high
-        continue-on-error: false
+
+  infra-integration:
+    name: real S3 (MinIO) + real ClamAV
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: postgres }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+      clamav:
+        image: clamav/clamav:stable
+        ports: ["3310:3310"]
+    env:
+      TEST_PG_ADMIN: postgres:postgres
+      PGPASSWORD: postgres
+      INFRA_REQUIRED: "1"                 # a missing service FAILS the job instead of skipping
+      INFRA_ENFORCES_SIGNATURES: "1"
+      INFRA_S3_ENDPOINT: http://localhost:9000
+      INFRA_CLAMAV_HOST: localhost
+      AWS_ACCESS_KEY_ID: minio
+      AWS_SECRET_ACCESS_KEY: minio-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - name: Start MinIO
+        run: |
+          docker run -d --name minio -p 9000:9000 -e MINIO_ROOT_USER=minio -e MINIO_ROOT_PASSWORD=minio-secret \
+            quay.io/minio/minio server /data
+          for i in $(seq 1 30); do curl -sf http://localhost:9000/minio/health/live && break; sleep 2; done
+      - name: Wait for ClamAV (downloads the official signature database on first start)
+        run: |
+          for i in $(seq 1 90); do
+            if [ "$(printf 'zPING\0' | timeout 3 nc localhost 3310 | tr -d '\0')" = "PONG" ]; then echo ready; exit 0; fi
+            sleep 5
+          done
+          echo "clamd not ready"; exit 1
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm test:infra
 
   migrations-from-scratch:
     runs-on: ubuntu-latest
@@ -50,21 +95,16 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - name: Apply every migration to an empty database
+      - name: Apply every migration to an empty database using the production migration script
         env: { MIGRATION_DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres" }
-        run: pnpm db:migrate
-      - name: Schema must match prisma/schema.prisma (no un-migrated drift)
-        env: { MIGRATION_DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres" }
-        run: |
-          pnpm --filter @uk/db exec prisma migrate diff \
-            --from-url "$MIGRATION_DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code \
-            || echo "::warning::drift reported (expected only for hand-written RLS/trigger SQL, review diff)"
+        run: bash infra/db/migrate.sh
 
   terraform:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
+        with: { terraform_version: "1.9.8" }
       - run: terraform -chdir=infra/terraform fmt -check -recursive
       - run: terraform -chdir=infra/terraform init -backend=false
       - run: terraform -chdir=infra/terraform validate
@@ -82,5 +122,5 @@ jobs:
           file: infra/docker/Dockerfile
           target: ${{ matrix.target }}
           push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.target }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.target }}

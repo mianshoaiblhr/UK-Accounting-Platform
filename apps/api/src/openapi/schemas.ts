@@ -1,0 +1,43 @@
+import { z } from 'zod';
+
+/** Response shapes (the request shapes come from @uk/contracts, so docs and validation can never drift). */
+const uuid = z.string().uuid();
+const ts = z.string().datetime();
+const page = <T extends z.ZodTypeAny>(item: T) => z.object({ items: z.array(item), nextCursor: z.string().nullable() });
+
+export const Company = z.object({ id: uuid, organisationId: uuid, name: z.string(), companyNumber: z.string().nullable(), legalForm: z.string(), status: z.enum(['ACTIVE', 'ARCHIVED']), createdAt: ts });
+export const Period = z.object({ id: uuid, companyId: uuid, startDate: z.string(), endDate: z.string(), status: z.enum(['OPEN', 'CLOSED', 'LOCKED']) });
+export const DocumentVersion = z.object({ id: uuid, documentId: uuid, versionNo: z.number().int(), contentType: z.string(), sizeBytes: z.number().int(), sha256: z.string().nullable(), status: z.enum(['PENDING_UPLOAD', 'UPLOADED', 'SCANNING', 'AVAILABLE', 'QUARANTINED', 'FAILED']), scanResult: z.string().nullable(), storageKey: z.string() });
+export const DocumentRecord = z.object({ id: uuid, name: z.string(), companyId: uuid.nullable(), documentClass: z.string(), status: z.enum(['ACTIVE', 'ARCHIVED']), legalHold: z.boolean(), versions: z.array(DocumentVersion).optional() });
+export const UploadInstructions = z.object({ method: z.literal('PUT'), url: z.string(), headers: z.record(z.string()), via: z.enum(['presigned', 'api']), expiresInSeconds: z.number() });
+export const DocumentCreated = z.object({ document: DocumentRecord, version: DocumentVersion, upload: UploadInstructions });
+export const Job = z.object({ id: uuid, type: z.string(), queue: z.string(), status: z.enum(['QUEUED', 'RUNNING', 'RETRYING', 'COMPLETED', 'FAILED', 'DEAD']), progress: z.number().int(), progressMessage: z.string().nullable(), attempts: z.number().int(), maxAttempts: z.number().int(), error: z.string().nullable(), correlationId: z.string(), createdAt: ts, startedAt: ts.nullable(), finishedAt: ts.nullable(), result: z.unknown().nullable() });
+export const Task = z.object({ id: uuid, companyId: uuid.nullable(), title: z.string(), description: z.string(), status: z.enum(['OPEN', 'IN_PROGRESS', 'DONE', 'CANCELLED']), priority: z.enum(['LOW', 'NORMAL', 'HIGH']), dueDate: z.string().nullable(), assigneeUserId: uuid.nullable(), createdByUserId: uuid, completedAt: ts.nullable() });
+export const Notification = z.object({ id: uuid, type: z.string(), title: z.string(), body: z.string(), entityType: z.string().nullable(), entityId: z.string().nullable(), readAt: ts.nullable(), createdAt: ts });
+export const WorkflowInstance = z.object({ id: uuid, type: z.string(), definitionVersion: z.number().int(), state: z.string(), subjectType: z.string(), subjectId: z.string(), version: z.number().int(), startedByUserId: uuid, completedAt: ts.nullable() });
+export const WorkflowDetail = WorkflowInstance.extend({ availableActions: z.array(z.string()), transitions: z.array(z.object({ fromState: z.string().nullable(), toState: z.string(), action: z.string(), actorUserId: uuid.nullable(), comment: z.string().nullable(), occurredAt: ts })) });
+export const WorkflowDefinitionView = z.object({ type: z.string(), version: z.number().int(), initialState: z.string(), terminalStates: z.array(z.string()), apiStartable: z.boolean(), transitions: z.array(z.object({ action: z.string(), from: z.array(z.string()), to: z.string(), permission: z.string() }).passthrough()) });
+export const Connection = z.object({ id: uuid, provider: z.string(), displayName: z.string(), status: z.enum(['ACTIVE', 'REVOKED', 'ERROR']), companyId: uuid.nullable(), scopes: z.array(z.string()), createdAt: ts, lastCheckedAt: ts.nullable(), lastError: z.string().nullable() });
+export const Provider = z.object({ provider: z.string(), displayName: z.string(), capabilities: z.array(z.string()) });
+export const AiProposal = z.object({ id: uuid, kind: z.string(), payload: z.unknown(), status: z.enum(['PENDING_REVIEW', 'APPROVED', 'REJECTED']), workflowInstanceId: uuid.nullable(), requestedByUserId: uuid.nullable(), decidedByUserId: uuid.nullable(), decidedAt: ts.nullable(), decisionComment: z.string().nullable() });
+export const JobAccepted = z.object({ jobId: uuid, status: z.string() });
+export const Role = z.object({ id: uuid, key: z.string(), name: z.string(), description: z.string(), permissions: z.array(z.string()), isSystem: z.boolean() });
+export const Member = z.object({ id: uuid, user: z.object({ id: uuid, email: z.string(), displayName: z.string() }), role: z.object({ id: uuid, key: z.string(), name: z.string() }), status: z.string(), companyScope: z.enum(['ALL', 'ASSIGNED']), companyIds: z.array(uuid) });
+export const Invitation = z.object({ id: uuid, email: z.string(), expiresAt: ts });
+export const AuditEvent = z.object({ id: uuid, occurredAt: ts, organisationId: uuid.nullable(), actorUserId: uuid.nullable(), action: z.string(), entityType: z.string().nullable(), entityId: z.string().nullable(), outcome: z.enum(['SUCCESS', 'FAILURE', 'DENIED']), ip: z.string().nullable(), correlationId: z.string().nullable(), metadata: z.record(z.unknown()) });
+export const Organisation = z.object({ id: uuid, type: z.enum(['PRACTICE', 'BUSINESS']), name: z.string(), status: z.string() });
+export const OrgMe = z.object({ organisationId: uuid, role: z.string(), permissions: z.array(z.string()), companyScope: z.enum(['ALL', 'ASSIGNED']), companyIds: z.array(uuid) });
+export const Me = z.object({ user: z.object({ id: uuid, email: z.string(), displayName: z.string() }), mfa: z.object({ enabled: z.boolean(), type: z.string().nullable(), recoveryCodesRemaining: z.number().int() }), organisations: z.array(z.object({ id: uuid, name: z.string(), type: z.enum(['PRACTICE', 'BUSINESS']), role: z.string(), roleName: z.string(), membershipId: uuid })) });
+export const Session = z.object({ id: uuid, createdAt: ts, lastSeenAt: ts, ip: z.string().nullable(), userAgent: z.string().nullable(), authMethod: z.string(), current: z.boolean() });
+export const LoginResult = z.object({ mfaRequired: z.boolean(), challengeToken: z.string().optional(), expiresAt: ts.optional(), sessionToken: z.string().optional().describe('Only returned by the /bearer variants') });
+export const Message = z.object({ message: z.string() });
+export const Health = z.object({ status: z.literal('ok'), checks: z.record(z.string()).optional() });
+export const LoginEvent = z.object({ id: uuid, occurredAt: ts, action: z.string(), outcome: z.string(), ip: z.string().nullable(), userAgent: z.string().nullable() });
+export const MfaStatus = z.object({ enabled: z.boolean(), type: z.string().nullable(), recoveryCodesRemaining: z.number().int() });
+export const MfaEnrol = z.object({ secret: z.string(), otpauthUrl: z.string() });
+export const MfaConfirmed = z.object({ recoveryCodes: z.array(z.string()).describe('Shown exactly once') });
+export const DownloadLink = z.object({ url: z.string(), expiresInSeconds: z.number(), sha256: z.string().nullable() });
+export const CheckResult = z.object({ ok: z.boolean(), detail: z.string().optional(), provider: z.string() });
+
+export const Pages = { Company: page(Company), DocumentRecord: page(DocumentRecord), Job: page(Job), Task: page(Task), Notification: page(Notification), WorkflowInstance: page(WorkflowInstance), AiProposal: page(AiProposal), AuditEvent: page(AuditEvent) };
+export const items = <T extends z.ZodTypeAny>(i: T) => z.object({ items: z.array(i) });

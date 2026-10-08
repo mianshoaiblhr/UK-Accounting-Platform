@@ -13,48 +13,59 @@ enum UserStatus {
   ACTIVE
   DISABLED
 }
+
 enum OrganisationType {
   PRACTICE
   BUSINESS
 }
+
 enum OrganisationStatus {
   ACTIVE
   SUSPENDED
 }
+
 enum MembershipStatus {
   ACTIVE
   SUSPENDED
   REMOVED
 }
+
 enum CompanyScope {
   ALL
   ASSIGNED
 }
+
 enum AuthTokenPurpose {
   EMAIL_VERIFICATION
   PASSWORD_RESET
 }
+
 enum MfaFactorType {
   TOTP
 }
+
 enum MfaFactorStatus {
   PENDING
   ACTIVE
   DISABLED
 }
+
 enum CompanyStatus {
   ACTIVE
   ARCHIVED
 }
+
 enum PeriodStatus {
   OPEN
   CLOSED
   LOCKED
 }
+
 enum DocumentStatus {
   ACTIVE
   ARCHIVED
 }
+
 enum DocumentVersionStatus {
   PENDING_UPLOAD
   UPLOADED
@@ -63,6 +74,7 @@ enum DocumentVersionStatus {
   QUARANTINED
   FAILED
 }
+
 enum JobRecordStatus {
   QUEUED
   RUNNING
@@ -71,31 +83,69 @@ enum JobRecordStatus {
   FAILED
   DEAD
 }
+
 enum AuditOutcome {
   SUCCESS
   FAILURE
   DENIED
 }
+
 enum IdempotencyStatus {
   IN_PROGRESS
   COMPLETED
 }
 
+enum OutboxStatus {
+  PENDING
+  PUBLISHED
+  FAILED
+}
+
+enum TaskStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  NORMAL
+  HIGH
+}
+
+enum IntegrationStatus {
+  ACTIVE
+  REVOKED
+  ERROR
+}
+
+enum AiRunStatus {
+  SUCCEEDED
+  FAILED
+}
+
+enum AiProposalStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
 // ───────────── Global (not tenant-scoped) ─────────────
 model User {
-  id               String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email            String     @unique
-  displayName      String     @map("display_name")
-  passwordHash     String?    @map("password_hash")
-  emailVerifiedAt  DateTime?  @map("email_verified_at") @db.Timestamptz(3)
-  status           UserStatus @default(ACTIVE)
-  failedLoginCount Int        @default(0) @map("failed_login_count")
-  lockedUntil      DateTime?  @map("locked_until") @db.Timestamptz(3)
-  lockoutLevel     Int        @default(0) @map("lockout_level")
-  lastLoginAt      DateTime?  @map("last_login_at") @db.Timestamptz(3)
-  passwordChangedAt DateTime? @map("password_changed_at") @db.Timestamptz(3)
-  createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt        DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email             String     @unique
+  displayName       String     @map("display_name")
+  passwordHash      String?    @map("password_hash")
+  emailVerifiedAt   DateTime?  @map("email_verified_at") @db.Timestamptz(3)
+  status            UserStatus @default(ACTIVE)
+  failedLoginCount  Int        @default(0) @map("failed_login_count")
+  lockedUntil       DateTime?  @map("locked_until") @db.Timestamptz(3)
+  lockoutLevel      Int        @default(0) @map("lockout_level")
+  lastLoginAt       DateTime?  @map("last_login_at") @db.Timestamptz(3)
+  passwordChangedAt DateTime?  @map("password_changed_at") @db.Timestamptz(3)
+  createdAt         DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   identities    UserIdentity[]
   sessions      Session[]
@@ -366,18 +416,18 @@ model DocumentVersion {
 
 /// Append-only. organisation_id NULL for pre-tenant events (login etc.).
 model AuditEvent {
-  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  occurredAt    DateTime     @default(now()) @map("occurred_at") @db.Timestamptz(3)
-  organisationId String?     @map("organisation_id") @db.Uuid
-  actorUserId   String?      @map("actor_user_id") @db.Uuid
-  action        String
-  entityType    String?      @map("entity_type")
-  entityId      String?      @map("entity_id")
-  outcome       AuditOutcome @default(SUCCESS)
-  ip            String?
-  userAgent     String?      @map("user_agent")
-  correlationId String?      @map("correlation_id")
-  metadata      Json         @default("{}")
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  occurredAt     DateTime     @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  organisationId String?      @map("organisation_id") @db.Uuid
+  actorUserId    String?      @map("actor_user_id") @db.Uuid
+  action         String
+  entityType     String?      @map("entity_type")
+  entityId       String?      @map("entity_id")
+  outcome        AuditOutcome @default(SUCCESS)
+  ip             String?
+  userAgent      String?      @map("user_agent")
+  correlationId  String?      @map("correlation_id")
+  metadata       Json         @default("{}")
 
   @@index([organisationId, occurredAt(sort: Desc)])
   @@index([actorUserId, occurredAt(sort: Desc)])
@@ -424,4 +474,200 @@ model IdempotencyRecord {
 
   @@unique([organisationId, key])
   @@map("idempotency_record")
+}
+
+/// Global (auth subsystem only): IP addresses a user has successfully signed in from. Used so that a
+/// distributed password-guessing attack on an account cannot lock out the real owner's usual locations.
+model LoginTrustedIp {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  ipHash        String   @map("ip_hash")
+  lastSuccessAt DateTime @default(now()) @map("last_success_at") @db.Timestamptz(3)
+
+  @@unique([userId, ipHash])
+  @@map("login_trusted_ip")
+}
+
+// ───────────── Transactional outbox ─────────────
+model OutboxEvent {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventType      String       @map("event_type")
+  eventVersion   Int          @default(1) @map("event_version")
+  aggregateType  String       @map("aggregate_type")
+  aggregateId    String       @map("aggregate_id")
+  organisationId String?      @map("organisation_id") @db.Uuid
+  actorUserId    String?      @map("actor_user_id") @db.Uuid
+  payload        Json
+  occurredAt     DateTime     @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  correlationId  String       @map("correlation_id")
+  causationId    String?      @map("causation_id")
+  /// Optional business idempotency key: publishing the same key twice stores one event.
+  idempotencyKey String?      @unique @map("idempotency_key")
+  status         OutboxStatus @default(PENDING)
+  retryCount     Int          @default(0) @map("retry_count")
+  lastError      String?      @map("last_error")
+  nextAttemptAt  DateTime     @default(now()) @map("next_attempt_at") @db.Timestamptz(3)
+  publishedAt    DateTime?    @map("published_at") @db.Timestamptz(3)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([status, nextAttemptAt])
+  @@index([organisationId, occurredAt(sort: Desc)])
+  @@map("outbox_event")
+}
+
+/// Consumer-side idempotency: (event, consumer) is processed at most once to completion.
+model EventConsumption {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventId        String   @map("event_id") @db.Uuid
+  consumer       String
+  organisationId String?  @map("organisation_id") @db.Uuid
+  processedAt    DateTime @default(now()) @map("processed_at") @db.Timestamptz(3)
+
+  @@unique([eventId, consumer])
+  @@map("event_consumption")
+}
+
+// ───────────── Workflow / tasks / notifications ─────────────
+model WorkflowInstance {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId    String    @map("organisation_id") @db.Uuid
+  companyId         String?   @map("company_id") @db.Uuid
+  type              String
+  definitionVersion Int       @map("definition_version")
+  state             String
+  subjectType       String    @map("subject_type")
+  subjectId         String    @map("subject_id")
+  context           Json      @default("{}")
+  /// Optimistic concurrency token.
+  version           Int       @default(1)
+  startedByUserId   String    @map("started_by_user_id") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  completedAt       DateTime? @map("completed_at") @db.Timestamptz(3)
+
+  transitions WorkflowTransition[]
+
+  @@unique([organisationId, id])
+  @@index([organisationId, type, state])
+  @@index([organisationId, subjectType, subjectId])
+  @@map("workflow_instance")
+}
+
+/// Append-only history of every state change.
+model WorkflowTransition {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  instanceId     String   @map("instance_id") @db.Uuid
+  fromState      String?  @map("from_state")
+  toState        String   @map("to_state")
+  action         String
+  actorUserId    String?  @map("actor_user_id") @db.Uuid
+  comment        String?
+  occurredAt     DateTime @default(now()) @map("occurred_at") @db.Timestamptz(3)
+
+  instance WorkflowInstance @relation(fields: [organisationId, instanceId], references: [organisationId, id], onDelete: Cascade)
+
+  @@index([instanceId, occurredAt])
+  @@map("workflow_transition")
+}
+
+model Task {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId  String       @map("organisation_id") @db.Uuid
+  companyId       String?      @map("company_id") @db.Uuid
+  title           String
+  description     String       @default("")
+  status          TaskStatus   @default(OPEN)
+  priority        TaskPriority @default(NORMAL)
+  dueDate         DateTime?    @map("due_date") @db.Date
+  assigneeUserId  String?      @map("assignee_user_id") @db.Uuid
+  createdByUserId String       @map("created_by_user_id") @db.Uuid
+  subjectType     String?      @map("subject_type")
+  subjectId       String?      @map("subject_id")
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  completedAt     DateTime?    @map("completed_at") @db.Timestamptz(3)
+
+  @@index([organisationId, status])
+  @@index([organisationId, assigneeUserId])
+  @@map("task")
+}
+
+model Notification {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String    @map("organisation_id") @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  type           String
+  title          String
+  body           String    @default("")
+  entityType     String?   @map("entity_type")
+  entityId       String?   @map("entity_id")
+  readAt         DateTime? @map("read_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([organisationId, userId, createdAt(sort: Desc)])
+  @@map("notification")
+}
+
+// ───────────── Integrations / AI ─────────────
+model IntegrationConnection {
+  id                   String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId       String            @map("organisation_id") @db.Uuid
+  companyId            String?           @map("company_id") @db.Uuid
+  provider             String
+  displayName          String            @map("display_name")
+  status               IntegrationStatus @default(ACTIVE)
+  /// AES-256-GCM envelope; never returned by the API, never logged.
+  credentialsEncrypted String?           @map("credentials_encrypted")
+  scopes               String[]
+  createdByUserId      String            @map("created_by_user_id") @db.Uuid
+  createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  lastCheckedAt        DateTime?         @map("last_checked_at") @db.Timestamptz(3)
+  lastError            String?           @map("last_error")
+
+  @@index([organisationId, provider])
+  @@map("integration_connection")
+}
+
+/// Every AI invocation is logged (hashes, not content) for audit and cost control.
+model AiRun {
+  id               String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId   String      @map("organisation_id") @db.Uuid
+  userId           String?     @map("user_id") @db.Uuid
+  purpose          String
+  provider         String
+  model            String
+  inputHash        String      @map("input_hash")
+  outputHash       String?     @map("output_hash")
+  status           AiRunStatus
+  promptTokens     Int?        @map("prompt_tokens")
+  completionTokens Int?        @map("completion_tokens")
+  latencyMs        Int?        @map("latency_ms")
+  error            String?
+  correlationId    String      @map("correlation_id")
+  createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([organisationId, createdAt(sort: Desc)])
+  @@map("ai_run")
+}
+
+/// AI output is only ever a PROPOSAL. Applying it needs an authorised human decision.
+model AiProposal {
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId     String           @map("organisation_id") @db.Uuid
+  companyId          String?          @map("company_id") @db.Uuid
+  aiRunId            String?          @map("ai_run_id") @db.Uuid
+  kind               String
+  payload            Json
+  status             AiProposalStatus @default(PENDING_REVIEW)
+  workflowInstanceId String?          @map("workflow_instance_id") @db.Uuid
+  requestedByUserId  String?          @map("requested_by_user_id") @db.Uuid
+  decidedByUserId    String?          @map("decided_by_user_id") @db.Uuid
+  decidedAt          DateTime?        @map("decided_at") @db.Timestamptz(3)
+  decisionComment    String?          @map("decision_comment")
+  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([organisationId, status])
+  @@map("ai_proposal")
 }

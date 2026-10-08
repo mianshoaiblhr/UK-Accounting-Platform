@@ -185,12 +185,12 @@ resource "aws_ecs_task_definition" "svc" {
     operating_system_family = "LINUX"
   }
   container_definitions = jsonencode([{
-    name         = each.key
-    image        = "${aws_ecr_repository.app[each.key].repository_url}:${var.image_tag}"
-    essential    = true
-    portMappings = each.value.port == 0 ? [] : [{ containerPort = each.value.port }]
-    environment  = concat(local.common_env, each.value.env)
-    secrets      = each.key == "web" ? [] : local.common_secrets
+    name                   = each.key
+    image                  = "${aws_ecr_repository.app[each.key].repository_url}:${var.image_tag}"
+    essential              = true
+    portMappings           = each.value.port == 0 ? [] : [{ containerPort = each.value.port }]
+    environment            = concat(local.common_env, each.value.env)
+    secrets                = each.key == "web" ? [] : local.common_secrets
     readonlyRootFilesystem = true
     logConfiguration = {
       logDriver = "awslogs"

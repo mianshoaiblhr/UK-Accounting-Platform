@@ -77,3 +77,37 @@ export const ALLOWED_UPLOAD_TYPES = [
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/xml', 'text/xml', 'application/zip',
 ] as const;
+
+export const startWorkflowSchema = z.object({
+  type: z.string().max(60), subjectType: z.string().max(60), subjectId: z.string().max(100),
+  companyId: z.string().uuid().optional(), context: z.record(z.unknown()).default({}),
+}).strict();
+export const transitionWorkflowSchema = z.object({
+  action: z.string().max(60), comment: z.string().max(2000).optional(), expectedVersion: z.number().int().positive().optional(),
+}).strict();
+
+export const createTaskSchema = z.object({
+  title: z.string().trim().min(1).max(200), description: z.string().max(5000).default(''),
+  companyId: z.string().uuid().optional(), assigneeUserId: z.string().uuid().optional(),
+  priority: z.enum(['LOW', 'NORMAL', 'HIGH']).default('NORMAL'),
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+}).strict();
+export const updateTaskSchema = z.object({
+  title: z.string().trim().min(1).max(200).optional(), description: z.string().max(5000).optional(),
+  status: z.enum(['OPEN', 'IN_PROGRESS', 'DONE', 'CANCELLED']).optional(),
+  priority: z.enum(['LOW', 'NORMAL', 'HIGH']).optional(), dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  assigneeUserId: z.string().uuid().nullable().optional(),
+}).strict();
+export const taskListQuerySchema = paginationSchema.extend({
+  status: z.enum(['OPEN', 'IN_PROGRESS', 'DONE', 'CANCELLED']).optional(), assignee: z.enum(['me', 'any']).default('any'),
+});
+
+export const createConnectionSchema = z.object({
+  provider: z.string().max(60), displayName: z.string().trim().min(1).max(120),
+  companyId: z.string().uuid().optional(), credentials: z.record(z.unknown()),
+}).strict();
+
+export const requestAiSuggestionSchema = z.object({
+  purpose: z.string().regex(/^[a-z][a-z0-9_]{2,60}$/), input: z.string().min(1).max(20_000), companyId: z.string().uuid().optional(),
+}).strict();
+export const decideProposalSchema = z.object({ decision: z.enum(['APPROVE', 'REJECT']), comment: z.string().max(2000).optional() }).strict();

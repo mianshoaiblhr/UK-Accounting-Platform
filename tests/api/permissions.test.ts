@@ -36,6 +36,14 @@ const probes: Call[] = [
   { name: 'list jobs', perm: 'job:read', run: call('get', '/jobs') },
   { name: 'invite member', perm: 'member:invite', run: (u) => call('post', '/invitations', { email: `nobody-${Math.random().toString(36).slice(2)}@example.test`, roleId: '00000000-0000-4000-8000-0000000000a6' })(u) },
   { name: 'enqueue job', perm: 'job:manage', run: call('post', '/jobs/echo', { message: 'x' }) },
+  { name: 'list tasks', perm: 'task:read', run: call('get', '/tasks') },
+  { name: 'create task', perm: 'task:manage', run: call('post', '/tasks', { title: 'perm probe' }) },
+  { name: 'list workflows', perm: 'workflow:read', run: call('get', '/workflows') },
+  { name: 'start workflow', perm: 'workflow:manage', run: call('post', '/workflows', { type: 'generic_approval', subjectType: 'probe', subjectId: 'p' }) },
+  { name: 'list integrations', perm: 'integration:read', run: call('get', '/integrations/connections') },
+  { name: 'create connection', perm: 'integration:manage', run: call('post', '/integrations/connections', { provider: 'mock', displayName: 'p', credentials: { apiKey: 'abcdefgh' } }) },
+  { name: 'list AI proposals', perm: 'ai:use', run: call('get', '/ai/proposals') },
+  { name: 'decide AI proposal', perm: 'ai:approve', run: call('post', '/ai/proposals/11111111-1111-4111-8111-111111111111/decision', { decision: 'APPROVE' }) },
   { name: 'create document', perm: 'document:upload', run: call('post', '/documents', { name: 'p.pdf', contentType: 'application/pdf', sizeBytes: 10 }) },
 ];
 probes.find((p) => p.name === 'create company')!.run = (u) => call('post', '/companies', { name: `Perm ${Math.random()}` })(u);

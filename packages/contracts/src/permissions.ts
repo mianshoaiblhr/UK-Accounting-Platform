@@ -8,6 +8,10 @@ export const PERMISSIONS = [
   'document:read', 'document:upload', 'document:archive',
   'audit:read',
   'job:read', 'job:manage',
+  'task:read', 'task:manage',
+  'workflow:read', 'workflow:manage',
+  'integration:read', 'integration:manage',
+  'ai:use', 'ai:approve',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -21,11 +25,12 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
   { key: 'admin', name: 'Administrator', description: 'Manage people, companies and documents',
     permissions: PERMISSIONS.filter((p) => p !== 'org:manage') },
   { key: 'accountant', name: 'Accountant', description: 'Work on assigned client companies',
-    permissions: [...READ, 'company:create', 'company:update', 'period:manage', 'document:upload', 'document:archive', 'job:read', 'audit:read'] },
+    permissions: [...READ, 'company:create', 'company:update', 'period:manage', 'document:upload', 'document:archive', 'job:read', 'audit:read',
+      'task:read', 'task:manage', 'workflow:read', 'workflow:manage', 'ai:use', 'ai:approve'] },
   { key: 'bookkeeper', name: 'Bookkeeper', description: 'Prepare records for assigned companies',
-    permissions: [...READ, 'document:upload', 'job:read'] },
+    permissions: [...READ, 'document:upload', 'job:read', 'task:read', 'task:manage', 'workflow:read', 'ai:use'] },
   { key: 'reviewer', name: 'Reviewer', description: 'Read-only review and audit access',
-    permissions: [...READ, 'audit:read', 'job:read'] },
+    permissions: [...READ, 'audit:read', 'job:read', 'task:read', 'workflow:read'] },
   { key: 'client_viewer', name: 'Client Viewer', description: 'Client read-only access to own company',
     permissions: ['org:read', 'company:read', 'period:read', 'document:read'] },
 ];

@@ -1,5 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { Events } from '@uk/contracts';
 import { conflict, notFound } from '@uk/core';
+import { publishEvent } from '@uk/platform';
 import { Prisma, type Database, type Tx } from '@uk/db';
 import { AuditService } from '../audit/audit.service';
 import { DB } from '../common/tokens';
@@ -26,6 +28,7 @@ export class CompaniesService {
           await tx.companyAssignment.create({ data: { organisationId: org.organisationId, membershipId: org.membershipId, companyId: company.id } });
         }
         await this.audit.record({ action: 'company.created', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'company', entityId: company.id, metadata: { name: company.name } }, tx);
+        await publishEvent(tx, Events.companyCreated, { aggregateId: company.id, organisationId: org.organisationId, actorUserId: org.userId, payload: { companyId: company.id, name: company.name } });
         return company;
       });
     } catch (e) {
@@ -71,6 +74,7 @@ export class CompaniesService {
           data: { organisationId: org.organisationId, companyId, startDate: new Date(input.startDate), endDate: new Date(input.endDate) },
         });
         await this.audit.record({ action: 'period.created', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'accounting_period', entityId: p.id, metadata: { companyId, ...input } }, tx);
+        await publishEvent(tx, Events.accountingPeriodCreated, { aggregateId: p.id, organisationId: org.organisationId, actorUserId: org.userId, payload: { periodId: p.id, companyId, startDate: input.startDate, endDate: input.endDate } });
         return p;
       });
     } catch (e) {

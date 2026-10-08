@@ -55,3 +55,4 @@ export class Database {
     await this.prisma.$disconnect();
   }
 }
+export * from './classification';

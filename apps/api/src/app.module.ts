@@ -12,6 +12,12 @@ import { CompaniesController } from './companies/companies.controller';
 import { CompaniesService } from './companies/companies.service';
 import { DocumentsController } from './documents/documents.controller';
 import { DocumentsService } from './documents/documents.service';
+import { AiController } from './ai/ai.controller';
+import { IntegrationsController } from './integrations/integrations.controller';
+import { NotificationsController } from './notifications/notifications.controller';
+import { TasksController } from './tasks/tasks.controller';
+import { TasksService } from './tasks/tasks.service';
+import { WorkflowsController } from './workflows/workflows.controller';
 import { HealthController } from './health/health.controller';
 import { JobsController } from './jobs/jobs.controller';
 import { OrganisationsController } from './organisations/organisations.controller';
@@ -23,9 +29,10 @@ export class AppModule {
     return {
       module: AppModule,
       imports: [InfraModule.forRoot(config), AuditModule, AuthModule],
-      controllers: [HealthController, OrganisationsController, CompaniesController, DocumentsController, JobsController],
+      controllers: [HealthController, OrganisationsController, CompaniesController, DocumentsController, JobsController,
+        TasksController, WorkflowsController, NotificationsController, IntegrationsController, AiController],
       providers: [
-        OrganisationsService, CompaniesService, DocumentsService,
+        OrganisationsService, CompaniesService, DocumentsService, TasksService,
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_GUARD, useClass: OrgGuard },
         { provide: APP_INTERCEPTOR, useClass: IdempotencyInterceptor },

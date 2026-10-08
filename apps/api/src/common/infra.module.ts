@@ -4,7 +4,8 @@ import { createStorage } from '@uk/adapters';
 import { FieldEncryption, RateLimiter, createLogger, type AppConfig, type Logger, tooManyRequests } from '@uk/core';
 import { Database } from '@uk/db';
 import { JobProducer } from '@uk/jobs';
-import { CONFIG, CRYPTO, DB, JOBS, LOGGER, RATE_LIMITER, REDIS, STORAGE } from './tokens';
+import { AiGateway, AiProposalService, IntegrationService, NotificationService, WorkflowEngine, WorkflowRegistry, createAiProviders, createIntegrationRegistry } from '@uk/platform';
+import { AI_GATEWAY, AI_PROPOSALS, AI_PROVIDERS, CONFIG, CRYPTO, DB, INTEGRATIONS, JOBS, LOGGER, NOTIFICATIONS, RATE_LIMITER, REDIS, STORAGE, WORKFLOWS } from './tokens';
 
 /** Limiter that can be disabled for tests/dev (never in production — enforced by config validation). */
 export class Limits {
@@ -36,6 +37,12 @@ export class InfraModule {
         inject: [REDIS],
         useFactory: (redis: IORedis) => new Limits(config.RATE_LIMIT_ENABLED ? new RateLimiter(redis) : null),
       },
+      { provide: WORKFLOWS, useFactory: () => new WorkflowEngine(new WorkflowRegistry()) },
+      { provide: NOTIFICATIONS, inject: [JOBS], useFactory: (jobs: JobProducer) => new NotificationService(jobs) },
+      { provide: INTEGRATIONS, inject: [CRYPTO], useFactory: (crypto: FieldEncryption) => new IntegrationService(createIntegrationRegistry(config), crypto) },
+      { provide: AI_PROVIDERS, useFactory: () => createAiProviders(config) },
+      { provide: AI_GATEWAY, inject: [AI_PROVIDERS, LOGGER], useFactory: (p: ReturnType<typeof createAiProviders>, l: Logger) => new AiGateway(p, l) },
+      { provide: AI_PROPOSALS, inject: [WORKFLOWS], useFactory: (w: WorkflowEngine) => new AiProposalService(w) },
       {
         provide: JOBS,
         inject: [DB, CRYPTO, LOGGER],

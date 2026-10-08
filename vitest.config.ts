@@ -3,7 +3,7 @@ import swc from 'unplugin-swc';
 import { defineConfig } from 'vitest/config';
 
 const alias = Object.fromEntries(
-  ['core', 'contracts', 'db', 'jobs', 'adapters'].map((p) => [`@uk/${p}`, resolve(__dirname, `packages/${p}/src/index.ts`)]),
+  ['core', 'contracts', 'db', 'jobs', 'adapters', 'platform'].map((p) => [`@uk/${p}`, resolve(__dirname, `packages/${p}/src/index.ts`)]),
 );
 
 const PG_HOST = process.env.TEST_PG_HOST ?? 'localhost:5432';
@@ -26,6 +26,7 @@ const testEnv = {
   STORAGE_DRIVER: 'local',
   STORAGE_LOCAL_DIR: '.tmp/test-storage',
   WORKER_CONCURRENCY: '4',
+  LOGIN_DELAY_BASE_SECONDS: '0', // progressive delay is exercised explicitly in login-throttle.test.ts
 };
 
 const base = { plugins: [swc.vite({ module: { type: 'es6' } })], resolve: { alias } };
@@ -42,11 +43,22 @@ export default defineConfig({
         ...base,
         test: {
           name: 'integration',
-          include: ['tests/db/**/*.test.ts', 'tests/jobs/**/*.test.ts', 'tests/api/**/*.test.ts'],
+          include: ['tests/db/**/*.test.ts', 'tests/jobs/**/*.test.ts', 'tests/platform/**/*.test.ts', 'tests/api/**/*.test.ts'],
           env: testEnv,
           globalSetup: ['tests/setup/global.ts'],
           testTimeout: 30_000,
           hookTimeout: 60_000,
+        },
+      },
+      {
+        ...base,
+        test: {
+          name: 'infra',
+          include: ['tests/infra/**/*.test.ts'],
+          env: { ...testEnv, AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID ?? 'test', AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY ?? 'test' },
+          globalSetup: ['tests/setup/global.ts'],
+          testTimeout: 60_000,
+          hookTimeout: 120_000,
         },
       },
       {

@@ -13,14 +13,17 @@ Practice-first platform for UK accountancy practices (many client companies) and
 | Documents | Presigned/streamed upload → async hash + content sniff + antivirus → AVAILABLE/QUARANTINED, immutable versions |
 | Audit | Append-only (DB-enforced), same-transaction writes, redaction |
 | API | `/api/v1`, problem+json, zod validation, cursor pagination, `Idempotency-Key`, CSRF origin checks, security headers |
-| Infra | Docker compose, Dockerfile, Terraform for AWS **eu-west-2 (London)**, GitHub Actions CI |
+| Outbox & events | Transactional outbox → relay → idempotent consumers (`docs/architecture/events.md`) |
+| Foundations | Workflow engine (maker/checker), tasks, notifications, integration abstraction, AI gateway + human-approved proposals |
+| OpenAPI | Generated contract `docs/api/openapi.json`; Swagger UI at `/api/docs` (non-production) |
+| Infra | Docker compose, Dockerfile, Terraform for AWS **eu-west-2 (London)**, GitHub Actions CI, migration runner with destructive-change gate |
 
-Docs: [`docs/architecture/V0-foundation.md`](docs/architecture/V0-foundation.md) (design, 18 sections) · [`docs/architecture/adr.md`](docs/architecture/adr.md) · [`docs/runbooks/`](docs/runbooks).
+Docs: [`V0-foundation.md`](docs/architecture/V0-foundation.md) · [`security-architecture.md`](docs/architecture/security-architecture.md) · [`database-architecture.md`](docs/architecture/database-architecture.md) · [`events.md`](docs/architecture/events.md) · [`v0-completion-gate.md`](docs/architecture/v0-completion-gate.md) · [`v0-compliance-matrix.md`](docs/architecture/v0-compliance-matrix.md) · [`adr.md`](docs/architecture/adr.md) · runbooks in [`docs/runbooks/`](docs/runbooks) · API contract [`docs/api/openapi.json`](docs/api/openapi.json).
 
 ## Layout
 ```
 apps/api  apps/worker  apps/web
-packages/{core,contracts,db,jobs,adapters}
+packages/{core,contracts,db,jobs,adapters,platform}
 infra/{docker,terraform,db}   tests/{db,jobs,api,e2e}
 ```
 Rule: only `packages/db` may import `@prisma/client` (ESLint-enforced) so the tenant context can't be bypassed. Tenant data is accessed only via `db.tenant({organisationId,userId}, tx => …)`.
@@ -40,6 +43,8 @@ node apps/api/dist/main.js & node apps/worker/dist/main.js & pnpm --filter @uk/w
 ```bash
 pnpm test                 # unit + database + jobs + API + security + tenancy + permissions + regression
 pnpm test:e2e             # real browser (Playwright library under Vitest) against api+worker+web
+pnpm test:infra           # real S3 + ClamAV adapter contracts and pipeline (see docs/runbooks/infra-tests.md)
+pnpm openapi              # regenerate docs/api/openapi.json after API changes (a test fails if it is stale)
 pnpm test:regression      # tests tagged "regression": must stay green in every later version
 pnpm typecheck && pnpm lint
 ```

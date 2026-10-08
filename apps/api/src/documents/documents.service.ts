@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ALLOWED_UPLOAD_TYPES, JobTypes } from '@uk/contracts';
+import { ALLOWED_UPLOAD_TYPES, Events, JobTypes } from '@uk/contracts';
+import { publishEvent } from '@uk/platform';
 import { badRequest, conflict, notFound, unprocessable, uuidv7, type AppConfig } from '@uk/core';
 import type { StoragePort } from '@uk/adapters';
 import type { Database, Tx } from '@uk/db';
@@ -33,7 +34,7 @@ export class DocumentsService {
 
   private async uploadInstructions(org: OrgAccess, documentId: string, v: { id: string; storageKey: string; contentType: string }) {
     const presigned = await this.storage.presignUpload(v.storageKey, v.contentType, PRESIGN_SECONDS);
-    if (presigned) return { ...presigned, via: 's3' as const, expiresInSeconds: PRESIGN_SECONDS };
+    if (presigned) return { ...presigned, via: 'presigned' as const, expiresInSeconds: PRESIGN_SECONDS };
     return {
       method: 'PUT' as const, via: 'api' as const, headers: { 'Content-Type': v.contentType },
       url: `/api/v1/organisations/${org.organisationId}/documents/${documentId}/versions/${v.id}/content`, expiresInSeconds: PRESIGN_SECONDS,
@@ -110,8 +111,14 @@ export class DocumentsService {
 
   private async markUploaded(org: OrgAccess, versionId: string) {
     const v = await this.t(org, async (tx) => {
-      await tx.documentVersion.updateMany({ where: { id: versionId, status: 'PENDING_UPLOAD' }, data: { status: 'UPLOADED' } });
-      return tx.documentVersion.findUniqueOrThrow({ where: { id: versionId } });
+      const moved = await tx.documentVersion.updateMany({ where: { id: versionId, status: 'PENDING_UPLOAD' }, data: { status: 'UPLOADED' } });
+      const ver = await tx.documentVersion.findUniqueOrThrow({ where: { id: versionId }, include: { document: { select: { companyId: true } } } });
+      if (moved.count === 1) {
+        await publishEvent(tx, Events.documentUploaded, { aggregateId: ver.id, organisationId: org.organisationId, actorUserId: org.userId,
+          payload: { documentId: ver.documentId, versionId: ver.id, companyId: ver.document.companyId, contentType: ver.contentType, sizeBytes: ver.sizeBytes } });
+      }
+      const { document: _d, ...plain } = ver;
+      return plain;
     });
     await this.jobs.enqueue(JobTypes.documentProcess, { documentVersionId: versionId }, {
       organisationId: org.organisationId, userId: org.userId, idempotencyKey: `docproc:${versionId}`,

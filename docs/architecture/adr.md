@@ -15,11 +15,17 @@
 | 11 | **Audit append-only in DB** (grants + triggers), written in the business transaction | Cannot be altered by the app role or the owner without disabling triggers. |
 | 12 | **Vitest everywhere**; Playwright *library* inside Vitest for E2E | One runner. Integration files run serially (shared DB/Redis). |
 | 13 | Turborepo dropped; `pnpm -r` topological build | Not needed at this size. |
-| 14 | Deferred: OpenAPI generation, domain-event outbox, SSO providers, WebAuthn, Redis-backed web rate limits at the edge | Outbox arrives with V1 posting (needs transactional events). |
+| 14 | **OpenAPI in V0**: contract generated from the running Nest app; request schemas ARE the runtime zod validators; route docs table enforced complete by tests; spec committed and drift-checked | Contract is a first-class asset. |
+| 15 | **Transactional outbox in V0**: event row written in the business transaction; polling relay with `SKIP LOCKED`; BullMQ hand-off; consumer idempotency via `event_consumption` in the consumer's transaction | Guarantees no lost/phantom events; at-least-once delivery, exactly-once effect. |
+| 16 | **Layered login throttling** (IP+account pair, IP, account-under-attack with trusted-IP carve-out) replaces per-account lockout | Stops brute force without enabling lockout DoS; no account enumeration. |
+| 17 | **Auth tables outside tenant RLS** is a documented, tested exception (`security-architecture.md` §1.1) | RLS there adds complexity/failure modes with no isolation benefit. |
+| 18 | **Real-infrastructure test layer**: shared adapter contract suites run against fakes and real S3/ClamAV; CI requires them (`INFRA_REQUIRED=1`) | Fakes cannot drift from reality. |
+| 19 | **Workflow engine, tasks, notifications, integration + AI abstractions** are V0 foundations; AI output is proposal-only behind a human-approval workflow | Reusable by V1+ without re-implementing approvals or leaking vendor SDKs. |
+| 20 | Migrations non-destructive by default; destructive ones need an approval marker + verified backup id | `docs/runbooks/migrations.md`. |
+| 21 | Deferred: SSO providers, WebAuthn, outbox retention/cleanup job, Redis-backed edge rate limits | Not needed for V0. |
 
 ## Known limitations (honest list)
-- Per-account login throttle (10/15 min) can be used to nuisance-lock a known email's sign-ins; lockout state is not revealed. Accepted for V0; add CAPTCHA/step-up later.
-- Global tables (`user`, `session`, auth tokens) rely on application discipline, not RLS (only the auth module touches them).
-- Terraform is unvalidated in this environment (no AWS/terraform available); CI runs `fmt`/`validate`. The one-off migration ECS task definition is not yet in Terraform (see deploy runbook).
-- ClamAV adapter is tested against a protocol-faithful fake, not a live clamd.
-- S3 adapter is not exercised against real S3/MinIO in tests.
+- Login volume cap per IP can affect users behind a shared NAT during an attack (pair/IP/account layers otherwise target the attacker only).
+- Global auth tables are protected by application-level controls only — see `security-architecture.md` §1.1 (tested).
+- Terraform passes `fmt` + `validate` but has not been applied to a real AWS account. The migration runs as a pipeline step (`infra/db/migrate.sh`), deliberately not provisioned as infrastructure.
+- Real S3/ClamAV tests run in the `infra` layer (`pnpm test:infra`); locally against a stand-in S3 server and a minimal-signature clamd, in CI against MinIO + official ClamAV.

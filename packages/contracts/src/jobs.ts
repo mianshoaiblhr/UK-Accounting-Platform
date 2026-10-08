@@ -2,7 +2,7 @@ import { z, type ZodTypeAny } from 'zod';
 
 /** Every workload class named in the V0 brief gets a queue now; later versions only add handlers. */
 export const QUEUES = [
-  'documents', 'imports', 'exports', 'ai', 'reconciliation',
+  'events', 'documents', 'imports', 'exports', 'ai', 'reconciliation',
   'notifications', 'reports', 'integrations', 'scheduled',
 ] as const;
 export type QueueName = (typeof QUEUES)[number];
@@ -38,6 +38,21 @@ export const JobTypes = {
     type: 'document.process', queue: 'documents',
     retry: { attempts: 4, backoffMs: 5_000 },
     schema: z.object({ documentVersionId: z.string().uuid() }),
+  }),
+  eventDispatch: defineJob({
+    type: 'event.dispatch', queue: 'events',
+    retry: { attempts: 8, backoffMs: 2_000 },
+    schema: z.object({ eventId: z.string().uuid() }),
+  }),
+  integrationExecute: defineJob({
+    type: 'integration.execute', queue: 'integrations', sensitive: true,
+    retry: { attempts: 5, backoffMs: 5_000 },
+    schema: z.object({ connectionId: z.string().uuid(), operation: z.string().max(100), params: z.record(z.unknown()).default({}) }),
+  }),
+  aiSuggest: defineJob({
+    type: 'ai.suggest', queue: 'ai', sensitive: true,
+    retry: { attempts: 3, backoffMs: 5_000 },
+    schema: z.object({ purpose: z.string().max(100), input: z.string().max(20_000), companyId: z.string().uuid().optional() }),
   }),
   systemEcho: defineJob({
     type: 'system.echo', queue: 'scheduled',
