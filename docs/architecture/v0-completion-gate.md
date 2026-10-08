@@ -49,4 +49,4 @@ Architecture (`V0-foundation.md`) ✅ · Database architecture ✅ · Security m
 ## Open items before V1
 1. ⏳ Supply the Master Manifest + V0 spec → populate the compliance matrix, resolve any `CONFLICTING` items.
 2. ⚠️ First real AWS apply in a non-production account (Terraform validated, not applied).
-3. ⚠️ Pre-release run of `pnpm test:infra` in CI against MinIO + official ClamAV (this session ran it against a local clamd with a minimal signature set and an S3-compatible stand-in).
+3. ⚠️ Run `pnpm test:infra` once against **real AWS S3** (staging bucket, `INFRA_ENFORCES_SIGNATURES=1`) before the first production release; CI runs it against moto (S3 protocol) and the official ClamAV image.

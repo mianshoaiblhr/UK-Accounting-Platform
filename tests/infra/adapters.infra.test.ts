@@ -8,8 +8,8 @@ import { antivirusContract, storageContract } from './contracts';
 import { ensureBucket, infra } from './env';
 
 /**
- * Real-infrastructure layer. Fakes keep unit/integration tests fast; THIS layer proves the adapters against the
- * real thing (MinIO/S3 and clamd). CI sets INFRA_* (and INFRA_REQUIRED=1 so a missing service FAILS rather than skips).
+ * Real-infrastructure layer. Fakes keep unit/integration tests fast; THIS layer proves the adapters against a
+ * real S3-protocol server (moto locally and in CI; real AWS S3 in the staging smoke test) and a real clamd. CI sets INFRA_* (and INFRA_REQUIRED=1 so a missing service FAILS rather than skips).
  * Locally: see docs/runbooks/infra-tests.md.
  */
 describe('infrastructure availability gate', () => {
@@ -36,7 +36,7 @@ describe.skipIf(!infra.s3)('S3Storage specifics (adapter-level; never visible to
     const head = await client.send(new HeadObjectCommand({ Bucket: infra.bucket, Key: key }));
     expect(head.ServerSideEncryption).toBeTruthy();
   });
-  it('rejects expired presigned URLs on servers that enforce signatures (MinIO/S3)', async () => {
+  it('rejects expired presigned URLs on servers that enforce signatures (real S3)', async () => {
     if (process.env.INFRA_ENFORCES_SIGNATURES !== '1') return; // moto (local stand-in) does not validate signatures
     await ensureBucket();
     const st = s3(), key = `org/exp/${Date.now()}`;

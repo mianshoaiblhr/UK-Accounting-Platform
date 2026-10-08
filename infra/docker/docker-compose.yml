@@ -10,11 +10,9 @@ services:
     image: redis:7
     command: ["redis-server", "--appendonly", "yes"]
     ports: ["6379:6379"]
-  minio:            # S3-compatible; same S3Storage adapter as AWS (set S3_ENDPOINT)
-    image: minio/minio
-    command: server /data --console-address ":9001"
-    environment: { MINIO_ROOT_USER: minio, MINIO_ROOT_PASSWORD: minio-secret }
-    ports: ["9000:9000", "9001:9001"]
+  s3:               # S3-compatible emulator (moto); same S3Storage adapter as AWS (set S3_ENDPOINT / INFRA_S3_ENDPOINT)
+    image: motoserver/moto:latest
+    ports: ["5000:5000"]
   mailpit:          # inspect outgoing mail at http://localhost:8025 (use EMAIL_DRIVER=file or point SES-compatible tooling here)
     image: axllent/mailpit
     ports: ["8025:8025", "1025:1025"]

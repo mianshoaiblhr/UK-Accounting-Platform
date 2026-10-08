@@ -19,7 +19,7 @@
 | 15 | **Transactional outbox in V0**: event row written in the business transaction; polling relay with `SKIP LOCKED`; BullMQ hand-off; consumer idempotency via `event_consumption` in the consumer's transaction | Guarantees no lost/phantom events; at-least-once delivery, exactly-once effect. |
 | 16 | **Layered login throttling** (IP+account pair, IP, account-under-attack with trusted-IP carve-out) replaces per-account lockout | Stops brute force without enabling lockout DoS; no account enumeration. |
 | 17 | **Auth tables outside tenant RLS** is a documented, tested exception (`security-architecture.md` §1.1) | RLS there adds complexity/failure modes with no isolation benefit. |
-| 18 | **Real-infrastructure test layer**: shared adapter contract suites run against fakes and real S3/ClamAV; CI requires them (`INFRA_REQUIRED=1`) | Fakes cannot drift from reality. |
+| 18 | **Real-infrastructure test layer**: shared adapter contract suites run against fakes and real S3/ClamAV; CI requires them (`INFRA_REQUIRED=1`); S3 protocol via moto (MinIO no longer distributed), ClamAV via the official image | Fakes cannot drift from reality. |
 | 19 | **Workflow engine, tasks, notifications, integration + AI abstractions** are V0 foundations; AI output is proposal-only behind a human-approval workflow | Reusable by V1+ without re-implementing approvals or leaking vendor SDKs. |
 | 20 | Migrations non-destructive by default; destructive ones need an approval marker + verified backup id | `docs/runbooks/migrations.md`. |
 | 21 | Deferred: SSO providers, WebAuthn, outbox retention/cleanup job, Redis-backed edge rate limits | Not needed for V0. |

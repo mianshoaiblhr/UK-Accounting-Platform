@@ -40,7 +40,7 @@ jobs:
         run: pnpm test:e2e
 
   infra-integration:
-    name: real S3 (MinIO) + real ClamAV
+    name: real S3 protocol (moto) + real ClamAV
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -59,28 +59,28 @@ jobs:
       TEST_PG_ADMIN: postgres:postgres
       PGPASSWORD: postgres
       INFRA_REQUIRED: "1"                 # a missing service FAILS the job instead of skipping
-      INFRA_ENFORCES_SIGNATURES: "1"
-      INFRA_S3_ENDPOINT: http://localhost:9000
+      INFRA_ENFORCES_SIGNATURES: "0"      # moto does not validate signatures; run against real AWS S3 in the staging smoke test
+      INFRA_S3_ENDPOINT: http://localhost:5000
       INFRA_CLAMAV_HOST: localhost
-      AWS_ACCESS_KEY_ID: minio
-      AWS_SECRET_ACCESS_KEY: minio-secret
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
-      - name: Start MinIO (official binary)
+      - name: Start S3-compatible server (moto)
         run: |
           set -euxo pipefail
-          curl -sSfLo minio https://dl.min.io/server/minio/release/linux-amd64/minio
-          chmod +x minio
-          MINIO_ROOT_USER=minio MINIO_ROOT_PASSWORD=minio-secret nohup ./minio server "$RUNNER_TEMP/minio-data" --address ":9000" > "$RUNNER_TEMP/minio.log" 2>&1 &
+          # MinIO no longer publishes community binaries/images (HTTP 410), so use moto's S3 implementation.
+          pip install "moto[server]"
+          nohup moto_server -p 5000 > "$RUNNER_TEMP/moto.log" 2>&1 &
           for i in $(seq 1 30); do
-            if curl -sf http://localhost:9000/minio/health/live; then echo "minio ready"; exit 0; fi
+            if curl -sf -o /dev/null http://localhost:5000/moto-api/; then echo "moto ready"; exit 0; fi
             sleep 2
           done
-          cat "$RUNNER_TEMP/minio.log" || true
-          echo "minio did not become healthy"; exit 1
+          cat "$RUNNER_TEMP/moto.log" || true
+          echo "moto did not become healthy"; exit 1
       - name: Wait for ClamAV (downloads the official signature database on first start)
         run: |
           for i in $(seq 1 90); do
