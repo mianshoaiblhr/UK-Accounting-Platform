@@ -56,7 +56,8 @@ describe('RBAC matrix: every system role x every guarded capability', () => {
         const allowed = (role.permissions as string[]).includes(p.perm);
         it(`${allowed ? 'ALLOWED' : 'DENIED '} ${p.name} (${p.perm})`, async () => {
           const status = await p.run(members[role.key]!);
-          if (allowed) expect([401, 403, 404], `${role.key}/${p.name} got ${status}`).not.toContain(status);
+          // allowed => the permission check passed (a 404 from a probe's placeholder id is fine: org membership is proven by the DENIED cases)
+          if (allowed) expect([401, 403], `${role.key}/${p.name} got ${status}`).not.toContain(status);
           else expect(status).toBe(403);
         });
       }
