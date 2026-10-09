@@ -1,6 +1,7 @@
 import type { DomainEvent } from '@uk/contracts';
 import type { Logger } from '@uk/core';
 import type { Database, Tx } from '@uk/db';
+import { OutOfOrderEventError } from './outbox';
 
 export interface ConsumerContext { event: DomainEvent; tx: Tx; log: Logger }
 export type ConsumerHandler = (ctx: ConsumerContext) => Promise<void>;
@@ -25,6 +26,12 @@ export class EventBus {
   async dispatch(eventId: string): Promise<{ ran: string[]; skipped: string[] }> {
     const row = await this.db.system((tx) => tx.outboxEvent.findUnique({ where: { id: eventId } }));
     if (!row) throw new Error(`event ${eventId} not found`);
+    // Defence in depth for per-aggregate ordering (the relay already only publishes an aggregate's head): never run a consumer for an
+    // event while an earlier event of the same aggregate is unprocessed. The job retries with backoff until the earlier one completes.
+    const blocker = await this.db.system((tx) => tx.$queryRaw<{ id: string }[]>`
+      SELECT id FROM outbox_event WHERE aggregate_type = ${row.aggregateType} AND aggregate_id = ${row.aggregateId}
+         AND seq < ${row.seq} AND processed_at IS NULL ORDER BY seq LIMIT 1`);
+    if (blocker.length) throw new OutOfOrderEventError(eventId, blocker[0]!.id);
     const event: DomainEvent = {
       id: row.id, type: row.eventType, version: row.eventVersion, aggregateType: row.aggregateType, aggregateId: row.aggregateId,
       organisationId: row.organisationId, actorUserId: row.actorUserId, occurredAt: row.occurredAt,
@@ -50,6 +57,8 @@ export class EventBus {
       }
     }
     if (firstError) throw firstError; // job retries; consumers that already committed are skipped next time
+    // Every consumer has committed: the event is processed and the next event of its aggregate may now be published.
+    await this.db.system((tx) => tx.outboxEvent.updateMany({ where: { id: eventId, status: 'PUBLISHED', processedAt: null }, data: { processedAt: new Date() } }));
     return { ran, skipped };
   }
 }

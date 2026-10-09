@@ -11,6 +11,11 @@ Guarantees: an event exists **iff** its business change committed (same transact
 
 Envelope (`outbox_event`): `id`, `event_type`, `event_version`, `aggregate_type`, `aggregate_id`, `organisation_id`, `actor_user_id`, `payload`, `occurred_at`, `correlation_id`, `causation_id`, `idempotency_key` (unique), `status`, `retry_count`, `last_error`, `next_attempt_at`, `published_at`. Content is immutable (trigger); tenants cannot read/alter it (RLS; only the system relay updates delivery fields).
 
+## Ordering, cleanup and monitoring (hardening)
+* **Per-aggregate ordering.** `seq` (identity) orders events; the relay publishes only the *head* event of an aggregate (no earlier event with `processed_at IS NULL`). `EventBus.dispatch` sets `processed_at` once all consumers committed and refuses to run an event ahead of an earlier unprocessed one (`OutOfOrderEventError` → job retry). Different aggregates are independent.
+* **Poison events.** A `FAILED` head (retries exhausted) or a consumer that never succeeds blocks its aggregate by design; fix and `replayFailed()` / retry the `event.dispatch` job. Alarm on `failed > 0` and on `oldestUnprocessedAgeSeconds`.
+* **Cleanup.** Processed events older than `OUTBOX_RETENTION_DAYS` are deleted with their consumer markers. A trigger makes deleting an unprocessed event impossible.
+
 ## Adding an event (V1+)
 1. `defineEvent({ type, version, aggregateType, schema })` in `packages/contracts/src/events.ts` (e.g. `TransactionPosted`, `JournalPosted`, `FilingSubmitted`, `FilingAccepted`).
 2. In the service, inside the business transaction: `await publishEvent(tx, Events.journalPosted, { aggregateId, organisationId, payload })`.

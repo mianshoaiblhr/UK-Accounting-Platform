@@ -32,8 +32,13 @@ export function startWorker(config: AppConfig, logger: Logger = createLogger(con
   runtime.start();
 
   const relay = new OutboxRelay(db, dispatchViaJobs(producer), logger);
-  const relayLoop = setInterval(() => { relay.relayOnce().catch((err) => logger.error({ err }, 'outbox relay failed')); }, Number(process.env.OUTBOX_POLL_MS ?? 500));
+  const relayLoop = setInterval(() => { relay.relayOnce().catch((err) => logger.error({ err }, 'outbox relay failed')); }, config.OUTBOX_POLL_MS);
   relayLoop.unref();
+  // Retention of fully processed events (unprocessed events are protected by a database trigger).
+  const cleanupLoop = setInterval(() => {
+    relay.cleanup(config.OUTBOX_RETENTION_DAYS).then((n) => n && logger.info({ deleted: n }, 'outbox cleanup')).catch((err) => logger.error({ err }, 'outbox cleanup failed'));
+  }, config.OUTBOX_CLEANUP_MS);
+  cleanupLoop.unref();
 
   // Recover jobs persisted to Postgres but never delivered to Redis (e.g. Redis outage mid-request).
   const sweeper = setInterval(() => {
@@ -46,6 +51,7 @@ export function startWorker(config: AppConfig, logger: Logger = createLogger(con
     async stop() {
       clearInterval(sweeper);
       clearInterval(relayLoop);
+      clearInterval(cleanupLoop);
       await runtime.stop();
       await producer.close();
       await db.close();

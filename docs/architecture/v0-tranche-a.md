@@ -17,3 +17,14 @@ See `docs/runbooks/supply-chain.md`. `pnpm audit --audit-level=high` is a CI gat
 
 **Decision (ADR-28): `audit:read` moved from ORG to COMPANY scope.** Previously anyone with `audit:read` saw the whole organisation's trail, which defeated per-company least privilege. Now a company-level auditor sees only that company's events; organisation-level events (no company) need `audit:read` on the organisation role. Role contents are unchanged. Consequence for anti-escalation: only someone who holds `audit:read` on a company can grant a role containing it there.
 Limits: events written before this change keep `company_id = NULL` (the trail is immutable, so they are not back-filled) and are therefore treated as organisation-level.
+
+## 3. Transactional outbox hardening
+| Concern | Implementation | Verified by |
+|---|---|---|
+| Ordering | `seq` identity column; the relay publishes only an aggregate's **head** (no earlier unprocessed event of the same `aggregate_type`+`aggregate_id`); the event bus refuses (`OutOfOrderEventError`, retried with backoff) to run an event while an earlier one is unprocessed. `processed_at` is set when every consumer committed | `tests/platform/outbox-hardening.test.ts` (head-only publication, failing head blocks only its aggregate, FAILED blocks until replay, concurrent relays, consumer guard) |
+| Cleanup | `OutboxRelay.cleanup(retentionDays)` deletes events processed more than `OUTBOX_RETENTION_DAYS` (default 14, min 1) ago and their `event_consumption` markers, in bounded batches, every `OUTBOX_CLEANUP_MS` | same file (retention, batches, markers kept for recent events) |
+| Safety of cleanup | `DELETE` is system-context only (RLS) and a trigger rejects deleting any event with `processed_at IS NULL`, whatever its age | same file + `tests/platform/outbox.test.ts` |
+| Lag / backlog | `OutboxRelay.stats()` → pending, failed, in-flight, oldest unprocessed age (the *outbox lag*), oldest pending age. Exposed as metrics/alarms in increment 8 | same file (`stats`) |
+| Bookkeeping | `processed_at` allowed only on `PUBLISHED` rows (check); `seq` immutable (identity `GENERATED ALWAYS` + trigger) | same file |
+
+**Decision (ADR-29): ordering is guaranteed per aggregate, not globally.** Events of one aggregate are produced one after another because the business change holds the aggregate's row lock / optimistic version until commit, so insertion order is business order. Global order across aggregates is not promised (and not needed). **Liveness trade-off:** a poisoned head event (FAILED, or a consumer that keeps failing) blocks *its own aggregate* until an operator replays it (`replayFailed`) or retries the dispatch job; other aggregates continue and the blocked state is visible as `failed` / `oldestUnprocessedAgeSeconds`. Behaviour change: the app role may now `DELETE` outbox rows through RLS (system context only) instead of never.

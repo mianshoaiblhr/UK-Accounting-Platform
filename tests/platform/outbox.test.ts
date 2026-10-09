@@ -143,11 +143,12 @@ describe('integrity & isolation', () => {
     expect(() => adminSql(`UPDATE outbox_event SET event_type='x' WHERE id='${id}'`)).toThrow(/immutable/);
     adminSql(`UPDATE outbox_event SET retry_count = 1 WHERE id='${id}'`);
   });
-  it('tenants cannot read, alter or delete outbox rows; the app role cannot delete at all', async () => {
+  it('tenants cannot read, alter or delete outbox rows; only the system context may delete, and never an unprocessed event', async () => {
     const { id } = await emit(org);
     expect(await db.tenant({ organisationId: org2 }, (tx) => tx.outboxEvent.findUnique({ where: { id } }))).toBeNull();
     expect((await db.tenant({ organisationId: org }, (tx) => tx.outboxEvent.updateMany({ where: { id }, data: { status: 'PUBLISHED' } }))).count).toBe(0); // only the system relay may update
-    await expect(db.tenant({ organisationId: org }, (tx) => tx.outboxEvent.deleteMany({ where: { id } }))).rejects.toThrow();
+    expect((await db.tenant({ organisationId: org }, (tx) => tx.outboxEvent.deleteMany({ where: { id } }))).count).toBe(0); // RLS: DELETE is system-only
+    await expect(db.system((tx) => tx.outboxEvent.deleteMany({ where: { id } }))).rejects.toThrow(/unprocessed/);               // trigger: unprocessed events are undeletable
     expect(await db.prisma.outboxEvent.count()).toBe(0); // no context => nothing visible
   });
   it('a tenant cannot publish an event into another tenant', async () => {

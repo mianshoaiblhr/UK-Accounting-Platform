@@ -42,6 +42,10 @@ const schema = z.object({
   API_DOCS_ENABLED: z.enum(['true', 'false']).optional(), // default: on outside production
   MAX_UPLOAD_BYTES: z.coerce.number().default(25 * 1024 * 1024),
   WORKER_CONCURRENCY: z.coerce.number().default(5),
+  // Transactional outbox
+  OUTBOX_POLL_MS: z.coerce.number().int().min(50).default(500),
+  OUTBOX_RETENTION_DAYS: z.coerce.number().int().min(1).default(14), // processed events older than this are deleted
+  OUTBOX_CLEANUP_MS: z.coerce.number().int().min(1000).default(600_000),
 });
 
 export type AppConfig = z.infer<typeof schema> & { allowedRegions: string[]; corsOrigins: string[]; isProduction: boolean; apiDocsEnabled: boolean };
