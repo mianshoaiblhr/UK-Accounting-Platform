@@ -151,11 +151,9 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.target }}
           cache-to: type=gha,mode=max,scope=${{ matrix.target }}
       # Image vulnerability scan: fail on fixable HIGH/CRITICAL findings in the OS packages and app dependencies.
+      # (Official image run directly - pinned tag, no third-party action to resolve.)
       - name: Scan image (Trivy)
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: uk-platform-${{ matrix.target }}:ci
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          exit-code: "1"
-          vuln-type: os,library
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$HOME/.cache/trivy:/root/.cache/" \
+            aquasec/trivy:0.75.0 image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress \
+            uk-platform-${{ matrix.target }}:ci
