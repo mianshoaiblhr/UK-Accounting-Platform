@@ -59,6 +59,8 @@ export const TABLE_PROTECTION: Record<string, { protection: Protection; why: str
   account: { protection: 'RLS+APP', why: 'Chart of accounts per company; account:read/manage (COMPANY scope), never deleted.' },
   journal: { protection: 'RLS+APP', why: 'Posted accounting events; immutable; written only by the PostingService; ledger:read/journal:post (COMPANY scope).' },
   journal_line: { protection: 'RLS+APP', why: 'Debit/credit lines of a journal; immutable; same access as the journal.' },
+  journal_request: { protection: 'RLS+APP', why: 'Pending/decided opening-balance and control-adjustment requests (not ledger entries); ledger:read to view, ledger:approve to decide.' },
+  ledger_policy: { protection: 'RLS+APP', why: 'Per-company approval policy; ledger:read to view, ledger:policy to change.' },
   ledger_sequence: { protection: 'RLS', why: 'Per-company journal numbering counter; touched only by the PostingService.' },
   notification_preference: { protection: 'RLS+APP', why: 'Per-user channel opt-ins; the API only ever reads and writes the caller\'s own rows.' },
   notification_delivery: { protection: 'RLS', why: 'Planned out-of-band deliveries (outbox-like); no HTTP surface, written with the notification and executed by the worker sweeper.' },

@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { uuidv7 } from '@uk/core';
 import { Database, type Tx } from '@uk/db';
-import { AccountService, LedgerQueries, PeriodService, PostingService, type PostInput, type PostingActor } from '@uk/accounting';
+import { AccountService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, type PostInput, type PostingActor, type RequestActor } from '@uk/accounting';
 import { adminSql } from '../helpers/db';
 
 /**
@@ -16,6 +16,14 @@ const posting = new PostingService();
 const accounts = new AccountService();
 const queries = new LedgerQueries();
 const actor: PostingActor = { kind: 'USER', userId: '', can: async () => true };
+const requests = new JournalRequestService(posting, new LedgerPolicyService());
+let approver: string, evidenceDoc: string;
+/** Opening balances and control adjustments go through a request that a second person approves (M2); the dedicated tests are in ledger-controls.test.ts. */
+const postViaRequest = async (kind: 'OPENING_BALANCE' | 'CONTROL_ADJUSTMENT', o: { description: string; journalDate: string; lines: PostInput['lines'] }, company = co) => {
+  const req = await t((tx) => requests.create(tx, { organisationId: org, companyId: company, kind, actor: actor as RequestActor, description: o.description, reason: 'Test request for the posting service suite', journalDate: o.journalDate, lines: o.lines, evidenceDocumentIds: [evidenceDoc] }));
+  const done = await t((tx) => requests.approve(tx, { organisationId: org, companyId: company, requestId: req.id, actor: { kind: 'USER', userId: approver, can: async () => true } }));
+  return t((tx) => tx.journal.findUniqueOrThrow({ where: { id: done.postedJournalId! } }));
+};
 const t = <T>(fn: (tx: Tx) => Promise<T>) => db.tenant({ organisationId: org, userId: user }, fn);
 const post = (over: Partial<PostInput> = {}, company = co) => t((tx) => posting.post(tx, {
   organisationId: org, companyId: company, journalDate: '2026-03-15', sourceType: 'MANUAL', description: 'Test journal', idempotencyKey: `k-${uuidv7()}`, actor,
@@ -32,6 +40,7 @@ beforeAll(async () => {
   org = uuidv7(); other = uuidv7();
   user = sql(`INSERT INTO "user"(email, display_name) VALUES ('post-${org}@t.test','P') RETURNING id`).split('\n')[0]!;
   actor.userId = user;
+  approver = sql(`INSERT INTO "user"(email, display_name) VALUES ('approver-${org}@t.test','A') RETURNING id`).split('\n')[0]!;
   sql(`INSERT INTO organisation(id,type,name) VALUES ('${org}','BUSINESS','Posting A'),('${other}','BUSINESS','Posting B')`);
   const mkCo = (o: string, n: string) => sql(`INSERT INTO company(organisation_id, name) VALUES ('${o}','${n}') RETURNING id`).split('\n')[0]!;
   co = mkCo(org, 'Co A'); coB = mkCo(org, 'Co B'); mkCo(other, 'Other org co');
@@ -39,6 +48,7 @@ beforeAll(async () => {
     sql(`INSERT INTO accounting_period(organisation_id, company_id, start_date, end_date) VALUES ('${org}','${c}','2026-01-01','2026-12-31'),('${org}','${c}','2025-01-01','2025-12-31')`);
   }
   periodId = sql(`SELECT id FROM accounting_period WHERE company_id='${co}' AND start_date='2026-01-01'`);
+  evidenceDoc = sql(`INSERT INTO document(organisation_id,company_id,name,created_by_user_id) VALUES ('${org}','${co}','tb.pdf','${user}') RETURNING id`).split('\n')[0]!;
   const chart = await t((tx) => accounts.initialiseDefault(tx, { organisationId: org, companyId: co, userId: user }));
   for (const a of (chart as { items: { id: string; code: string }[] }).items) acc[a.code] = a.id;
   const chartB = await t((tx) => accounts.initialiseDefault(tx, { organisationId: org, companyId: coB, userId: user }));
@@ -105,8 +115,9 @@ describe('negative: every validation refuses with a typed error and writes nothi
   it('manual journals cannot post to a control account; opening balances can', async () => {
     const lines = [{ accountId: acc['1100']!, debit: '500', credit: '0' }, { accountId: acc['3000']!, debit: '0', credit: '500' }];
     await rejects(post({ lines }), 'control_account_restricted');
-    const ob = await post({ sourceType: 'OPENING_BALANCE', description: 'Opening debtors', lines, journalDate: firstDay() });
-    await rejects(post({ sourceType: 'OPENING_BALANCE', description: 'Opening debtors again', lines, journalDate: '2026-03-15' }), 'opening_balance_date_invalid');
+    const ob = await postViaRequest('OPENING_BALANCE', { description: 'Opening debtors', lines, journalDate: firstDay() });
+    await rejects(postViaRequest('OPENING_BALANCE', { description: 'Opening debtors again', lines, journalDate: '2026-03-15' }), 'opening_balance_date_invalid');
+    await rejects(post({ sourceType: 'OPENING_BALANCE', description: 'Direct posting is not allowed', lines, journalDate: firstDay() }), 'request_required');
     expect(ob.sourceType).toBe('OPENING_BALANCE');
   });
   it('unknown source, missing description, bad date', async () => {
@@ -296,7 +307,7 @@ describe('ledger reads come from the journal lines', () => {
     expect(paged.map((r) => `${r.journalId}:${r.lineNo}:${r.balance}`)).toEqual(all.items.map((r) => `${r.journalId}:${r.lineNo}:${r.balance}`));
   });
   it('a non-zero suspense balance is reported as a warning', async () => {
-    await post({ lines: [{ accountId: acc['9999']!, debit: '25', credit: '0' }, { accountId: acc['4000']!, debit: '0', credit: '25' }], sourceType: 'OPENING_BALANCE', description: 'to suspense', journalDate: firstDay() });
+    await postViaRequest('OPENING_BALANCE', { lines: [{ accountId: acc['9999']!, debit: '25', credit: '0' }, { accountId: acc['4000']!, debit: '0', credit: '25' }], description: 'to suspense', journalDate: firstDay() });
     const tb = await t((tx) => queries.trialBalance(tx, co, { asOf: '2026-12-31' })) as { warnings: { code: string; accountCode: string }[] };
     expect(tb.warnings).toEqual([expect.objectContaining({ code: 'suspense_balance', accountCode: '9999' })]);
   });

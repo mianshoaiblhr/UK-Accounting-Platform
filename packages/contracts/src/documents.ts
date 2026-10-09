@@ -90,7 +90,7 @@ export const evidenceLockSchema = z.object({
 
 // ───────── evidence graph (cross-platform §6) ─────────
 /** Entities that can be linked. Later versions append (journal, bank_transaction, report, tax_return, filing ...) together with a resolver. */
-export const EVIDENCE_ENTITY_TYPES = ['document', 'document_version', 'task', 'workflow_instance', 'ai_proposal', 'contact', 'company', 'accounting_period'] as const;
+export const EVIDENCE_ENTITY_TYPES = ['document', 'document_version', 'task', 'workflow_instance', 'ai_proposal', 'contact', 'company', 'accounting_period', 'journal'] as const;
 export type EvidenceEntityType = (typeof EVIDENCE_ENTITY_TYPES)[number];
 export const EVIDENCE_KINDS = ['SUPPORTS', 'DERIVED_FROM', 'ATTACHED_TO', 'REFERENCES', 'FILED_AS'] as const;
 export type EvidenceKind = (typeof EVIDENCE_KINDS)[number];

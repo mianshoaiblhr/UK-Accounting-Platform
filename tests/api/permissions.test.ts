@@ -17,7 +17,7 @@ beforeAll(async () => {
 afterAll(() => s.stop());
 
 type Call = { name: string; perm: string; run: (u: TestUser) => Promise<number> };
-const call = (method: 'get' | 'post' | 'patch' | 'delete', path: string, body?: object) => async (u: TestUser) => {
+const call = (method: 'get' | 'post' | 'put' | 'patch' | 'delete', path: string, body?: object) => async (u: TestUser) => {
   const r = await s.api()[method](orgPath(owner, path)).set(bearer(u.token)).send(body);
   return r.status;
 };
@@ -64,6 +64,10 @@ probes.push(
   { name: 'initialise chart of accounts', perm: 'account:manage', run: (u) => call('post', `/companies/${company.id}/accounts/initialise`)(u) },
   { name: 'read journals', perm: 'ledger:read', run: (u) => call('get', `/companies/${company.id}/journals`)(u) },
   { name: 'post journal', perm: 'journal:post', run: (u) => call('post', `/companies/${company.id}/journals`, {})(u) },
+  { name: 'request opening balance', perm: 'ledger:opening-balance', run: (u) => call('post', `/companies/${company.id}/opening-balance-requests`, {})(u) },
+  { name: 'request control adjustment', perm: 'ledger:control-adjustment', run: (u) => call('post', `/companies/${company.id}/control-adjustment-requests`, {})(u) },
+  { name: 'approve journal request', perm: 'ledger:approve', run: (u) => call('post', `/companies/${company.id}/journal-requests/${GHOST}/approve`, {})(u) },
+  { name: 'set ledger policy', perm: 'ledger:policy', run: (u) => call('put', `/companies/${company.id}/ledger-policy`, {})(u) },
   { name: 'lock period', perm: 'period:lock', run: (u) => call('post', `/companies/${company.id}/periods/${GHOST}/lock`, { reason: 'probe' })(u) },
 );
 probes.find((p) => p.name === 'create company')!.run = (u) => call('post', '/companies', { name: `Perm ${Math.random()}` })(u);

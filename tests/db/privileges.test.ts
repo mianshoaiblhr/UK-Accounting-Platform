@@ -26,6 +26,8 @@ const FORBIDDEN: Record<string, string[]> = {
   journal_line: ['UPDATE', 'DELETE', 'TRUNCATE'],
   account: ['DELETE', 'TRUNCATE'],                // deactivated, never deleted
   ledger_sequence: ['DELETE', 'TRUNCATE'],
+  journal_request: ['DELETE', 'TRUNCATE'],        // decided, never deleted (content immutable by trigger)
+  ledger_policy: ['DELETE', 'TRUNCATE'],
   notification_preference: ['DELETE', 'TRUNCATE'], // toggled, never removed
   notification_delivery: ['DELETE', 'TRUNCATE'],   // planned deliveries are final once handled
   outbox_event: ['TRUNCATE'],                    // DELETE is system-context only (RLS) and trigger-guarded

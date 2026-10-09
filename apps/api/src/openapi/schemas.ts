@@ -81,6 +81,7 @@ export const AccountView = z.object({
 export const JournalHeader = z.object({
   id: uuid, journalNumber: z.number().int(), journalDate: day, periodId: uuid, sourceType: z.string(), sourceId: z.string().nullable(), sourceReference: z.string().nullable(), description: z.string(),
   total: money, lineCount: z.number().int(), actorType: z.enum(['USER', 'SYSTEM']), postedByUserId: uuid.nullable(), postedAt: ts, reversesJournalId: uuid.nullable(),
+  requestId: uuid.nullable().describe('The approved journal request this journal was posted from (opening balances and control adjustments only)'), requestedByUserId: uuid.nullable(), approvedByUserId: uuid.nullable(),
   reversedByJournalId: uuid.nullable(), reversedByJournalNumber: z.number().int().nullable(),
 });
 export const JournalDetail = JournalHeader.extend({
@@ -100,3 +101,18 @@ export const TrialBalance = z.object({
   totalDebit: money, totalCredit: money, balanced: z.boolean(), warnings: z.array(z.object({ code: z.string(), accountId: uuid, accountCode: z.string(), message: z.string(), balance: signedMoney })),
 });
 export const PeriodState = z.object({ id: uuid, companyId: uuid, startDate: day, endDate: day, status: z.enum(['OPEN', 'CLOSED', 'LOCKED']), statusChangedAt: ts.nullable(), statusChangedByUserId: uuid.nullable(), statusReason: z.string().nullable() });
+
+export const JournalRequest = z.object({
+  id: uuid, companyId: uuid, kind: z.enum(['OPENING_BALANCE', 'CONTROL_ADJUSTMENT']), status: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']),
+  effectiveStatus: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'EXPIRED']).describe('PENDING requests past their expiry read EXPIRED: they can no longer be approved'),
+  journalDate: day, description: z.string(), reason: z.string(), currency: z.string().length(3), total: money,
+  lines: z.array(z.object({ accountId: uuid, debit: money, credit: money, description: z.string().optional().nullable() })), evidenceDocumentIds: z.array(uuid),
+  requestedByUserId: uuid, requestedAt: ts, expiresAt: ts, approvalRequired: z.boolean(), selfApproved: z.boolean().describe('true when the company policy exempted this request from a second person (below the materiality threshold)'),
+  policySnapshot: z.record(z.string(), z.unknown()).describe('The policy that applied when the request was made'),
+  decidedByUserId: uuid.nullable(), decidedAt: ts.nullable(), decisionReason: z.string().nullable(), postedJournalId: uuid.nullable(),
+});
+export const JournalRequestPage = page(JournalRequest);
+export const LedgerPolicy = z.object({
+  openingBalanceApproval: z.enum(['ALWAYS', 'ABOVE_THRESHOLD']), controlAdjustmentApproval: z.enum(['ALWAYS', 'ABOVE_THRESHOLD']), materialityThreshold: money.nullable(), requestExpiryDays: z.number().int(),
+  isDefault: z.boolean().describe('true when nothing has been configured for the company (approval always required, 14 days)'), updatedAt: ts.nullable(), updatedByUserId: uuid.nullable(),
+});

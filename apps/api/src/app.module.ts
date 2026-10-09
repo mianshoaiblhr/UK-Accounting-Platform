@@ -35,7 +35,7 @@ import { OrganisationsController } from './organisations/organisations.controlle
 import { OrganisationsService } from './organisations/organisations.service';
 import { LedgerController } from './ledger/ledger.controller';
 import { LedgerApiService } from './ledger/ledger.service';
-import { AccountService, LedgerQueries, PeriodService, PostingService } from '@uk/accounting';
+import { AccountService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService } from '@uk/accounting';
 
 @Module({})
 export class AppModule {
@@ -50,6 +50,8 @@ export class AppModule {
         { provide: AccountService, useFactory: () => new AccountService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: PeriodService, useFactory: () => new PeriodService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: LedgerQueries, useFactory: () => new LedgerQueries() },
+        { provide: LedgerPolicyService, useFactory: () => new LedgerPolicyService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
+        { provide: JournalRequestService, inject: [PostingService, LedgerPolicyService], useFactory: (posting: PostingService, policies: LedgerPolicyService) => new JournalRequestService(posting, policies, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         LedgerApiService,
         OrganisationsService, PracticesService, MasterDataService, CompaniesService, DocumentsService, FoldersService, EvidenceService, TasksService,
         { provide: APP_GUARD, useClass: AuthGuard },

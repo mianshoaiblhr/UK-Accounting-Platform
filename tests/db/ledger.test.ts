@@ -130,7 +130,7 @@ describe('posted journals are immutable (privileges first, triggers second)', ()
   it('even the table owner cannot change a journal: the trigger refuses', () => {
     expect(() => sql(`UPDATE journal SET description='tampered' WHERE id='${id}'`)).toThrow(/not permitted \(append-only\)/);
     expect(() => sql(`DELETE FROM journal_line WHERE journal_id='${id}'`)).toThrow(/not permitted \(append-only\)/);
-    expect(() => sql(`TRUNCATE journal, journal_line`)).toThrow(/not permitted \(append-only\)/);
+    expect(() => sql(`TRUNCATE journal, journal_line, journal_request`)).toThrow(/not permitted \(append-only\)/);
   });
   it('accounts are never deleted by the runtime role', async () => {
     await expect(raw(`DELETE FROM account WHERE id='${acc['8000']}'`)).rejects.toThrow(/permission denied/);

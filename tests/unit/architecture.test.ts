@@ -139,6 +139,16 @@ describe('database access paths that carry security meaning', () => {
     const WRITE = /\.(journal|journalLine|ledgerSequence)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(journal|journal_line|ledger_sequence)"?\b/i;
     expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/posting.ts']);
   });
+  it('only the request service writes journal requests and the ledger policy (M2): approval state has one writer', () => {
+    const WRITE = /\.(journalRequest|ledgerPolicy)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(journal_request|ledger_policy)"?\b/i;
+    expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/requests.ts']);
+  });
+  it('request-based journal sources are posted from a request only: the API source list never offers them', () => {
+    const api = read(`${ROOT}/packages/contracts/src/ledger.ts`);
+    expect(api).toMatch(/API_JOURNAL_SOURCES = \['MANUAL'\]/);
+    expect(read(`${ROOT}/packages/contracts/src/ledger.ts`)).toMatch(/OPENING_BALANCE:[^\n]*requiresRequest: true/);
+    expect(read(`${ROOT}/packages/contracts/src/ledger.ts`)).toMatch(/CONTROL_ADJUSTMENT:[^\n]*requiresRequest: true/);
+  });
   it('the database posting switch is set by the PostingService and by nothing else', () => {
     expect(SRC.filter((f) => /app\.posting/.test(read(f))).map(rel)).toEqual(['packages/accounting/src/posting.ts']);
   });

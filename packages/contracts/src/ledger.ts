@@ -60,16 +60,20 @@ export interface JournalSourceDef {
   permission: string;
   /** May touch control accounts (manual journals may not: sub-ledger integrity, ADR-46). */
   controlAccounts: boolean;
+  /** Cannot be posted directly: only from an approved (or policy-exempt) journal request (ADR-49, DEC-012). */
+  requiresRequest?: boolean;
   description: string;
 }
 /** Later milestones append their sources here (SALES_INVOICE, RECEIPT, ...); the PostingService reads only this registry. */
 export const JOURNAL_SOURCES: Record<string, JournalSourceDef> = {
   MANUAL: { actors: ['USER'], permission: 'journal:post', controlAccounts: false, description: 'Manual journal entered by a person' },
-  OPENING_BALANCE: { actors: ['USER'], permission: 'journal:post', controlAccounts: true, description: 'Opening balances at the start of record keeping' },
+  OPENING_BALANCE: { actors: ['USER'], permission: 'ledger:opening-balance', controlAccounts: true, requiresRequest: true, description: 'Opening balances at the start of record keeping (request + approval policy)' },
+  CONTROL_ADJUSTMENT: { actors: ['USER'], permission: 'ledger:control-adjustment', controlAccounts: true, requiresRequest: true, description: 'Exceptional adjustment of a control account (reason, evidence, approval policy)' },
   REVERSAL: { actors: ['USER'], permission: 'journal:post', controlAccounts: true, description: 'Mirror of an earlier journal (corrections are reversals, never edits)' },
 };
 export const isJournalSource = (s: string) => Object.prototype.hasOwnProperty.call(JOURNAL_SOURCES, s);
-export const API_JOURNAL_SOURCES = ['MANUAL', 'OPENING_BALANCE'] as const;
+/** Sources a client may name on POST /journals. Opening balances and control adjustments go through journal requests (DEC-012). */
+export const API_JOURNAL_SOURCES = ['MANUAL'] as const;
 
 // ───────────── Money (decimal strings) ─────────────
 /** Non-negative decimal string, at most 4 fractional digits here; the PostingService enforces the currency's own minor units. */
@@ -198,3 +202,39 @@ export const DEFAULT_CHART: readonly ChartTemplateAccount[] = [
 
 // ───────────── Events ─────────────
 export const LEDGER_PERMISSIONS = ['account:read', 'account:manage', 'ledger:read', 'journal:post', 'period:lock'] as const;
+
+// ───────────── Journal requests and the approval policy (M2, ADR-49, DEC-012) ─────────────
+export const REQUEST_KINDS = ['OPENING_BALANCE', 'CONTROL_ADJUSTMENT'] as const;
+export type RequestKind = (typeof REQUEST_KINDS)[number];
+export const REQUEST_STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'] as const;
+export type RequestStatus = (typeof REQUEST_STATUSES)[number];
+export const APPROVAL_MODES = ['ALWAYS', 'ABOVE_THRESHOLD'] as const;
+export type ApprovalMode = (typeof APPROVAL_MODES)[number];
+/** Proposed defaults (v1-plan.md section 7, item 1): approval always required; a pending request expires after 14 days. */
+export const DEFAULT_APPROVAL_MODE: ApprovalMode = 'ALWAYS';
+export const DEFAULT_REQUEST_EXPIRY_DAYS = 14;
+export const MIN_REQUEST_REASON_LENGTH = 20;
+export const MAX_EVIDENCE_DOCUMENTS = 20;
+
+export const createJournalRequestSchema = z.object({
+  journalDate: isoDate, description: z.string().trim().min(1).max(500),
+  /** Why this entry is needed. At least 20 characters: it is read by the approver and by auditors. */
+  reason: z.string().trim().min(MIN_REQUEST_REASON_LENGTH, `Give a reason of at least ${MIN_REQUEST_REASON_LENGTH} characters`).max(1000),
+  currency: z.string().regex(/^[A-Z]{3}$/, 'ISO 4217 code, upper case').optional(),
+  lines: z.array(journalLineSchema).min(2).max(500),
+  evidenceDocumentIds: z.array(z.string().uuid()).max(MAX_EVIDENCE_DOCUMENTS).default([]).transform((a) => [...new Set(a)]),
+}).strict();
+export const decideRequestSchema = z.object({ comment: z.string().trim().max(1000).optional() }).strict();
+export const rejectRequestSchema = z.object({ reason: z.string().trim().min(1).max(1000) }).strict();
+export const requestListQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(25), cursor: z.string().max(100).optional(),
+  status: z.enum(REQUEST_STATUSES).optional(), kind: z.enum(REQUEST_KINDS).optional(),
+}).strict();
+export const setLedgerPolicySchema = z.object({
+  openingBalanceApproval: z.enum(APPROVAL_MODES), controlAdjustmentApproval: z.enum(APPROVAL_MODES),
+  /** Functional-currency amount: a request whose total is strictly greater than this is material. Required when a mode is ABOVE_THRESHOLD. */
+  materialityThreshold: moneyString.nullable().default(null),
+  requestExpiryDays: z.number().int().min(1).max(90).default(DEFAULT_REQUEST_EXPIRY_DAYS),
+  reason: z.string().trim().min(MIN_REQUEST_REASON_LENGTH).max(1000),
+}).strict().refine((p) => (p.openingBalanceApproval !== 'ABOVE_THRESHOLD' && p.controlAdjustmentApproval !== 'ABOVE_THRESHOLD') || (p.materialityThreshold !== null && Number(p.materialityThreshold) > 0),
+  { message: 'ABOVE_THRESHOLD needs a materiality threshold greater than zero', path: ['materialityThreshold'] });

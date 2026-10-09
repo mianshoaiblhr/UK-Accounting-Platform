@@ -37,6 +37,7 @@ export class EvidenceService {
       case 'ai_proposal': { const x = await tx.aiProposal.findUnique({ where: { id }, select: { companyId: true } }); return x ? readable('ai:use', x.companyId) : null; }
       case 'contact': { const x = await tx.contact.findUnique({ where: { id }, select: { companyId: true } }); return x ? readable('contact:read', x.companyId) : null; }
       case 'company': { const x = await tx.company.findUnique({ where: { id }, select: { id: true } }); return x ? readable('company:read', x.id) : null; }
+      case 'journal': { const x = await tx.journal.findUnique({ where: { id }, select: { companyId: true } }); return x ? readable('ledger:read', x.companyId) : null; }
       case 'accounting_period': { const x = await tx.accountingPeriod.findUnique({ where: { id }, select: { companyId: true } }); return x ? readable('period:read', x.companyId) : null; }
     }
   }

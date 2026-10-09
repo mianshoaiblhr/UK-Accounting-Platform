@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ACCOUNT_SUBTYPES, CONTROL_KINDS, DEBIT_NORMAL, DEFAULT_CHART, JOURNAL_SOURCES, PERIOD_TRANSITIONS, REPORT_LINES, createAccountSchema, moneyString, postJournalSchema } from './ledger';
+import { ACCOUNT_SUBTYPES, CONTROL_KINDS, DEBIT_NORMAL, DEFAULT_CHART, JOURNAL_SOURCES, PERIOD_TRANSITIONS, REPORT_LINES, createAccountSchema, createJournalRequestSchema, moneyString, postJournalSchema, rejectRequestSchema, setLedgerPolicySchema, API_JOURNAL_SOURCES, DEFAULT_APPROVAL_MODE, DEFAULT_REQUEST_EXPIRY_DAYS } from './ledger';
 import { PERMISSIONS } from './permissions';
 
 describe('default chart of accounts', () => {
@@ -68,5 +68,37 @@ describe('registries that carry controls', () => {
     expect(PERIOD_TRANSITIONS.lock.permission).toBe('period:lock');
     expect(PERIOD_TRANSITIONS.unlock.permission).toBe('period:lock');
     expect(PERIOD_TRANSITIONS.close.permission).toBe('period:manage');
+  });
+});
+
+describe('journal requests and the approval policy (M2)', () => {
+  const line = (a: string, d: string, c: string) => ({ accountId: '11111111-1111-4111-8111-111111111111', debit: d, credit: c, description: a });
+  const req = { journalDate: '2026-01-01', description: 'Opening debtors', reason: 'Brought forward from the prior accountant', lines: [line('a', '5', '0'), line('b', '0', '5')] };
+  it('opening balances and control adjustments need a request and their own permissions; the API source list offers only MANUAL', () => {
+    expect([...API_JOURNAL_SOURCES]).toEqual(['MANUAL']);
+    expect(JOURNAL_SOURCES.OPENING_BALANCE).toMatchObject({ permission: 'ledger:opening-balance', requiresRequest: true, controlAccounts: true });
+    expect(JOURNAL_SOURCES.CONTROL_ADJUSTMENT).toMatchObject({ permission: 'ledger:control-adjustment', requiresRequest: true, controlAccounts: true });
+    expect(JOURNAL_SOURCES.MANUAL!.requiresRequest).toBeUndefined();
+  });
+  it('a request needs a reason of at least 20 characters, two lines, and unique evidence ids', () => {
+    expect(createJournalRequestSchema.safeParse(req).success).toBe(true);
+    expect(createJournalRequestSchema.safeParse({ ...req, reason: 'too short' }).success).toBe(false);
+    expect(createJournalRequestSchema.safeParse({ ...req, lines: [line('a', '5', '0')] }).success).toBe(false);
+    const id = '22222222-2222-4222-8222-222222222222';
+    expect(createJournalRequestSchema.parse({ ...req, evidenceDocumentIds: [id, id] }).evidenceDocumentIds).toEqual([id]);
+    expect(createJournalRequestSchema.safeParse({ ...req, surprise: 1 }).success).toBe(false);
+  });
+  it('rejection needs a reason; the policy has no "never" mode, needs a threshold for ABOVE_THRESHOLD and a reason for every change', () => {
+    expect(rejectRequestSchema.safeParse({}).success).toBe(false);
+    const p = { openingBalanceApproval: 'ABOVE_THRESHOLD', controlAdjustmentApproval: 'ALWAYS', materialityThreshold: '1000.00', requestExpiryDays: 14, reason: 'Agreed with the board for the year' };
+    expect(setLedgerPolicySchema.safeParse(p).success).toBe(true);
+    expect(setLedgerPolicySchema.safeParse({ ...p, materialityThreshold: null }).success).toBe(false);
+    expect(setLedgerPolicySchema.safeParse({ ...p, materialityThreshold: '0' }).success).toBe(false);
+    expect(setLedgerPolicySchema.safeParse({ ...p, openingBalanceApproval: 'NEVER' }).success).toBe(false);
+    expect(setLedgerPolicySchema.safeParse({ ...p, reason: 'x' }).success).toBe(false);
+    expect(setLedgerPolicySchema.safeParse({ ...p, openingBalanceApproval: 'ALWAYS', materialityThreshold: null }).success).toBe(true);
+  });
+  it('proposed defaults: approval always, 14 days', () => {
+    expect([DEFAULT_APPROVAL_MODE, DEFAULT_REQUEST_EXPIRY_DAYS]).toEqual(['ALWAYS', 14]);
   });
 });

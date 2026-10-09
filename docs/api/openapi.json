@@ -2655,7 +2655,8 @@
                 "ai_proposal",
                 "contact",
                 "company",
-                "accounting_period"
+                "accounting_period",
+                "journal"
               ]
             }
           },
@@ -8183,7 +8184,7 @@
         "x-required-permissions": [
           "journal:post"
         ],
-        "summary": "Post a manual or opening-balance journal through the PostingService (balanced, open period, active non-control accounts; immutable once posted)",
+        "summary": "Post a manual journal through the PostingService (balanced, open period, active non-control accounts; immutable once posted). Opening balances and control adjustments use journal requests",
         "description": "Single-currency limitation: journals are posted in the company's own currency only. A different `currency` is refused with 422 `foreign_currency_not_supported` until the foreign-currency foundation (plan milestone M3, decision DEC-009) is delivered.\n\n**Requires permission:** `journal:post`",
         "security": [
           {
@@ -8470,6 +8471,734 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ReverseJournalRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/opening-balance-requests": {
+      "post": {
+        "operationId": "Ledger_requestOpeningBalance",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Request created (or posted, when exempt)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalRequest"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:opening-balance"
+        ],
+        "summary": "Request an opening-balance journal (ledger:opening-balance). Validated like a journal but not posted: a pending request is not a ledger entry. Posted after approval by a different person, or at once when the company policy exempts it",
+        "description": "**Requires permission:** `ledger:opening-balance`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateJournalRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/control-adjustment-requests": {
+      "post": {
+        "operationId": "Ledger_requestControlAdjustment",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Request created (or posted, when exempt)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalRequest"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:control-adjustment"
+        ],
+        "summary": "Request an exceptional adjustment of a control account (ledger:control-adjustment): reason and evidence required; approval per policy",
+        "description": "**Requires permission:** `ledger:control-adjustment`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateJournalRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/journal-requests": {
+      "get": {
+        "operationId": "Ledger_listRequests",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED",
+                "CANCELLED"
+              ]
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "OPENING_BALANCE",
+                "CONTROL_ADJUSTMENT"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalRequestPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "Journal requests, newest first (filter by status and kind)",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/journal-requests/{requestId}": {
+      "get": {
+        "operationId": "Ledger_getRequest",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalRequest"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "One journal request with its policy snapshot and outcome",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/journal-requests/{requestId}/approve": {
+      "post": {
+        "operationId": "Ledger_approveRequest",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Approved and posted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalRequest"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:approve"
+        ],
+        "summary": "Approve a pending request (ledger:approve, never your own) - the PostingService posts the journal in the same transaction",
+        "description": "**Requires permission:** `ledger:approve`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecideJournalRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/journal-requests/{requestId}/reject": {
+      "post": {
+        "operationId": "Ledger_rejectRequest",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalRequest"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:approve"
+        ],
+        "summary": "Reject a pending request (ledger:approve, reason required); the ledger is untouched",
+        "description": "**Requires permission:** `ledger:approve`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectJournalRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/journal-requests/{requestId}/cancel": {
+      "post": {
+        "operationId": "Ledger_cancelRequest",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancelled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalRequest"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The requester withdraws their own pending request",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecideJournalRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ledger-policy": {
+      "get": {
+        "operationId": "Ledger_getPolicy",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Policy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LedgerPolicy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The company's second-person approval policy (defaults when nothing is configured)",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "Ledger_setPolicy",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Policy set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LedgerPolicy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:policy"
+        ],
+        "summary": "Set the approval policy (ledger:policy, reason required, audited with before/after). There is no mode that skips permission, reason, evidence or audit",
+        "description": "**Requires permission:** `ledger:policy`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetLedgerPolicyRequest"
               }
             }
           }
@@ -12811,6 +13540,22 @@
             "format": "uuid",
             "nullable": true
           },
+          "requestId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "The approved journal request this journal was posted from (opening balances and control adjustments only)"
+          },
+          "requestedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "approvedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
           "reversedByJournalId": {
             "type": "string",
             "format": "uuid",
@@ -12910,6 +13655,9 @@
           "postedByUserId",
           "postedAt",
           "reversesJournalId",
+          "requestId",
+          "requestedByUserId",
+          "approvedByUserId",
           "reversedByJournalId",
           "reversedByJournalNumber",
           "currency",
@@ -12989,6 +13737,22 @@
                   "format": "uuid",
                   "nullable": true
                 },
+                "requestId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true,
+                  "description": "The approved journal request this journal was posted from (opening balances and control adjustments only)"
+                },
+                "requestedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "approvedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
                 "reversedByJournalId": {
                   "type": "string",
                   "format": "uuid",
@@ -13014,6 +13778,9 @@
                 "postedByUserId",
                 "postedAt",
                 "reversesJournalId",
+                "requestId",
+                "requestedByUserId",
+                "approvedByUserId",
                 "reversedByJournalId",
                 "reversedByJournalNumber"
               ],
@@ -13401,6 +14168,409 @@
           "statusChangedAt",
           "statusChangedByUserId",
           "statusReason"
+        ],
+        "additionalProperties": false
+      },
+      "JournalRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "OPENING_BALANCE",
+              "CONTROL_ADJUSTMENT"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED",
+              "CANCELLED"
+            ]
+          },
+          "effectiveStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED",
+              "CANCELLED",
+              "EXPIRED"
+            ],
+            "description": "PENDING requests past their expiry read EXPIRED: they can no longer be approved"
+          },
+          "journalDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "description": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "total": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d+)?$",
+            "description": "Decimal string, never a JSON number"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "debit": {
+                  "type": "string",
+                  "pattern": "^\\d+(\\.\\d+)?$",
+                  "description": "Decimal string, never a JSON number"
+                },
+                "credit": {
+                  "type": "string",
+                  "pattern": "^\\d+(\\.\\d+)?$",
+                  "description": "Decimal string, never a JSON number"
+                },
+                "description": {
+                  "type": "string",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "accountId",
+                "debit",
+                "credit"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "evidenceDocumentIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "requestedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "approvalRequired": {
+            "type": "boolean"
+          },
+          "selfApproved": {
+            "type": "boolean",
+            "description": "true when the company policy exempted this request from a second person (below the materiality threshold)"
+          },
+          "policySnapshot": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "The policy that applied when the request was made"
+          },
+          "decidedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "decidedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "decisionReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "postedJournalId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "kind",
+          "status",
+          "effectiveStatus",
+          "journalDate",
+          "description",
+          "reason",
+          "currency",
+          "total",
+          "lines",
+          "evidenceDocumentIds",
+          "requestedByUserId",
+          "requestedAt",
+          "expiresAt",
+          "approvalRequired",
+          "selfApproved",
+          "policySnapshot",
+          "decidedByUserId",
+          "decidedAt",
+          "decisionReason",
+          "postedJournalId"
+        ],
+        "additionalProperties": false
+      },
+      "JournalRequestPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "OPENING_BALANCE",
+                    "CONTROL_ADJUSTMENT"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "PENDING",
+                    "APPROVED",
+                    "REJECTED",
+                    "CANCELLED"
+                  ]
+                },
+                "effectiveStatus": {
+                  "type": "string",
+                  "enum": [
+                    "PENDING",
+                    "APPROVED",
+                    "REJECTED",
+                    "CANCELLED",
+                    "EXPIRED"
+                  ],
+                  "description": "PENDING requests past their expiry read EXPIRED: they can no longer be approved"
+                },
+                "journalDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "currency": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 3
+                },
+                "total": {
+                  "type": "string",
+                  "pattern": "^\\d+(\\.\\d+)?$",
+                  "description": "Decimal string, never a JSON number"
+                },
+                "lines": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "accountId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "debit": {
+                        "type": "string",
+                        "pattern": "^\\d+(\\.\\d+)?$",
+                        "description": "Decimal string, never a JSON number"
+                      },
+                      "credit": {
+                        "type": "string",
+                        "pattern": "^\\d+(\\.\\d+)?$",
+                        "description": "Decimal string, never a JSON number"
+                      },
+                      "description": {
+                        "type": "string",
+                        "nullable": true
+                      }
+                    },
+                    "required": [
+                      "accountId",
+                      "debit",
+                      "credit"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "evidenceDocumentIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "requestedByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "requestedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "expiresAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "approvalRequired": {
+                  "type": "boolean"
+                },
+                "selfApproved": {
+                  "type": "boolean",
+                  "description": "true when the company policy exempted this request from a second person (below the materiality threshold)"
+                },
+                "policySnapshot": {
+                  "type": "object",
+                  "additionalProperties": {},
+                  "description": "The policy that applied when the request was made"
+                },
+                "decidedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "decidedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "decisionReason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "postedJournalId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "kind",
+                "status",
+                "effectiveStatus",
+                "journalDate",
+                "description",
+                "reason",
+                "currency",
+                "total",
+                "lines",
+                "evidenceDocumentIds",
+                "requestedByUserId",
+                "requestedAt",
+                "expiresAt",
+                "approvalRequired",
+                "selfApproved",
+                "policySnapshot",
+                "decidedByUserId",
+                "decidedAt",
+                "decisionReason",
+                "postedJournalId"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false
+      },
+      "LedgerPolicy": {
+        "type": "object",
+        "properties": {
+          "openingBalanceApproval": {
+            "type": "string",
+            "enum": [
+              "ALWAYS",
+              "ABOVE_THRESHOLD"
+            ]
+          },
+          "controlAdjustmentApproval": {
+            "type": "string",
+            "enum": [
+              "ALWAYS",
+              "ABOVE_THRESHOLD"
+            ]
+          },
+          "materialityThreshold": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d+)?$",
+            "description": "Decimal string, never a JSON number",
+            "nullable": true
+          },
+          "requestExpiryDays": {
+            "type": "integer"
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "true when nothing has been configured for the company (approval always required, 14 days)"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updatedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "required": [
+          "openingBalanceApproval",
+          "controlAdjustmentApproval",
+          "materialityThreshold",
+          "requestExpiryDays",
+          "isDefault",
+          "updatedAt",
+          "updatedByUserId"
         ],
         "additionalProperties": false
       },
@@ -16129,7 +17299,11 @@
                 "account:manage",
                 "ledger:read",
                 "journal:post",
-                "period:lock"
+                "period:lock",
+                "ledger:opening-balance",
+                "ledger:control-adjustment",
+                "ledger:approve",
+                "ledger:policy"
               ]
             },
             "minItems": 1
@@ -16665,7 +17839,8 @@
               "ai_proposal",
               "contact",
               "company",
-              "accounting_period"
+              "accounting_period",
+              "journal"
             ]
           },
           "sourceId": {
@@ -16682,7 +17857,8 @@
               "ai_proposal",
               "contact",
               "company",
-              "accounting_period"
+              "accounting_period",
+              "journal"
             ]
           },
           "targetId": {
@@ -17597,8 +18773,7 @@
           "source": {
             "type": "string",
             "enum": [
-              "MANUAL",
-              "OPENING_BALANCE"
+              "MANUAL"
             ],
             "default": "MANUAL"
           },
@@ -17670,6 +18845,143 @@
           }
         },
         "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "CreateJournalRequest": {
+        "type": "object",
+        "properties": {
+          "journalDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 1000
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "debit": {
+                  "type": "string",
+                  "pattern": "^\\d{1,15}(\\.\\d{1,4})?$",
+                  "default": "0"
+                },
+                "credit": {
+                  "type": "string",
+                  "pattern": "^\\d{1,15}(\\.\\d{1,4})?$",
+                  "default": "0"
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 300
+                }
+              },
+              "required": [
+                "accountId"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 2,
+            "maxItems": 500
+          },
+          "evidenceDocumentIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "maxItems": 20,
+            "default": []
+          }
+        },
+        "required": [
+          "journalDate",
+          "description",
+          "reason",
+          "lines"
+        ],
+        "additionalProperties": false
+      },
+      "DecideJournalRequest": {
+        "type": "object",
+        "properties": {
+          "comment": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "additionalProperties": false
+      },
+      "RejectJournalRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "SetLedgerPolicyRequest": {
+        "type": "object",
+        "properties": {
+          "openingBalanceApproval": {
+            "type": "string",
+            "enum": [
+              "ALWAYS",
+              "ABOVE_THRESHOLD"
+            ]
+          },
+          "controlAdjustmentApproval": {
+            "type": "string",
+            "enum": [
+              "ALWAYS",
+              "ABOVE_THRESHOLD"
+            ]
+          },
+          "materialityThreshold": {
+            "type": "string",
+            "pattern": "^\\d{1,15}(\\.\\d{1,4})?$",
+            "nullable": true,
+            "default": null
+          },
+          "requestExpiryDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 90,
+            "default": 14
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "openingBalanceApproval",
+          "controlAdjustmentApproval",
           "reason"
         ],
         "additionalProperties": false

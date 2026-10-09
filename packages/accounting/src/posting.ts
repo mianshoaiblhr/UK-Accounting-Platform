@@ -11,7 +11,7 @@ import { ZERO, fmt, money, type Money } from './money';
  * which only this class sets. Posted journals are immutable; corrections are reversal journals.
  *
  * One transaction, fixed order, every step a typed failure:
- *   actor -> permission -> source -> amounts -> idempotency -> period -> accounts -> balance -> extra validators (VAT in M2) -> number -> insert -> audit -> event.
+ *   actor -> permission -> source -> amounts -> idempotency -> period -> accounts -> balance -> extra validators (VAT slot) -> number -> insert -> audit -> event.
  */
 export interface PostingActor {
   kind: ActorKind;
@@ -39,6 +39,8 @@ export interface PostInput {
   reversesJournalId?: string | null;
   /** Free text kept on the audit event (e.g. why a journal is reversed). */
   reason?: string | null;
+  /** Only for sources that `requiresRequest` (opening balance, control adjustment): the request being posted. Set by the RequestService; the actor is the approver. */
+  request?: { id: string; requestedByUserId: string; selfApproved: boolean };
 }
 
 export interface PostedJournal {
@@ -69,16 +71,102 @@ export class PostingService {
     const source = JOURNAL_SOURCES[input.sourceType];
     if (!source) throw unprocessable(`Unknown journal source ${input.sourceType}`, 'unknown_source');
     if (!source.actors.includes(actor.kind)) throw forbidden(`${input.sourceType} journals cannot be posted by a ${actor.kind.toLowerCase()} actor`, 'source_not_allowed_for_actor');
-    // 2. permission, for this company
-    if (!(await actor.can(source.permission, input.companyId))) throw forbidden(`Requires permission ${source.permission}`, 'permission_denied');
-    // 3. source reference
+    // 2. permission, for this company. Opening balances / control adjustments are posted on a request: the requester held the source permission when
+    //    asking (RequestService); the actor here is the approver (ledger:approve), or the requester when the company's policy exempted the request.
+    if (source.requiresRequest) {
+      const r = input.request;
+      if (!r) throw forbidden(`${input.sourceType} journals can only be posted from an approved journal request`, 'request_required');
+      if (!actor.userId) throw forbidden('Posting a request needs a signed-in person', 'actor_invalid');
+      if (r.selfApproved ? actor.userId !== r.requestedByUserId : actor.userId === r.requestedByUserId) {
+        throw forbidden(r.selfApproved ? 'A policy-exempt request is posted by its requester' : 'A request cannot be approved by the person who made it', 'self_approval_not_allowed');
+      }
+      const needed = r.selfApproved ? source.permission : 'ledger:approve';
+      if (!(await actor.can(needed, input.companyId))) throw forbidden(`Requires permission ${needed}`, 'permission_denied');
+      if (input.sourceId !== r.id) throw unprocessable('The source of a request journal is the request', 'source_reference_invalid');
+    } else {
+      if (input.request) throw unprocessable('Only request-based sources take a request', 'source_reference_invalid');
+      if (!(await actor.can(source.permission, input.companyId))) throw forbidden(`Requires permission ${source.permission}`, 'permission_denied');
+    }
+    this.checkSourceReference(input, source);
+    return this.postPrepared(tx, input, source);
+  }
+
+  /**
+   * Dry run for a journal request (steps 4-8 plus the control-account and opening-balance rules): everything that does not depend on the approval is
+   * checked when the request is made, so an approver is never asked to approve something that could not post. Writes nothing.
+   */
+  async validateForRequest(tx: Tx, input: Omit<PostInput, 'request' | 'idempotencyKey' | 'actor'> & { actor?: PostingActor }): Promise<{ total: string; lines: PostLineInput[]; currency: string }> {
+    const source = JOURNAL_SOURCES[input.sourceType];
+    if (!source?.requiresRequest) throw unprocessable('Not a request-based journal source', 'unknown_source');
+    if (!input.description?.trim()) throw unprocessable('A description is required', 'description_required');
+    const base = await this.prepareAmounts(tx, input as PostInput);
+    const led = await this.prepareLedger(tx, input as PostInput, source, base);
+    return { total: fmt(led.debits, base.cur.minorUnits), currency: base.company.baseCurrency, lines: base.lines.map((l) => ({ accountId: l.accountId, debit: fmt(l.debit, base.cur.minorUnits), credit: fmt(l.credit, base.cur.minorUnits), description: l.description })) };
+  }
+
+  private checkSourceReference(input: PostInput, source: (typeof JOURNAL_SOURCES)[string]) {
     if (input.sourceType === 'REVERSAL') {
       if (!input.reversesJournalId || input.sourceId !== input.reversesJournalId) throw unprocessable('A reversal must name the journal it reverses as its source', 'source_reference_required');
     } else if (input.reversesJournalId) throw unprocessable('Only REVERSAL journals can reverse another journal', 'source_reference_invalid');
-    else if (input.sourceType !== 'MANUAL' && input.sourceType !== 'OPENING_BALANCE' && !input.sourceId) throw unprocessable('A source transaction reference is required', 'source_reference_required');
+    else if (!source.requiresRequest && input.sourceType !== 'MANUAL' && !input.sourceId) throw unprocessable('A source transaction reference is required', 'source_reference_required');
     if (!input.description?.trim()) throw unprocessable('A description is required', 'description_required');
+  }
 
-    // 4. company, currency, amounts
+  private async postPrepared(tx: Tx, input: PostInput, source: (typeof JOURNAL_SOURCES)[string]): Promise<PostedJournal> {
+    const { actor } = input;
+    const { company, cur, date, lines } = await this.prepareAmounts(tx, input);
+    // 5. idempotency (before anything is written)
+    const contentHash = createHash('sha256').update(JSON.stringify({
+      c: input.companyId, d: input.journalDate, s: input.sourceType, i: input.sourceId ?? null, r: input.sourceReference ?? null, t: input.description.trim(), v: input.reversesJournalId ?? null,
+      l: lines.map((l) => [l.accountId, l.debit.toFixed(4), l.credit.toFixed(4), l.description ?? null]),
+    })).digest('hex');
+    const existing = await tx.journal.findUnique({ where: { organisationId_companyId_idempotencyKey: { organisationId: input.organisationId, companyId: input.companyId, idempotencyKey: input.idempotencyKey } } });
+    if (existing) {
+      if (existing.contentHash !== contentHash) throw conflict('This idempotency key was already used for a different journal', 'idempotency_conflict');
+      return { ...this.view(existing, cur.minorUnits), replayed: true };
+    }
+
+    const { period, accounts, debits } = await this.prepareLedger(tx, input, source, { company, cur, date, lines });
+
+    // 9. extra validators (the VAT validator joins in M4)
+    const ctx: PostingContext = { tx, input, period, accounts: accounts as PostingContext['accounts'], lines };
+    for (const v of this.opts.validators ?? []) await v(ctx);
+
+    // 10. number, insert (only here may the posting flag be on), audit, event
+    await tx.$queryRaw`SELECT set_config('app.posting', 'on', true)`;
+    try {
+      const seq = await tx.$queryRaw<{ last_number: number }[]>`
+        INSERT INTO ledger_sequence (organisation_id, company_id, last_number) VALUES (${input.organisationId}::uuid, ${input.companyId}::uuid, 1)
+        ON CONFLICT (organisation_id, company_id) DO UPDATE SET last_number = ledger_sequence.last_number + 1 RETURNING last_number`;
+      const journalNumber = seq[0]!.last_number;
+      const journal = await tx.journal.create({ data: {
+        organisationId: input.organisationId, companyId: input.companyId, periodId: period.id, journalNumber, journalDate: date,
+        sourceType: input.sourceType, sourceId: input.sourceId ?? null, sourceReference: input.sourceReference ?? null, description: input.description.trim(),
+        currency: company.baseCurrency, total: debits, lineCount: lines.length, actorType: actor.kind, postedByUserId: actor.userId ?? null,
+        idempotencyKey: input.idempotencyKey, contentHash, reversesJournalId: input.reversesJournalId ?? null,
+        correlationId: getContext()?.correlationId,
+        ...(input.request ? { requestId: input.request.id, requestedByUserId: input.request.requestedByUserId, approvedByUserId: actor.userId! } : {}),
+      } });
+      await tx.journalLine.createMany({ data: lines.map((l, i) => ({
+        organisationId: input.organisationId, companyId: input.companyId, journalId: journal.id, lineNo: i + 1, accountId: l.accountId, debit: l.debit, credit: l.credit, description: l.description ?? null,
+      })) });
+      await tx.auditEvent.createMany({ data: [auditRow({
+        action: input.sourceType === 'REVERSAL' ? 'journal.reversed' : 'journal.posted', organisationId: input.organisationId, companyId: input.companyId, actorUserId: actor.userId ?? null,
+        entityType: 'journal', entityId: journal.id, reason: input.reason ?? null,
+        after: { journalNumber, journalDate: input.journalDate, sourceType: input.sourceType, total: fmt(debits, cur.minorUnits), lines: lines.length },
+        metadata: { periodId: period.id, reverses: input.reversesJournalId ?? null, actorKind: actor.kind, ...(input.request ? { requestId: input.request.id, requestedBy: input.request.requestedByUserId, approvedBy: actor.userId, selfApproved: input.request.selfApproved } : {}) },
+      }, this.opts.captureDeviceMetadata)] });
+      await publishEvent(tx, Events.transactionPosted, { aggregateId: journal.id, organisationId: input.organisationId, actorUserId: actor.userId ?? null,
+        payload: { journalId: journal.id, companyId: input.companyId, periodId: period.id, journalNumber, journalDate: input.journalDate, sourceType: input.sourceType, sourceId: input.sourceId ?? null, total: fmt(debits, cur.minorUnits), reversesJournalId: input.reversesJournalId ?? null } });
+      return { ...this.view(journal, cur.minorUnits), replayed: false };
+    } finally {
+      // The switch is transaction-local, so it dies with the transaction anyway. When the database refused the insert the transaction is already
+      // aborted and this statement would fail too - and hide the real error - so it is best-effort.
+      await tx.$queryRaw`SELECT set_config('app.posting', 'off', true)`.catch(() => undefined);
+    }
+  }
+
+  private async prepareAmounts(tx: Tx, input: PostInput) {
     const company = await tx.company.findUnique({ where: { id: input.companyId }, select: { id: true, baseCurrency: true } });
     if (!company) throw notFound('Company not found');
     if (input.currency && input.currency !== company.baseCurrency) {
@@ -99,17 +187,11 @@ export class PostingService {
       return { accountId: l.accountId, debit, credit, description: l.description };
     });
 
-    // 5. idempotency (before anything is written)
-    const contentHash = createHash('sha256').update(JSON.stringify({
-      c: input.companyId, d: input.journalDate, s: input.sourceType, i: input.sourceId ?? null, r: input.sourceReference ?? null, t: input.description.trim(), v: input.reversesJournalId ?? null,
-      l: lines.map((l) => [l.accountId, l.debit.toFixed(4), l.credit.toFixed(4), l.description ?? null]),
-    })).digest('hex');
-    const existing = await tx.journal.findUnique({ where: { organisationId_companyId_idempotencyKey: { organisationId: input.organisationId, companyId: input.companyId, idempotencyKey: input.idempotencyKey } } });
-    if (existing) {
-      if (existing.contentHash !== contentHash) throw conflict('This idempotency key was already used for a different journal', 'idempotency_conflict');
-      return { ...this.view(existing, cur.minorUnits), replayed: true };
-    }
+    return { company, cur, date, lines };
+  }
 
+  private async prepareLedger(tx: Tx, input: PostInput, source: (typeof JOURNAL_SOURCES)[string], base: { company: { baseCurrency: string }; cur: { minorUnits: number }; date: Date; lines: { accountId: string; debit: Money; credit: Money }[] }) {
+    const { cur, date, lines } = base;
     // 6. period
     const periodRef = await tx.accountingPeriod.findFirst({ where: { companyId: input.companyId, startDate: { lte: date }, endDate: { gte: date } }, select: { id: true } });
     if (!periodRef) throw unprocessable(`No accounting period covers ${input.journalDate}`, 'no_period');
@@ -136,45 +218,16 @@ export class PostingService {
       if (!first || isoDay(first.startDate) !== input.journalDate) throw unprocessable(`Opening balances must be dated ${first ? isoDay(first.startDate) : 'the first day of the first accounting period'}`, 'opening_balance_date_invalid');
     }
 
+    // 7c. a control adjustment exists to move a control account; anything else is a plain manual journal
+    if (input.sourceType === 'CONTROL_ADJUSTMENT' && !ids.some((id) => accounts.get(id)!.isControl)) throw unprocessable('A control adjustment must touch at least one control account; use a manual journal otherwise', 'no_control_account');
+
     // 8. balance
     const debits = lines.reduce((s, l) => s.plus(l.debit), ZERO);
     const credits = lines.reduce((s, l) => s.plus(l.credit), ZERO);
     if (!debits.equals(credits)) throw unprocessable(`Debits (${fmt(debits, cur.minorUnits)}) must equal credits (${fmt(credits, cur.minorUnits)})`, 'unbalanced_journal');
     if (debits.isZero()) throw unprocessable('A journal cannot be zero', 'invalid_amount');
 
-    // 9. extra validators (VAT treatment arrives with the VAT foundation)
-    const ctx: PostingContext = { tx, input, period, accounts: accounts as PostingContext['accounts'], lines };
-    for (const v of this.opts.validators ?? []) await v(ctx);
-
-    // 10. number, insert (only here may the posting flag be on), audit, event
-    await tx.$queryRaw`SELECT set_config('app.posting', 'on', true)`;
-    try {
-      const seq = await tx.$queryRaw<{ last_number: number }[]>`
-        INSERT INTO ledger_sequence (organisation_id, company_id, last_number) VALUES (${input.organisationId}::uuid, ${input.companyId}::uuid, 1)
-        ON CONFLICT (organisation_id, company_id) DO UPDATE SET last_number = ledger_sequence.last_number + 1 RETURNING last_number`;
-      const journalNumber = seq[0]!.last_number;
-      const journal = await tx.journal.create({ data: {
-        organisationId: input.organisationId, companyId: input.companyId, periodId: period.id, journalNumber, journalDate: date,
-        sourceType: input.sourceType, sourceId: input.sourceId ?? null, sourceReference: input.sourceReference ?? null, description: input.description.trim(),
-        currency: company.baseCurrency, total: debits, lineCount: lines.length, actorType: actor.kind, postedByUserId: actor.userId ?? null,
-        idempotencyKey: input.idempotencyKey, contentHash, reversesJournalId: input.reversesJournalId ?? null,
-        correlationId: getContext()?.correlationId,
-      } });
-      await tx.journalLine.createMany({ data: lines.map((l, i) => ({
-        organisationId: input.organisationId, companyId: input.companyId, journalId: journal.id, lineNo: i + 1, accountId: l.accountId, debit: l.debit, credit: l.credit, description: l.description ?? null,
-      })) });
-      await tx.auditEvent.createMany({ data: [auditRow({
-        action: input.sourceType === 'REVERSAL' ? 'journal.reversed' : 'journal.posted', organisationId: input.organisationId, companyId: input.companyId, actorUserId: actor.userId ?? null,
-        entityType: 'journal', entityId: journal.id, reason: input.reason ?? null,
-        after: { journalNumber, journalDate: input.journalDate, sourceType: input.sourceType, total: fmt(debits, cur.minorUnits), lines: lines.length },
-        metadata: { periodId: period.id, reverses: input.reversesJournalId ?? null, actorKind: actor.kind },
-      }, this.opts.captureDeviceMetadata)] });
-      await publishEvent(tx, Events.transactionPosted, { aggregateId: journal.id, organisationId: input.organisationId, actorUserId: actor.userId ?? null,
-        payload: { journalId: journal.id, companyId: input.companyId, periodId: period.id, journalNumber, journalDate: input.journalDate, sourceType: input.sourceType, sourceId: input.sourceId ?? null, total: fmt(debits, cur.minorUnits), reversesJournalId: input.reversesJournalId ?? null } });
-      return { ...this.view(journal, cur.minorUnits), replayed: false };
-    } finally {
-      await tx.$queryRaw`SELECT set_config('app.posting', 'off', true)`;
-    }
+    return { period, accounts, debits };
   }
 
   /**

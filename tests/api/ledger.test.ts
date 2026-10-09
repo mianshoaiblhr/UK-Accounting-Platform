@@ -93,14 +93,11 @@ describe('journals', () => {
     expect((await post(journal([['1100', '10', '0'], ['4000', '0', '10']]))).body.code).toBe('control_account_restricted');
     expect((await post({ ...rent(), unknownField: 1 })).status).toBe(422);
   });
-  it('opening balances are the only manual source allowed onto control accounts, and only dated at the very start of record keeping', async () => {
+  it('opening balances can no longer be posted directly: POST /journals refuses the source; the request flow (ledger-controls.test.ts) is the only way', async () => {
     const lines = [{ accountId: acc['1100'], debit: '500.00', credit: '0' }, { accountId: acc['3000'], debit: '0', credit: '500.00' }];
-    const ob = { description: 'Opening debtors', source: 'OPENING_BALANCE', lines };
-    expect((await as(accountant, 'post', `${base()}/journals`, { ...ob, journalDate: '2026-03-15' })).body.code).toBe('opening_balance_date_invalid');
-    const ok = await as(accountant, 'post', `${base()}/journals`, { ...ob, journalDate: '2025-01-01' });
-    expect(ok.status).toBe(201);
-    expect(ok.body.sourceType).toBe('OPENING_BALANCE');
-    expect((await as(bookkeeper, 'post', `${base()}/journals`, { ...ob, journalDate: '2025-01-01' })).status).toBe(403);
+    for (const source of ['OPENING_BALANCE', 'CONTROL_ADJUSTMENT']) {
+      expect((await as(owner, 'post', `${base()}/journals`, { description: 'Opening debtors', source, journalDate: '2025-01-01', lines })).status).toBe(422);
+    }
   });
   it('foreign currency is explicitly not supported yet: a different currency is refused with a pointer to the plan; the company currency is accepted', async () => {
     const usd = await as(accountant, 'post', `${base()}/journals`, rent('10.00', { currency: 'USD' }));

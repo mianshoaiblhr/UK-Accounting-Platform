@@ -18,6 +18,7 @@ export const PERMISSIONS = [
   'contact:read', 'contact:manage',
   'document:confidential', 'evidence:lock', 'evidence:read', 'evidence:manage',
   'account:read', 'account:manage', 'ledger:read', 'journal:post', 'period:lock',
+  'ledger:opening-balance', 'ledger:control-adjustment', 'ledger:approve', 'ledger:policy',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -43,6 +44,7 @@ export const PERMISSION_SCOPE: Record<Permission, PermissionScope> = {
   'contact:read': 'COMPANY', 'contact:manage': 'COMPANY',
   'document:confidential': 'COMPANY', 'evidence:lock': 'COMPANY', 'evidence:read': 'COMPANY', 'evidence:manage': 'COMPANY',
   'account:read': 'COMPANY', 'account:manage': 'COMPANY', 'ledger:read': 'COMPANY', 'journal:post': 'COMPANY', 'period:lock': 'COMPANY',
+  'ledger:opening-balance': 'COMPANY', 'ledger:control-adjustment': 'COMPANY', 'ledger:approve': 'COMPANY', 'ledger:policy': 'COMPANY',
 };
 export const permissionsOfScope = (...scopes: PermissionScope[]): Permission[] => PERMISSIONS.filter((p) => scopes.includes(PERMISSION_SCOPE[p]));
 
@@ -67,7 +69,7 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
   { key: 'accountant', name: 'Accountant', description: 'Work on assigned client companies',
     permissions: [...READ, 'practice:read', 'company:create', 'company:update', 'period:manage', 'document:upload', 'document:archive', 'job:read', 'audit:read',
       'task:read', 'task:manage', 'workflow:read', 'workflow:manage', 'workflow:review', 'ai:use', 'ai:approve', 'contact:read', 'contact:manage', 'evidence:read', 'evidence:manage',
-      'account:read', 'account:manage', 'ledger:read', 'journal:post'] },
+      'account:read', 'account:manage', 'ledger:read', 'journal:post', 'ledger:control-adjustment'] },
   { key: 'bookkeeper', name: 'Bookkeeper', description: 'Prepare records for assigned companies',
     permissions: [...READ, 'practice:read', 'document:upload', 'job:read', 'task:read', 'task:manage', 'workflow:read', 'ai:use', 'contact:read', 'contact:manage', 'evidence:read', 'evidence:manage', 'account:read', 'ledger:read'] },
   { key: 'reviewer', name: 'Reviewer', description: 'Read-only review and audit access',

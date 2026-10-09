@@ -90,7 +90,7 @@ export const RETENTION_RULES: readonly RetentionRule[] = [
   // Documents and what explains them follow the document's own category (looked up per document type), not a table-wide period.
   ...tableRules('ACCOUNTING_RECORDS', ['document', 'document_version', 'document_extraction', 'document_folder', 'document_access', 'evidence_link', 'accounting_period',
     // V1 ledger: journals and what explains them are accounting records
-    'account', 'journal', 'journal_line', 'ledger_sequence']),
+    'account', 'journal', 'journal_line', 'ledger_sequence', 'journal_request', 'ledger_policy']),
   ...tableRules('WHILE_ACTIVE', [
     'user', 'user_identity', 'mfa_factor', 'mfa_recovery_code', 'organisation', 'role', 'organisation_membership', 'practice', 'practice_membership', 'company_membership', 'invitation',
     'company', 'company_officer', 'contact', 'address', 'feature_flag_override', 'task', 'task_attachment', 'task_comment', 'workflow_instance', 'workflow_transition',

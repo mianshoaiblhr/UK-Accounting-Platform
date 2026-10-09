@@ -1,6 +1,6 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import type { z } from 'zod';
-import { accountListQuerySchema, createAccountSchema, journalListQuerySchema, ledgerQuerySchema, periodTransitionSchema, postJournalSchema, reverseJournalSchema, trialBalanceQuerySchema, updateAccountSchema, type PeriodAction } from '@uk/contracts';
+import { accountListQuerySchema, createAccountSchema, createJournalRequestSchema, decideRequestSchema, rejectRequestSchema, requestListQuerySchema, setLedgerPolicySchema, journalListQuerySchema, ledgerQuerySchema, periodTransitionSchema, postJournalSchema, reverseJournalSchema, trialBalanceQuerySchema, updateAccountSchema, type PeriodAction } from '@uk/contracts';
 import { Idempotent, Org, RequireFeature, RequirePermissions } from '../common/decorators';
 import type { OrgAccess } from '../common/types';
 import { ZodPipe } from '../common/zod.pipe';
@@ -38,6 +38,26 @@ export class LedgerController {
   getJournal(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('journalId') id: string) { return this.svc.getJournal(org, c, id); }
   @Post('journals/:journalId/reverse') @RequirePermissions('journal:post') @Idempotent()
   reverse(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('journalId') id: string, @Body(new ZodPipe(reverseJournalSchema)) b: z.output<typeof reverseJournalSchema>) { return this.svc.reverseJournal(org, c, id, b); }
+
+  // ───── Opening balances and control-account adjustments: requested, approved by a second person per policy, then posted by the PostingService (M2) ─────
+  @Post('opening-balance-requests') @RequirePermissions('ledger:opening-balance') @Idempotent()
+  requestOpeningBalance(@Org() org: OrgAccess, @ID('companyId') c: string, @Body(new ZodPipe(createJournalRequestSchema)) b: z.output<typeof createJournalRequestSchema>) { return this.svc.createRequest(org, c, 'OPENING_BALANCE', b); }
+  @Post('control-adjustment-requests') @RequirePermissions('ledger:control-adjustment') @Idempotent()
+  requestControlAdjustment(@Org() org: OrgAccess, @ID('companyId') c: string, @Body(new ZodPipe(createJournalRequestSchema)) b: z.output<typeof createJournalRequestSchema>) { return this.svc.createRequest(org, c, 'CONTROL_ADJUSTMENT', b); }
+  @Get('journal-requests') @RequirePermissions('ledger:read')
+  listRequests(@Org() org: OrgAccess, @ID('companyId') c: string, @Query(new ZodPipe(requestListQuerySchema)) q: z.output<typeof requestListQuerySchema>) { return this.svc.listRequests(org, c, q); }
+  @Get('journal-requests/:requestId') @RequirePermissions('ledger:read')
+  getRequest(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('requestId') id: string) { return this.svc.getRequest(org, c, id); }
+  @Post('journal-requests/:requestId/approve') @HttpCode(200) @RequirePermissions('ledger:approve') @Idempotent()
+  approveRequest(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('requestId') id: string, @Body(new ZodPipe(decideRequestSchema)) b: z.output<typeof decideRequestSchema>) { return this.svc.approveRequest(org, c, id, b.comment); }
+  @Post('journal-requests/:requestId/reject') @HttpCode(200) @RequirePermissions('ledger:approve') @Idempotent()
+  rejectRequest(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('requestId') id: string, @Body(new ZodPipe(rejectRequestSchema)) b: z.output<typeof rejectRequestSchema>) { return this.svc.rejectRequest(org, c, id, b.reason); }
+  @Post('journal-requests/:requestId/cancel') @HttpCode(200) @RequirePermissions('ledger:read') @Idempotent()
+  cancelRequest(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('requestId') id: string, @Body(new ZodPipe(decideRequestSchema)) b: z.output<typeof decideRequestSchema>) { return this.svc.cancelRequest(org, c, id, b.comment); }
+  @Get('ledger-policy') @RequirePermissions('ledger:read')
+  getPolicy(@Org() org: OrgAccess, @ID('companyId') c: string) { return this.svc.getPolicy(org, c); }
+  @Put('ledger-policy') @RequirePermissions('ledger:policy')
+  setPolicy(@Org() org: OrgAccess, @ID('companyId') c: string, @Body(new ZodPipe(setLedgerPolicySchema)) b: z.output<typeof setLedgerPolicySchema>) { return this.svc.setPolicy(org, c, b); }
 
   // ───── General ledger and reports (read the ledger only) ─────
   @Get('ledger') @RequirePermissions('ledger:read')

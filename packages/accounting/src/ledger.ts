@@ -42,10 +42,11 @@ export class LedgerQueries {
       lines: j.lines.map((l) => { const a = accounts.get(l.accountId); return { lineNo: l.lineNo, accountId: l.accountId, accountCode: a?.code ?? null, accountName: a?.name ?? null, debit: fmt(l.debit, minor), credit: fmt(l.credit, minor), description: l.description }; }) };
   }
 
-  private header(j: { id: string; journalNumber: number; journalDate: Date; periodId: string; sourceType: string; sourceId: string | null; sourceReference: string | null; description: string; total: Money; lineCount: number; actorType: string; postedByUserId: string | null; postedAt: Date; reversesJournalId: string | null },
+  private header(j: { id: string; journalNumber: number; journalDate: Date; periodId: string; sourceType: string; sourceId: string | null; sourceReference: string | null; description: string; total: Money; lineCount: number; actorType: string; postedByUserId: string | null; postedAt: Date; reversesJournalId: string | null; requestId: string | null; requestedByUserId: string | null; approvedByUserId: string | null },
     minor: number, reversedBy?: { id: string; journalNumber: number }) {
     return { id: j.id, journalNumber: j.journalNumber, journalDate: isoDay(j.journalDate), periodId: j.periodId, sourceType: j.sourceType, sourceId: j.sourceId, sourceReference: j.sourceReference, description: j.description,
       total: fmt(j.total, minor), lineCount: j.lineCount, actorType: j.actorType, postedByUserId: j.postedByUserId, postedAt: j.postedAt, reversesJournalId: j.reversesJournalId,
+      requestId: j.requestId, requestedByUserId: j.requestedByUserId, approvedByUserId: j.approvedByUserId,
       reversedByJournalId: reversedBy?.id ?? null, reversedByJournalNumber: reversedBy?.journalNumber ?? null };
   }
 

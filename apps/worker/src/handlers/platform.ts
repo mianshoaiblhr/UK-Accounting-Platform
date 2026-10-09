@@ -34,6 +34,14 @@ export function registerConsumers(bus: EventBus, notifications: NotificationServ
     await notifications.notify(tx, { organisationId: event.organisationId!, userId: p.assigneeUserId, type: p.decision === 'APPROVE' ? 'task.approved' : 'task.returned',
       title: p.decision === 'APPROVE' ? 'Your task was approved' : 'Your task was returned for changes', body: p.title, entityType: 'task', entityId: p.taskId });
   });
+  // M2: the requester learns the outcome of their opening-balance / control-adjustment request. No amounts or account names in the notification.
+  bus.subscribe('notifications.ledger_request_decided', [Events.ledgerRequestDecided.type], async ({ event, tx }) => {
+    const p = Events.ledgerRequestDecided.schema.parse(event.payload);
+    if (p.requesterUserId === p.decidedByUserId) return; // withdrawing or self-posting your own request needs no notification
+    const what = p.kind === 'OPENING_BALANCE' ? 'opening balance' : 'control-account adjustment';
+    await notifications.notify(tx, { organisationId: event.organisationId!, userId: p.requesterUserId, type: `ledger.request_${p.decision.toLowerCase()}`,
+      title: p.decision === 'APPROVED' ? `Your ${what} request was approved and posted` : `Your ${what} request was ${p.decision.toLowerCase()}`, body: 'Open the request for details.', entityType: 'journal_request', entityId: p.requestId });
+  });
   bus.subscribe('notifications.task_commented', [Events.taskCommented.type], async ({ event, tx }) => {
     const p = Events.taskCommented.schema.parse(event.payload);
     for (const userId of p.recipientUserIds) {

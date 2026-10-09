@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { z } from 'zod';
-import type { Permission, PeriodAction, accountListQuerySchema, createAccountSchema, journalListQuerySchema, ledgerQuerySchema, postJournalSchema, trialBalanceQuerySchema, updateAccountSchema } from '@uk/contracts';
+import type { Permission, PeriodAction, RequestKind, accountListQuerySchema, createJournalRequestSchema, requestListQuerySchema, setLedgerPolicySchema, createAccountSchema, journalListQuerySchema, ledgerQuerySchema, postJournalSchema, trialBalanceQuerySchema, updateAccountSchema } from '@uk/contracts';
 import { notFound, uuidv7 } from '@uk/core';
 import type { Database, Tx } from '@uk/db';
-import { AccountService, LedgerQueries, PeriodService, PostingService, periodView, type PostingActor } from '@uk/accounting';
+import { AccountService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, periodView, type PostingActor, type RequestActor } from '@uk/accounting';
 import { DB } from '../common/tokens';
 import type { OrgAccess } from '../common/types';
 
@@ -14,7 +14,7 @@ import type { OrgAccess } from '../common/types';
 @Injectable()
 export class LedgerApiService {
   constructor(@Inject(DB) private readonly db: Database, private readonly accounts: AccountService, private readonly posting: PostingService,
-    private readonly periods: PeriodService, private readonly queries: LedgerQueries) {}
+    private readonly periods: PeriodService, private readonly queries: LedgerQueries, private readonly requests: JournalRequestService, private readonly policies: LedgerPolicyService) {}
 
   private t<T>(org: OrgAccess, fn: (tx: Tx) => Promise<T>) { return this.db.tenant({ organisationId: org.organisationId, userId: org.userId }, fn); }
   private actor(org: OrgAccess): PostingActor {
@@ -47,6 +47,23 @@ export class LedgerApiService {
   }
   listJournals(org: OrgAccess, companyId: string, q: z.output<typeof journalListQuerySchema>) { return this.t(org, (tx) => this.queries.listJournals(tx, companyId, q)); }
   getJournal(org: OrgAccess, companyId: string, id: string) { return this.t(org, (tx) => this.queries.getJournal(tx, companyId, id)); }
+
+  // Journal requests (opening balances, control-account adjustments) and the approval policy
+  private reqActor(org: OrgAccess): RequestActor {
+    return { ...this.actor(org), userId: org.userId, canReadDocument: (d) => org.access.canReadDocument({ ...d, createdByUserId: d.createdByUserId ?? '' }) };
+  }
+  createRequest(org: OrgAccess, companyId: string, kind: RequestKind, b: z.output<typeof createJournalRequestSchema>) {
+    return this.t(org, (tx) => this.requests.create(tx, { organisationId: org.organisationId, companyId, kind, actor: this.reqActor(org), ...b }));
+  }
+  listRequests(org: OrgAccess, companyId: string, q: z.output<typeof requestListQuerySchema>) { return this.t(org, (tx) => this.requests.list(tx, companyId, q)); }
+  getRequest(org: OrgAccess, companyId: string, id: string) { return this.t(org, (tx) => this.requests.get(tx, companyId, id)); }
+  approveRequest(org: OrgAccess, companyId: string, id: string, comment?: string) { return this.t(org, (tx) => this.requests.approve(tx, { organisationId: org.organisationId, companyId, requestId: id, actor: this.reqActor(org), comment })); }
+  rejectRequest(org: OrgAccess, companyId: string, id: string, reason: string) { return this.t(org, (tx) => this.requests.reject(tx, { organisationId: org.organisationId, companyId, requestId: id, actor: this.reqActor(org), reason })); }
+  cancelRequest(org: OrgAccess, companyId: string, id: string, reason?: string) { return this.t(org, (tx) => this.requests.cancel(tx, { organisationId: org.organisationId, companyId, requestId: id, actor: this.reqActor(org), reason })); }
+  getPolicy(org: OrgAccess, companyId: string) { return this.t(org, (tx) => this.policies.get(tx, companyId)); }
+  setPolicy(org: OrgAccess, companyId: string, b: z.output<typeof setLedgerPolicySchema>) {
+    return this.t(org, (tx) => this.policies.set(tx, { organisationId: org.organisationId, companyId, actor: this.reqActor(org), ...b }));
+  }
 
   // Reads
   generalLedger(org: OrgAccess, companyId: string, q: z.output<typeof ledgerQuerySchema>) { return this.t(org, (tx) => this.queries.generalLedger(tx, companyId, q)); }
