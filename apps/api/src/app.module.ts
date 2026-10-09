@@ -20,6 +20,8 @@ import { TasksService } from './tasks/tasks.service';
 import { WorkflowsController } from './workflows/workflows.controller';
 import { HealthController } from './health/health.controller';
 import { JobsController } from './jobs/jobs.controller';
+import { PracticesController } from './practices/practices.controller';
+import { PracticesService } from './practices/practices.service';
 import { OrganisationsController } from './organisations/organisations.controller';
 import { OrganisationsService } from './organisations/organisations.service';
 
@@ -30,9 +32,9 @@ export class AppModule {
       module: AppModule,
       imports: [InfraModule.forRoot(config), AuditModule, AuthModule],
       controllers: [HealthController, OrganisationsController, CompaniesController, DocumentsController, JobsController,
-        TasksController, WorkflowsController, NotificationsController, IntegrationsController, AiController],
+        TasksController, PracticesController, WorkflowsController, NotificationsController, IntegrationsController, AiController],
       providers: [
-        OrganisationsService, CompaniesService, DocumentsService, TasksService,
+        OrganisationsService, PracticesService, CompaniesService, DocumentsService, TasksService,
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_GUARD, useClass: OrgGuard },
         { provide: APP_INTERCEPTOR, useClass: IdempotencyInterceptor },

@@ -138,7 +138,7 @@
         "x-required-permissions": [
           "org:read"
         ],
-        "summary": "The caller's role, permissions and company scope in this organisation",
+        "summary": "The caller's organisation role, reach, and explicit practice/company grants",
         "description": "**Requires permission:** `org:read`",
         "security": [
           {
@@ -2163,6 +2163,625 @@
         }
       }
     },
+    "/api/v1/organisations/{organisationId}/practices": {
+      "post": {
+        "operationId": "Practices_create",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Practice"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Practices"
+        ],
+        "x-required-permissions": [
+          "practice:manage"
+        ],
+        "summary": "Create a practice (practice organisations only)",
+        "description": "**Requires permission:** `practice:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePracticeRequest"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "Practices_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Practices",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Practices"
+        ],
+        "x-required-permissions": [
+          "practice:read"
+        ],
+        "summary": "List practices the caller can see",
+        "description": "**Requires permission:** `practice:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/practices/{practiceId}": {
+      "get": {
+        "operationId": "Practices_get",
+        "parameters": [
+          {
+            "name": "practiceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Practice",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Practice"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Practices"
+        ],
+        "x-required-permissions": [
+          "practice:read"
+        ],
+        "summary": "Get a practice",
+        "description": "**Requires permission:** `practice:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "Practices_update",
+        "parameters": [
+          {
+            "name": "practiceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Practice"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Practices"
+        ],
+        "x-required-permissions": [
+          "practice:manage"
+        ],
+        "summary": "Rename or archive a practice",
+        "description": "**Requires permission:** `practice:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePracticeRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/practices/{practiceId}/members": {
+      "get": {
+        "operationId": "Practices_members",
+        "parameters": [
+          {
+            "name": "practiceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Members",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrantList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Practices"
+        ],
+        "x-required-permissions": [
+          "practice:read"
+        ],
+        "summary": "Members holding a practice-level role",
+        "description": "**Requires permission:** `practice:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/practices/{practiceId}/members/{membershipId}": {
+      "put": {
+        "operationId": "Practices_setMember",
+        "parameters": [
+          {
+            "name": "practiceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "membershipId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Granted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrantResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Practices"
+        ],
+        "x-required-permissions": [
+          "practice:member:manage"
+        ],
+        "summary": "Grant or change a practice-level role (bounded by the granter's own rights)",
+        "description": "**Requires permission:** `practice:member:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetGrantRequest"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "Practices_removeMember",
+        "parameters": [
+          {
+            "name": "practiceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "membershipId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Practices"
+        ],
+        "x-required-permissions": [
+          "practice:member:manage"
+        ],
+        "summary": "Remove a practice-level role",
+        "description": "**Requires permission:** `practice:member:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/access": {
+      "get": {
+        "operationId": "Practices_companyAccess",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Grants",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrantList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Companies"
+        ],
+        "x-required-permissions": [
+          "company:access:manage"
+        ],
+        "summary": "Members holding an explicit company-level role",
+        "description": "**Requires permission:** `company:access:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/access/{membershipId}": {
+      "put": {
+        "operationId": "Practices_setCompanyAccess",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "membershipId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Granted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrantResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Companies"
+        ],
+        "x-required-permissions": [
+          "company:access:manage"
+        ],
+        "summary": "Grant or change a company-level role (the most specific grant; bounded by the granter's own rights on that company)",
+        "description": "**Requires permission:** `company:access:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetGrantRequest"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "Practices_removeCompanyAccess",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "membershipId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Companies"
+        ],
+        "x-required-permissions": [
+          "company:access:manage"
+        ],
+        "summary": "Remove a company-level role",
+        "description": "**Requires permission:** `company:access:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/organisations/{organisationId}/workflows/definitions": {
       "get": {
         "operationId": "Workflows_definitions",
@@ -2485,6 +3104,75 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/TransitionWorkflowRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/workflows/{workflowId}/reassign": {
+      "post": {
+        "operationId": "Workflows_reassign",
+        "parameters": [
+          {
+            "name": "workflowId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reassigned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowInstance"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Workflows"
+        ],
+        "x-required-permissions": [
+          "workflow:manage"
+        ],
+        "summary": "Reassign (or unassign) a workflow; recorded in the history",
+        "description": "**Requires permission:** `workflow:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReassignWorkflowRequest"
               }
             }
           }
@@ -3149,8 +3837,9 @@
             "schema": {
               "type": "string",
               "enum": [
-                "PENDING_REVIEW",
-                "APPROVED",
+                "SUGGESTED",
+                "UNDER_REVIEW",
+                "ACCEPTED",
                 "REJECTED"
               ]
             }
@@ -3257,6 +3946,62 @@
         ]
       }
     },
+    "/api/v1/organisations/{organisationId}/ai/proposals/{proposalId}/review": {
+      "post": {
+        "operationId": "Ai_review",
+        "parameters": [
+          {
+            "name": "proposalId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Under review",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiProposal"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "AI"
+        ],
+        "x-required-permissions": [
+          "ai:approve"
+        ],
+        "summary": "Take a SUGGESTED proposal into human review (SUGGESTED -> UNDER_REVIEW; requires ai:approve)",
+        "description": "**Requires permission:** `ai:approve`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/organisations/{organisationId}/ai/proposals/{proposalId}/decision": {
       "post": {
         "operationId": "Ai_decide",
@@ -3307,7 +4052,7 @@
         "x-required-permissions": [
           "ai:approve"
         ],
-        "summary": "Approve or reject a proposal (requires ai:approve; recorded in workflow history)",
+        "summary": "Accept or reject a proposal that is UNDER_REVIEW (requires ai:approve; recorded in workflow history). Accepting applies nothing: the owning module acts through its own authorised service.",
         "description": "**Requires permission:** `ai:approve`",
         "security": [
           {
@@ -4209,6 +4954,9 @@
       "name": "Tasks"
     },
     {
+      "name": "Practices"
+    },
+    {
       "name": "Workflows"
     },
     {
@@ -4303,6 +5051,12 @@
             "type": "string",
             "format": "uuid"
           },
+          "practiceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Managing practice; null for direct (BUSINESS) organisations"
+          },
           "name": {
             "type": "string"
           },
@@ -4328,6 +5082,7 @@
         "required": [
           "id",
           "organisationId",
+          "practiceId",
           "name",
           "companyNumber",
           "legalForm",
@@ -4951,6 +5706,19 @@
           "definitionVersion": {
             "type": "integer"
           },
+          "companyId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "assigneeUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "attempt": {
+            "type": "integer"
+          },
           "state": {
             "type": "string"
           },
@@ -4977,6 +5745,9 @@
           "id",
           "type",
           "definitionVersion",
+          "companyId",
+          "assigneeUserId",
+          "attempt",
           "state",
           "subjectType",
           "subjectId",
@@ -4997,6 +5768,19 @@
             "type": "string"
           },
           "definitionVersion": {
+            "type": "integer"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "assigneeUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "attempt": {
             "type": "integer"
           },
           "state": {
@@ -5050,6 +5834,16 @@
                   "type": "string",
                   "nullable": true
                 },
+                "attempt": {
+                  "type": "integer"
+                },
+                "evidenceDocumentIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
                 "occurredAt": {
                   "type": "string",
                   "format": "date-time"
@@ -5061,6 +5855,8 @@
                 "action",
                 "actorUserId",
                 "comment",
+                "attempt",
+                "evidenceDocumentIds",
                 "occurredAt"
               ],
               "additionalProperties": false
@@ -5071,6 +5867,9 @@
           "id",
           "type",
           "definitionVersion",
+          "companyId",
+          "assigneeUserId",
+          "attempt",
           "state",
           "subjectType",
           "subjectId",
@@ -5155,10 +5954,73 @@
           "status": {
             "type": "string",
             "enum": [
-              "PENDING_REVIEW",
-              "APPROVED",
+              "SUGGESTED",
+              "UNDER_REVIEW",
+              "ACCEPTED",
               "REJECTED"
             ]
+          },
+          "provider": {
+            "type": "string",
+            "nullable": true
+          },
+          "model": {
+            "type": "string",
+            "nullable": true
+          },
+          "promptVersion": {
+            "type": "string",
+            "nullable": true
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "nullable": true,
+            "description": "0..1 where the provider supplies one"
+          },
+          "sourceEvidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "reviewStartedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "appliedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "appliedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "appliedReference": {
+            "type": "string",
+            "nullable": true
           },
           "workflowInstanceId": {
             "type": "string",
@@ -5189,11 +6051,154 @@
           "id",
           "kind",
           "status",
+          "provider",
+          "model",
+          "promptVersion",
+          "confidence",
+          "sourceEvidence",
+          "reviewStartedByUserId",
+          "appliedAt",
+          "appliedByUserId",
+          "appliedReference",
           "workflowInstanceId",
           "requestedByUserId",
           "decidedByUserId",
           "decidedAt",
           "decisionComment"
+        ],
+        "additionalProperties": false
+      },
+      "Practice": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "organisationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "ARCHIVED"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "organisationId",
+          "name",
+          "status",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "GrantList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "membershipId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "user": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "displayName": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "email",
+                    "displayName"
+                  ],
+                  "additionalProperties": false
+                },
+                "status": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "key",
+                    "name"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "membershipId",
+                "user",
+                "status",
+                "role"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "GrantResult": {
+        "type": "object",
+        "properties": {
+          "membershipId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "practiceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "membershipId",
+          "roleId"
         ],
         "additionalProperties": false
       },
@@ -5291,6 +6296,13 @@
             "type": "string",
             "format": "uuid"
           },
+          "organisationType": {
+            "type": "string",
+            "enum": [
+              "PRACTICE",
+              "BUSINESS"
+            ]
+          },
           "role": {
             "type": "string"
           },
@@ -5298,29 +6310,42 @@
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "Organisation-level role permissions; company/practice decisions use grants"
           },
           "companyScope": {
             "type": "string",
             "enum": [
               "ALL",
               "ASSIGNED"
-            ]
+            ],
+            "description": "Reach of the organisation role: ALL = organisation-wide default"
           },
           "companyIds": {
             "type": "array",
             "items": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "Companies with an explicit company-level grant"
+          },
+          "practiceIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Practices with an explicit practice-level grant"
           }
         },
         "required": [
           "organisationId",
+          "organisationType",
           "role",
           "permissions",
           "companyScope",
-          "companyIds"
+          "companyIds",
+          "practiceIds"
         ],
         "additionalProperties": false
       },
@@ -5583,6 +6608,12 @@
                   "type": "string",
                   "format": "uuid"
                 },
+                "practiceId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true,
+                  "description": "Managing practice; null for direct (BUSINESS) organisations"
+                },
                 "name": {
                   "type": "string"
                 },
@@ -5608,6 +6639,7 @@
               "required": [
                 "id",
                 "organisationId",
+                "practiceId",
                 "name",
                 "companyNumber",
                 "legalForm",
@@ -6005,6 +7037,19 @@
                 "definitionVersion": {
                   "type": "integer"
                 },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "assigneeUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "attempt": {
+                  "type": "integer"
+                },
                 "state": {
                   "type": "string"
                 },
@@ -6031,6 +7076,9 @@
                 "id",
                 "type",
                 "definitionVersion",
+                "companyId",
+                "assigneeUserId",
+                "attempt",
                 "state",
                 "subjectType",
                 "subjectId",
@@ -6071,10 +7119,73 @@
                 "status": {
                   "type": "string",
                   "enum": [
-                    "PENDING_REVIEW",
-                    "APPROVED",
+                    "SUGGESTED",
+                    "UNDER_REVIEW",
+                    "ACCEPTED",
                     "REJECTED"
                   ]
+                },
+                "provider": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "model": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "promptVersion": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "confidence": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ],
+                  "nullable": true,
+                  "description": "0..1 where the provider supplies one"
+                },
+                "sourceEvidence": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "id"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "reviewStartedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "appliedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "appliedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "appliedReference": {
+                  "type": "string",
+                  "nullable": true
                 },
                 "workflowInstanceId": {
                   "type": "string",
@@ -6105,6 +7216,15 @@
                 "id",
                 "kind",
                 "status",
+                "provider",
+                "model",
+                "promptVersion",
+                "confidence",
+                "sourceEvidence",
+                "reviewStartedByUserId",
+                "appliedAt",
+                "appliedByUserId",
+                "appliedReference",
                 "workflowInstanceId",
                 "requestedByUserId",
                 "decidedByUserId",
@@ -6382,6 +7502,74 @@
                     "type": "string",
                     "format": "uuid"
                   }
+                },
+                "companyGrants": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "companyId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "role": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "key": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "key"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "companyId",
+                      "role"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "practiceGrants": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "practiceId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "role": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "key": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "key"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "practiceId",
+                      "role"
+                    ],
+                    "additionalProperties": false
+                  }
                 }
               },
               "required": [
@@ -6390,7 +7578,56 @@
                 "role",
                 "status",
                 "companyScope",
-                "companyIds"
+                "companyIds",
+                "companyGrants",
+                "practiceGrants"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "organisationId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "ACTIVE",
+                    "ARCHIVED"
+                  ]
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "organisationId",
+                "name",
+                "status",
+                "createdAt"
               ],
               "additionalProperties": false
             }
@@ -6787,7 +8024,13 @@
                 "integration:read",
                 "integration:manage",
                 "ai:use",
-                "ai:approve"
+                "ai:approve",
+                "practice:read",
+                "practice:manage",
+                "practice:member:manage",
+                "company:access:manage",
+                "workflow:review",
+                "workflow:approve"
               ]
             },
             "minItems": 1
@@ -6905,6 +8148,10 @@
               "OTHER"
             ],
             "default": "LTD"
+          },
+          "practiceId": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "required": [
@@ -7100,6 +8347,51 @@
         },
         "additionalProperties": false
       },
+      "CreatePracticeRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "UpdatePracticeRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "ARCHIVED"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "SetGrantRequest": {
+        "type": "object",
+        "properties": {
+          "roleId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "roleId"
+        ],
+        "additionalProperties": false
+      },
       "StartWorkflowRequest": {
         "type": "object",
         "properties": {
@@ -7147,10 +8439,36 @@
             "type": "integer",
             "exclusiveMinimum": true,
             "minimum": 0
+          },
+          "evidenceDocumentIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "maxItems": 50
           }
         },
         "required": [
           "action"
+        ],
+        "additionalProperties": false
+      },
+      "ReassignWorkflowRequest": {
+        "type": "object",
+        "properties": {
+          "assigneeUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "assigneeUserId"
         ],
         "additionalProperties": false
       },
@@ -7229,7 +8547,7 @@
           "decision": {
             "type": "string",
             "enum": [
-              "APPROVE",
+              "ACCEPT",
               "REJECT"
             ]
           },

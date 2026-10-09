@@ -110,11 +110,10 @@ describe('practice-first: assigned-company scope', () => {
     expect((await s.api().post(orgPath(a, '/documents')).set(bearer(staff.token)).send({ name: 'x', companyId: c2.id, contentType: 'application/pdf', sizeBytes: 5 })).status).toBe(404);
     expect((await s.api().post(orgPath(a, `/companies/${c2.id}/periods`)).set(bearer(staff.token)).send({ startDate: '2025-04-01', endDate: '2026-03-31' })).status).toBe(404);
   });
-  it('companies created by an assigned-scope member are auto-assigned to them', async () => {
+  it('an assigned-scope member has no implicit reach: creating a company needs an explicit practice grant (deny by default)', async () => {
     const staff = await addMember(s, a, 'accountant', { scope: 'ASSIGNED', companyIds: [] });
-    const created = await makeCompany(s, staff, 'Staff Created Ltd');
-    const list = await s.api().get(orgPath(a, '/companies')).set(bearer(staff.token));
-    expect(list.body.items.map((c: { id: string }) => c.id)).toEqual([created.id]);
+    const r = await s.api().post(orgPath(a, '/companies')).set(bearer(staff.token)).send({ name: 'Staff Created Ltd' });
+    expect(r.status).toBe(403);
   });
   it('a direct business is just a one-company organisation using the same API', async () => {
     const list = await get(b, '/companies');

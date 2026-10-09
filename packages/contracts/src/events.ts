@@ -31,7 +31,7 @@ export const Events = {
   aiProposalCreated: defineEvent({ type: 'ai.proposal_created', version: 1, aggregateType: 'ai_proposal',
     schema: z.object({ proposalId: uuid, kind: z.string() }) }),
   aiProposalDecided: defineEvent({ type: 'ai.proposal_decided', version: 1, aggregateType: 'ai_proposal',
-    schema: z.object({ proposalId: uuid, kind: z.string(), decision: z.enum(['APPROVED', 'REJECTED']), decidedByUserId: uuid }) }),
+    schema: z.object({ proposalId: uuid, kind: z.string(), decision: z.enum(['ACCEPTED', 'REJECTED', 'APPROVED'])  /* APPROVED: legacy events emitted before the state-model change */, decidedByUserId: uuid }) }),
 } as const;
 
 export const ALL_EVENT_DEFINITIONS: EventDefinition[] = Object.values(Events);

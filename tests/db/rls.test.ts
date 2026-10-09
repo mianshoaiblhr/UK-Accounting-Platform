@@ -15,10 +15,11 @@ beforeAll(async () => {
   userA = e(`INSERT INTO "user"(email, display_name) VALUES ('a-${A}@t.test','A') RETURNING id`).split('\n')[0]!;
   userB = e(`INSERT INTO "user"(email, display_name) VALUES ('b-${B}@t.test','B') RETURNING id`).split('\n')[0]!;
   e(`INSERT INTO organisation(id,type,name) VALUES ('${A}','PRACTICE','Org A'),('${B}','BUSINESS','Org B')`);
-  companyA = e(`INSERT INTO company(organisation_id,name) VALUES ('${A}','Co A') RETURNING id`).split('\n')[0]!;
+  e(`INSERT INTO practice(organisation_id,name) VALUES ('${A}','Practice A')`);
+  companyA = e(`INSERT INTO company(organisation_id,name,practice_id) VALUES ('${A}','Co A',(SELECT id FROM practice WHERE organisation_id='${A}')) RETURNING id`).split('\n')[0]!;
   companyB = e(`INSERT INTO company(organisation_id,name) VALUES ('${B}','Co B') RETURNING id`).split('\n')[0]!;
   const owner = e(`SELECT id FROM "role" WHERE key='owner'`);
-  e(`INSERT INTO membership(organisation_id,user_id,role_id) VALUES ('${A}','${userA}','${owner}'),('${B}','${userB}','${owner}')`);
+  e(`INSERT INTO organisation_membership(organisation_id,user_id,role_id) VALUES ('${A}','${userA}','${owner}'),('${B}','${userB}','${owner}')`);
 });
 afterAll(() => db.close());
 
@@ -27,7 +28,7 @@ describe('runtime role hardening', () => {
     expect(adminSql(`SELECT rolsuper OR rolbypassrls FROM pg_roles WHERE rolname='uk_app'`)).toBe('f');
   });
   it('RLS is enabled and forced on every tenant table', () => {
-    const rows = adminSql(`SELECT relname FROM pg_class WHERE relname IN ('organisation','role','membership','company_assignment','invitation','company','accounting_period','document','document_version','audit_event','job_record','idempotency_record') AND NOT (relrowsecurity AND relforcerowsecurity)`);
+    const rows = adminSql(`SELECT relname FROM pg_class WHERE relname IN ('organisation','role','organisation_membership','company_membership','practice','practice_membership','invitation','company','accounting_period','document','document_version','audit_event','job_record','idempotency_record') AND NOT (relrowsecurity AND relforcerowsecurity)`);
     expect(rows).toBe('');
   });
   it('every table carrying organisation_id has RLS (guard for future migrations)', () => {
@@ -41,7 +42,7 @@ describe('row level security (fail closed)', () => {
   it('no context => zero rows from tenant tables', async () => {
     expect(await db.prisma.company.count()).toBe(0);
     expect(await db.prisma.organisation.count()).toBe(0);
-    expect(await db.prisma.membership.count()).toBe(0);
+    expect(await db.prisma.organisationMembership.count()).toBe(0);
   });
   it('no context => writes are rejected', async () => {
     await expect(db.prisma.company.create({ data: { organisationId: A, name: 'x' } })).rejects.toThrow();
@@ -68,9 +69,9 @@ describe('row level security (fail closed)', () => {
     expect(await db.prisma.company.count()).toBe(0);
   });
   it('user context sees own memberships across orgs but cannot modify them', async () => {
-    const ms = await db.asUser(userA, (tx) => tx.membership.findMany());
+    const ms = await db.asUser(userA, (tx) => tx.organisationMembership.findMany());
     expect(ms.map((m) => m.organisationId)).toEqual([A]);
-    const r = await db.asUser(userA, (tx) => tx.membership.updateMany({ data: { status: 'SUSPENDED' } }));
+    const r = await db.asUser(userA, (tx) => tx.organisationMembership.updateMany({ data: { status: 'SUSPENDED' } }));
     expect(r.count).toBe(0);
   });
   it('organisation visible to its members only', async () => {
@@ -117,7 +118,7 @@ describe('structural integrity', () => {
   });
   it('a membership cannot use another organisations custom role', () => {
     const roleB = adminSql(`SELECT id FROM "role" WHERE key='custom_b'`);
-    expect(() => adminSql(`UPDATE membership SET role_id='${roleB}' WHERE organisation_id='${A}'`)).toThrow(/different organisation/);
+    expect(() => adminSql(`UPDATE organisation_membership SET role_id='${roleB}' WHERE organisation_id='${A}'`)).toThrow(/different organisation/);
   });
   it('email must be lowercase', () => {
     expect(() => adminSql(`INSERT INTO "user"(email,display_name) VALUES ('UPPER@T.TEST','x')`)).toThrow();

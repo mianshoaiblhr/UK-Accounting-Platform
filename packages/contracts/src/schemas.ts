@@ -27,6 +27,8 @@ export const createCompanySchema = z.object({
   name: z.string().trim().min(1).max(200),
   companyNumber: z.string().trim().regex(/^[A-Z0-9]{8}$/i, 'Company number must be 8 characters').optional(),
   legalForm: z.enum(['LTD', 'LLP', 'SOLE_TRADER', 'PARTNERSHIP', 'CHARITY', 'OTHER']).default('LTD'),
+  /** Managing practice. Required for practice organisations (defaulted when there is only one), forbidden for direct businesses. */
+  practiceId: z.string().uuid().optional(),
 }).strict();
 export const updateCompanySchema = z.object({ name: z.string().trim().min(1).max(200) }).strict();
 
@@ -84,7 +86,15 @@ export const startWorkflowSchema = z.object({
 }).strict();
 export const transitionWorkflowSchema = z.object({
   action: z.string().max(60), comment: z.string().max(2000).optional(), expectedVersion: z.number().int().positive().optional(),
+  /** Documents offered as evidence for this transition (same organisation/company, readable by the actor). */
+  evidenceDocumentIds: z.array(z.string().uuid()).max(50).optional(),
 }).strict();
+export const reassignWorkflowSchema = z.object({ assigneeUserId: z.string().uuid().nullable(), comment: z.string().max(2000).optional() }).strict();
+
+export const createPracticeSchema = z.object({ name: z.string().trim().min(1).max(200) }).strict();
+export const updatePracticeSchema = z.object({ name: z.string().trim().min(1).max(200).optional(), status: z.enum(['ACTIVE', 'ARCHIVED']).optional() }).strict();
+/** Grants `roleId` to a member at practice level (PUT) or company level (PUT). The path names the target. */
+export const setGrantSchema = z.object({ roleId: z.string().uuid() }).strict();
 
 export const createTaskSchema = z.object({
   title: z.string().trim().min(1).max(200), description: z.string().max(5000).default(''),
@@ -110,4 +120,4 @@ export const createConnectionSchema = z.object({
 export const requestAiSuggestionSchema = z.object({
   purpose: z.string().regex(/^[a-z][a-z0-9_]{2,60}$/), input: z.string().min(1).max(20_000), companyId: z.string().uuid().optional(),
 }).strict();
-export const decideProposalSchema = z.object({ decision: z.enum(['APPROVE', 'REJECT']), comment: z.string().max(2000).optional() }).strict();
+export const decideProposalSchema = z.object({ decision: z.enum(['ACCEPT', 'REJECT']), comment: z.string().max(2000).optional() }).strict();

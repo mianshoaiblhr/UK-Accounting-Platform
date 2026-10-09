@@ -29,8 +29,14 @@ Each migration file runs in a transaction; a failure rolls that file back and re
 - **Database rollback = roll forward.** Prisma has no down-migrations by design. For a bad *additive* migration, ship a corrective migration. For data corruption, use **point-in-time recovery** (RDS PITR, 35 days) into a new instance and cut over per `backup-restore.md`.
 - Destructive steps are the last release of an expand/contract cycle, only after the code that used the old structure has been out for a full retention window.
 
+### 4.1 Reversing the architecture change set (20260103*)
+`docs/runbooks/rollback/20260103-architecture-change-set.down.sql` reverses migrations `20260103000000_v0_practice_and_company_roles` and `20260103000100_v0_workflow_and_ai_states` (renames, practice tables, per-company roles, workflow/AI columns, AI status mapping). It is **not** run automatically, refuses to run while the new roles or practice memberships are in use, and loses only data that has no representation in the old model (listed in the script header). `tests/db/upgrade.test.ts` proves it restores the previous schema *exactly* (columns, constraints, policies, triggers, enums, system roles). Remove the two rows from `_prisma_migrations` afterwards.
+
+### 4.2 Owner role and row-level security
+Tables use `FORCE ROW LEVEL SECURITY`, which also applies to the **table owner** (the migrator). A migration that inserts/updates/deletes data in a tenant table must lift RLS on that table for the migration's own transaction (`ALTER TABLE … NO FORCE ROW LEVEL SECURITY` … `FORCE ROW LEVEL SECURITY`) or the statements fail (INSERT) or silently affect zero rows (UPDATE/DELETE). `tests/db/upgrade.test.ts` applies every migration as a non-superuser owner to guard this.
+
 ## 5. Backups before destructive migrations
-Required whenever a pending migration carries `-- destructive-approved:`:
+Required whenever a pending migration carries `-- destructive-approved:` (except on a brand-new, empty database - `migrate.sh` detects this because the first migration is still pending):
 1. Take a manual RDS snapshot (`aws rds create-db-snapshot`) **and** confirm the latest AWS Backup recovery point is < 24 h old.
 2. Verify restorability for high-risk changes (restore to staging, run smoke checks).
 3. Export the snapshot id to the pipeline as `BACKUP_SNAPSHOT_ID`. `infra/db/migrate.sh` **refuses to run** destructive migrations without it (verified), and records the id in the log.

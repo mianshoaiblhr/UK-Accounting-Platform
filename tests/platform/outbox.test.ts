@@ -14,7 +14,7 @@ beforeAll(async () => {
   db = new Database(process.env.DATABASE_URL!);
   org = uuidv7(); org2 = uuidv7();
   userId = adminSql(`INSERT INTO "user"(email, display_name) VALUES ('ob-${org}@t.test','O') RETURNING id`).split('\n')[0]!;
-  adminSql(`INSERT INTO organisation(id,type,name) VALUES ('${org}','PRACTICE','Outbox Org'),('${org2}','PRACTICE','Other Org')`);
+  adminSql(`INSERT INTO organisation(id,type,name) VALUES ('${org}','BUSINESS','Outbox Org'),('${org2}','BUSINESS','Other Org')`);
   adminSql(`UPDATE outbox_event SET status='PUBLISHED' WHERE status='PENDING'`); // isolate from other files
 });
 afterAll(() => db.close());

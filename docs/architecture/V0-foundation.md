@@ -34,13 +34,15 @@ AWS SDK v3 (S3, SES) · Terraform. Turborepo was dropped: `pnpm -r` topological 
 ## 4. Database baseline
 Migrations only (Prisma migrate; hand-written SQL appended for RLS/grants/triggers/constraints).
 Tables — **global**: `user`, `user_identity`, `session`, `auth_token`, `mfa_factor`, `mfa_recovery_code`,
-`auth_challenge`. **Tenant** (`organisation_id`, RLS): `organisation`, `role`, `membership`,
-`company_assignment`, `invitation`, `company`, `accounting_period`, `document`, `document_version`,
+`auth_challenge`. **Tenant** (`organisation_id`, RLS): `organisation`, `role`, `organisation_membership`, `practice`, `practice_membership`,
+`company_membership`, `invitation`, `company`, `accounting_period`, `document`, `document_version`,
 `audit_event`, `job_record`, `idempotency_record`. UUID PKs, timestamptz, snake_case.
 Composite FKs `(organisation_id, id)` make cross-tenant references structurally impossible.
 `accounting_period` has a no-overlap exclusion constraint per company. Document versions are immutable
 (trigger). Audit is append-only (grants + trigger).
 DB roles: `uk_migrator` (owner; runs migrations), `uk_app` (runtime; RLS enforced, no BYPASSRLS, no DDL).
+
+> **Superseded in part (D1/D5/D6, see `v0-hierarchy-and-authorisation-design.md`):** the model below gained a distinct `practice` level, practice/company-level roles and renamed membership tables. Sections 4, 5 and 7 describe the original V0; the design document and ADR-22..27 are authoritative.
 
 ## 5. Multi-tenancy model (Practice-first)
 `Organisation (PRACTICE | BUSINESS) → Memberships → Users`; `Organisation → Companies → Accounting Periods`.

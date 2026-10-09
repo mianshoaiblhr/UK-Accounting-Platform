@@ -31,7 +31,7 @@ export function registerAi(rt: JobRuntime, deps: { db: Database; gateway: AiGate
     if (!organisationId) throw new UnrecoverableError('ai.suggest requires an organisation');
     return permanentOn4xx(() => deps.db.tenant({ organisationId, userId: userId ?? undefined }, async (tx) => {
       const run = await deps.gateway.complete(tx, { organisationId, userId, purpose: payload.purpose }, { prompt: payload.input });
-      const proposal = await deps.proposals.create(tx, { organisationId, companyId: payload.companyId, requestedByUserId: userId, kind: payload.purpose, aiRunId: run.runId, payload: { summary: run.text } });
+      const proposal = await deps.proposals.create(tx, { organisationId, companyId: payload.companyId, requestedByUserId: userId, kind: payload.purpose, aiRunId: run.runId, provider: run.provider, model: run.model, payload: { summary: run.text } });
       return { proposalId: proposal.id, aiRunId: run.runId };
     }));
   });

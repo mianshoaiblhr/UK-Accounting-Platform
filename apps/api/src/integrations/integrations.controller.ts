@@ -8,7 +8,7 @@ import type { IntegrationService } from '@uk/platform';
 import { AuditService } from '../audit/audit.service';
 import { Idempotent, Org, RequirePermissions } from '../common/decorators';
 import { DB, INTEGRATIONS, JOBS } from '../common/tokens';
-import { canAccessCompany, type OrgAccess } from '../common/types';
+import type { OrgAccess } from '../common/types';
 import { ZodPipe } from '../common/zod.pipe';
 
 const executeSchema = z.object({ operation: z.string().max(100), params: z.record(z.unknown()).default({}) }).strict();
@@ -26,7 +26,7 @@ export class IntegrationsController {
 
   @Post('connections') @RequirePermissions('integration:manage') @Idempotent()
   async create(@Org() org: OrgAccess, @Body(new ZodPipe(createConnectionSchema)) b: z.output<typeof createConnectionSchema>) {
-    if (b.companyId && !canAccessCompany(org, b.companyId)) throw notFound('Company not found');
+    if (b.companyId) await org.access.requireCompany('company:update', b.companyId); // a company-bound connection needs control of that company
     return this.db.tenant(this.ctx(org), async (tx) => {
       const c = await this.svc.create(tx, { organisationId: org.organisationId, userId: org.userId, provider: b.provider, displayName: b.displayName, companyId: b.companyId, credentials: b.credentials });
       await this.audit.record({ action: 'integration.connected', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'integration_connection', entityId: c.id, metadata: { provider: b.provider } }, tx);

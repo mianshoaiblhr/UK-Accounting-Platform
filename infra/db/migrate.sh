@@ -25,7 +25,12 @@ if [ -n "$PENDING" ]; then
   for m in $PENDING; do
     if grep -qiE '^--[[:space:]]*destructive-approved:' "prisma/migrations/$m/migration.sql"; then DESTRUCTIVE="$DESTRUCTIVE $m"; fi
   done
-  if [ -n "$DESTRUCTIVE" ]; then
+  FIRST=$(ls prisma/migrations | grep -E '^[0-9]{14}_' | sort | head -1)
+  if [ -n "$DESTRUCTIVE" ] && echo "$PENDING" | grep -qx "$FIRST"; then
+    # The very first migration is pending, so nothing has ever been applied: this is a brand-new, empty database
+    # (Prisma refuses to run against a non-empty database without a baseline). There is no data to protect.
+    echo "fresh database detected (no migration applied yet): no backup required for:$DESTRUCTIVE"
+  elif [ -n "$DESTRUCTIVE" ]; then
     echo "!! destructive-approved migrations pending:$DESTRUCTIVE"
     : "${BACKUP_SNAPSHOT_ID:?A verified backup/snapshot id (BACKUP_SNAPSHOT_ID) is required before destructive migrations}"
     echo "backup recorded: $BACKUP_SNAPSHOT_ID"

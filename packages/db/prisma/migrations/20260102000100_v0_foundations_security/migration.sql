@@ -63,6 +63,10 @@ CREATE POLICY notification_update ON notification FOR UPDATE USING (organisation
   WITH CHECK (organisation_id = app_org() AND user_id = app_user());
 
 -- ───────── New permissions for the system roles (additive; applied migrations are never edited) ─────────
+-- NOTE: FORCE ROW LEVEL SECURITY applies to the table OWNER, so a non-superuser migrator (uk_migrator in production) would be
+-- blocked from (or silently skip) the data statements below. RLS is lifted for this one table for the rest of the
+-- migration transaction only and re-applied at the end. (Found in the V0 specification review; no persistent database had applied this file.)
+ALTER TABLE "role" NO FORCE ROW LEVEL SECURITY;
 UPDATE "role" SET permissions = permissions || ARRAY['task:read','task:manage','workflow:read','workflow:manage','integration:read','integration:manage','ai:use','ai:approve']
   WHERE organisation_id IS NULL AND key IN ('owner','admin');
 UPDATE "role" SET permissions = permissions || ARRAY['task:read','task:manage','workflow:read','workflow:manage','ai:use','ai:approve']
@@ -71,3 +75,4 @@ UPDATE "role" SET permissions = permissions || ARRAY['task:read','task:manage','
   WHERE organisation_id IS NULL AND key = 'bookkeeper';
 UPDATE "role" SET permissions = permissions || ARRAY['task:read','workflow:read']
   WHERE organisation_id IS NULL AND key = 'reviewer';
+ALTER TABLE "role" FORCE ROW LEVEL SECURITY;

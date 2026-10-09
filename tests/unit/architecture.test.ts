@@ -18,6 +18,28 @@ const rel = (f: string) => relative(ROOT, f);
 const read = (f: string) => readFileSync(f, 'utf8');
 const camel = (t: string) => t.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
 
+describe('authorisation is central, not re-implemented per controller (D6)', () => {
+  const CENTRAL = ['apps/api/src/common/access.ts', 'apps/api/src/common/org.guard.ts', 'apps/api/src/common/types.ts', 'packages/contracts/src/authz.ts', 'packages/contracts/src/permissions.ts'];
+  it('company/practice-level decisions never read raw role or scope data outside the central authoriser', () => {
+    const offenders: string[] = [];
+    const RAW = /org\.permissions\b|assignedCompanyIds|\bcompanyScope\s*===|canAccessCompany|\.orgRole\b|\.companyGrants\b|\.practiceGrants\b|\.reach\b/;
+    for (const f of SRC.filter((x) => x.includes('apps/api/src') && !CENTRAL.includes(rel(x)))) {
+      // the organisation service legitimately reads the CALLER's organisation role for role administration (ORG scope) - listed explicitly
+      if (rel(f) === 'apps/api/src/organisations/organisations.service.ts' || rel(f) === 'apps/api/src/organisations/organisations.controller.ts') continue;
+      if (RAW.test(read(f))) offenders.push(rel(f));
+    }
+    expect(offenders, 'ask org.access (AccessContext) instead of inspecting roles/scopes yourself').toEqual([]);
+  });
+  it('no service carries its own copy of the "visible companies" filter', () => {
+    const offenders = SRC.filter((f) => /apps\/api\/src/.test(f) && /companyId: \{ in: \[\.\.\./.test(read(f))).map(rel);
+    expect(offenders).toEqual([]);
+  });
+  it('the pure authorisation module has no I/O dependencies', () => {
+    const src = read(join(ROOT, 'packages/contracts/src/authz.ts'));
+    expect([...src.matchAll(/from '([^']+)'/g)].map((m) => m[1])).toEqual(['./permissions']);
+  });
+});
+
 describe('tenant isolation is structural, not conventional', () => {
   it('no code reads or writes tenant tables through the raw (context-free) Prisma client', () => {
     const models = new Set(TENANT_TABLES.map(camel));

@@ -35,6 +35,17 @@ enum CompanyScope {
   ASSIGNED
 }
 
+enum PlatformRole {
+  NONE
+  SUPPORT
+  ADMIN
+}
+
+enum PracticeStatus {
+  ACTIVE
+  ARCHIVED
+}
+
 enum AuthTokenPurpose {
   EMAIL_VERIFICATION
   PASSWORD_RESET
@@ -126,8 +137,9 @@ enum AiRunStatus {
 }
 
 enum AiProposalStatus {
-  PENDING_REVIEW
-  APPROVED
+  SUGGESTED
+  UNDER_REVIEW
+  ACCEPTED
   REJECTED
 }
 
@@ -139,6 +151,8 @@ model User {
   passwordHash      String?    @map("password_hash")
   emailVerifiedAt   DateTime?  @map("email_verified_at") @db.Timestamptz(3)
   status            UserStatus @default(ACTIVE)
+  /// Platform-level role. Confers NO tenant data access (see authz.ts).
+  platformRole      PlatformRole @default(NONE) @map("platform_role")
   failedLoginCount  Int        @default(0) @map("failed_login_count")
   lockedUntil       DateTime?  @map("locked_until") @db.Timestamptz(3)
   lockoutLevel      Int        @default(0) @map("lockout_level")
@@ -153,7 +167,7 @@ model User {
   mfaFactors    MfaFactor[]
   recoveryCodes MfaRecoveryCode[]
   challenges    AuthChallenge[]
-  memberships   Membership[]
+  memberships   OrganisationMembership[]
 
   @@map("user")
 }
@@ -258,7 +272,8 @@ model Organisation {
   updatedAt DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   roles       Role[]
-  memberships Membership[]
+  memberships OrganisationMembership[]
+  practices   Practice[]
   companies   Company[]
 
   @@map("organisation")
@@ -276,45 +291,90 @@ model Role {
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   organisation Organisation? @relation(fields: [organisationId], references: [id], onDelete: Cascade)
-  memberships  Membership[]
+  memberships  OrganisationMembership[]
+  practiceMemberships PracticeMembership[]
+  companyMemberships  CompanyMembership[]
 
   @@unique([organisationId, key])
   @@map("role")
 }
 
-model Membership {
+/// A user's membership of an organisation (tenant). The gate for all access; carries the organisation-level role and reach.
+model OrganisationMembership {
   id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   organisationId String           @map("organisation_id") @db.Uuid
   userId         String           @map("user_id") @db.Uuid
   roleId         String           @map("role_id") @db.Uuid
   status         MembershipStatus @default(ACTIVE)
+  /// Reach: ALL = organisation-wide default access; ASSIGNED = only practices/companies granted explicitly.
   companyScope   CompanyScope     @default(ALL) @map("company_scope")
   createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt      DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  organisation Organisation        @relation(fields: [organisationId], references: [id], onDelete: Cascade)
-  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role         Role                @relation(fields: [roleId], references: [id])
-  assignments  CompanyAssignment[]
+  organisation        Organisation         @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role                Role                 @relation(fields: [roleId], references: [id])
+  practiceMemberships PracticeMembership[]
+  companyMemberships  CompanyMembership[]
 
   @@unique([organisationId, userId])
   @@unique([organisationId, id])
   @@index([userId])
-  @@map("membership")
+  @@map("organisation_membership")
 }
 
-model CompanyAssignment {
+/// An accountancy practice inside a PRACTICE organisation. Direct (BUSINESS) organisations have none.
+model Practice {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String         @map("organisation_id") @db.Uuid
+  name           String
+  status         PracticeStatus @default(ACTIVE)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organisation Organisation          @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  companies    Company[]
+  members      PracticeMembership[]
+
+  @@unique([organisationId, id])
+  @@unique([organisationId, name])
+  @@map("practice")
+}
+
+/// Practice-level role: PRACTICE permissions on this practice, and the default role on its companies.
+model PracticeMembership {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  practiceId     String   @map("practice_id") @db.Uuid
+  membershipId   String   @map("membership_id") @db.Uuid
+  roleId         String   @map("role_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  practice   Practice               @relation(fields: [organisationId, practiceId], references: [organisationId, id], onDelete: Cascade)
+  membership OrganisationMembership @relation(fields: [organisationId, membershipId], references: [organisationId, id], onDelete: Cascade)
+  role       Role                   @relation(fields: [roleId], references: [id])
+
+  @@unique([practiceId, membershipId])
+  @@index([membershipId])
+  @@map("practice_membership")
+}
+
+/// Company-level role (most specific grant; replaces broader grants for this company). Formerly company_assignment.
+model CompanyMembership {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   organisationId String   @map("organisation_id") @db.Uuid
   membershipId   String   @map("membership_id") @db.Uuid
   companyId      String   @map("company_id") @db.Uuid
+  roleId         String   @map("role_id") @db.Uuid
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  membership Membership @relation(fields: [organisationId, membershipId], references: [organisationId, id], onDelete: Cascade)
-  company    Company    @relation(fields: [organisationId, companyId], references: [organisationId, id], onDelete: Cascade)
+  membership OrganisationMembership @relation(fields: [organisationId, membershipId], references: [organisationId, id], onDelete: Cascade)
+  company    Company                @relation(fields: [organisationId, companyId], references: [organisationId, id], onDelete: Cascade)
+  role       Role                   @relation(fields: [roleId], references: [id])
 
   @@unique([membershipId, companyId])
-  @@map("company_assignment")
+  @@index([companyId])
+  @@map("company_membership")
 }
 
 model Invitation {
@@ -341,17 +401,21 @@ model Company {
   name           String
   /// Registered number held as plain data only; no Companies House integration in V0.
   companyNumber  String?       @map("company_number")
+  /// Managing practice (explicit relationship). Required for PRACTICE organisations, forbidden for BUSINESS (trigger).
+  practiceId     String?       @map("practice_id") @db.Uuid
   legalForm      String        @default("LTD") @map("legal_form")
   status         CompanyStatus @default(ACTIVE)
   createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   organisation Organisation        @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  practice     Practice?           @relation(fields: [organisationId, practiceId], references: [organisationId, id])
   periods      AccountingPeriod[]
-  assignments  CompanyAssignment[]
+  memberships  CompanyMembership[]
 
   @@unique([organisationId, id])
   @@index([organisationId])
+  @@index([organisationId, practiceId])
   @@map("company")
 }
 
@@ -541,6 +605,9 @@ model WorkflowInstance {
   /// Optimistic concurrency token.
   version           Int       @default(1)
   startedByUserId   String    @map("started_by_user_id") @db.Uuid
+  assigneeUserId    String?   @map("assignee_user_id") @db.Uuid
+  /// Increments each time a rejected instance is reopened (retry).
+  attempt           Int       @default(1)
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   completedAt       DateTime? @map("completed_at") @db.Timestamptz(3)
@@ -563,6 +630,9 @@ model WorkflowTransition {
   action         String
   actorUserId    String?  @map("actor_user_id") @db.Uuid
   comment        String?
+  attempt        Int      @default(1)
+  /// Documents offered as evidence for this transition (validated to the same organisation/company).
+  evidenceDocumentIds String[] @default([]) @map("evidence_document_ids") @db.Uuid
   occurredAt     DateTime @default(now()) @map("occurred_at") @db.Timestamptz(3)
 
   instance WorkflowInstance @relation(fields: [organisationId, instanceId], references: [organisationId, id], onDelete: Cascade)
@@ -660,7 +730,19 @@ model AiProposal {
   aiRunId            String?          @map("ai_run_id") @db.Uuid
   kind               String
   payload            Json
-  status             AiProposalStatus @default(PENDING_REVIEW)
+  status             AiProposalStatus @default(SUGGESTED)
+  /// Provenance: which model/provider produced it, with what prompt, how confident, from which evidence.
+  provider           String?
+  model              String?
+  promptVersion      String?          @map("prompt_version")
+  confidence         Decimal?         @db.Decimal(5, 4)
+  sourceEvidence     Json             @default("[]") @map("source_evidence")
+  reviewStartedByUserId String?       @map("review_started_by_user_id") @db.Uuid
+  reviewStartedAt    DateTime?        @map("review_started_at") @db.Timestamptz(3)
+  /// Set only by the authorised application service that acted on an ACCEPTED proposal (never by AI).
+  appliedAt          DateTime?        @map("applied_at") @db.Timestamptz(3)
+  appliedByUserId    String?          @map("applied_by_user_id") @db.Uuid
+  appliedReference   String?          @map("applied_reference")
   workflowInstanceId String?          @map("workflow_instance_id") @db.Uuid
   requestedByUserId  String?          @map("requested_by_user_id") @db.Uuid
   decidedByUserId    String?          @map("decided_by_user_id") @db.Uuid

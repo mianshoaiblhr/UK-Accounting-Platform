@@ -74,7 +74,9 @@ export class AuthService {
     const ownerRole = await this.db.asUser(userId, (tx) => tx.role.findFirstOrThrow({ where: { organisationId: null, key: 'owner' } }));
     await this.db.tenant({ organisationId, userId }, async (tx) => {
       await tx.organisation.create({ data: { id: organisationId, type: input.organisationType, name: input.organisationName } });
-      const m = await tx.membership.create({ data: { organisationId, userId, roleId: ownerRole.id, companyScope: 'ALL' } });
+      const m = await tx.organisationMembership.create({ data: { organisationId, userId, roleId: ownerRole.id, companyScope: 'ALL' } });
+      // A practice organisation always has at least one practice (the managing unit of its client companies).
+      if (input.organisationType === 'PRACTICE') await tx.practice.create({ data: { organisationId, name: input.organisationName } });
       await this.audit.record({ action: 'organisation.created', organisationId, actorUserId: userId, entityType: 'organisation', entityId: organisationId, metadata: { type: input.organisationType, membershipId: m.id } }, tx);
       await publishEvent(tx, Events.userAddedToOrganisation, { aggregateId: m.id, organisationId, actorUserId: userId, payload: { membershipId: m.id, userId, roleKey: 'owner' } });
     });

@@ -15,7 +15,8 @@ export class OrganisationsController {
 
   @Get('organisations/:organisationId/me') @RequirePermissions('org:read')
   me(@Org() org: OrgAccess) {
-    return { organisationId: org.organisationId, role: org.roleKey, permissions: [...org.permissions], companyScope: org.companyScope, companyIds: org.assignedCompanyIds };
+    const s = org.access.snapshot;
+    return { organisationId: org.organisationId, organisationType: org.organisationType, role: org.roleKey, permissions: [...org.permissions], companyScope: org.companyScope, companyIds: org.assignedCompanyIds, practiceIds: [...s.practiceGrants.keys()] };
   }
 
   @Get('organisations/:organisationId/roles') @RequirePermissions('role:read')

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ALLOWED_UPLOAD_TYPES, Events, JobTypes } from '@uk/contracts';
+import { ALLOWED_UPLOAD_TYPES, Events, JobTypes, type Permission } from '@uk/contracts';
 import { publishEvent } from '@uk/platform';
 import { badRequest, conflict, notFound, unprocessable, uuidv7, type AppConfig } from '@uk/core';
 import type { StoragePort } from '@uk/adapters';
@@ -7,7 +7,7 @@ import type { Database, Tx } from '@uk/db';
 import type { JobProducer } from '@uk/jobs';
 import { AuditService } from '../audit/audit.service';
 import { CONFIG, DB, JOBS, STORAGE } from '../common/tokens';
-import { canAccessCompany, type OrgAccess } from '../common/types';
+import type { OrgAccess } from '../common/types';
 
 const PRESIGN_SECONDS = 300;
 
@@ -43,7 +43,7 @@ export class DocumentsService {
 
   async create(org: OrgAccess, input: { name: string; companyId?: string; contentType: string; sizeBytes: number; documentClass: string }) {
     this.validateFile(input.contentType, input.sizeBytes);
-    if (input.companyId && !canAccessCompany(org, input.companyId)) throw notFound('Company not found');
+    await org.access.requireResource('document:upload', input.companyId ?? null, 'Company not found');
     const documentId = uuidv7(), versionId = uuidv7();
     const storageKey = this.key(org.organisationId, documentId, 1, versionId);
     const out = await this.t(org, async (tx) => {
@@ -62,7 +62,7 @@ export class DocumentsService {
 
   async newVersion(org: OrgAccess, documentId: string, input: { contentType: string; sizeBytes: number }) {
     this.validateFile(input.contentType, input.sizeBytes);
-    const doc = await this.getDocument(org, documentId);
+    const doc = await this.getDocument(org, documentId, 'document:upload');
     if (doc.status === 'ARCHIVED') throw conflict('Document is archived', 'document_archived');
     const versionId = uuidv7();
     const version = await this.t(org, async (tx) => {
@@ -77,14 +77,16 @@ export class DocumentsService {
     return { version, upload: await this.uploadInstructions(org, documentId, version) };
   }
 
-  private async getDocument(org: OrgAccess, documentId: string) {
+  /** Loads a document the caller may act on with `perm` (permission is evaluated for the document's own company). */
+  private async getDocument(org: OrgAccess, documentId: string, perm: Permission) {
     const d = await this.t(org, (tx) => tx.document.findUnique({ where: { id: documentId } }));
-    if (!d || (d.companyId && !canAccessCompany(org, d.companyId))) throw notFound('Document not found');
+    if (!d) throw notFound('Document not found');
+    await org.access.requireResource(perm, d.companyId, 'Document not found');
     return d;
   }
 
-  private async getVersion(org: OrgAccess, documentId: string, versionId: string) {
-    await this.getDocument(org, documentId);
+  private async getVersion(org: OrgAccess, documentId: string, versionId: string, perm: Permission) {
+    await this.getDocument(org, documentId, perm);
     const v = await this.t(org, (tx) => tx.documentVersion.findFirst({ where: { id: versionId, documentId } }));
     if (!v) throw notFound('Document version not found');
     return v;
@@ -92,7 +94,7 @@ export class DocumentsService {
 
   /** Direct-through-API upload (local driver / small files). S3 deployments upload with the presigned URL. */
   async uploadContent(org: OrgAccess, documentId: string, versionId: string, body: Buffer) {
-    const v = await this.getVersion(org, documentId, versionId);
+    const v = await this.getVersion(org, documentId, versionId, 'document:upload');
     if (v.status !== 'PENDING_UPLOAD') throw conflict('Content was already uploaded for this version', 'already_uploaded');
     if (!Buffer.isBuffer(body) || body.length === 0) throw badRequest('Empty upload body', 'empty_body');
     if (body.length !== v.sizeBytes) throw unprocessable('Uploaded size does not match declared size', 'size_mismatch');
@@ -101,7 +103,7 @@ export class DocumentsService {
   }
 
   async complete(org: OrgAccess, documentId: string, versionId: string) {
-    const v = await this.getVersion(org, documentId, versionId);
+    const v = await this.getVersion(org, documentId, versionId, 'document:upload');
     if (v.status !== 'PENDING_UPLOAD' && v.status !== 'UPLOADED') return v; // idempotent
     const head = await this.storage.headObject(v.storageKey);
     if (!head) throw unprocessable('No uploaded content found for this version', 'upload_missing');
@@ -127,7 +129,7 @@ export class DocumentsService {
   }
 
   async list(org: OrgAccess, q: { limit: number; cursor?: string; companyId?: string }) {
-    const scoped = org.companyScope === 'ALL' ? {} : { OR: [{ companyId: null }, { companyId: { in: [...org.assignedCompanyIds] } }] };
+    const scoped = await org.access.companyWhere('document:read');
     const rows = await this.t(org, (tx) => tx.document.findMany({
       where: { ...scoped, ...(q.companyId ? { companyId: q.companyId } : {}) }, orderBy: { id: 'desc' }, take: q.limit + 1,
       include: { versions: { orderBy: { versionNo: 'desc' }, take: 1 } },
@@ -137,12 +139,12 @@ export class DocumentsService {
   }
 
   async get(org: OrgAccess, documentId: string) {
-    await this.getDocument(org, documentId);
+    await this.getDocument(org, documentId, 'document:read');
     return this.t(org, (tx) => tx.document.findUniqueOrThrow({ where: { id: documentId }, include: { versions: { orderBy: { versionNo: 'desc' } } } }));
   }
 
   async archive(org: OrgAccess, documentId: string) {
-    const d = await this.getDocument(org, documentId);
+    const d = await this.getDocument(org, documentId, 'document:archive');
     if (d.legalHold) throw conflict('Document is under legal hold', 'legal_hold');
     return this.t(org, async (tx) => {
       const r = await tx.document.update({ where: { id: documentId }, data: { status: 'ARCHIVED' } });
@@ -152,9 +154,9 @@ export class DocumentsService {
   }
 
   async downloadLink(org: OrgAccess, documentId: string, versionId: string) {
-    const v = await this.getVersion(org, documentId, versionId);
+    const v = await this.getVersion(org, documentId, versionId, 'document:read');
     if (v.status !== 'AVAILABLE') throw conflict(`Document version is ${v.status}; only AVAILABLE versions can be downloaded`, 'document_not_available');
-    const doc = await this.getDocument(org, documentId);
+    const doc = await this.getDocument(org, documentId, 'document:read');
     const url = (await this.storage.presignDownload(v.storageKey, doc.name, PRESIGN_SECONDS))
       ?? `/api/v1/organisations/${org.organisationId}/documents/${documentId}/versions/${versionId}/content`;
     await this.audit.record({ action: 'document.download_link_issued', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'document_version', entityId: versionId });
@@ -163,9 +165,9 @@ export class DocumentsService {
 
   /** Streams content through the API (local driver). Same authorization and AVAILABLE gate as presigned links. */
   async readContent(org: OrgAccess, documentId: string, versionId: string) {
-    const v = await this.getVersion(org, documentId, versionId);
+    const v = await this.getVersion(org, documentId, versionId, 'document:read');
     if (v.status !== 'AVAILABLE') throw conflict('Document version is not available', 'document_not_available');
-    const doc = await this.getDocument(org, documentId);
+    const doc = await this.getDocument(org, documentId, 'document:read');
     await this.audit.record({ action: 'document.downloaded', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'document_version', entityId: versionId });
     return { data: await this.storage.getObject(v.storageKey), contentType: v.contentType, filename: doc.name };
   }

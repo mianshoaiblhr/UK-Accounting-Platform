@@ -103,7 +103,7 @@ export class AuthController {
   @Get('me')
   async me(@Auth() a: AuthInfo) {
     const memberships = await this.db.asUser(a.userId, (tx) =>
-      tx.membership.findMany({
+      tx.organisationMembership.findMany({
         where: { userId: a.userId, status: 'ACTIVE' },
         include: { organisation: { select: { id: true, name: true, type: true } }, role: { select: { key: true, name: true } } },
       }));

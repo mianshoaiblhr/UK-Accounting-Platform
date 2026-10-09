@@ -1,11 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Events } from '@uk/contracts';
-import { conflict, notFound } from '@uk/core';
+import { companyPermissions } from '@uk/contracts';
+import { conflict, forbidden, notFound, unprocessable } from '@uk/core';
 import { publishEvent } from '@uk/platform';
 import { Prisma, type Database, type Tx } from '@uk/db';
 import { AuditService } from '../audit/audit.service';
 import { DB } from '../common/tokens';
-import { canAccessCompany, type OrgAccess } from '../common/types';
+import type { OrgAccess } from '../common/types';
 
 @Injectable()
 export class CompaniesService {
@@ -13,21 +14,41 @@ export class CompaniesService {
 
   private t<T>(org: OrgAccess, fn: (tx: Tx) => Promise<T>) { return this.db.tenant({ organisationId: org.organisationId, userId: org.userId }, fn); }
 
-  private scopeFilter(org: OrgAccess) {
-    return org.companyScope === 'ALL' ? {} : { id: { in: [...org.assignedCompanyIds] } };
+  /**
+   * The managing practice is an explicit relationship: required for PRACTICE organisations (defaulted when there is
+   * exactly one), forbidden for direct BUSINESS organisations (also enforced by a database trigger).
+   */
+  private async resolvePractice(org: OrgAccess, tx: Tx, requested?: string): Promise<string | null> {
+    if (org.organisationType === 'BUSINESS') {
+      if (requested) throw unprocessable('Direct business organisations do not have practices', 'practice_not_allowed');
+      if (!(await org.access.can('company:create'))) throw forbidden('You do not have permission to perform this action', 'permission_denied');
+      return null;
+    }
+    let practiceId = requested;
+    if (!practiceId) {
+      const all = await tx.practice.findMany({ where: { status: 'ACTIVE' }, select: { id: true }, take: 2 });
+      if (all.length !== 1) throw unprocessable('practiceId is required', 'practice_required');
+      practiceId = all[0]!.id;
+    }
+    if (!(await tx.practice.findUnique({ where: { id: practiceId }, select: { id: true } }))) throw notFound('Practice not found');
+    if (!(await org.access.can('company:create', { practiceId }))) throw forbidden('You do not have permission to create companies in this practice', 'permission_denied');
+    return practiceId;
   }
 
-  async create(org: OrgAccess, input: { name: string; companyNumber?: string; legalForm: string }) {
+  async create(org: OrgAccess, input: { name: string; companyNumber?: string; legalForm: string; practiceId?: string }) {
     try {
       return await this.t(org, async (tx) => {
+        const practiceId = await this.resolvePractice(org, tx, input.practiceId);
         const company = await tx.company.create({
-          data: { organisationId: org.organisationId, name: input.name, companyNumber: input.companyNumber?.toUpperCase(), legalForm: input.legalForm },
+          data: { organisationId: org.organisationId, practiceId, name: input.name, companyNumber: input.companyNumber?.toUpperCase(), legalForm: input.legalForm },
         });
-        if (org.companyScope === 'ASSIGNED') {
-          // Creators with assigned-only scope must be able to see what they create.
-          await tx.companyAssignment.create({ data: { organisationId: org.organisationId, membershipId: org.membershipId, companyId: company.id } });
+        // A creator must be able to see what they create: if no existing grant covers the new company, grant their own role on it.
+        const snap = org.access.snapshot;
+        if (!companyPermissions(snap, { id: company.id, practiceId }).has('company:read')) {
+          const roleId = (await tx.organisationMembership.findUniqueOrThrow({ where: { id: org.membershipId }, select: { roleId: true } })).roleId;
+          await tx.companyMembership.create({ data: { organisationId: org.organisationId, membershipId: org.membershipId, companyId: company.id, roleId } });
         }
-        await this.audit.record({ action: 'company.created', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'company', entityId: company.id, metadata: { name: company.name } }, tx);
+        await this.audit.record({ action: 'company.created', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'company', entityId: company.id, metadata: { name: company.name, practiceId } }, tx);
         await publishEvent(tx, Events.companyCreated, { aggregateId: company.id, organisationId: org.organisationId, actorUserId: org.userId, payload: { companyId: company.id, name: company.name } });
         return company;
       });
@@ -38,15 +59,16 @@ export class CompaniesService {
   }
 
   async list(org: OrgAccess, q: { limit: number; cursor?: string }) {
+    const scope = await org.access.companyTableWhere('company:read');
     const rows = await this.t(org, (tx) => tx.company.findMany({
-      where: { ...this.scopeFilter(org), status: 'ACTIVE' }, orderBy: { id: 'asc' }, take: q.limit + 1,
+      where: { ...scope, status: 'ACTIVE' }, orderBy: { id: 'asc' }, take: q.limit + 1,
       ...(q.cursor ? { cursor: { id: q.cursor }, skip: 1 } : {}),
     }));
     return { items: rows.slice(0, q.limit), nextCursor: rows.length > q.limit ? rows[q.limit - 1]!.id : null };
   }
 
   async get(org: OrgAccess, companyId: string) {
-    if (!canAccessCompany(org, companyId)) throw notFound('Company not found');
+    await org.access.requireCompany('company:read', companyId);
     const c = await this.t(org, (tx) => tx.company.findUnique({ where: { id: companyId } }));
     if (!c) throw notFound('Company not found');
     return c;

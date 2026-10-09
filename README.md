@@ -6,7 +6,7 @@ Practice-first platform for UK accountancy practices (many client companies) and
 
 | Area | V0 delivers |
 |---|---|
-| Tenancy | Organisation (PRACTICE/BUSINESS) → memberships → companies → accounting periods; PostgreSQL RLS (fail-closed) |
+| Tenancy | Organisation (PRACTICE/BUSINESS) → Practice (practice organisations) → Company → Accounting period; organisation / practice / company-level roles; PostgreSQL RLS (fail-closed) |
 | Auth | Email/password (argon2id), email verification, password reset, sessions, lockout + Redis rate limits, TOTP MFA + recovery codes, login audit trail, `IdentityProvider` seam for Entra/Google/Auth0 |
 | RBAC | Permission catalogue, system + custom roles, per-company (assigned-scope) access, anti-escalation rules |
 | Jobs | BullMQ queues for every planned workload, retries/exponential backoff, DLQ, status/progress, idempotency, correlation IDs, sweeper |

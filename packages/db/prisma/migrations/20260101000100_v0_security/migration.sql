@@ -132,6 +132,10 @@ CREATE POLICY audit_select ON audit_event FOR SELECT USING (
 CREATE POLICY audit_insert ON audit_event FOR INSERT WITH CHECK (organisation_id IS NULL OR organisation_id = app_org());
 
 -- ───────── Seed: system roles (kept in sync with @uk/contracts SYSTEM_ROLES by a test) ─────────
+-- NOTE: FORCE ROW LEVEL SECURITY applies to the table OWNER, so a non-superuser migrator (uk_migrator in production) would be
+-- blocked from (or silently skip) the data statements below. RLS is lifted for this one table for the rest of the
+-- migration transaction only and re-applied at the end. (Found in the V0 specification review; no persistent database had applied this file.)
+ALTER TABLE "role" NO FORCE ROW LEVEL SECURITY;
 INSERT INTO "role" (id, organisation_id, key, name, description, permissions, is_system) VALUES
 ('00000000-0000-4000-8000-0000000000a1', NULL, 'owner', 'Owner', 'Full control including organisation settings', ARRAY['org:read','org:manage','member:read','member:invite','member:manage','role:read','role:manage','company:read','company:create','company:update','period:read','period:manage','document:read','document:upload','document:archive','audit:read','job:read','job:manage']::text[], true),
 ('00000000-0000-4000-8000-0000000000a2', NULL, 'admin', 'Administrator', 'Manage people, companies and documents', ARRAY['org:read','member:read','member:invite','member:manage','role:read','role:manage','company:read','company:create','company:update','period:read','period:manage','document:read','document:upload','document:archive','audit:read','job:read','job:manage']::text[], true),
@@ -139,3 +143,4 @@ INSERT INTO "role" (id, organisation_id, key, name, description, permissions, is
 ('00000000-0000-4000-8000-0000000000a4', NULL, 'bookkeeper', 'Bookkeeper', 'Prepare records for assigned companies', ARRAY['org:read','member:read','role:read','company:read','period:read','document:read','document:upload','job:read']::text[], true),
 ('00000000-0000-4000-8000-0000000000a5', NULL, 'reviewer', 'Reviewer', 'Read-only review and audit access', ARRAY['org:read','member:read','role:read','company:read','period:read','document:read','audit:read','job:read']::text[], true),
 ('00000000-0000-4000-8000-0000000000a6', NULL, 'client_viewer', 'Client Viewer', 'Client read-only access to own company', ARRAY['org:read','company:read','period:read','document:read']::text[], true);
+ALTER TABLE "role" FORCE ROW LEVEL SECURITY;

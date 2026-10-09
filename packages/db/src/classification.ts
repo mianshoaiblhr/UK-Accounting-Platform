@@ -22,8 +22,10 @@ export const TABLE_PROTECTION: Record<string, { protection: Protection; why: str
   // ── Tenant data: RLS + application authorisation ──
   organisation: { protection: 'RLS+APP', why: 'Tenant root; visible to active members only.' },
   role: { protection: 'RLS+APP', why: 'System roles readable by all; custom roles per tenant.' },
-  membership: { protection: 'RLS+APP', why: 'A user sees own memberships everywhere; only the org context can change them.' },
-  company_assignment: { protection: 'RLS+APP', why: 'Practice staff company scope.' },
+  organisation_membership: { protection: 'RLS+APP', why: 'A user sees own memberships everywhere; only the org context can change them.' },
+  practice: { protection: 'RLS+APP', why: 'Practice inside a PRACTICE organisation; access via practice:* permissions.' },
+  practice_membership: { protection: 'RLS+APP', why: 'Practice-level role grants.' },
+  company_membership: { protection: 'RLS+APP', why: 'Company-level role grants (most specific grant).' },
   invitation: { protection: 'RLS+APP', why: 'Token lookup uses the audited system context.' },
   company: { protection: 'RLS+APP', why: 'Client company; company-scope enforced in services.' },
   accounting_period: { protection: 'RLS+APP', why: 'Company child; composite FK to company.' },

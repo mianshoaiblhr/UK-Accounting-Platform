@@ -5,7 +5,8 @@ import type { Database, Task, Tx } from '@uk/db';
 import { publishEvent } from '@uk/platform';
 import { AuditService } from '../audit/audit.service';
 import { DB } from '../common/tokens';
-import { canAccessCompany, type OrgAccess } from '../common/types';
+import { loadAccess } from '../common/access';
+import type { OrgAccess } from '../common/types';
 
 interface CreateInput { title: string; description: string; companyId?: string; assigneeUserId?: string; priority: 'LOW' | 'NORMAL' | 'HIGH'; dueDate?: string }
 interface UpdateInput { title?: string; description?: string; status?: 'OPEN' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED'; priority?: 'LOW' | 'NORMAL' | 'HIGH'; dueDate?: string | null; assigneeUserId?: string | null }
@@ -16,15 +17,11 @@ export class TasksService {
 
   private t<T>(org: OrgAccess, fn: (tx: Tx) => Promise<T>) { return this.db.tenant({ organisationId: org.organisationId, userId: org.userId }, fn); }
 
-  private visible(org: OrgAccess) {
-    return org.companyScope === 'ALL' ? {} : { OR: [{ companyId: null }, { companyId: { in: [...org.assignedCompanyIds] } }] };
-  }
-
-  /** The assignee must be an active member who is allowed to see the task's company. */
-  private async assertAssignable(tx: Tx, userId: string, companyId: string | null) {
-    const m = await tx.membership.findFirst({ where: { userId, status: 'ACTIVE' }, include: { assignments: { select: { companyId: true } } } });
-    if (!m) throw unprocessable('Assignee is not an active member of this organisation', 'invalid_assignee');
-    if (companyId && m.companyScope === 'ASSIGNED' && !m.assignments.some((a) => a.companyId === companyId)) {
+  /** The assignee must be an active member who can read the task's company (evaluated by the central rules). */
+  private async assertAssignable(org: OrgAccess, userId: string, companyId: string | null) {
+    const target = await loadAccess(this.db, org.organisationId, userId);
+    if (!target) throw unprocessable('Assignee is not an active member of this organisation', 'invalid_assignee');
+    if (!(await target.access.can('task:read', { companyId }))) {
       throw unprocessable('Assignee does not have access to this company', 'invalid_assignee');
     }
   }
@@ -36,10 +33,10 @@ export class TasksService {
   }
 
   async create(org: OrgAccess, input: CreateInput) {
-    if (input.companyId && !canAccessCompany(org, input.companyId)) throw notFound('Company not found');
+    await org.access.requireResource('task:manage', input.companyId ?? null, 'Company not found');
     return this.t(org, async (tx) => {
       if (input.companyId && !(await tx.company.findUnique({ where: { id: input.companyId } }))) throw notFound('Company not found');
-      if (input.assigneeUserId) await this.assertAssignable(tx, input.assigneeUserId, input.companyId ?? null);
+      if (input.assigneeUserId) await this.assertAssignable(org, input.assigneeUserId, input.companyId ?? null);
       const task = await tx.task.create({ data: {
         organisationId: org.organisationId, companyId: input.companyId, title: input.title, description: input.description, priority: input.priority,
         dueDate: input.dueDate ? new Date(input.dueDate) : undefined, assigneeUserId: input.assigneeUserId, createdByUserId: org.userId } });
@@ -50,24 +47,27 @@ export class TasksService {
   }
 
   async list(org: OrgAccess, q: { limit: number; cursor?: string; status?: string; assignee: 'me' | 'any' }) {
+    const visible = await org.access.companyWhere('task:read');
     const rows = await this.t(org, (tx) => tx.task.findMany({
-      where: { ...this.visible(org), ...(q.status ? { status: q.status as never } : {}), ...(q.assignee === 'me' ? { assigneeUserId: org.userId } : {}) },
+      where: { ...visible, ...(q.status ? { status: q.status as never } : {}), ...(q.assignee === 'me' ? { assigneeUserId: org.userId } : {}) },
       orderBy: { id: 'desc' }, take: q.limit + 1, ...(q.cursor ? { cursor: { id: q.cursor }, skip: 1 } : {}),
     }));
     return { items: rows.slice(0, q.limit), nextCursor: rows.length > q.limit ? rows[q.limit - 1]!.id : null };
   }
 
   async get(org: OrgAccess, id: string) {
-    const task = await this.t(org, (tx) => tx.task.findFirst({ where: { id, ...this.visible(org) } }));
+    const task = await this.t(org, (tx) => tx.task.findUnique({ where: { id } }));
+    if (task) await org.access.requireResource('task:read', task.companyId, 'Task not found');
     if (!task) throw notFound('Task not found');
     return task;
   }
 
   async update(org: OrgAccess, id: string, input: UpdateInput) {
-    await this.get(org, id);
+    const existing = await this.get(org, id);
+    await org.access.requireResource('task:manage', existing.companyId, 'Task not found');
+    if (input.assigneeUserId) await this.assertAssignable(org, input.assigneeUserId, existing.companyId);
     return this.t(org, async (tx) => {
       const before = await tx.task.findUniqueOrThrow({ where: { id } });
-      if (input.assigneeUserId) await this.assertAssignable(tx, input.assigneeUserId, before.companyId);
       const task = await tx.task.update({ where: { id }, data: {
         title: input.title, description: input.description, priority: input.priority, status: input.status,
         dueDate: input.dueDate === undefined ? undefined : input.dueDate === null ? null : new Date(input.dueDate),

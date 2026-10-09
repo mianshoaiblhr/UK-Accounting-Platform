@@ -41,7 +41,7 @@ describe('regression: V0 foundation contract', () => {
     expect(PERMISSIONS.length).toBeGreaterThanOrEqual(18);
     expect(QUEUES).toEqual(expect.arrayContaining(['documents', 'imports', 'exports', 'ai', 'reconciliation', 'notifications', 'reports', 'integrations', 'scheduled']));
     const tables = adminSql(`SELECT string_agg(table_name, ',' ORDER BY table_name) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'`).split(',');
-    for (const t of ['user', 'session', 'organisation', 'membership', 'role', 'company', 'accounting_period', 'document', 'document_version', 'audit_event', 'job_record']) expect(tables).toContain(t);
+    for (const t of ['user', 'session', 'organisation', 'organisation_membership', 'practice', 'practice_membership', 'company_membership', 'role', 'company', 'accounting_period', 'document', 'document_version', 'audit_event', 'job_record']) expect(tables).toContain(t);
   });
 
   it('regression: V0 boundary — no ledger / bookkeeping / tax / filing tables or routes exist', async () => {

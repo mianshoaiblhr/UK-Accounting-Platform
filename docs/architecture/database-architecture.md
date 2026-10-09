@@ -13,8 +13,8 @@ UUID keys; `timestamptz`; snake_case; every tenant table has `organisation_id` a
 
 ## Tables (see security-architecture.md for protection per table)
 - **Identity (global):** user, user_identity, session, auth_token, mfa_factor, mfa_recovery_code, auth_challenge, login_trusted_ip
-- **Tenancy:** organisation (PRACTICE|BUSINESS) → membership → role / company_assignment; invitation
-- **Practice model:** company → accounting_period (no-overlap exclusion constraint)
+- **Tenancy & ownership** (ADR-22/23): `organisation` (PRACTICE|BUSINESS, immutable type; tenant + billing owner) → `practice` (PRACTICE organisations only) → `company` (`organisation_id` = owner, `practice_id` = managing practice, trigger-enforced); access grants at three levels: `organisation_membership` (role + reach ALL|ASSIGNED), `practice_membership` (role), `company_membership` (role); `role` (system or per-organisation); `invitation`. Composite FKs `(organisation_id, id)` make cross-organisation links impossible.
+- **Period model:** company → accounting_period (no-overlap exclusion constraint)
 - **Documents:** document → document_version (immutable trigger, SHA-256, scan status)
 - **Audit:** audit_event (append-only)
 - **Async platform:** job_record (+BullMQ), outbox_event, event_consumption, idempotency_record

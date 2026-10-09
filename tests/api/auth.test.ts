@@ -61,7 +61,7 @@ describe('registration & email verification', () => {
     expect(r.status).toBe(fresh.status);
     expect(r.body).toEqual(fresh.body);
     expect((await s.mail.waitFor(u.email, /already have an account/)).subject).toBeTruthy();
-    expect(adminSql(`SELECT count(*) FROM membership m JOIN "user" x ON x.id=m.user_id WHERE x.email='${u.email}'`)).toBe('1');
+    expect(adminSql(`SELECT count(*) FROM organisation_membership m JOIN "user" x ON x.id=m.user_id WHERE x.email='${u.email}'`)).toBe('1');
   });
 });
 

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Events, JobTypes, isPermission, PERMISSIONS, type Permission } from '@uk/contracts';
+import { Events, JobTypes, canGrantRole, isPermission, PERMISSIONS, type Permission } from '@uk/contracts';
 import { publishEvent } from '@uk/platform';
 import { badRequest, conflict, forbidden, generateToken, notFound, sha256Hex, unprocessable, type AppConfig } from '@uk/core';
 import type { Database, Tx } from '@uk/db';
@@ -47,19 +47,29 @@ export class OrganisationsService {
   // ───────────── Members ─────────────
   listMembers(org: OrgAccess) {
     return this.t(org, async (tx) => {
-      const rows = await tx.membership.findMany({
+      const rows = await tx.organisationMembership.findMany({
         where: { status: { not: 'REMOVED' } }, orderBy: { createdAt: 'asc' },
-        include: { user: { select: { id: true, email: true, displayName: true } }, role: { select: { id: true, key: true, name: true } }, assignments: { select: { companyId: true } } },
+        include: {
+          user: { select: { id: true, email: true, displayName: true } }, role: { select: { id: true, key: true, name: true } },
+          companyMemberships: { select: { companyId: true, role: { select: { id: true, key: true } } } },
+          practiceMemberships: { select: { practiceId: true, role: { select: { id: true, key: true } } } },
+        },
       });
-      return rows.map((m) => ({ id: m.id, user: m.user, role: m.role, status: m.status, companyScope: m.companyScope, companyIds: m.assignments.map((a) => a.companyId) }));
+      return rows.map((m) => ({
+        id: m.id, user: m.user, role: m.role, status: m.status, companyScope: m.companyScope,
+        companyIds: m.companyMemberships.map((a) => a.companyId),
+        companyGrants: m.companyMemberships.map((a) => ({ companyId: a.companyId, role: a.role })),
+        practiceGrants: m.practiceMemberships.map((a) => ({ practiceId: a.practiceId, role: a.role })),
+      }));
     });
   }
 
   private async assertRoleUsable(tx: Tx, org: OrgAccess, roleId: string) {
     const role = await tx.role.findUnique({ where: { id: roleId } }); // RLS: system roles + this org's roles only
     if (!role) throw unprocessable('Unknown role', 'unknown_role');
-    const unmet = role.permissions.filter(isPermission).filter((p) => !org.permissions.has(p));
-    if (unmet.length) throw forbidden('Cannot assign a role with permissions you do not hold', 'privilege_escalation');
+    if (!canGrantRole(org.access.snapshot, new Set(role.permissions.filter(isPermission)), { type: 'ORG' })) {
+      throw forbidden('Cannot assign a role with permissions you do not hold', 'privilege_escalation');
+    }
     return role;
   }
 
@@ -70,15 +80,15 @@ export class OrganisationsService {
   }
 
   private async assertNotLastOwner(tx: Tx, membershipId: string) {
-    const target = await tx.membership.findUnique({ where: { id: membershipId }, include: { role: true } });
+    const target = await tx.organisationMembership.findUnique({ where: { id: membershipId }, include: { role: true } });
     if (target?.role.key !== 'owner' || target.status !== 'ACTIVE') return;
-    const owners = await tx.membership.count({ where: { status: 'ACTIVE', role: { key: 'owner' } } });
+    const owners = await tx.organisationMembership.count({ where: { status: 'ACTIVE', role: { key: 'owner' } } });
     if (owners <= 1) throw conflict('An organisation must keep at least one active owner', 'last_owner');
   }
 
   async updateMember(org: OrgAccess, membershipId: string, input: UpdateMemberInput) {
     return this.t(org, async (tx) => {
-      const m = await tx.membership.findUnique({ where: { id: membershipId } });
+      const m = await tx.organisationMembership.findUnique({ where: { id: membershipId } });
       if (!m || m.status === 'REMOVED') throw notFound('Member not found');
       if (input.roleId) {
         await this.assertRoleUsable(tx, org, input.roleId);
@@ -87,12 +97,29 @@ export class OrganisationsService {
       if (input.status === 'SUSPENDED') await this.assertNotLastOwner(tx, membershipId);
       if (input.companyIds) await this.assertCompanies(tx, input.companyIds);
       const scope = input.companyScope ?? m.companyScope;
-      await tx.membership.update({ where: { id: membershipId }, data: { roleId: input.roleId, status: input.status, companyScope: scope } });
-      if (input.companyIds || input.companyScope === 'ALL') {
-        await tx.companyAssignment.deleteMany({ where: { membershipId } });
-        if (scope === 'ASSIGNED' && input.companyIds?.length) {
-          await tx.companyAssignment.createMany({ data: input.companyIds.map((companyId) => ({ organisationId: org.organisationId, membershipId, companyId })) });
+      await tx.organisationMembership.update({ where: { id: membershipId }, data: { roleId: input.roleId, status: input.status, companyScope: scope } });
+      // Company grants created implicitly ("assigned companies use the member's role") follow a change of the organisation role;
+      // explicitly different per-company roles are left untouched (explicit grants are only changed through the access endpoints).
+      if (input.roleId && input.roleId !== m.roleId) {
+        await tx.companyMembership.updateMany({ where: { membershipId, roleId: m.roleId }, data: { roleId: input.roleId } });
+      }
+      if (input.companyIds) {
+        const roleId = input.roleId ?? m.roleId;
+        const role = await tx.role.findUniqueOrThrow({ where: { id: roleId } });
+        const existing = await tx.companyMembership.findMany({ where: { membershipId }, select: { companyId: true } });
+        const keep = new Set(input.companyIds);
+        const have = new Set(existing.map((e) => e.companyId));
+        const added = input.companyIds.filter((id) => !have.has(id));
+        // Changing who can access a company needs company:access:manage on THAT company, and the role must not exceed the granter's own.
+        for (const id of [...added, ...existing.map((e) => e.companyId).filter((id) => !keep.has(id))]) await org.access.requireCompany('company:access:manage', id);
+        for (const id of added) {
+          const ref = await org.access.companyRef(id);
+          if (!ref || !canGrantRole(org.access.snapshot, new Set(role.permissions.filter(isPermission)), { type: 'COMPANY', company: ref })) {
+            throw forbidden('Cannot grant a role with permissions you do not hold on this company', 'privilege_escalation');
+          }
         }
+        await tx.companyMembership.deleteMany({ where: { membershipId, companyId: { notIn: input.companyIds } } });
+        if (added.length) await tx.companyMembership.createMany({ data: added.map((companyId) => ({ organisationId: org.organisationId, membershipId, companyId, roleId })) });
       }
       await this.audit.record({ action: 'member.updated', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'membership', entityId: membershipId, metadata: { ...input } }, tx);
       return { id: membershipId };
@@ -101,11 +128,12 @@ export class OrganisationsService {
 
   async removeMember(org: OrgAccess, membershipId: string) {
     return this.t(org, async (tx) => {
-      const m = await tx.membership.findUnique({ where: { id: membershipId } });
+      const m = await tx.organisationMembership.findUnique({ where: { id: membershipId } });
       if (!m || m.status === 'REMOVED') throw notFound('Member not found');
       await this.assertNotLastOwner(tx, membershipId);
-      await tx.membership.update({ where: { id: membershipId }, data: { status: 'REMOVED' } });
-      await tx.companyAssignment.deleteMany({ where: { membershipId } });
+      await tx.organisationMembership.update({ where: { id: membershipId }, data: { status: 'REMOVED' } });
+      await tx.companyMembership.deleteMany({ where: { membershipId } });
+      await tx.practiceMembership.deleteMany({ where: { membershipId } });
       await this.audit.record({ action: 'member.removed', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'membership', entityId: membershipId }, tx);
     });
   }
@@ -115,8 +143,11 @@ export class OrganisationsService {
     const token = generateToken();
     const inv = await this.t(org, async (tx) => {
       await this.assertRoleUsable(tx, org, input.roleId);
-      if (input.companyScope === 'ASSIGNED') await this.assertCompanies(tx, input.companyIds);
-      const dup = await tx.membership.findFirst({ where: { status: { not: 'REMOVED' }, user: { email: input.email } } });
+      if (input.companyScope === 'ASSIGNED') {
+        await this.assertCompanies(tx, input.companyIds);
+        for (const id of input.companyIds) await org.access.requireCompany('company:access:manage', id);
+      }
+      const dup = await tx.organisationMembership.findFirst({ where: { status: { not: 'REMOVED' }, user: { email: input.email } } });
       if (dup) throw conflict('This person is already a member', 'already_member');
       const row = await tx.invitation.create({
         data: {
@@ -159,15 +190,16 @@ export class OrganisationsService {
     return this.db.tenant({ organisationId: inv.organisationId, userId }, async (tx) => {
       const claimed = await tx.invitation.updateMany({ where: { id: inv.id, acceptedAt: null }, data: { acceptedAt: new Date() } });
       if (claimed.count !== 1) throw bad;
-      const existing = await tx.membership.findUnique({ where: { organisationId_userId: { organisationId: inv.organisationId, userId } } });
+      const existing = await tx.organisationMembership.findUnique({ where: { organisationId_userId: { organisationId: inv.organisationId, userId } } });
       const data = { roleId: inv.roleId, status: 'ACTIVE' as const, companyScope: inv.companyScope };
       const m = existing
-        ? await tx.membership.update({ where: { id: existing.id }, data })
-        : await tx.membership.create({ data: { ...data, organisationId: inv.organisationId, userId } });
-      await tx.companyAssignment.deleteMany({ where: { membershipId: m.id } });
+        ? await tx.organisationMembership.update({ where: { id: existing.id }, data })
+        : await tx.organisationMembership.create({ data: { ...data, organisationId: inv.organisationId, userId } });
+      await tx.companyMembership.deleteMany({ where: { membershipId: m.id } });
+      await tx.practiceMembership.deleteMany({ where: { membershipId: m.id } });
       if (inv.companyScope === 'ASSIGNED' && inv.companyIds.length) {
         const valid = await tx.company.findMany({ where: { id: { in: inv.companyIds } }, select: { id: true } });
-        await tx.companyAssignment.createMany({ data: valid.map((c) => ({ organisationId: inv.organisationId, membershipId: m.id, companyId: c.id })) });
+        await tx.companyMembership.createMany({ data: valid.map((c) => ({ organisationId: inv.organisationId, membershipId: m.id, companyId: c.id, roleId: inv.roleId })) });
       }
       await this.audit.record({ action: 'invitation.accepted', organisationId: inv.organisationId, actorUserId: userId, entityType: 'membership', entityId: m.id }, tx);
       const role = await tx.role.findUniqueOrThrow({ where: { id: inv.roleId } });

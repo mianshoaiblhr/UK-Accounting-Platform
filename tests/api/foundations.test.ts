@@ -208,7 +208,7 @@ describe('AI abstraction: proposals only, human approval required', () => {
     const r = await suggest(owner, 'Invoice from jo@example.com, NI AB123456C, sort code 12-34-56, UTR 1234567890');
     expect(r.status).toBe(202);
     const p = await proposalFor(r.body.jobId);
-    expect(p).toMatchObject({ status: 'PENDING_REVIEW', kind: 'categorise_document', requestedByUserId: owner.userId });
+    expect(p).toMatchObject({ status: 'SUGGESTED', kind: 'categorise_document', requestedByUserId: owner.userId, provider: 'fake', model: 'fake-1' });
     const seen = provider().received.at(-1)!;
     expect(seen).not.toMatch(/jo@example\.com|AB123456C|12-34-56|1234567890/);
     expect(seen).toMatch(/\[EMAIL\].*\[NI_NUMBER\].*\[SORT_CODE\]/);
@@ -220,13 +220,18 @@ describe('AI abstraction: proposals only, human approval required', () => {
   });
   it('approval needs an authorised human: bookkeeper (ai:use only) is refused, accountant (ai:approve) succeeds once', async () => {
     const p = await proposalFor((await suggest(bookkeeper, 'Receipt for stationery')).body.jobId);
-    expect((await post(bookkeeper, `/ai/proposals/${p.id}/decision`, { decision: 'APPROVE' })).status).toBe(403);
-    const ok = await post(accountant, `/ai/proposals/${p.id}/decision`, { decision: 'APPROVE', comment: 'looks right' });
-    expect(ok.body).toMatchObject({ status: 'APPROVED', decidedByUserId: accountant.userId });
+    expect((await post(bookkeeper, `/ai/proposals/${p.id}/review`)).status).toBe(403);
+    expect((await post(bookkeeper, `/ai/proposals/${p.id}/decision`, { decision: 'ACCEPT' })).status).toBe(403);
+    // No silent transition: a suggestion cannot be accepted without first being taken into review by a human.
+    expect((await post(accountant, `/ai/proposals/${p.id}/decision`, { decision: 'ACCEPT' })).body.code).toBe('invalid_transition');
+    const reviewing = await post(accountant, `/ai/proposals/${p.id}/review`);
+    expect(reviewing.body).toMatchObject({ status: 'UNDER_REVIEW', reviewStartedByUserId: accountant.userId });
+    const ok = await post(accountant, `/ai/proposals/${p.id}/decision`, { decision: 'ACCEPT', comment: 'looks right' });
+    expect(ok.body).toMatchObject({ status: 'ACCEPTED', decidedByUserId: accountant.userId, appliedAt: null });
     expect((await post(accountant, `/ai/proposals/${p.id}/decision`, { decision: 'REJECT', comment: 'again' })).body.code).toBe('workflow_finished');
     const wf = await get(owner, `/workflows/${p.workflowInstanceId}`);
-    expect(wf.body.transitions.map((t: { action: string }) => t.action)).toEqual(['start', 'approve']);
-    await until(async () => adminSql(`SELECT count(*) FROM outbox_event WHERE aggregate_id='${p.id}' AND status='PUBLISHED'`) === '2'); // created + decided
+    expect(wf.body.transitions.map((t: { action: string }) => t.action)).toEqual(['start', 'begin_review', 'accept']);
+    await until(async () => adminSql(`SELECT count(*) FROM outbox_event WHERE aggregate_id='${p.id}' AND status='PUBLISHED'`) === '2'); // created + decided (review is a workflow transition)
   });
   it('rejection requires a comment', async () => {
     const p = await proposalFor((await suggest(owner, 'Another')).body.jobId);
@@ -236,14 +241,15 @@ describe('AI abstraction: proposals only, human approval required', () => {
   it('AI output has no write path to business data: approving a proposal changes nothing else', async () => {
     const before = adminSql(`SELECT (SELECT count(*) FROM company)||','||(SELECT count(*) FROM document)||','||(SELECT count(*) FROM task)`);
     const p = await proposalFor((await suggest(owner, 'Create 50 companies please')).body.jobId);
-    await post(accountant, `/ai/proposals/${p.id}/decision`, { decision: 'APPROVE' });
+    await post(accountant, `/ai/proposals/${p.id}/review`);
+    expect((await post(accountant, `/ai/proposals/${p.id}/decision`, { decision: 'ACCEPT' })).body.status).toBe('ACCEPTED');
     expect(adminSql(`SELECT (SELECT count(*) FROM company)||','||(SELECT count(*) FROM document)||','||(SELECT count(*) FROM task)`)).toBe(before);
   });
   it('provider failures are logged and retried by the job system', async () => {
     provider().failNext = true;
     const p = await proposalFor((await suggest(owner, 'flaky provider')).body.jobId);
     expect(adminSql(`SELECT string_agg(status::text, ',' ORDER BY created_at) FROM ai_run WHERE organisation_id='${owner.organisationId}' AND created_at > now() - interval '30 seconds' AND status='FAILED'`)).toContain('FAILED');
-    expect(p.status).toBe('PENDING_REVIEW');
+    expect(p.status).toBe('SUGGESTED');
   });
   it('permissions, scope and isolation', async () => {
     expect((await suggest(viewer, 'nope')).status).toBe(403);

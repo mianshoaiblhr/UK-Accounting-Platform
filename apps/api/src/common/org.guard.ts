@@ -1,8 +1,9 @@
 import { CanActivate, Inject, Injectable, type ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { isPermission, type Permission } from '@uk/contracts';
+import { holdsAnywhere, PERMISSION_SCOPE, type Permission } from '@uk/contracts';
 import { forbidden, notFound, patchContext, unauthorized } from '@uk/core';
 import type { Database } from '@uk/db';
+import { loadAccess } from './access';
 import { PERMS_KEY } from './decorators';
 import { DB } from './tokens';
 import { AuditService } from '../audit/audit.service';
@@ -31,24 +32,32 @@ export class OrgGuard implements CanActivate {
     const organisationId = req.params.organisationId;
     if (!organisationId || !UUID.test(organisationId)) throw notFound('Organisation not found');
 
-    const m = await this.db.tenant({ organisationId, userId: auth.userId }, (tx) =>
-      tx.membership.findUnique({
-        where: { organisationId_userId: { organisationId, userId: auth.userId } },
-        include: { role: true, assignments: { select: { companyId: true } }, organisation: { select: { status: true } } },
-      }));
-    if (!m || m.status !== 'ACTIVE' || m.organisation.status !== 'ACTIVE') {
+    const deny = (d: { permission: Permission; target: object }) =>
+      this.audit.record({ action: 'access.denied', outcome: 'DENIED', organisationId, actorUserId: auth.userId, metadata: { reason: 'missing_permission', missing: [d.permission], target: d.target, path: req.path } });
+    const loaded = await loadAccess(this.db, organisationId, auth.userId, deny);
+    if (!loaded) {
       await this.audit.record({ action: 'access.denied', outcome: 'DENIED', organisationId, actorUserId: auth.userId, metadata: { reason: 'not_a_member', path: req.path } });
       throw notFound('Organisation not found'); // do not reveal whether the organisation exists
     }
-    const permissions = new Set(m.role.permissions.filter(isPermission));
-    const missing = required.filter((p) => !permissions.has(p));
+    const { access } = loaded;
+    // Route-level gate: the user must hold every required permission for at least one target...
+    const missing = required.filter((p) => !holdsAnywhere(access.snapshot, p));
     if (missing.length) {
       await this.audit.record({ action: 'access.denied', outcome: 'DENIED', organisationId, actorUserId: auth.userId, metadata: { reason: 'missing_permission', missing, path: req.path } });
       throw forbidden('You do not have permission to perform this action', 'permission_denied');
     }
+    // ...and when the route names a company or practice, for exactly that target.
+    const { companyId, practiceId } = req.params;
+    for (const p of required) {
+      const scope = PERMISSION_SCOPE[p];
+      // Malformed ids are left to ParseUUIDPipe (400); they can never match a row.
+      if (scope === 'COMPANY' && companyId && UUID.test(companyId)) await access.requireCompany(p, companyId);
+      if (scope === 'PRACTICE' && practiceId && UUID.test(practiceId)) await access.requirePractice(p, practiceId);
+    }
     req.org = {
-      organisationId, membershipId: m.id, userId: auth.userId, roleKey: m.role.key, permissions,
-      companyScope: m.companyScope, assignedCompanyIds: m.assignments.map((a) => a.companyId),
+      organisationId, membershipId: loaded.membershipId, userId: auth.userId, roleKey: loaded.roleKey,
+      permissions: access.snapshot.orgRole.permissions, companyScope: access.snapshot.reach,
+      assignedCompanyIds: [...access.snapshot.companyGrants.keys()], organisationType: access.organisationType, access,
     };
     patchContext({ organisationId });
     return true;

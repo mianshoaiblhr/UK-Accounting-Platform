@@ -11,7 +11,7 @@ beforeAll(async () => {
   s = await startStack();
   owner = await createUser(s, { type: 'PRACTICE' });
   company = await makeCompany(s, owner);
-  for (const key of ['admin', 'accountant', 'bookkeeper', 'reviewer', 'client_viewer']) members[key] = await addMember(s, owner, key);
+  for (const key of ['admin', 'partner', 'manager', 'accountant', 'bookkeeper', 'reviewer', 'client_viewer']) members[key] = await addMember(s, owner, key);
   members.owner = owner;
 });
 afterAll(() => s.stop());
@@ -43,9 +43,16 @@ const probes: Call[] = [
   { name: 'list integrations', perm: 'integration:read', run: call('get', '/integrations/connections') },
   { name: 'create connection', perm: 'integration:manage', run: call('post', '/integrations/connections', { provider: 'mock', displayName: 'p', credentials: { apiKey: 'abcdefgh' } }) },
   { name: 'list AI proposals', perm: 'ai:use', run: call('get', '/ai/proposals') },
-  { name: 'decide AI proposal', perm: 'ai:approve', run: call('post', '/ai/proposals/11111111-1111-4111-8111-111111111111/decision', { decision: 'APPROVE' }) },
+  { name: 'decide AI proposal', perm: 'ai:approve', run: call('post', '/ai/proposals/11111111-1111-4111-8111-111111111111/decision', { decision: 'ACCEPT' }) },
   { name: 'create document', perm: 'document:upload', run: call('post', '/documents', { name: 'p.pdf', contentType: 'application/pdf', sizeBytes: 10 }) },
 ];
+const GHOST = '11111111-1111-4111-8111-111111111111';
+probes.push(
+  { name: 'list practices', perm: 'practice:read', run: call('get', '/practices') },
+  { name: 'update practice', perm: 'practice:manage', run: call('patch', `/practices/${GHOST}`, { name: 'x' }) },
+  { name: 'grant practice role', perm: 'practice:member:manage', run: (u) => s.api().put(orgPath(owner, `/practices/${GHOST}/members/${GHOST}`)).set(bearer(u.token)).send({ roleId: GHOST }).then((r) => r.status) },
+  { name: 'list company access', perm: 'company:access:manage', run: (u) => call('get', `/companies/${company.id}/access`)(u) },
+);
 probes.find((p) => p.name === 'create company')!.run = (u) => call('post', '/companies', { name: `Perm ${Math.random()}` })(u);
 probes.push({ name: 'create period', perm: 'period:manage', run: (u) => call('post', `/companies/${company.id}/periods`, { startDate: `${2000 + Math.floor(Math.random() * 90)}-01-01`, endDate: `${2000 + Math.floor(Math.random() * 90)}-12-31` })(u) });
 
@@ -66,7 +73,7 @@ describe('RBAC matrix: every system role x every guarded capability', () => {
   it('probe list covers every permission that guards an endpoint (except the ones with dedicated tests below)', () => {
     const covered = new Set(probes.map((p) => p.perm));
     const untested = PERMISSIONS.filter((p) => !covered.has(p));
-    expect(untested.sort()).toEqual(['company:update', 'document:archive', 'member:manage', 'org:manage']);
+    expect(untested.sort()).toEqual(['company:update', 'document:archive', 'member:manage', 'org:manage', 'workflow:approve', 'workflow:review']);
   });
 });
 
