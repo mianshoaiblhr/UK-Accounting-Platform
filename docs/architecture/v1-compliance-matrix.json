@@ -112,7 +112,7 @@
     },
     "Privacy track (parallel to V1)": {
       "title": "Privacy finding on session / challenge IP and user agent (DEC-013)",
-      "status": "INVESTIGATION IN PROGRESS - never marked resolved without review",
+      "status": "INVESTIGATION DELIVERED - finding UNRESOLVED, awaiting privacy review (never resolved without it)",
       "owner": "Engineering (investigation); DPO / legal (decisions)",
       "depends": [
         "DEC-003 retention review"
@@ -1584,9 +1584,9 @@
       "ref": "DEC-013",
       "req": "Session/challenge IP and user agent: collection, use, access and purpose traced; policy-controlled retention and deletion proposed; tests",
       "m": "Privacy track (parallel to V1)",
-      "s": "M",
-      "ev": "",
-      "note": "",
+      "s": "P",
+      "ev": "Investigation delivered: docs/legal/device-metadata-investigation.md (7 collection points traced, 6 findings F-1..F-6, options A-F proposed and NOT enabled, review checklist); 10 characterisation tests in tests/api/device-metadata.test.ts; legal schedule corrected (raw IPs in Redis rate-limit keys). The finding is UNRESOLVED: no policy, deletion or lawful basis is approved; deletion stays frozen (S4(b)).",
+      "note": "Never mark resolved without the recorded privacy review",
       "owner": "Engineering (investigation); DPO / legal (review and decisions)",
       "deps": "V0 audit switch; retention schedule (DEC-003)",
       "accept": "docs/legal/device-metadata-investigation.md traces every write and read with code references; characterisation tests fail if collection or exposure changes silently; a proposal for policy-controlled retention/deletion is written but NOT enabled; the item is not marked resolved until the privacy review is recorded.",

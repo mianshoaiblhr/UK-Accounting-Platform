@@ -84,3 +84,6 @@ V1 continues on synthetic/test data. Unverified retention rules, untested real-v
 ### Process
 The V1 plan and matrix carry, for every row: owner, dependencies, acceptance criteria and deferred scope. A milestone starts only when its specification and dependencies are written down and clear; scope is not silently expanded.
 
+
+### DEC-013 update (investigation delivered; finding still UNRESOLVED)
+The trace is in `docs/legal/device-metadata-investigation.md` with 6 findings: `auth_challenge.ip` is collected and never read (F-1); the audit switch does not cover sessions or challenges (F-2); nothing is purged (F-3); `login_trusted_ip` keeps a hashed IP per user indefinitely (F-4); the generic Redis rate-limit keys hold the raw IP for up to an hour (F-5, which corrects the earlier schedule statement that all Redis keys were hashed); access is narrow (F-6). Options A-F (stop collecting the challenge IP, a session switch, coarsening, a retention job, hashing rate-limit keys, transparency) are proposed and **not enabled**. 10 characterisation tests pin today's behaviour. The item stays unresolved until the qualified privacy review is recorded here.

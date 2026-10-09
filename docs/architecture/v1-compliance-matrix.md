@@ -14,8 +14,8 @@ Generated from `v1-compliance-matrix.json` at commit `fae5270`; CI: <https://git
 | Status | Rows |
 |---|---|
 | IMPLEMENTED | 27 (23% of applicable) |
-| PARTIALLY IMPLEMENTED | 11 (9% of applicable) |
-| MISSING | 75 (66% of applicable) |
+| PARTIALLY IMPLEMENTED | 12 (10% of applicable) |
+| MISSING | 74 (65% of applicable) |
 | NOT APPLICABLE | 0 |
 | **Total** | **113** |
 
@@ -32,7 +32,7 @@ Generated from `v1-compliance-matrix.json` at commit `fae5270`; CI: <https://git
 | M7 | Bank accounts, statement import (async), transfers, charges, interest, reconciliation | PLANNED | Engineering | M5; M6 | 15 | 0 |
 | M8 | Profit and loss, balance sheet, drill-down to documents, controls and alerts, FX reporting | PLANNED | Engineering | M3; M5; M6; M7 | 8 | 0 |
 | M9 | V1 UI slices behind feature flags (DEC-002) | PLANNED - runs in parallel from M2 | Engineering (front end) | API of the milestone each screen uses | 1 | 0 |
-| Privacy track (parallel to V1) | Privacy finding on session / challenge IP and user agent (DEC-013) | INVESTIGATION IN PROGRESS - never marked resolved without review | Engineering (investigation); DPO / legal (decisions) | DEC-003 retention review | 1 | 0 |
+| Privacy track (parallel to V1) | Privacy finding on session / challenge IP and user agent (DEC-013) | INVESTIGATION DELIVERED - finding UNRESOLVED, awaiting privacy review (never resolved without it) | Engineering (investigation); DPO / legal (decisions) | DEC-003 retention review | 1 | 0 |
 
 A milestone is accepted by the product owner on an acceptance package: commit SHA, CI run (every job), test results, migrations, security/permission checks, matrix changes, known limitations (DEC-007).
 
@@ -249,7 +249,7 @@ A milestone is accepted by the product owner on an acceptance package: commit SH
 
 ## Privacy track (parallel to V1) - Privacy finding on session / challenge IP and user agent (DEC-013)
 
-**Status:** INVESTIGATION IN PROGRESS - never marked resolved without review  
+**Status:** INVESTIGATION DELIVERED - finding UNRESOLVED, awaiting privacy review (never resolved without it)  
 **Owner:** Engineering (investigation); DPO / legal (decisions)  
 **Depends on:** DEC-003 retention review  
 **Acceptance:** V1-PRIV-01  
@@ -257,4 +257,4 @@ A milestone is accepted by the product owner on an acceptance package: commit SH
 
 | ID | Reference | Requirement | Status | Owner | Dependencies | Acceptance criteria | Deferred scope | Evidence | Notes |
 |---|---|---|---|---|---|---|---|---|---|
-| **V1-PRIV-01** | DEC-013 | Session/challenge IP and user agent: collection, use, access and purpose traced; policy-controlled retention and deletion proposed; tests | **MISSING** | Engineering (investigation); DPO / legal (review and decisions) | V0 audit switch; retention schedule (DEC-003) | docs/legal/device-metadata-investigation.md traces every write and read with code references; characterisation tests fail if collection or exposure changes silently; a proposal for policy-controlled retention/deletion is written but NOT enabled; the item is not marked resolved until the privacy review is recorded. | Any deletion job (S4(b) is frozen) |  |  |
+| **V1-PRIV-01** | DEC-013 | Session/challenge IP and user agent: collection, use, access and purpose traced; policy-controlled retention and deletion proposed; tests | **PARTIALLY IMPLEMENTED** | Engineering (investigation); DPO / legal (review and decisions) | V0 audit switch; retention schedule (DEC-003) | docs/legal/device-metadata-investigation.md traces every write and read with code references; characterisation tests fail if collection or exposure changes silently; a proposal for policy-controlled retention/deletion is written but NOT enabled; the item is not marked resolved until the privacy review is recorded. | Any deletion job (S4(b) is frozen) | Investigation delivered: docs/legal/device-metadata-investigation.md (7 collection points traced, 6 findings F-1..F-6, options A-F proposed and NOT enabled, review checklist); 10 characterisation tests in tests/api/device-metadata.test.ts; legal schedule corrected (raw IPs in Redis rate-limit keys). The finding is UNRESOLVED: no policy, deletion or lawful basis is approved; deletion stays frozen (S4(b)). | Never mark resolved without the recorded privacy review |
