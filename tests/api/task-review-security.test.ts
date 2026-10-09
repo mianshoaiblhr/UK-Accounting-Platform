@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { Database } from '@uk/db';
+import { Database, type Tx } from '@uk/db';
 import { adminSql } from '../helpers/db';
 import { addMember, bearer, createUser, makeCompany, orgPath, roleId, startStack, type Stack, type TestUser } from '../helpers/stack';
 
@@ -154,7 +154,7 @@ describe('every database path enforces the rule', () => {
   it('other tenant contexts, the system context, user-only and context-free connections cannot complete a reviewed task', async () => {
     const t = await inReview();
     const other = (await createUser(s, { type: 'BUSINESS' })).organisationId;
-    const complete = (tx: { task: { updateMany: (a: object) => Promise<{ count: number }> } }) => tx.task.updateMany({ where: { id: t.id }, data: { status: 'DONE' } });
+    const complete = (tx: Tx) => tx.task.updateMany({ where: { id: t.id }, data: { status: 'DONE' } });
     // reviewer's identity inside ANOTHER organisation's context: row security hides the task
     expect((await db.tenant({ organisationId: other, userId: reviewer.userId }, complete)).count).toBe(0);
     // the trusted system context cannot even see task rows (no system branch in the task policy), and it has no acting user anyway
@@ -165,7 +165,7 @@ describe('every database path enforces the rule', () => {
     // user-only context sees no tenant rows at all
     expect((await db.asUser(reviewer.userId, complete)).count).toBe(0);
     // no context at all
-    expect((await complete(db.prisma as never)).count).toBe(0);
+    expect((await complete(db.prisma as unknown as Tx)).count).toBe(0);
     expect(status(t.id)).toBe('IN_REVIEW');
     // and the genuine path still works
     expect((await db.tenant({ organisationId: owner.organisationId, userId: reviewer.userId }, complete)).count).toBe(1);
