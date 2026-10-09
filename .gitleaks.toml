@@ -1,0 +1,15 @@
+# Secret scanning policy. Default gitleaks rules apply; only deterministic, non-secret test fixtures are allow-listed.
+title = "uk-accounting-platform"
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Test fixtures and documentation examples (no real credentials exist in these files)"
+paths = [
+  '''^tests/''',
+  '''^packages/.*/src/.*\.test\.ts$''',
+  '''^vitest\.config\.ts$''',
+  '''^docs/''',
+  '''^\.env\.example$''',
+  '''^pnpm-lock\.yaml$''',
+]

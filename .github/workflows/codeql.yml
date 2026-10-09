@@ -1,0 +1,19 @@
+name: codeql
+on:
+  push: { branches: ["**"] }
+  pull_request:
+  schedule: [{ cron: "17 3 * * 1" }]   # weekly: new queries find old code
+permissions: { contents: read }
+concurrency: { group: "codeql-${{ github.ref }}", cancel-in-progress: true }
+
+jobs:
+  analyze:
+    name: static analysis (CodeQL)
+    runs-on: ubuntu-latest
+    permissions: { contents: read, security-events: write, actions: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with: { languages: javascript-typescript, queries: security-and-quality }
+      - uses: github/codeql-action/analyze@v3
+        with: { category: "/language:javascript-typescript" }

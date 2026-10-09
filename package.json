@@ -38,7 +38,7 @@
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.24.0",
     "unplugin-swc": "^1.5.1",
-    "vitest": "^3.0.5"
+    "vitest": "^4.1.11"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -50,6 +50,10 @@
       "esbuild",
       "sharp",
       "@nestjs/core"
-    ]
+    ],
+    "overrides": {
+      "postcss": ">=8.5.23",
+      "deepmerge-ts": ">=8.0.0"
+    }
   }
 }
