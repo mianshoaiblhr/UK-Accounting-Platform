@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isValidYearEnd } from './financial-year';
 import { passwordSchema } from '@uk/core';
 import { PERMISSIONS } from './permissions';
 
@@ -23,16 +24,43 @@ export const resendVerificationSchema = z.object({ email }).strict();
 export const mfaConfirmSchema = z.object({ code: z.string().regex(/^\d{6}$/) }).strict();
 export const mfaDisableSchema = z.object({ currentPassword: z.string().min(1).max(128), code: z.string().min(6).max(20) }).strict();
 
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((s) => !Number.isNaN(Date.parse(s)) && new Date(s).toISOString().startsWith(s), 'Invalid date');
+const countryCode = z.string().regex(/^[A-Z]{2}$/, 'ISO 3166-1 alpha-2 code, upper case');
+const currencyCode = z.string().regex(/^[A-Z]{3}$/, 'ISO 4217 code, upper case');
+export const yearEndSchema = z.object({ month: z.number().int().min(1).max(12), day: z.number().int().min(1).max(31) }).strict()
+  .refine((y) => isValidYearEnd(y), { message: 'Not a valid month/day (29 February means the last day of February)' });
+
+/** Company profile fields shared by create and update. */
+const companyProfile = {
+  legalForm: z.enum(['LTD', 'LLP', 'SOLE_TRADER', 'PARTNERSHIP', 'CHARITY', 'OTHER']),
+  incorporationDate: isoDate,
+  yearEnd: yearEndSchema,
+  baseCurrency: currencyCode,
+  countryCode,
+  taxJurisdictionCode: z.string().regex(/^[A-Z0-9][A-Z0-9_-]{1,30}$/),
+};
 export const createCompanySchema = z.object({
   name: z.string().trim().min(1).max(200),
   companyNumber: z.string().trim().regex(/^[A-Z0-9]{8}$/i, 'Company number must be 8 characters').optional(),
-  legalForm: z.enum(['LTD', 'LLP', 'SOLE_TRADER', 'PARTNERSHIP', 'CHARITY', 'OTHER']).default('LTD'),
+  legalForm: companyProfile.legalForm.default('LTD'),
+  incorporationDate: companyProfile.incorporationDate.optional(),
+  yearEnd: companyProfile.yearEnd.optional(),
+  baseCurrency: companyProfile.baseCurrency.optional(),
+  countryCode: companyProfile.countryCode.optional(),
+  taxJurisdictionCode: companyProfile.taxJurisdictionCode.optional(),
   /** Managing practice. Required for practice organisations (defaulted when there is only one), forbidden for direct businesses. */
   practiceId: z.string().uuid().optional(),
 }).strict();
-export const updateCompanySchema = z.object({ name: z.string().trim().min(1).max(200) }).strict();
+export const updateCompanySchema = z.object({
+  name: z.string().trim().min(1).max(200).optional(),
+  legalForm: companyProfile.legalForm.optional(),
+  incorporationDate: companyProfile.incorporationDate.nullable().optional(),
+  yearEnd: companyProfile.yearEnd.nullable().optional(),
+  baseCurrency: companyProfile.baseCurrency.optional(),
+  countryCode: companyProfile.countryCode.optional(),
+  taxJurisdictionCode: companyProfile.taxJurisdictionCode.nullable().optional(),
+}).strict().refine((b) => Object.keys(b).length > 0, { message: 'Provide at least one field to change' });
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((s) => !Number.isNaN(Date.parse(s)), 'Invalid date');
 export const createPeriodSchema = z.object({ startDate: isoDate, endDate: isoDate })
   .strict().refine((p) => p.startDate < p.endDate, { message: 'startDate must be before endDate', path: ['endDate'] });
 
@@ -134,3 +162,52 @@ export const auditQuerySchema = paginationSchema.extend({
   companyId: z.string().uuid().optional(), actorUserId: z.string().uuid().optional(), outcome: z.enum(['SUCCESS', 'FAILURE', 'DENIED']).optional(),
   sourceWorkflowId: z.string().uuid().optional(), from: z.string().datetime().optional(), to: z.string().datetime().optional(),
 });
+
+// ───────────── Master data ─────────────
+export const createContactSchema = z.object({
+  /** Omit for an organisation-level contact; set to attach the contact to one company (it then follows that company's access rules). */
+  companyId: z.string().uuid().optional(),
+  kind: z.enum(['PERSON', 'ORGANISATION']),
+  name: z.string().trim().min(1).max(200),
+  email: z.string().trim().toLowerCase().email().max(254).optional(),
+  phone: z.string().trim().max(40).optional(),
+  reference: z.string().trim().max(100).optional(),
+  labels: z.array(z.string().trim().min(1).max(40)).max(10).default([]),
+  notes: z.string().max(2000).optional(),
+}).strict();
+export const updateContactSchema = z.object({
+  name: z.string().trim().min(1).max(200).optional(),
+  email: z.string().trim().toLowerCase().email().max(254).nullable().optional(),
+  phone: z.string().trim().max(40).nullable().optional(),
+  reference: z.string().trim().max(100).nullable().optional(),
+  labels: z.array(z.string().trim().min(1).max(40)).max(10).optional(),
+  notes: z.string().max(2000).nullable().optional(),
+}).strict().refine((b) => Object.keys(b).length > 0, { message: 'Provide at least one field to change' });
+export const contactListQuerySchema = paginationSchema.extend({
+  companyId: z.string().uuid().optional(), kind: z.enum(['PERSON', 'ORGANISATION']).optional(),
+  status: z.enum(['ACTIVE', 'ARCHIVED']).default('ACTIVE'), q: z.string().trim().min(1).max(100).optional(),
+});
+
+const GB_POSTCODE = /^[A-Z]{1,2}[0-9][A-Z0-9]? ?[0-9][A-Z]{2}$/i;
+const addressFields = {
+  kind: z.enum(['REGISTERED_OFFICE', 'TRADING', 'CORRESPONDENCE', 'RESIDENTIAL', 'OTHER']),
+  line1: z.string().trim().min(1).max(200), line2: z.string().trim().max(200).optional(), line3: z.string().trim().max(200).optional(),
+  city: z.string().trim().min(1).max(100), region: z.string().trim().max(100).optional(), postcode: z.string().trim().max(20).optional(),
+  countryCode, primary: z.boolean().default(false),
+};
+export const createAddressSchema = z.object(addressFields).strict()
+  .refine((a) => a.countryCode !== 'GB' || !a.postcode || GB_POSTCODE.test(a.postcode), { message: 'Not a valid UK postcode', path: ['postcode'] });
+export const updateAddressSchema = z.object({
+  kind: addressFields.kind.optional(), line1: addressFields.line1.optional(), line2: z.string().trim().max(200).nullable().optional(), line3: z.string().trim().max(200).nullable().optional(),
+  city: addressFields.city.optional(), region: z.string().trim().max(100).nullable().optional(), postcode: z.string().trim().max(20).nullable().optional(),
+  countryCode: countryCode.optional(), primary: z.boolean().optional(),
+}).strict().refine((b) => Object.keys(b).length > 0, { message: 'Provide at least one field to change' })
+  .refine((a) => a.countryCode !== 'GB' || !a.postcode || GB_POSTCODE.test(a.postcode), { message: 'Not a valid UK postcode', path: ['postcode'] });
+
+export const createOfficerSchema = z.object({
+  contactId: z.string().uuid(),
+  role: z.enum(['DIRECTOR', 'SECRETARY', 'PERSON_WITH_SIGNIFICANT_CONTROL', 'MEMBER', 'PARTNER', 'TRUSTEE', 'OTHER']),
+  appointedOn: isoDate, resignedOn: isoDate.optional(),
+}).strict().refine((o) => !o.resignedOn || o.resignedOn >= o.appointedOn, { message: 'resignedOn cannot precede appointedOn', path: ['resignedOn'] });
+export const updateOfficerSchema = z.object({ resignedOn: isoDate.nullable() }).strict();
+export const asOfQuerySchema = z.object({ asOf: isoDate.optional(), countryCode: countryCode.optional() });

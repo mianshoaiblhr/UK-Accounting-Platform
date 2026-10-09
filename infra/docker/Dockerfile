@@ -13,7 +13,10 @@ RUN pnpm -r build
 
 FROM node:22-slim AS runtime
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH NODE_ENV=production
-RUN corepack enable && apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+# Security: pick up patched OS packages (the base image lags behind Debian security fixes) and remove npm - the runtime never
+# runs it, and its bundled dependencies are a recurring source of image-scan findings. Everything starts with `node` directly.
+RUN apt-get update && apt-get -y upgrade && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/* \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 WORKDIR /app
 COPY --from=build --chown=node:node /app /app
 USER node

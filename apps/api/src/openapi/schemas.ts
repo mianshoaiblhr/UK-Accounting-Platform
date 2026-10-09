@@ -5,7 +5,8 @@ const uuid = z.string().uuid();
 const ts = z.string().datetime();
 const page = <T extends z.ZodTypeAny>(item: T) => z.object({ items: z.array(item), nextCursor: z.string().nullable() });
 
-export const Company = z.object({ id: uuid, organisationId: uuid, practiceId: uuid.nullable().describe('Managing practice; null for direct (BUSINESS) organisations'), name: z.string(), companyNumber: z.string().nullable(), legalForm: z.string(), status: z.enum(['ACTIVE', 'ARCHIVED']), createdAt: ts });
+const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+export const Company = z.object({ id: uuid, organisationId: uuid, practiceId: uuid.nullable().describe('Managing practice; null for direct (BUSINESS) organisations'), name: z.string(), companyNumber: z.string().nullable(), legalForm: z.string(), incorporationDate: day.nullable(), yearEnd: z.object({ month: z.number().int(), day: z.number().int() }).nullable().describe('Financial year-end; 29 February means the last day of February'), baseCurrency: z.string().length(3), countryCode: z.string().length(2), taxJurisdictionCode: z.string().nullable(), status: z.enum(['ACTIVE', 'ARCHIVED']), createdAt: ts });
 export const Period = z.object({ id: uuid, companyId: uuid, startDate: z.string(), endDate: z.string(), status: z.enum(['OPEN', 'CLOSED', 'LOCKED']) });
 export const DocumentVersion = z.object({ id: uuid, documentId: uuid, versionNo: z.number().int(), contentType: z.string(), sizeBytes: z.number().int(), sha256: z.string().nullable(), status: z.enum(['PENDING_UPLOAD', 'UPLOADED', 'SCANNING', 'AVAILABLE', 'QUARANTINED', 'FAILED']), scanResult: z.string().nullable(), storageKey: z.string() });
 export const DocumentRecord = z.object({ id: uuid, name: z.string(), companyId: uuid.nullable(), documentClass: z.string(), status: z.enum(['ACTIVE', 'ARCHIVED']), legalHold: z.boolean(), versions: z.array(DocumentVersion).optional() });
@@ -28,6 +29,13 @@ export const AuditEvent = z.object({ id: uuid, occurredAt: ts, organisationId: u
 export const Organisation = z.object({ id: uuid, type: z.enum(['PRACTICE', 'BUSINESS']), name: z.string(), status: z.string() });
 export const OrgMe = z.object({ organisationId: uuid, organisationType: z.enum(['PRACTICE', 'BUSINESS']), role: z.string(), permissions: z.array(z.string()).describe('Organisation-level role permissions; company/practice decisions use grants'), companyScope: z.enum(['ALL', 'ASSIGNED']).describe('Reach of the organisation role: ALL = organisation-wide default'), companyIds: z.array(uuid).describe('Companies with an explicit company-level grant'), practiceIds: z.array(uuid).describe('Practices with an explicit practice-level grant') });
 export const FeatureFlag = z.object({ key: z.string(), description: z.string(), enabled: z.boolean(), source: z.enum(['organisation', 'environment', 'default']).describe('Where the effective value comes from'), overriddenAt: ts.optional(), reason: z.string().nullable().optional() });
+export const Currency = z.object({ code: z.string().length(3), numericCode: z.string(), name: z.string(), minorUnits: z.number().int() });
+export const Country = z.object({ alpha2: z.string().length(2), alpha3: z.string().length(3), numericCode: z.string(), name: z.string() });
+export const TaxJurisdiction = z.object({ id: uuid, code: z.string(), countryCode: z.string().length(2), name: z.string(), authority: z.string(), validFrom: day, validTo: day.nullable() });
+export const Contact = z.object({ id: uuid, companyId: uuid.nullable().describe('null = organisation-level contact'), kind: z.enum(['PERSON', 'ORGANISATION']), name: z.string(), email: z.string().nullable(), phone: z.string().nullable(), reference: z.string().nullable(), labels: z.array(z.string()), notes: z.string().nullable(), status: z.enum(['ACTIVE', 'ARCHIVED']), createdAt: ts, updatedAt: ts });
+export const Address = z.object({ id: uuid, companyId: uuid.nullable(), contactId: uuid.nullable(), kind: z.enum(['REGISTERED_OFFICE', 'TRADING', 'CORRESPONDENCE', 'RESIDENTIAL', 'OTHER']), line1: z.string(), line2: z.string().nullable(), line3: z.string().nullable(), city: z.string(), region: z.string().nullable(), postcode: z.string().nullable(), countryCode: z.string().length(2), primary: z.boolean() });
+export const Officer = z.object({ id: uuid, companyId: uuid, role: z.enum(['DIRECTOR', 'SECRETARY', 'PERSON_WITH_SIGNIFICANT_CONTROL', 'MEMBER', 'PARTNER', 'TRUSTEE', 'OTHER']), appointedOn: day, resignedOn: day.nullable(), contact: z.object({ id: uuid, name: z.string(), kind: z.enum(['PERSON', 'ORGANISATION']) }) });
+export const ProposedPeriod = z.object({ startDate: day, endDate: day });
 export const Practice = z.object({ id: uuid, organisationId: uuid, name: z.string(), status: z.enum(['ACTIVE', 'ARCHIVED']), createdAt: ts });
 const grantee = z.object({ membershipId: uuid, user: z.object({ id: uuid, email: z.string(), displayName: z.string() }), status: z.string(), role: z.object({ id: uuid, key: z.string(), name: z.string() }) });
 export const GrantList = z.object({ items: z.array(grantee) });
@@ -44,5 +52,5 @@ export const MfaConfirmed = z.object({ recoveryCodes: z.array(z.string()).descri
 export const DownloadLink = z.object({ url: z.string(), expiresInSeconds: z.number(), sha256: z.string().nullable() });
 export const CheckResult = z.object({ ok: z.boolean(), detail: z.string().optional(), provider: z.string() });
 
-export const Pages = { Company: page(Company), DocumentRecord: page(DocumentRecord), Job: page(Job), Task: page(Task), Notification: page(Notification), WorkflowInstance: page(WorkflowInstance), AiProposal: page(AiProposal), AuditEvent: page(AuditEvent) };
+export const Pages = { Contact: page(Contact), Company: page(Company), DocumentRecord: page(DocumentRecord), Job: page(Job), Task: page(Task), Notification: page(Notification), WorkflowInstance: page(WorkflowInstance), AiProposal: page(AiProposal), AuditEvent: page(AuditEvent) };
 export const items = <T extends z.ZodTypeAny>(i: T) => z.object({ items: z.array(i) });

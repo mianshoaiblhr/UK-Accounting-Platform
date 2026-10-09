@@ -13,7 +13,8 @@
 set -euo pipefail
 : "${MIGRATION_DATABASE_URL:?MIGRATION_DATABASE_URL is required}"
 cd "$(dirname "$0")/../../packages/db"
-PRISMA="npx prisma"
+# The local binary, not npx/pnpm: the runtime image ships without npm and must not need network access to run migrations.
+PRISMA="./node_modules/.bin/prisma"
 
 echo "== status before =="
 $PRISMA migrate status || true   # exits non-zero when migrations are pending: that is expected here

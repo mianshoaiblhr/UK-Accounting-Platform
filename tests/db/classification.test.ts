@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { GLOBAL_AUTH_TABLES, TABLE_PROTECTION, TENANT_TABLES, Database } from '@uk/db';
+import { GLOBAL_AUTH_TABLES, REFERENCE_TABLES, TABLE_PROTECTION, TENANT_TABLES, Database } from '@uk/db';
 import { uuidv7 } from '@uk/core';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -42,6 +42,24 @@ describe('classification matches reality', () => {
   });
   it('the runtime role cannot change RLS settings or policies (not the table owner)', () => {
     expect(adminSql(`SELECT count(*) FROM pg_tables WHERE schemaname='public' AND tableowner='uk_app'`)).toBe('0');
+  });
+});
+
+describe('reference tables (global, read-only)', () => {
+  it('are exactly the ISO / jurisdiction tables, carry no organisation_id and are populated', () => {
+    expect([...REFERENCE_TABLES].sort()).toEqual(['country', 'currency', 'tax_jurisdiction']);
+    for (const t of REFERENCE_TABLES) {
+      expect(adminSql(`SELECT count(*) FROM information_schema.columns WHERE table_name='${t}' AND column_name='organisation_id'`), t).toBe('0');
+      expect(Number(adminSql(`SELECT count(*) FROM ${t}`)), `${t} rows`).toBeGreaterThan(0);
+    }
+  });
+  it('the runtime role can read but never write them (changes are migrations)', async () => {
+    for (const t of REFERENCE_TABLES) {
+      expect(adminSql(`SELECT has_table_privilege('uk_app','${t}','SELECT')`), t).toBe('t');
+      for (const p of ['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE']) expect(adminSql(`SELECT has_table_privilege('uk_app','${t}','${p}')`), `${t} ${p}`).toBe('f');
+    }
+    expect(await db.prisma.$queryRawUnsafe<{ n: bigint }[]>(`SELECT count(*)::bigint n FROM country`)).toBeTruthy();
+    await expect(db.prisma.$executeRawUnsafe(`INSERT INTO currency(code,numeric_code,name,minor_units) VALUES ('ZZZ','999','x',2)`)).rejects.toThrow();
   });
 });
 

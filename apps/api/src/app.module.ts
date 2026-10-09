@@ -8,6 +8,9 @@ import { IdempotencyInterceptor } from './common/idempotency.interceptor';
 import { InfraModule } from './common/infra.module';
 import { FeatureGuard } from './common/feature.guard';
 import { OrgGuard } from './common/org.guard';
+import { MasterDataController } from './master-data/master-data.controller';
+import { MasterDataService } from './master-data/master-data.service';
+import { ReferenceController } from './master-data/reference.controller';
 import { FeatureFlagsController } from './features/features.controller';
 import { ProblemFilter } from './common/problem.filter';
 import { CompaniesController } from './companies/companies.controller';
@@ -34,9 +37,9 @@ export class AppModule {
       module: AppModule,
       imports: [InfraModule.forRoot(config), AuditModule, AuthModule],
       controllers: [HealthController, OrganisationsController, CompaniesController, DocumentsController, JobsController,
-        TasksController, PracticesController, FeatureFlagsController, WorkflowsController, NotificationsController, IntegrationsController, AiController],
+        TasksController, PracticesController, FeatureFlagsController, MasterDataController, ReferenceController, WorkflowsController, NotificationsController, IntegrationsController, AiController],
       providers: [
-        OrganisationsService, PracticesService, CompaniesService, DocumentsService, TasksService,
+        OrganisationsService, PracticesService, MasterDataService, CompaniesService, DocumentsService, TasksService,
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_GUARD, useClass: OrgGuard },
         { provide: APP_GUARD, useClass: FeatureGuard },

@@ -15,6 +15,7 @@ export const PERMISSIONS = [
   'practice:read', 'practice:manage', 'practice:member:manage',
   'company:access:manage',
   'workflow:review', 'workflow:approve',
+  'contact:read', 'contact:manage',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -37,6 +38,7 @@ export const PERMISSION_SCOPE: Record<Permission, PermissionScope> = {
   'task:read': 'COMPANY', 'task:manage': 'COMPANY',
   'workflow:read': 'COMPANY', 'workflow:manage': 'COMPANY', 'workflow:review': 'COMPANY', 'workflow:approve': 'COMPANY',
   'ai:use': 'COMPANY', 'ai:approve': 'COMPANY',
+  'contact:read': 'COMPANY', 'contact:manage': 'COMPANY',
 };
 export const permissionsOfScope = (...scopes: PermissionScope[]): Permission[] => PERMISSIONS.filter((p) => scopes.includes(PERMISSION_SCOPE[p]));
 
@@ -56,14 +58,14 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
     permissions: [...ORG_READ, 'job:read', 'practice:read', 'practice:manage', 'practice:member:manage', 'company:create', ...COMPANY_ALL] },
   { key: 'manager', name: 'Manager', description: 'Manages day-to-day work on a company: can review but not approve or manage access',
     permissions: [...ORG_READ, 'job:read', 'practice:read', 'company:read', 'company:update', 'period:read', 'period:manage',
-      'document:read', 'document:upload', 'document:archive', 'task:read', 'task:manage', 'workflow:read', 'workflow:manage', 'workflow:review', 'ai:use'] },
+      'document:read', 'document:upload', 'document:archive', 'task:read', 'task:manage', 'workflow:read', 'workflow:manage', 'workflow:review', 'ai:use', 'contact:read', 'contact:manage'] },
   { key: 'accountant', name: 'Accountant', description: 'Work on assigned client companies',
     permissions: [...READ, 'practice:read', 'company:create', 'company:update', 'period:manage', 'document:upload', 'document:archive', 'job:read', 'audit:read',
-      'task:read', 'task:manage', 'workflow:read', 'workflow:manage', 'workflow:review', 'ai:use', 'ai:approve'] },
+      'task:read', 'task:manage', 'workflow:read', 'workflow:manage', 'workflow:review', 'ai:use', 'ai:approve', 'contact:read', 'contact:manage'] },
   { key: 'bookkeeper', name: 'Bookkeeper', description: 'Prepare records for assigned companies',
-    permissions: [...READ, 'practice:read', 'document:upload', 'job:read', 'task:read', 'task:manage', 'workflow:read', 'ai:use'] },
+    permissions: [...READ, 'practice:read', 'document:upload', 'job:read', 'task:read', 'task:manage', 'workflow:read', 'ai:use', 'contact:read', 'contact:manage'] },
   { key: 'reviewer', name: 'Reviewer', description: 'Read-only review and audit access',
-    permissions: [...READ, 'practice:read', 'audit:read', 'job:read', 'task:read', 'workflow:read', 'workflow:review'] },
+    permissions: [...READ, 'practice:read', 'audit:read', 'job:read', 'task:read', 'workflow:read', 'workflow:review', 'contact:read'] },
   { key: 'client_viewer', name: 'Client Viewer', description: 'Client read-only access to own company',
     permissions: ['org:read', 'company:read', 'period:read', 'document:read'] },
 ];

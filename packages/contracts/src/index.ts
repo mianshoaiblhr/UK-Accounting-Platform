@@ -5,3 +5,4 @@ export * from './events';
 export * from './workflow';
 export * from './authz';
 export * from './features';
+export * from './financial-year';

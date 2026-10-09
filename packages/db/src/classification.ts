@@ -6,8 +6,10 @@
  *  RLS      : PostgreSQL row-level security only (infrastructure plumbing with no user-facing API)
  *  RLS+APP  : row-level security AND application-level authorisation (RBAC permission + company scope)
  *  APP      : application-level controls only — GLOBAL authentication-subsystem tables that are not tenant data
+ *  REFERENCE: global reference data (currencies, countries, tax jurisdictions): no tenant data, READ-ONLY for the runtime role;
+ *             changed only by migrations
  */
-export type Protection = 'RLS' | 'RLS+APP' | 'APP';
+export type Protection = 'RLS' | 'RLS+APP' | 'APP' | 'REFERENCE';
 
 export const TABLE_PROTECTION: Record<string, { protection: Protection; why: string }> = {
   // ── Authentication subsystem (global; reached only through apps/api/src/auth) ──
@@ -22,6 +24,12 @@ export const TABLE_PROTECTION: Record<string, { protection: Protection; why: str
   // ── Tenant data: RLS + application authorisation ──
   organisation: { protection: 'RLS+APP', why: 'Tenant root; visible to active members only.' },
   role: { protection: 'RLS+APP', why: 'System roles readable by all; custom roles per tenant.' },
+  currency: { protection: 'REFERENCE', why: 'ISO 4217; global, read-only for the runtime role.' },
+  country: { protection: 'REFERENCE', why: 'ISO 3166-1; global, read-only for the runtime role.' },
+  tax_jurisdiction: { protection: 'REFERENCE', why: 'Effective-dated jurisdictions; global, read-only for the runtime role.' },
+  contact: { protection: 'RLS+APP', why: 'Master data; company-linked contacts follow company access, organisation-level ones the organisation role.' },
+  address: { protection: 'RLS+APP', why: 'Owned by exactly one company or contact; follows the owner\'s access rules.' },
+  company_officer: { protection: 'RLS+APP', why: 'Directors/officers of a company; follows company access.' },
   feature_flag_override: { protection: 'RLS+APP', why: 'Per-organisation feature toggles; changing them needs org:manage.' },
   organisation_membership: { protection: 'RLS+APP', why: 'A user sees own memberships everywhere; only the org context can change them.' },
   practice: { protection: 'RLS+APP', why: 'Practice inside a PRACTICE organisation; access via practice:* permissions.' },
@@ -47,5 +55,6 @@ export const TABLE_PROTECTION: Record<string, { protection: Protection; why: str
   idempotency_record: { protection: 'RLS', why: 'Per-tenant request replay cache.' },
 };
 
-export const TENANT_TABLES = Object.entries(TABLE_PROTECTION).filter(([, v]) => v.protection !== 'APP').map(([k]) => k);
+export const TENANT_TABLES = Object.entries(TABLE_PROTECTION).filter(([, v]) => v.protection === 'RLS' || v.protection === 'RLS+APP').map(([k]) => k);
+export const REFERENCE_TABLES = Object.entries(TABLE_PROTECTION).filter(([, v]) => v.protection === 'REFERENCE').map(([k]) => k);
 export const GLOBAL_AUTH_TABLES = Object.entries(TABLE_PROTECTION).filter(([, v]) => v.protection === 'APP').map(([k]) => k);

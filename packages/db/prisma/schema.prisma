@@ -46,6 +46,34 @@ enum PracticeStatus {
   ARCHIVED
 }
 
+enum ContactKind {
+  PERSON
+  ORGANISATION
+}
+
+enum ContactStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum AddressKind {
+  REGISTERED_OFFICE
+  TRADING
+  CORRESPONDENCE
+  RESIDENTIAL
+  OTHER
+}
+
+enum OfficerRole {
+  DIRECTOR
+  SECRETARY
+  PERSON_WITH_SIGNIFICANT_CONTROL
+  MEMBER
+  PARTNER
+  TRUSTEE
+  OTHER
+}
+
 enum AuthTokenPurpose {
   EMAIL_VERIFICATION
   PASSWORD_RESET
@@ -416,6 +444,15 @@ model Company {
   name           String
   /// Registered number held as plain data only; no Companies House integration in V0.
   companyNumber  String?       @map("company_number")
+  incorporationDate DateTime?  @map("incorporation_date") @db.Date
+  /// Financial year-end as a month/day pair (29 Feb = last day of February).
+  yearEndMonth   Int?          @map("year_end_month") @db.SmallInt
+  yearEndDay     Int?          @map("year_end_day") @db.SmallInt
+  baseCurrency   String        @default("GBP") @map("base_currency") @db.Char(3)
+  /// Country of incorporation / registration.
+  countryCode    String        @default("GB") @map("country_code") @db.Char(2)
+  /// Primary tax jurisdiction code (effective-dated definitions live in tax_jurisdiction).
+  taxJurisdictionCode String?  @map("tax_jurisdiction_code")
   /// Managing practice (explicit relationship). Required for PRACTICE organisations, forbidden for BUSINESS (trigger).
   practiceId     String?       @map("practice_id") @db.Uuid
   legalForm      String        @default("LTD") @map("legal_form")
@@ -427,11 +464,125 @@ model Company {
   practice     Practice?           @relation(fields: [organisationId, practiceId], references: [organisationId, id])
   periods      AccountingPeriod[]
   memberships  CompanyMembership[]
+  contacts     Contact[]
+  addresses    Address[]
+  officers     CompanyOfficer[]
 
   @@unique([organisationId, id])
   @@index([organisationId])
   @@index([organisationId, practiceId])
   @@map("company")
+}
+
+// ───────────── Master data ─────────────
+/// ISO 4217 reference data (global, read-only for the runtime role).
+model Currency {
+  code        String @id @db.Char(3)
+  numericCode String @unique @map("numeric_code") @db.Char(3)
+  name        String
+  minorUnits  Int    @map("minor_units") @db.SmallInt
+
+  @@map("currency")
+}
+
+/// ISO 3166-1 reference data (global, read-only for the runtime role).
+model Country {
+  alpha2      String @id @db.Char(2)
+  alpha3      String @unique @db.Char(3)
+  numericCode String @unique @map("numeric_code") @db.Char(3)
+  name        String
+
+  taxJurisdictions TaxJurisdiction[]
+
+  @@map("country")
+}
+
+/// Effective-dated tax jurisdiction (global reference). No overlapping definitions of one code (exclusion constraint).
+model TaxJurisdiction {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String
+  countryCode String    @map("country_code") @db.Char(2)
+  name        String
+  authority   String
+  validFrom   DateTime  @map("valid_from") @db.Date
+  validTo     DateTime? @map("valid_to") @db.Date
+
+  country Country @relation(fields: [countryCode], references: [alpha2])
+
+  @@index([countryCode])
+  @@map("tax_jurisdiction")
+}
+
+model Contact {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId  String        @map("organisation_id") @db.Uuid
+  /// Null = an organisation-level contact; set = belongs to one company (and follows that company's access rules).
+  companyId       String?       @map("company_id") @db.Uuid
+  kind            ContactKind
+  name            String
+  email           String?
+  phone           String?
+  reference       String?
+  labels          String[]      @default([])
+  notes           String?
+  status          ContactStatus @default(ACTIVE)
+  createdByUserId String        @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  company   Company?        @relation(fields: [organisationId, companyId], references: [organisationId, id], onDelete: Cascade)
+  addresses Address[]
+  officers  CompanyOfficer[]
+
+  @@unique([organisationId, id])
+  @@index([organisationId, companyId])
+  @@map("contact")
+}
+
+model Address {
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String      @map("organisation_id") @db.Uuid
+  companyId      String?     @map("company_id") @db.Uuid
+  contactId      String?     @map("contact_id") @db.Uuid
+  kind           AddressKind
+  line1          String
+  line2          String?
+  line3          String?
+  city           String
+  region         String?
+  postcode       String?
+  countryCode    String      @map("country_code") @db.Char(2)
+  isPrimary      Boolean     @default(false) @map("is_primary")
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  company Company? @relation(fields: [organisationId, companyId], references: [organisationId, id], onDelete: Cascade)
+  contact Contact? @relation(fields: [organisationId, contactId], references: [organisationId, id], onDelete: Cascade)
+
+  @@index([organisationId, companyId])
+  @@index([organisationId, contactId])
+  @@map("address")
+}
+
+/// A person or organisation holding an office at a company. History is kept: resignation sets resigned_on.
+model CompanyOfficer {
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String      @map("organisation_id") @db.Uuid
+  companyId      String      @map("company_id") @db.Uuid
+  contactId      String      @map("contact_id") @db.Uuid
+  role           OfficerRole
+  appointedOn    DateTime    @map("appointed_on") @db.Date
+  resignedOn     DateTime?   @map("resigned_on") @db.Date
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  company Company @relation(fields: [organisationId, companyId], references: [organisationId, id], onDelete: Cascade)
+  contact Contact @relation(fields: [organisationId, contactId], references: [organisationId, id])
+
+  @@unique([companyId, contactId, role, appointedOn])
+  @@index([organisationId, companyId])
+  @@index([organisationId, contactId])
+  @@map("company_officer")
 }
 
 /// Period shell only: dates + status. No accounting semantics until V1+.

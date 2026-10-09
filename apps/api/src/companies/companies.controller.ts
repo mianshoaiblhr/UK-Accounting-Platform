@@ -20,9 +20,12 @@ export class CompaniesController {
   get(@Org() org: OrgAccess, @Param('companyId', ParseUUIDPipe) id: string) { return this.svc.get(org, id); }
 
   @Patch(':companyId') @RequirePermissions('company:update')
-  rename(@Org() org: OrgAccess, @Param('companyId', ParseUUIDPipe) id: string, @Body(new ZodPipe(updateCompanySchema)) b: z.output<typeof updateCompanySchema>) {
-    return this.svc.rename(org, id, b.name);
+  update(@Org() org: OrgAccess, @Param('companyId', ParseUUIDPipe) id: string, @Body(new ZodPipe(updateCompanySchema)) b: z.output<typeof updateCompanySchema>) {
+    return this.svc.update(org, id, b);
   }
+
+  @Get(':companyId/periods/next') @RequirePermissions('period:read')
+  nextPeriod(@Org() org: OrgAccess, @Param('companyId', ParseUUIDPipe) id: string) { return this.svc.nextPeriod(org, id); }
 
   @Get(':companyId/periods') @RequirePermissions('period:read')
   periods(@Org() org: OrgAccess, @Param('companyId', ParseUUIDPipe) id: string) { return this.svc.listPeriods(org, id); }

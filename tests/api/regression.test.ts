@@ -46,7 +46,9 @@ describe('regression: V0 foundation contract', () => {
 
   it('regression: V0 boundary — no ledger / bookkeeping / tax / filing tables or routes exist', async () => {
     const tables = adminSql(`SELECT string_agg(table_name, ',') FROM information_schema.tables WHERE table_schema='public'`);
-    expect(tables).not.toMatch(/ledger|journal|invoice|vat|tax|payroll|hmrc|companies_house|ixbrl|posting/i);
+    // `tax_jurisdiction` is V0 master data (specification §3), not tax computation: it is the only tax-named table V0 may have.
+    expect(tables.replace(/tax_jurisdiction/g, '')).not.toMatch(/ledger|journal|invoice|vat|tax|payroll|hmrc|companies_house|ixbrl|posting/i);
+    expect(tables).toContain('tax_jurisdiction');
     const u = await createUser(s);
     for (const p of ['/ledger', '/journals', '/invoices', '/vat', '/tax', '/filings']) {
       expect((await s.api().get(orgPath(u, p)).set(bearer(u.token))).status).toBe(404);

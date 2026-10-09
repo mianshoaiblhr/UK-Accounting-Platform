@@ -49,6 +49,8 @@ const probes: Call[] = [
 const GHOST = '11111111-1111-4111-8111-111111111111';
 probes.push(
   { name: 'list practices', perm: 'practice:read', run: call('get', '/practices') },
+  { name: 'list contacts', perm: 'contact:read', run: call('get', '/contacts') },
+  { name: 'create contact', perm: 'contact:manage', run: (u) => call('post', '/contacts', { kind: 'PERSON', name: `Perm ${Math.random()}` })(u) },
   { name: 'update practice', perm: 'practice:manage', run: call('patch', `/practices/${GHOST}`, { name: 'x' }) },
   { name: 'grant practice role', perm: 'practice:member:manage', run: (u) => s.api().put(orgPath(owner, `/practices/${GHOST}/members/${GHOST}`)).set(bearer(u.token)).send({ roleId: GHOST }).then((r) => r.status) },
   { name: 'list company access', perm: 'company:access:manage', run: (u) => call('get', `/companies/${company.id}/access`)(u) },
