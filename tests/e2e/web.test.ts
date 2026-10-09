@@ -155,6 +155,9 @@ describe('browser journey: practice onboarding with MFA', () => {
     await page.getByRole('button', { name: 'Register' }).click();
     const mail = await stack.mail.waitFor(email, /Verify/);
     await page.goto(/https?:\/\/\S+/.exec(mail.text)![0].replace('http://localhost:3000', WEB));
+    // The verification page calls the API after it has loaded: leaving it before it says "verified" can abort that call and leave the
+    // account unverified (the sign-in below would then be refused and the URL would never change - a race that failed CI once).
+    await pw(page.getByRole('status')).toContainText('verified');
     await page.goto('/login');
     await fill(page, 'Email', email);
     await fill(page, 'Password', PASSWORD);

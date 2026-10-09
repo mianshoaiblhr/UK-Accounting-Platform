@@ -29,6 +29,7 @@
 * `7bc2ad5` pushed with a **type error in a new test file** (I had checked typecheck through a pipe that hid the exit code); fixed in `048b6bf`, which was fully green.
 * `9bb10ff` **failed CI**: my evidence-graph integrity test wrongly flagged organisation-level documents cited as evidence for a company workflow. Reproduced in a clean clone, fixed in `0a69b86`.
 * The full local suite on `0a69b86` failed one **existing** test (the `/readyz` response contract); fixed in `a57ebb3`, which was the head of that push, so `0a69b86` itself never ran in CI.
+* `a1d9a15` (documentation only, code identical to `a57ebb3`) **failed the real-browser E2E step in CI** (test 4 timed out after sign-in) although the same code had passed in CI and in four clean clones. Root cause, found from the log and the page code: the e-mail verification page calls the API after it has loaded, and that test navigated to the sign-in page without waiting for the "verified" confirmation (the first journey does wait), so an aborted verification left the account unverified and the sign-in was refused. A **race in the test**, not a product defect; fixed by waiting for the confirmation (3 consecutive local e2e runs green) in the commit that follows `a1d9a15`.
 No test was skipped, weakened or deleted to obtain green.
 
 ## 2. Compliance counts (144 rows)
