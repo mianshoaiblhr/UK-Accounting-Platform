@@ -152,7 +152,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.target }}
       # Image vulnerability scan: fail on fixable HIGH/CRITICAL findings in the OS packages and app dependencies.
       - name: Scan image (Trivy)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: uk-platform-${{ matrix.target }}:ci
           severity: HIGH,CRITICAL
