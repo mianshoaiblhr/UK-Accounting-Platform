@@ -24,14 +24,14 @@ export interface RouteDoc {
 const page = z.object({ limit: z.number().int().min(1).max(100).default(25).describe('Page size'), cursor: z.string().optional().describe('`nextCursor` from the previous page') });
 export const NAMED_RESPONSES: Record<string, ZodTypeAny> = {
   Company: R.Company, Period: R.Period, DocumentRecord: R.DocumentRecord, DocumentVersion: R.DocumentVersion, DocumentCreated: R.DocumentCreated,
-  Job: R.Job, JobAccepted: R.JobAccepted, Task: R.Task, Notification: R.Notification, WorkflowInstance: R.WorkflowInstance, WorkflowDetail: R.WorkflowDetail,
+  Job: R.Job, JobAccepted: R.JobAccepted, Task: R.Task, TaskComment: R.TaskComment, TaskAttachment: R.TaskAttachment, TaskReminder: R.TaskReminder, Notification: R.Notification, WorkflowInstance: R.WorkflowInstance, WorkflowDetail: R.WorkflowDetail,
   Connection: R.Connection, AiProposal: R.AiProposal, Practice: R.Practice, FeatureFlag: R.FeatureFlag, Contact: R.Contact, Address: R.Address, Officer: R.Officer, ProposedPeriod: R.ProposedPeriod, GrantList: R.GrantList, GrantResult: R.GrantResult, Role: R.Role, Invitation: R.Invitation, Organisation: R.Organisation, OrgMe: R.OrgMe, Me: R.Me,
   LoginResult: R.LoginResult, Message: R.Message, Health: R.Health, MfaStatus: R.MfaStatus, MfaEnrol: R.MfaEnrol, MfaConfirmed: R.MfaConfirmed,
   DownloadLink: R.DownloadLink, CheckResult: R.CheckResult,
   CompanyPage: R.Pages.Company, DocumentPage: R.Pages.DocumentRecord, JobPage: R.Pages.Job, TaskPage: R.Pages.Task, NotificationPage: R.Pages.Notification,
   WorkflowPage: R.Pages.WorkflowInstance, AiProposalPage: R.Pages.AiProposal, AuditEventPage: R.Pages.AuditEvent,
   PeriodList: R.items(R.Period), RoleList: z.object({ items: z.array(R.Role), permissionCatalogue: z.array(z.string()) }), MemberList: R.items(R.Member), ContactPage: R.Pages.Contact, AddressList: R.items(R.Address), OfficerList: R.items(R.Officer), CurrencyList: R.items(R.Currency), CountryList: R.items(R.Country), TaxJurisdictionList: R.items(R.TaxJurisdiction), FeatureFlagList: R.items(R.FeatureFlag), PracticeList: R.items(R.Practice),
-  InvitationList: R.items(R.Invitation), ConnectionList: R.items(R.Connection), ProviderList: R.items(R.Provider), SessionList: R.items(R.Session),
+  TaskCommentList: R.items(R.TaskComment), TaskAttachmentList: R.items(R.TaskAttachment), TaskReminderList: R.items(R.TaskReminder), InvitationList: R.items(R.Invitation), ConnectionList: R.items(R.Connection), ProviderList: R.items(R.Provider), SessionList: R.items(R.Session),
   LoginHistory: R.items(R.LoginEvent), WorkflowDefinitionList: R.items(R.WorkflowDefinitionView),
   UnreadCount: z.object({ count: z.number().int() }), UpdatedCount: z.object({ updated: z.number().int() }),
 };
@@ -97,10 +97,19 @@ export const ROUTES: Record<string, RouteDoc> = {
   [`POST ${v}/jobs/{jobId}/retry`]: { tag: 'Jobs', summary: 'Retry a FAILED/DEAD job', ok: [202, 'Job', 'Re-queued'] },
   [`POST ${v}/jobs/echo`]: { tag: 'Jobs', summary: 'Enqueue a harmless test job (exercises retries/backoff/DLQ)', body: ['EnqueueEchoRequest', C.enqueueEchoSchema], ok: [202, 'Job', 'Queued'] },
   // ── Tasks ──
-  [`POST ${v}/tasks`]: { tag: 'Tasks', summary: 'Create a task (optionally assigned; assignment publishes task.assigned)', body: ['CreateTaskRequest', C.createTaskSchema], ok: [201, 'Task', 'Created'] },
-  [`GET ${v}/tasks`]: { tag: 'Tasks', summary: 'List tasks', query: C.taskListQuerySchema, ok: [200, 'TaskPage', 'Page of tasks'] },
+  [`POST ${v}/tasks`]: { tag: 'Tasks', summary: 'Create a task (optional assignee, reviewer and source; assignment publishes task.assigned)', body: ['CreateTaskRequest', C.createTaskSchema], ok: [201, 'Task', 'Created'] },
+  [`GET ${v}/tasks`]: { tag: 'Tasks', summary: 'List tasks (filters: status, assignee, reviewer, company, priority, source, due date, overdue)', query: C.taskListQuerySchema, ok: [200, 'TaskPage', 'Page of tasks'] },
   [`GET ${v}/tasks/{taskId}`]: { tag: 'Tasks', summary: 'Get a task', ok: [200, 'Task', 'Task'] },
   [`PATCH ${v}/tasks/{taskId}`]: { tag: 'Tasks', summary: 'Update / complete / reassign a task', body: ['UpdateTaskRequest', C.updateTaskSchema], ok: [200, 'Task', 'Updated'] },
+  [`POST ${v}/tasks/{taskId}/review`]: { tag: 'Tasks', summary: 'Designated reviewer approves (task becomes DONE) or returns (back to IN_PROGRESS, comment required) a task that is IN_REVIEW', body: ['ReviewTaskRequest', C.reviewTaskSchema], ok: [200, 'Task', 'Reviewed'] },
+  [`GET ${v}/tasks/{taskId}/comments`]: { tag: 'Tasks', summary: 'Task conversation (append-only)', ok: [200, 'TaskCommentList', 'Comments'] },
+  [`POST ${v}/tasks/{taskId}/comments`]: { tag: 'Tasks', summary: 'Comment on a task (managers, the assignee and the reviewer)', body: ['CreateTaskCommentRequest', C.createTaskCommentSchema], ok: [201, 'TaskComment', 'Created'] },
+  [`GET ${v}/tasks/{taskId}/attachments`]: { tag: 'Tasks', summary: 'Documents linked to a task', ok: [200, 'TaskAttachmentList', 'Attachments'] },
+  [`POST ${v}/tasks/{taskId}/attachments`]: { tag: 'Tasks', summary: 'Link a document of the task\'s company (requires document read access)', body: ['AttachTaskDocumentRequest', C.attachTaskDocumentSchema], ok: [201, 'TaskAttachment', 'Linked'] },
+  [`DELETE ${v}/tasks/{taskId}/attachments/{documentId}`]: { tag: 'Tasks', summary: 'Unlink a document', ok: [204, null, 'Unlinked'] },
+  [`GET ${v}/tasks/{taskId}/reminders`]: { tag: 'Tasks', summary: 'Reminders of a task', ok: [200, 'TaskReminderList', 'Reminders'] },
+  [`POST ${v}/tasks/{taskId}/reminders`]: { tag: 'Tasks', summary: 'Schedule an in-app reminder (delivered by the worker; the notification carries no task content)', body: ['CreateTaskReminderRequest', C.createTaskReminderSchema], ok: [201, 'TaskReminder', 'Scheduled'] },
+  [`DELETE ${v}/tasks/{taskId}/reminders/{reminderId}`]: { tag: 'Tasks', summary: 'Cancel a pending reminder', ok: [204, null, 'Cancelled'] },
   // ── Workflows ──
   [`GET ${v}/reference/currencies`]: { tag: 'Reference data', summary: 'ISO 4217 currencies (read-only)', ok: [200, 'CurrencyList', 'Currencies'] },
   [`GET ${v}/reference/countries`]: { tag: 'Reference data', summary: 'ISO 3166-1 countries (read-only)', ok: [200, 'CountryList', 'Countries'] },

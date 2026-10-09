@@ -24,6 +24,22 @@ export function registerConsumers(bus: EventBus, notifications: NotificationServ
     if (p.assigneeUserId === p.assignedByUserId) return; // don't notify people about their own actions
     await notifications.notify(tx, { organisationId: event.organisationId!, userId: p.assigneeUserId, type: 'task.assigned', title: 'A task was assigned to you', body: p.title, entityType: 'task', entityId: p.taskId });
   });
+  bus.subscribe('notifications.task_review_requested', [Events.taskReviewRequested.type], async ({ event, tx }) => {
+    const p = Events.taskReviewRequested.schema.parse(event.payload);
+    await notifications.notify(tx, { organisationId: event.organisationId!, userId: p.reviewerUserId, type: 'task.review_requested', title: 'A task is waiting for your review', body: p.title, entityType: 'task', entityId: p.taskId });
+  });
+  bus.subscribe('notifications.task_reviewed', [Events.taskReviewed.type], async ({ event, tx }) => {
+    const p = Events.taskReviewed.schema.parse(event.payload);
+    if (!p.assigneeUserId || p.assigneeUserId === p.reviewerUserId) return;
+    await notifications.notify(tx, { organisationId: event.organisationId!, userId: p.assigneeUserId, type: p.decision === 'APPROVE' ? 'task.approved' : 'task.returned',
+      title: p.decision === 'APPROVE' ? 'Your task was approved' : 'Your task was returned for changes', body: p.title, entityType: 'task', entityId: p.taskId });
+  });
+  bus.subscribe('notifications.task_commented', [Events.taskCommented.type], async ({ event, tx }) => {
+    const p = Events.taskCommented.schema.parse(event.payload);
+    for (const userId of p.recipientUserIds) {
+      await notifications.notify(tx, { organisationId: event.organisationId!, userId, type: 'task.commented', title: 'New comment on a task', body: p.title, entityType: 'task', entityId: p.taskId });
+    }
+  });
 }
 
 export function registerAi(rt: JobRuntime, deps: { db: Database; gateway: AiGateway; proposals: AiProposalService; features: FeatureFlagService }): void {

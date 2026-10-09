@@ -3,13 +3,13 @@ import { FieldEncryption, createLogger, type AppConfig, type Logger } from '@uk/
 import { Database } from '@uk/db';
 import { JobProducer, JobRuntime } from '@uk/jobs';
 import { parseFeatureDefaults } from '@uk/contracts';
-import { AiGateway, AiProposalService, EventBus, FeatureFlagService, IntegrationService, NotificationService, OutboxRelay, WorkflowEngine, WorkflowRegistry, createAiProviders, createIntegrationRegistry, dispatchViaJobs, type AiProvider } from '@uk/platform';
+import { AiGateway, AiProposalService, EventBus, FeatureFlagService, IntegrationService, NotificationService, OutboxRelay, TaskReminderSweeper, WorkflowEngine, WorkflowRegistry, createAiProviders, createIntegrationRegistry, dispatchViaJobs, type AiProvider } from '@uk/platform';
 import { registerAi, registerConsumers, registerEventDispatch, registerIntegrations } from './handlers/platform';
 import { registerDocument } from './handlers/document';
 import { registerEcho } from './handlers/echo';
 import { registerEmail } from './handlers/email';
 
-export interface WorkerHandle { stop(): Promise<void>; runtime: JobRuntime; producer: JobProducer; db: Database; relay: OutboxRelay; bus: EventBus; aiProviders: AiProvider[] }
+export interface WorkerHandle { stop(): Promise<void>; runtime: JobRuntime; producer: JobProducer; db: Database; relay: OutboxRelay; reminders: TaskReminderSweeper; bus: EventBus; aiProviders: AiProvider[] }
 
 /** Builds and starts the worker; also used by integration tests. */
 export function startWorker(config: AppConfig, logger: Logger = createLogger(config.LOG_LEVEL, 'worker')): WorkerHandle {
@@ -42,6 +42,11 @@ export function startWorker(config: AppConfig, logger: Logger = createLogger(con
   }, config.OUTBOX_CLEANUP_MS);
   cleanupLoop.unref();
 
+  // Task reminders: due reminders become in-app notifications (each handled in its tenant, exactly once).
+  const reminders = new TaskReminderSweeper(db, notifications, logger, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA });
+  const reminderLoop = setInterval(() => { reminders.sweepOnce().catch((err) => logger.error({ err }, 'task reminder sweep failed')); }, config.TASK_REMINDER_POLL_MS);
+  reminderLoop.unref();
+
   // Recover jobs persisted to Postgres but never delivered to Redis (e.g. Redis outage mid-request).
   const sweeper = setInterval(() => {
     producer.sweepStale().then((n) => n && logger.warn({ requeued: n }, 'swept stale queued jobs')).catch((err) => logger.error({ err }, 'sweep failed'));
@@ -49,11 +54,12 @@ export function startWorker(config: AppConfig, logger: Logger = createLogger(con
   sweeper.unref();
 
   return {
-    runtime, producer, db, relay, bus, aiProviders,
+    runtime, producer, db, relay, reminders, bus, aiProviders,
     async stop() {
       clearInterval(sweeper);
       clearInterval(relayLoop);
       clearInterval(cleanupLoop);
+      clearInterval(reminderLoop);
       await runtime.stop();
       await producer.close();
       await db.close();

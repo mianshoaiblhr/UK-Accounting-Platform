@@ -131,21 +131,37 @@ export const updatePracticeSchema = z.object({ name: z.string().trim().min(1).ma
 /** Grants `roleId` to a member at practice level (PUT) or company level (PUT). The path names the target. */
 export const setGrantSchema = z.object({ roleId: z.string().uuid() }).strict();
 
+export const TASK_STATUSES = ['OPEN', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'CANCELLED'] as const;
+/** Sources a client may declare. SYSTEM and EVENT are reserved for platform-created tasks. */
+export const TASK_CLIENT_SOURCES = ['MANUAL', 'WORKFLOW', 'AI_PROPOSAL', 'DOCUMENT'] as const;
+const taskDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 export const createTaskSchema = z.object({
   title: z.string().trim().min(1).max(200), description: z.string().max(5000).default(''),
-  companyId: z.string().uuid().optional(), assigneeUserId: z.string().uuid().optional(),
+  companyId: z.string().uuid().optional(), assigneeUserId: z.string().uuid().optional(), reviewerUserId: z.string().uuid().optional(),
   priority: z.enum(['LOW', 'NORMAL', 'HIGH']).default('NORMAL'),
-  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-}).strict();
+  dueDate: taskDate.optional(),
+  source: z.enum(TASK_CLIENT_SOURCES).default('MANUAL'), sourceId: z.string().trim().min(1).max(200).optional(),
+}).strict().refine((t) => t.source === 'MANUAL' || !!t.sourceId, { message: 'sourceId is required when source is not MANUAL', path: ['sourceId'] })
+  .refine((t) => !t.reviewerUserId || t.reviewerUserId !== t.assigneeUserId, { message: 'The reviewer cannot be the assignee', path: ['reviewerUserId'] });
 export const updateTaskSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(), description: z.string().max(5000).optional(),
-  status: z.enum(['OPEN', 'IN_PROGRESS', 'DONE', 'CANCELLED']).optional(),
-  priority: z.enum(['LOW', 'NORMAL', 'HIGH']).optional(), dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
-  assigneeUserId: z.string().uuid().nullable().optional(),
+  status: z.enum(TASK_STATUSES).optional(),
+  priority: z.enum(['LOW', 'NORMAL', 'HIGH']).optional(), dueDate: taskDate.nullable().optional(),
+  assigneeUserId: z.string().uuid().nullable().optional(), reviewerUserId: z.string().uuid().nullable().optional(),
 }).strict();
 export const taskListQuerySchema = paginationSchema.extend({
-  status: z.enum(['OPEN', 'IN_PROGRESS', 'DONE', 'CANCELLED']).optional(), assignee: z.enum(['me', 'any']).default('any'),
+  status: z.enum(TASK_STATUSES).optional(), assignee: z.enum(['me', 'any']).default('any'), reviewer: z.enum(['me', 'any']).default('any'),
+  companyId: z.string().uuid().optional(), priority: z.enum(['LOW', 'NORMAL', 'HIGH']).optional(),
+  source: z.enum(['MANUAL', 'WORKFLOW', 'AI_PROPOSAL', 'DOCUMENT', 'EVENT', 'SYSTEM']).optional(),
+  dueBefore: taskDate.optional(), overdue: z.enum(['true', 'false']).transform((v) => v === 'true').optional(),
 });
+export const reviewTaskSchema = z.object({ decision: z.enum(['APPROVE', 'RETURN']), comment: z.string().trim().min(1).max(5000).optional() }).strict()
+  .refine((r) => r.decision === 'APPROVE' || !!r.comment, { message: 'A comment is required when returning a task', path: ['comment'] });
+export const createTaskCommentSchema = z.object({ body: z.string().trim().min(1).max(5000) }).strict();
+export const attachTaskDocumentSchema = z.object({ documentId: z.string().uuid() }).strict();
+export const createTaskReminderSchema = z.object({
+  remindAt: z.string().datetime({ offset: true }), recipientUserId: z.string().uuid().optional(),
+}).strict();
 
 export const createConnectionSchema = z.object({
   provider: z.string().max(60), displayName: z.string().trim().min(1).max(120),

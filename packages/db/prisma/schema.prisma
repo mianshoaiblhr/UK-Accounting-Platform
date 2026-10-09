@@ -143,6 +143,7 @@ enum OutboxStatus {
 enum TaskStatus {
   OPEN
   IN_PROGRESS
+  IN_REVIEW
   DONE
   CANCELLED
 }
@@ -824,6 +825,7 @@ model WorkflowTransition {
 model Task {
   id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   organisationId  String       @map("organisation_id") @db.Uuid
+  /// Composite FK (organisation_id, company_id) -> company.
   companyId       String?      @map("company_id") @db.Uuid
   title           String
   description     String       @default("")
@@ -831,16 +833,79 @@ model Task {
   priority        TaskPriority @default(NORMAL)
   dueDate         DateTime?    @map("due_date") @db.Date
   assigneeUserId  String?      @map("assignee_user_id") @db.Uuid
+  /// Optional reviewer (never the assignee). With a reviewer the task is completed only from IN_REVIEW and only by that user.
+  reviewerUserId  String?      @map("reviewer_user_id") @db.Uuid
   createdByUserId String       @map("created_by_user_id") @db.Uuid
+  /// What created the task: MANUAL | WORKFLOW | AI_PROPOSAL | DOCUMENT | EVENT | SYSTEM.
+  source          String       @default("MANUAL")
+  sourceId        String?      @map("source_id")
   subjectType     String?      @map("subject_type")
   subjectId       String?      @map("subject_id")
   createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   completedAt     DateTime?    @map("completed_at") @db.Timestamptz(3)
 
+  attachments TaskAttachment[]
+  comments    TaskComment[]
+  reminders   TaskReminder[]
+
+  @@unique([organisationId, id])
   @@index([organisationId, status])
   @@index([organisationId, assigneeUserId])
+  @@index([organisationId, reviewerUserId])
+  @@index([organisationId, companyId])
   @@map("task")
+}
+
+/// Link between a task and a document of the same company (trigger-enforced).
+model TaskAttachment {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String  @map("organisation_id") @db.Uuid
+  taskId        String   @map("task_id") @db.Uuid
+  documentId    String   @map("document_id") @db.Uuid
+  addedByUserId String   @map("added_by_user_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  task Task @relation(fields: [organisationId, taskId], references: [organisationId, id], onDelete: Cascade)
+
+  @@unique([taskId, documentId])
+  @@index([organisationId, documentId])
+  @@map("task_attachment")
+}
+
+/// Append-only (trigger-enforced).
+model TaskComment {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  taskId         String   @map("task_id") @db.Uuid
+  authorUserId   String   @map("author_user_id") @db.Uuid
+  body           String
+  /// COMMENT | REVIEW_APPROVED | REVIEW_RETURNED
+  kind           String   @default("COMMENT")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  task Task @relation(fields: [organisationId, taskId], references: [organisationId, id], onDelete: Cascade)
+
+  @@index([taskId, createdAt])
+  @@map("task_comment")
+}
+
+/// Pending -> sent | cancelled exactly once (trigger-enforced); delivered by the worker sweeper.
+model TaskReminder {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId  String    @map("organisation_id") @db.Uuid
+  taskId          String    @map("task_id") @db.Uuid
+  recipientUserId String    @map("recipient_user_id") @db.Uuid
+  remindAt        DateTime  @map("remind_at") @db.Timestamptz(3)
+  createdByUserId String    @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  sentAt          DateTime? @map("sent_at") @db.Timestamptz(3)
+  cancelledAt     DateTime? @map("cancelled_at") @db.Timestamptz(3)
+
+  task Task @relation(fields: [organisationId, taskId], references: [organisationId, id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@map("task_reminder")
 }
 
 model Notification {

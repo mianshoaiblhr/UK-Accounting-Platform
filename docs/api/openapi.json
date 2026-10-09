@@ -2008,7 +2008,7 @@
         "x-required-permissions": [
           "task:manage"
         ],
-        "summary": "Create a task (optionally assigned; assignment publishes task.assigned)",
+        "summary": "Create a task (optional assignee, reviewer and source; assignment publishes task.assigned)",
         "description": "**Requires permission:** `task:manage`",
         "security": [
           {
@@ -2061,6 +2061,7 @@
               "enum": [
                 "OPEN",
                 "IN_PROGRESS",
+                "IN_REVIEW",
                 "DONE",
                 "CANCELLED"
               ]
@@ -2077,6 +2078,78 @@
                 "any"
               ],
               "default": "any"
+            }
+          },
+          {
+            "name": "reviewer",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "me",
+                "any"
+              ],
+              "default": "any"
+            }
+          },
+          {
+            "name": "companyId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "LOW",
+                "NORMAL",
+                "HIGH"
+              ]
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "MANUAL",
+                "WORKFLOW",
+                "AI_PROPOSAL",
+                "DOCUMENT",
+                "EVENT",
+                "SYSTEM"
+              ]
+            }
+          },
+          {
+            "name": "dueBefore",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "overdue",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
             }
           }
         ],
@@ -2113,7 +2186,7 @@
         "x-required-permissions": [
           "task:read"
         ],
-        "summary": "List tasks",
+        "summary": "List tasks (filters: status, assignee, reviewer, company, priority, source, due date, overdue)",
         "description": "**Requires permission:** `task:read`",
         "security": [
           {
@@ -2246,6 +2319,569 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/tasks/{taskId}/review": {
+      "post": {
+        "operationId": "Tasks_review",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reviewed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Tasks"
+        ],
+        "x-required-permissions": [
+          "task:read"
+        ],
+        "summary": "Designated reviewer approves (task becomes DONE) or returns (back to IN_PROGRESS, comment required) a task that is IN_REVIEW",
+        "description": "**Requires permission:** `task:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewTaskRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/tasks/{taskId}/comments": {
+      "get": {
+        "operationId": "Tasks_comments",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskCommentList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Tasks"
+        ],
+        "x-required-permissions": [
+          "task:read"
+        ],
+        "summary": "Task conversation (append-only)",
+        "description": "**Requires permission:** `task:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "Tasks_comment",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskComment"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Tasks"
+        ],
+        "x-required-permissions": [
+          "task:read"
+        ],
+        "summary": "Comment on a task (managers, the assignee and the reviewer)",
+        "description": "**Requires permission:** `task:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskCommentRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/tasks/{taskId}/attachments": {
+      "get": {
+        "operationId": "Tasks_attachments",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Attachments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskAttachmentList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Tasks"
+        ],
+        "x-required-permissions": [
+          "task:read"
+        ],
+        "summary": "Documents linked to a task",
+        "description": "**Requires permission:** `task:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "Tasks_attach",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Linked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskAttachment"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Tasks"
+        ],
+        "x-required-permissions": [
+          "task:manage"
+        ],
+        "summary": "Link a document of the task's company (requires document read access)",
+        "description": "**Requires permission:** `task:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttachTaskDocumentRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/tasks/{taskId}/attachments/{documentId}": {
+      "delete": {
+        "operationId": "Tasks_detach",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Unlinked"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Tasks"
+        ],
+        "x-required-permissions": [
+          "task:manage"
+        ],
+        "summary": "Unlink a document",
+        "description": "**Requires permission:** `task:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/tasks/{taskId}/reminders": {
+      "get": {
+        "operationId": "Tasks_reminders",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reminders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskReminderList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Tasks"
+        ],
+        "x-required-permissions": [
+          "task:read"
+        ],
+        "summary": "Reminders of a task",
+        "description": "**Requires permission:** `task:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "Tasks_addReminder",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Scheduled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskReminder"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Tasks"
+        ],
+        "x-required-permissions": [
+          "task:manage"
+        ],
+        "summary": "Schedule an in-app reminder (delivered by the worker; the notification carries no task content)",
+        "description": "**Requires permission:** `task:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskReminderRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/tasks/{taskId}/reminders/{reminderId}": {
+      "delete": {
+        "operationId": "Tasks_cancelReminder",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "reminderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Cancelled"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Tasks"
+        ],
+        "x-required-permissions": [
+          "task:manage"
+        ],
+        "summary": "Cancel a pending reminder",
+        "description": "**Requires permission:** `task:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
       }
     },
     "/api/v1/organisations/{organisationId}/practices": {
@@ -7394,6 +8030,7 @@
             "enum": [
               "OPEN",
               "IN_PROGRESS",
+              "IN_REVIEW",
               "DONE",
               "CANCELLED"
             ]
@@ -7415,6 +8052,27 @@
             "format": "uuid",
             "nullable": true
           },
+          "reviewerUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "With a reviewer the task is completed only from IN_REVIEW and only by that user"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "MANUAL",
+              "WORKFLOW",
+              "AI_PROPOSAL",
+              "DOCUMENT",
+              "EVENT",
+              "SYSTEM"
+            ]
+          },
+          "sourceId": {
+            "type": "string",
+            "nullable": true
+          },
           "createdByUserId": {
             "type": "string",
             "format": "uuid"
@@ -7434,8 +8092,146 @@
           "priority",
           "dueDate",
           "assigneeUserId",
+          "reviewerUserId",
+          "source",
+          "sourceId",
           "createdByUserId",
           "completedAt"
+        ],
+        "additionalProperties": false
+      },
+      "TaskComment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "taskId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "authorUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "body": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "COMMENT",
+              "REVIEW_APPROVED",
+              "REVIEW_RETURNED"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "taskId",
+          "authorUserId",
+          "body",
+          "kind",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "TaskAttachment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "taskId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "documentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "addedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "documentName": {
+            "type": "string",
+            "nullable": true,
+            "description": "null when the caller cannot read documents of the company"
+          },
+          "documentStatus": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "taskId",
+          "documentId",
+          "addedByUserId",
+          "createdAt",
+          "documentName",
+          "documentStatus"
+        ],
+        "additionalProperties": false
+      },
+      "TaskReminder": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "taskId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recipientUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "remindAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sentAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "cancelledAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "taskId",
+          "recipientUserId",
+          "remindAt",
+          "createdByUserId",
+          "createdAt",
+          "sentAt",
+          "cancelledAt"
         ],
         "additionalProperties": false
       },
@@ -9008,6 +9804,7 @@
                   "enum": [
                     "OPEN",
                     "IN_PROGRESS",
+                    "IN_REVIEW",
                     "DONE",
                     "CANCELLED"
                   ]
@@ -9029,6 +9826,27 @@
                   "format": "uuid",
                   "nullable": true
                 },
+                "reviewerUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true,
+                  "description": "With a reviewer the task is completed only from IN_REVIEW and only by that user"
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "MANUAL",
+                    "WORKFLOW",
+                    "AI_PROPOSAL",
+                    "DOCUMENT",
+                    "EVENT",
+                    "SYSTEM"
+                  ]
+                },
+                "sourceId": {
+                  "type": "string",
+                  "nullable": true
+                },
                 "createdByUserId": {
                   "type": "string",
                   "format": "uuid"
@@ -9048,6 +9866,9 @@
                 "priority",
                 "dueDate",
                 "assigneeUserId",
+                "reviewerUserId",
+                "source",
+                "sourceId",
                 "createdByUserId",
                 "completedAt"
               ],
@@ -10225,6 +11046,177 @@
         ],
         "additionalProperties": false
       },
+      "TaskCommentList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "taskId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "authorUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "body": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "COMMENT",
+                    "REVIEW_APPROVED",
+                    "REVIEW_RETURNED"
+                  ]
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "taskId",
+                "authorUserId",
+                "body",
+                "kind",
+                "createdAt"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "TaskAttachmentList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "taskId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "documentId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "addedByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "documentName": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "null when the caller cannot read documents of the company"
+                },
+                "documentStatus": {
+                  "type": "string",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "taskId",
+                "documentId",
+                "addedByUserId",
+                "createdAt",
+                "documentName",
+                "documentStatus"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "TaskReminderList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "taskId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "recipientUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "remindAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "sentAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "cancelledAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "taskId",
+                "recipientUserId",
+                "remindAt",
+                "createdByUserId",
+                "createdAt",
+                "sentAt",
+                "cancelledAt"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
       "InvitationList": {
         "type": "object",
         "properties": {
@@ -10974,6 +11966,10 @@
             "type": "string",
             "format": "uuid"
           },
+          "reviewerUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "priority": {
             "type": "string",
             "enum": [
@@ -10986,6 +11982,21 @@
           "dueDate": {
             "type": "string",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "MANUAL",
+              "WORKFLOW",
+              "AI_PROPOSAL",
+              "DOCUMENT"
+            ],
+            "default": "MANUAL"
+          },
+          "sourceId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
           }
         },
         "required": [
@@ -11010,6 +12021,7 @@
             "enum": [
               "OPEN",
               "IN_PROGRESS",
+              "IN_REVIEW",
               "DONE",
               "CANCELLED"
             ]
@@ -11031,8 +12043,78 @@
             "type": "string",
             "format": "uuid",
             "nullable": true
+          },
+          "reviewerUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
+        "additionalProperties": false
+      },
+      "ReviewTaskRequest": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "APPROVE",
+              "RETURN"
+            ]
+          },
+          "comment": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "additionalProperties": false
+      },
+      "CreateTaskCommentRequest": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "additionalProperties": false
+      },
+      "AttachTaskDocumentRequest": {
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "documentId"
+        ],
+        "additionalProperties": false
+      },
+      "CreateTaskReminderRequest": {
+        "type": "object",
+        "properties": {
+          "remindAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "recipientUserId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "remindAt"
+        ],
         "additionalProperties": false
       },
       "CreatePracticeRequest": {

@@ -25,12 +25,13 @@ const deploy = (schema: string, url: string) =>
   execFileSync('pnpm', ['--filter', '@uk/db', 'exec', 'prisma', 'migrate', 'deploy', '--schema', schema], { cwd: ROOT, env: { ...process.env, MIGRATION_DATABASE_URL: url }, stdio: 'pipe' });
 
 let tmp: string;
-const dbs = ['uk_upgrade_nonsu', 'uk_upgrade_data'];
+const dbs = ['uk_upgrade_nonsu', 'uk_upgrade_data', 'uk_upgrade_tasks'];
 beforeAll(() => {
   tmp = mkdtempSync(join(tmpdir(), 'uk-mig-'));
   psql(adminUrl('postgres'), "DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='uk_migrator_t') THEN CREATE ROLE uk_migrator_t LOGIN PASSWORD 'm' NOSUPERUSER NOBYPASSRLS CREATEROLE; END IF; END $$");
   for (const d of dbs) { psql(adminUrl('postgres'), `DROP DATABASE IF EXISTS ${d} WITH (FORCE)`); psql(adminUrl('postgres'), `CREATE DATABASE ${d} OWNER uk_migrator_t`); }
   psql(adminUrl('uk_upgrade_nonsu'), 'GRANT ALL ON SCHEMA public TO uk_migrator_t; CREATE EXTENSION IF NOT EXISTS btree_gist');
+  psql(adminUrl('uk_upgrade_tasks'), 'GRANT ALL ON SCHEMA public TO uk_migrator_t; CREATE EXTENSION IF NOT EXISTS btree_gist');
 });
 afterAll(() => {
   rmSync(tmp, { recursive: true, force: true });
@@ -104,6 +105,28 @@ describe('architecture change set upgrades a populated database without data los
     // rows are still protected after the upgrade
     expect(psql(url, `SELECT bool_and(relforcerowsecurity)::text FROM pg_class WHERE relname IN ('practice','practice_membership','company_membership','organisation_membership','company','role')`)).toBe('true');
   }, 240_000);
+});
+
+describe('task engine migration upgrades a populated database', () => {
+  const U = '11111111-1111-4111-8111-111111111111', ORG = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', CO = 'd1111111-1111-4111-8111-111111111111';
+  const T_OPEN = 'e1111111-1111-4111-8111-111111111111', T_DONE = 'e2222222-2222-4222-8222-222222222222';
+  const url = adminUrl('uk_upgrade_tasks'), owner = 'postgresql://uk_migrator_t:m@' + HOST + '/uk_upgrade_tasks';
+  it('keeps existing tasks (source MANUAL, no reviewer), and their company link now has a composite foreign key', () => {
+    const TASK_MIGRATION = all.find((d) => d.endsWith('_v0_task_engine'))!;
+    deploy(stage('pre-task', all.filter((d) => d < TASK_MIGRATION)), owner);
+    psql(url, `
+      INSERT INTO "user"(id,email,display_name) VALUES ('${U}','t@x.com','T');
+      INSERT INTO organisation(id,type,name) VALUES ('${ORG}','BUSINESS','Task Upgrade Ltd');
+      INSERT INTO company(id,organisation_id,name) VALUES ('${CO}','${ORG}','Upgrade Co');
+      INSERT INTO task(id,organisation_id,company_id,title,status,created_by_user_id) VALUES ('${T_OPEN}','${ORG}','${CO}','open one','IN_PROGRESS','${U}');
+      INSERT INTO task(id,organisation_id,title,status,created_by_user_id,completed_at) VALUES ('${T_DONE}','${ORG}','done one','DONE','${U}', now());`);
+    deploy(stage('with-task', all), owner);
+    expect(psql(url, `SELECT string_agg(id::text||':'||status::text||':'||source||':'||coalesce(reviewer_user_id::text,'-'), ',' ORDER BY title) FROM task`))
+      .toBe(`${T_DONE}:DONE:MANUAL:-,${T_OPEN}:IN_PROGRESS:MANUAL:-`);
+    expect(psql(url, `SELECT count(*) FROM pg_constraint WHERE conname='task_organisation_id_company_id_fkey'`)).toBe('1');
+    // the new status value is usable now that the migration is committed
+    psql(url, `UPDATE task SET status='IN_REVIEW', reviewer_user_id='${U}' WHERE id='${T_OPEN}'`);
+  });
 });
 
 describe('the architecture change set is reversible (documented rollback script)', () => {

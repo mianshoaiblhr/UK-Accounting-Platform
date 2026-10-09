@@ -50,6 +50,7 @@ const schema = z.object({
   OUTBOX_POLL_MS: z.coerce.number().int().min(50).default(500),
   OUTBOX_RETENTION_DAYS: z.coerce.number().int().min(1).default(14), // processed events older than this are deleted
   OUTBOX_CLEANUP_MS: z.coerce.number().int().min(1000).default(600_000),
+  TASK_REMINDER_POLL_MS: z.coerce.number().int().min(200).default(30_000), // how often due task reminders are delivered
 });
 
 export type AppConfig = z.infer<typeof schema> & { allowedRegions: string[]; corsOrigins: string[]; isProduction: boolean; apiDocsEnabled: boolean };

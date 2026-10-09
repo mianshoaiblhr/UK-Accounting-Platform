@@ -45,3 +45,9 @@ Required whenever a pending migration carries `-- destructive-approved:` (except
 
 ## 6. Authoring checklist
 Additive only · RLS enabled+forced for any new tenant table (the classification test fails otherwise) · register the table in `packages/db/src/classification.ts` · grants for `uk_app` · new permissions added to system roles by a **new** migration · update `docs/architecture/database-architecture.md`.
+
+## Tranche A migrations (V0 completion)
+`20260104000000_v0_audit_framework` … `20260104000400_v0_task_engine` are additive. Notes for operators:
+* **Forward-only items:** `20260104000400` adds the value `IN_REVIEW` to the `TaskStatus` enum. PostgreSQL cannot drop an enum value, so there is no down-script; rolling the *application* back is safe (older code never writes the new value, and tasks already `IN_REVIEW` remain readable as a string).
+* **Existing rows:** tasks keep working (`source` defaults to `MANUAL`, no reviewer, no review step). The migration adds the composite foreign key `(organisation_id, company_id)` to `task`; it validates against existing rows, so check `SELECT count(*) FROM task t WHERE company_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM company c WHERE c.organisation_id = t.organisation_id AND c.id = t.company_id)` returns 0 before the production run (the API has always checked this, so it is expected to be 0).
+* **Verified by:** `tests/db/upgrade.test.ts` (populated database upgrade as a non-superuser owner).
