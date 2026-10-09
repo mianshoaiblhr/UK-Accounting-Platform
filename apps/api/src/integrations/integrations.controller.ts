@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, Get, HttpCode, Inject, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Inject, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { z } from 'zod';
-import { JobTypes, createConnectionSchema } from '@uk/contracts';
+import { JobTypes, createConnectionSchema, reasonQuerySchema } from '@uk/contracts';
 import { notFound } from '@uk/core';
 import type { Database } from '@uk/db';
 import type { JobProducer } from '@uk/jobs';
@@ -29,16 +29,17 @@ export class IntegrationsController {
     if (b.companyId) await org.access.requireCompany('company:update', b.companyId); // a company-bound connection needs control of that company
     return this.db.tenant(this.ctx(org), async (tx) => {
       const c = await this.svc.create(tx, { organisationId: org.organisationId, userId: org.userId, provider: b.provider, displayName: b.displayName, companyId: b.companyId, credentials: b.credentials });
-      await this.audit.record({ action: 'integration.connected', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'integration_connection', entityId: c.id, metadata: { provider: b.provider } }, tx);
+      await this.audit.record({ action: 'integration.connected', organisationId: org.organisationId, actorUserId: org.userId, companyId: b.companyId ?? null, entityType: 'integration_connection', entityId: c.id, after: { provider: b.provider, displayName: b.displayName, status: c.status } }, tx);
       return c;
     });
   }
 
   @Delete('connections/:connectionId') @HttpCode(204) @RequirePermissions('integration:manage')
-  async revoke(@Org() org: OrgAccess, @Param('connectionId', ParseUUIDPipe) id: string) {
+  async revoke(@Org() org: OrgAccess, @Param('connectionId', ParseUUIDPipe) id: string, @Query(new ZodPipe(reasonQuerySchema)) q: z.output<typeof reasonQuerySchema>) {
     await this.db.tenant(this.ctx(org), async (tx) => {
+      const prior = await tx.integrationConnection.findUnique({ where: { id }, select: { status: true, companyId: true } });
       await this.svc.revoke(tx, id);
-      await this.audit.record({ action: 'integration.revoked', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'integration_connection', entityId: id }, tx);
+      await this.audit.record({ action: 'integration.revoked', organisationId: org.organisationId, actorUserId: org.userId, companyId: prior?.companyId ?? null, entityType: 'integration_connection', entityId: id, before: { status: prior?.status }, after: { status: 'REVOKED' }, reason: q.reason }, tx);
     });
   }
 

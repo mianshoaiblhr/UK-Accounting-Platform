@@ -483,6 +483,8 @@ model AuditEvent {
   id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   occurredAt     DateTime     @default(now()) @map("occurred_at") @db.Timestamptz(3)
   organisationId String?      @map("organisation_id") @db.Uuid
+  /// Company the event concerns; the audit trail is filtered by the reader's per-company access.
+  companyId      String?      @map("company_id") @db.Uuid
   actorUserId    String?      @map("actor_user_id") @db.Uuid
   action         String
   entityType     String?      @map("entity_type")
@@ -492,7 +494,15 @@ model AuditEvent {
   userAgent      String?      @map("user_agent")
   correlationId  String?      @map("correlation_id")
   metadata       Json         @default("{}")
+  /// Changed fields only, redacted and size-bounded.
+  before         Json?
+  after          Json?
+  reason         String?
+  /// Workflow instance this action was performed as part of.
+  sourceWorkflowId String?    @map("source_workflow_id") @db.Uuid
 
+  @@index([organisationId, companyId, occurredAt(sort: Desc)])
+  @@index([organisationId, entityType, entityId])
   @@index([organisationId, occurredAt(sort: Desc)])
   @@index([actorUserId, occurredAt(sort: Desc)])
   @@map("audit_event")

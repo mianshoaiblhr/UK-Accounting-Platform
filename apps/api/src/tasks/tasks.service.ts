@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Events } from '@uk/contracts';
 import { notFound, unprocessable } from '@uk/core';
 import type { Database, Task, Tx } from '@uk/db';
-import { publishEvent } from '@uk/platform';
+import { changeSet, publishEvent } from '@uk/platform';
 import { AuditService } from '../audit/audit.service';
 import { DB } from '../common/tokens';
 import { loadAccess } from '../common/access';
@@ -40,7 +40,7 @@ export class TasksService {
       const task = await tx.task.create({ data: {
         organisationId: org.organisationId, companyId: input.companyId, title: input.title, description: input.description, priority: input.priority,
         dueDate: input.dueDate ? new Date(input.dueDate) : undefined, assigneeUserId: input.assigneeUserId, createdByUserId: org.userId } });
-      await this.audit.record({ action: 'task.created', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'task', entityId: task.id }, tx);
+      await this.audit.record({ action: 'task.created', organisationId: org.organisationId, actorUserId: org.userId, companyId: task.companyId, entityType: 'task', entityId: task.id, after: { title: task.title, status: task.status, assigneeUserId: task.assigneeUserId, priority: task.priority } }, tx);
       await this.emitAssigned(tx, org, task);
       return task;
     });
@@ -73,7 +73,7 @@ export class TasksService {
         dueDate: input.dueDate === undefined ? undefined : input.dueDate === null ? null : new Date(input.dueDate),
         assigneeUserId: input.assigneeUserId,
         completedAt: input.status === 'DONE' ? new Date() : input.status ? null : undefined } });
-      await this.audit.record({ action: 'task.updated', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'task', entityId: id, metadata: { ...input } }, tx);
+      await this.audit.record({ action: 'task.updated', organisationId: org.organisationId, actorUserId: org.userId, companyId: task.companyId, entityType: 'task', entityId: id, ...changeSet(before, task, ['title', 'description', 'status', 'priority', 'dueDate', 'assigneeUserId']) }, tx);
       if (input.assigneeUserId && input.assigneeUserId !== before.assigneeUserId) await this.emitAssigned(tx, org, task);
       return task;
     });

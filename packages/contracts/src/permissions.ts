@@ -28,10 +28,10 @@ export type Permission = (typeof PERMISSIONS)[number];
 export type PermissionScope = 'ORG' | 'PRACTICE' | 'COMPANY';
 export const PERMISSION_SCOPE: Record<Permission, PermissionScope> = {
   'org:read': 'ORG', 'org:manage': 'ORG', 'member:read': 'ORG', 'member:invite': 'ORG', 'member:manage': 'ORG',
-  'role:read': 'ORG', 'role:manage': 'ORG', 'audit:read': 'ORG', 'job:read': 'ORG', 'job:manage': 'ORG',
+  'role:read': 'ORG', 'role:manage': 'ORG', 'job:read': 'ORG', 'job:manage': 'ORG',
   'integration:read': 'ORG', 'integration:manage': 'ORG',
   'practice:read': 'PRACTICE', 'practice:manage': 'PRACTICE', 'practice:member:manage': 'PRACTICE', 'company:create': 'PRACTICE',
-  'company:read': 'COMPANY', 'company:update': 'COMPANY', 'company:access:manage': 'COMPANY',
+  'company:read': 'COMPANY', 'company:update': 'COMPANY', 'company:access:manage': 'COMPANY', 'audit:read': 'COMPANY',
   'period:read': 'COMPANY', 'period:manage': 'COMPANY',
   'document:read': 'COMPANY', 'document:upload': 'COMPANY', 'document:archive': 'COMPANY',
   'task:read': 'COMPANY', 'task:manage': 'COMPANY',
@@ -53,7 +53,7 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
   { key: 'admin', name: 'Administrator', description: 'Manage people, practices, companies and documents',
     permissions: PERMISSIONS.filter((p) => p !== 'org:manage') },
   { key: 'partner', name: 'Partner', description: 'Leads a practice or client company: full company control including review, approval and access management',
-    permissions: [...ORG_READ, 'audit:read', 'job:read', 'practice:read', 'practice:manage', 'practice:member:manage', 'company:create', ...COMPANY_ALL] },
+    permissions: [...ORG_READ, 'job:read', 'practice:read', 'practice:manage', 'practice:member:manage', 'company:create', ...COMPANY_ALL] },
   { key: 'manager', name: 'Manager', description: 'Manages day-to-day work on a company: can review but not approve or manage access',
     permissions: [...ORG_READ, 'job:read', 'practice:read', 'company:read', 'company:update', 'period:read', 'period:manage',
       'document:read', 'document:upload', 'document:archive', 'task:read', 'task:manage', 'workflow:read', 'workflow:manage', 'workflow:review', 'ai:use'] },

@@ -18,7 +18,8 @@ const psql = (url: string, sql: string) => execFileSync('psql', [url, '-v', 'ON_
 const ROOT = resolve(__dirname, '../..');
 const MIGRATIONS = resolve(ROOT, 'packages/db/prisma/migrations');
 const all = readdirSync(MIGRATIONS).filter((d) => /^\d{14}_/.test(d)).sort();
-const CHANGE_SET = all.filter((d) => d >= '20260103');
+const CHANGE_SET = all.filter((d) => d >= '20260103' && d < '20260104');
+const UP_TO_CHANGE_SET = all.filter((d) => d < '20260104'); // later migrations are covered by their own tests
 const BEFORE = all.filter((d) => d < '20260103');
 const deploy = (schema: string, url: string) =>
   execFileSync('pnpm', ['--filter', '@uk/db', 'exec', 'prisma', 'migrate', 'deploy', '--schema', schema], { cwd: ROOT, env: { ...process.env, MIGRATION_DATABASE_URL: url }, stdio: 'pipe' });
@@ -123,7 +124,7 @@ describe('the architecture change set is reversible (documented rollback script)
     for (const d of ['uk_rollback_old', 'uk_rollback_new']) { psql(adminUrl('postgres'), `DROP DATABASE IF EXISTS ${d} WITH (FORCE)`); psql(adminUrl('postgres'), `CREATE DATABASE ${d}`); }
     try {
       deploy(stage('rb-old', BEFORE), adminUrl('uk_rollback_old'));
-      deploy(stage('rb-new', all), adminUrl('uk_rollback_new'));
+      deploy(stage('rb-new', UP_TO_CHANGE_SET), adminUrl('uk_rollback_new'));
       expect(fingerprint(adminUrl('uk_rollback_new'))).not.toBe(fingerprint(adminUrl('uk_rollback_old')));
       execFileSync('psql', [adminUrl('uk_rollback_new'), '-v', 'ON_ERROR_STOP=1', '--single-transaction', '-q', '-f', join(ROOT, 'docs/runbooks/rollback/20260103-architecture-change-set.down.sql')], { stdio: 'pipe' });
       expect(fingerprint(adminUrl('uk_rollback_new')).split('\n')).toEqual(fingerprint(adminUrl('uk_rollback_old')).split('\n'));
@@ -135,7 +136,7 @@ describe('the architecture change set is reversible (documented rollback script)
     const d = 'uk_rollback_guard';
     psql(adminUrl('postgres'), `DROP DATABASE IF EXISTS ${d} WITH (FORCE)`); psql(adminUrl('postgres'), `CREATE DATABASE ${d}`);
     try {
-      deploy(stage('rb-guard', all), adminUrl(d));
+      deploy(stage('rb-guard', UP_TO_CHANGE_SET), adminUrl(d));
       psql(adminUrl(d), `INSERT INTO "user"(id,email,display_name) VALUES ('11111111-1111-4111-8111-111111111111','g@x.com','G');
         INSERT INTO organisation(id,type,name) VALUES ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','PRACTICE','G');
         INSERT INTO organisation_membership(organisation_id,user_id,role_id) VALUES ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','11111111-1111-4111-8111-111111111111','00000000-0000-4000-8000-0000000000a7')`);

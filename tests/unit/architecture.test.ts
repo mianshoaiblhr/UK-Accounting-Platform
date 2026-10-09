@@ -115,7 +115,8 @@ describe('AI boundary: AI code cannot reach ledger, filing or document writers',
   it('the AI gateway module imports nothing that can write business data', () => {
     const src = read(join(ROOT, 'packages/platform/src/ai.ts'));
     const imports = [...src.matchAll(/from '([^']+)'/g)].map((m) => m[1]);
-    expect(imports.sort()).toEqual(['./outbox', './workflow', '@uk/contracts', '@uk/core', '@uk/db', 'zod'].sort());
+    // './audit' only builds rows for the append-only audit trail (no business tables)
+    expect(imports.sort()).toEqual(['./audit', './outbox', './workflow', '@uk/contracts', '@uk/core', '@uk/db', 'zod'].sort());
   });
   it('integration adapters receive only SafeHttp, never raw fetch / network / database handles', () => {
     const src = read(join(ROOT, 'packages/platform/src/integrations.ts'));

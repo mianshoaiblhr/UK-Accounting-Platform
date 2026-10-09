@@ -27,7 +27,7 @@ export function startWorker(config: AppConfig, logger: Logger = createLogger(con
   registerConsumers(bus, notifications);
   registerEventDispatch(runtime, bus);
   const aiProviders = createAiProviders(config);
-  registerAi(runtime, { db, gateway: new AiGateway(aiProviders, logger, db), proposals: new AiProposalService(new WorkflowEngine(new WorkflowRegistry())) });
+  registerAi(runtime, { db, gateway: new AiGateway(aiProviders, logger, db), proposals: new AiProposalService(new WorkflowEngine(new WorkflowRegistry(), { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA })) });
   registerIntegrations(runtime, { db, service: new IntegrationService(createIntegrationRegistry(config), crypto) });
   runtime.start();
 

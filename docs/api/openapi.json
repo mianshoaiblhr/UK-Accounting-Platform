@@ -381,6 +381,16 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "reason",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
           }
         ],
         "responses": {
@@ -398,6 +408,9 @@
           },
           "404": {
             "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
           }
         },
         "tags": [
@@ -1260,6 +1273,9 @@
           },
           "404": {
             "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
           }
         },
         "tags": [
@@ -1277,7 +1293,17 @@
           {
             "cookie": []
           }
-        ]
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchiveDocumentRequest"
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/organisations/{organisationId}/documents/{documentId}/versions": {
@@ -2555,6 +2581,16 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "reason",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
           }
         ],
         "responses": {
@@ -2572,6 +2608,9 @@
           },
           "404": {
             "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
           }
         },
         "tags": [
@@ -2745,6 +2784,16 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "reason",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
           }
         ],
         "responses": {
@@ -2762,6 +2811,9 @@
           },
           "404": {
             "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
           }
         },
         "tags": [
@@ -3562,6 +3614,16 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "reason",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
           }
         ],
         "responses": {
@@ -3579,6 +3641,9 @@
           },
           "404": {
             "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
           }
         },
         "tags": [
@@ -4086,8 +4151,7 @@
               "type": "integer",
               "minimum": 1,
               "maximum": 100,
-              "default": 25,
-              "description": "Page size"
+              "default": 25
             }
           },
           {
@@ -4096,7 +4160,7 @@
             "required": false,
             "schema": {
               "type": "string",
-              "description": "`nextCursor` from the previous page"
+              "maxLength": 200
             }
           },
           {
@@ -4104,7 +4168,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 100
             }
           },
           {
@@ -4112,7 +4177,75 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 60
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "companyId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "actorUserId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "outcome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "SUCCESS",
+                "FAILURE",
+                "DENIED"
+              ]
+            }
+          },
+          {
+            "name": "sourceWorkflowId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
             }
           }
         ],
@@ -4149,7 +4282,7 @@
         "x-required-permissions": [
           "audit:read"
         ],
-        "summary": "Append-only audit trail for the organisation",
+        "summary": "Append-only audit trail, filtered by the caller's per-company audit:read access. Events carry before/after (changed fields only), reason and source workflow.",
         "description": "**Requires permission:** `audit:read`",
         "security": [
           {
@@ -7282,6 +7415,11 @@
                   "type": "string",
                   "nullable": true
                 },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
                 "outcome": {
                   "type": "string",
                   "enum": [
@@ -7294,6 +7432,10 @@
                   "type": "string",
                   "nullable": true
                 },
+                "userAgent": {
+                  "type": "string",
+                  "nullable": true
+                },
                 "correlationId": {
                   "type": "string",
                   "nullable": true
@@ -7301,6 +7443,27 @@
                 "metadata": {
                   "type": "object",
                   "additionalProperties": {}
+                },
+                "before": {
+                  "type": "object",
+                  "additionalProperties": {},
+                  "nullable": true,
+                  "description": "Changed fields only (redacted)"
+                },
+                "after": {
+                  "type": "object",
+                  "additionalProperties": {},
+                  "nullable": true
+                },
+                "reason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "sourceWorkflowId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true,
+                  "description": "Workflow instance this action was part of"
                 }
               },
               "required": [
@@ -7311,10 +7474,16 @@
                 "action",
                 "entityType",
                 "entityId",
+                "companyId",
                 "outcome",
                 "ip",
+                "userAgent",
                 "correlationId",
-                "metadata"
+                "metadata",
+                "before",
+                "after",
+                "reason",
+                "sourceWorkflowId"
               ],
               "additionalProperties": false
             }
@@ -8071,6 +8240,11 @@
               "ACTIVE",
               "SUSPENDED"
             ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
           }
         },
         "additionalProperties": false
@@ -8224,6 +8398,17 @@
           "contentType",
           "sizeBytes"
         ],
+        "additionalProperties": false
+      },
+      "ArchiveDocumentRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
         "additionalProperties": false
       },
       "NewVersionRequest": {

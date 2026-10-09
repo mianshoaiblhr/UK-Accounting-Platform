@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Events } from '@uk/contracts';
 import { companyPermissions } from '@uk/contracts';
 import { conflict, forbidden, notFound, unprocessable } from '@uk/core';
-import { publishEvent } from '@uk/platform';
+import { changeSet, publishEvent } from '@uk/platform';
 import { Prisma, type Database, type Tx } from '@uk/db';
 import { AuditService } from '../audit/audit.service';
 import { DB } from '../common/tokens';
@@ -48,7 +48,7 @@ export class CompaniesService {
           const roleId = (await tx.organisationMembership.findUniqueOrThrow({ where: { id: org.membershipId }, select: { roleId: true } })).roleId;
           await tx.companyMembership.create({ data: { organisationId: org.organisationId, membershipId: org.membershipId, companyId: company.id, roleId } });
         }
-        await this.audit.record({ action: 'company.created', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'company', entityId: company.id, metadata: { name: company.name, practiceId } }, tx);
+        await this.audit.record({ action: 'company.created', organisationId: org.organisationId, actorUserId: org.userId, companyId: company.id, entityType: 'company', entityId: company.id, after: { name: company.name, companyNumber: company.companyNumber, legalForm: company.legalForm, practiceId } }, tx);
         await publishEvent(tx, Events.companyCreated, { aggregateId: company.id, organisationId: org.organisationId, actorUserId: org.userId, payload: { companyId: company.id, name: company.name } });
         return company;
       });
@@ -77,8 +77,9 @@ export class CompaniesService {
   async rename(org: OrgAccess, companyId: string, name: string) {
     await this.get(org, companyId);
     return this.t(org, async (tx) => {
+      const before = await tx.company.findUniqueOrThrow({ where: { id: companyId } });
       const c = await tx.company.update({ where: { id: companyId }, data: { name } });
-      await this.audit.record({ action: 'company.updated', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'company', entityId: companyId, metadata: { name } }, tx);
+      await this.audit.record({ action: 'company.updated', organisationId: org.organisationId, actorUserId: org.userId, companyId, entityType: 'company', entityId: companyId, ...changeSet(before, c, ['name']) }, tx);
       return c;
     });
   }
@@ -95,7 +96,7 @@ export class CompaniesService {
         const p = await tx.accountingPeriod.create({
           data: { organisationId: org.organisationId, companyId, startDate: new Date(input.startDate), endDate: new Date(input.endDate) },
         });
-        await this.audit.record({ action: 'period.created', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'accounting_period', entityId: p.id, metadata: { companyId, ...input } }, tx);
+        await this.audit.record({ action: 'period.created', organisationId: org.organisationId, actorUserId: org.userId, companyId, entityType: 'accounting_period', entityId: p.id, after: { startDate: input.startDate, endDate: input.endDate } }, tx);
         await publishEvent(tx, Events.accountingPeriodCreated, { aggregateId: p.id, organisationId: org.organisationId, actorUserId: org.userId, payload: { periodId: p.id, companyId, startDate: input.startDate, endDate: input.endDate } });
         return p;
       });

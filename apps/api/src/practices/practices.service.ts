@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { canGrantRole, isPermission } from '@uk/contracts';
 import { conflict, forbidden, notFound, unprocessable } from '@uk/core';
+import { changeSet } from '@uk/platform';
 import { Prisma, type Database, type Tx } from '@uk/db';
 import { AuditService } from '../audit/audit.service';
 import { DB } from '../common/tokens';
@@ -20,7 +21,7 @@ export class PracticesService {
     try {
       return await this.t(org, async (tx) => {
         const p = await tx.practice.create({ data: { organisationId: org.organisationId, name: input.name } });
-        await this.audit.record({ action: 'practice.created', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'practice', entityId: p.id, metadata: { name: p.name } }, tx);
+        await this.audit.record({ action: 'practice.created', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'practice', entityId: p.id, after: { name: p.name } }, tx);
         return p;
       });
     } catch (e) {
@@ -44,8 +45,9 @@ export class PracticesService {
 
   async update(org: OrgAccess, practiceId: string, input: { name?: string; status?: 'ACTIVE' | 'ARCHIVED' }) {
     return this.t(org, async (tx) => {
+      const before = await tx.practice.findUniqueOrThrow({ where: { id: practiceId } });
       const p = await tx.practice.update({ where: { id: practiceId }, data: input });
-      await this.audit.record({ action: 'practice.updated', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'practice', entityId: practiceId, metadata: { ...input } }, tx);
+      await this.audit.record({ action: 'practice.updated', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'practice', entityId: practiceId, ...changeSet(before, p, ['name', 'status']) }, tx);
       return p;
     });
   }
@@ -79,20 +81,22 @@ export class PracticesService {
       if (!canGrantRole(org.access.snapshot, new Set(role.permissions.filter(isPermission)), { type: 'PRACTICE', practiceId })) {
         throw forbidden('Cannot grant a role with permissions you do not hold in this practice', 'privilege_escalation');
       }
+      const prior = await tx.practiceMembership.findUnique({ where: { practiceId_membershipId: { practiceId, membershipId } } });
       const row = await tx.practiceMembership.upsert({
         where: { practiceId_membershipId: { practiceId, membershipId } },
         create: { organisationId: org.organisationId, practiceId, membershipId, roleId }, update: { roleId },
       });
-      await this.audit.record({ action: 'practice.member_set', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'practice', entityId: practiceId, metadata: { membershipId, roleId } }, tx);
+      await this.audit.record({ action: 'practice.member_set', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'practice', entityId: practiceId, metadata: { membershipId }, before: prior ? { roleId: prior.roleId } : null, after: { roleId } }, tx);
       return { practiceId, membershipId, roleId: row.roleId };
     });
   }
 
-  async removeMember(org: OrgAccess, practiceId: string, membershipId: string) {
+  async removeMember(org: OrgAccess, practiceId: string, membershipId: string, reason?: string) {
     await this.t(org, async (tx) => {
+      const prior = await tx.practiceMembership.findUnique({ where: { practiceId_membershipId: { practiceId, membershipId } } });
       const r = await tx.practiceMembership.deleteMany({ where: { practiceId, membershipId } });
       if (r.count !== 1) throw notFound('Practice member not found');
-      await this.audit.record({ action: 'practice.member_removed', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'practice', entityId: practiceId, metadata: { membershipId } }, tx);
+      await this.audit.record({ action: 'practice.member_removed', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'practice', entityId: practiceId, metadata: { membershipId }, before: { roleId: prior?.roleId }, after: null, reason }, tx);
     });
   }
 
@@ -116,20 +120,22 @@ export class PracticesService {
       if (!canGrantRole(org.access.snapshot, new Set(role.permissions.filter(isPermission)), { type: 'COMPANY', company: ref })) {
         throw forbidden('Cannot grant a role with permissions you do not hold on this company', 'privilege_escalation');
       }
+      const prior = await tx.companyMembership.findUnique({ where: { membershipId_companyId: { membershipId, companyId } } });
       const row = await tx.companyMembership.upsert({
         where: { membershipId_companyId: { membershipId, companyId } },
         create: { organisationId: org.organisationId, membershipId, companyId, roleId }, update: { roleId },
       });
-      await this.audit.record({ action: 'company.access_set', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'company', entityId: companyId, metadata: { membershipId, roleId } }, tx);
+      await this.audit.record({ action: 'company.access_set', organisationId: org.organisationId, actorUserId: org.userId, companyId, entityType: 'company', entityId: companyId, metadata: { membershipId }, before: prior ? { roleId: prior.roleId } : null, after: { roleId } }, tx);
       return { companyId, membershipId, roleId: row.roleId };
     });
   }
 
-  async removeCompanyAccess(org: OrgAccess, companyId: string, membershipId: string) {
+  async removeCompanyAccess(org: OrgAccess, companyId: string, membershipId: string, reason?: string) {
     await this.t(org, async (tx) => {
+      const prior = await tx.companyMembership.findUnique({ where: { membershipId_companyId: { membershipId, companyId } } });
       const r = await tx.companyMembership.deleteMany({ where: { companyId, membershipId } });
       if (r.count !== 1) throw notFound('Company access grant not found');
-      await this.audit.record({ action: 'company.access_removed', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'company', entityId: companyId, metadata: { membershipId } }, tx);
+      await this.audit.record({ action: 'company.access_removed', organisationId: org.organisationId, actorUserId: org.userId, companyId, entityType: 'company', entityId: companyId, metadata: { membershipId }, before: { roleId: prior?.roleId }, after: null, reason }, tx);
     });
   }
 }

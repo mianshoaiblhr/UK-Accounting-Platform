@@ -36,6 +36,8 @@ const schema = z.object({
   LOGIN_IP_BLOCK_MINUTES: z.coerce.number().default(15),
   LOGIN_ACCOUNT_PRESSURE_AT: z.coerce.number().default(30), // failures in 1h from >=3 distinct IPs => account under attack
   LOGIN_ACCOUNT_PRESSURE_MINUTES: z.coerce.number().default(30),
+  // Audit: keep IP address and user agent on audit events (security/fraud-prevention basis). Set false where that basis does not hold.
+  AUDIT_CAPTURE_DEVICE_METADATA: bool.default('true'),
   RATE_LIMIT_ENABLED: bool.default('true'),
   API_DOCS_ENABLED: z.enum(['true', 'false']).optional(), // default: on outside production
   MAX_UPLOAD_BYTES: z.coerce.number().default(25 * 1024 * 1024),

@@ -33,7 +33,7 @@ export class OrgGuard implements CanActivate {
     if (!organisationId || !UUID.test(organisationId)) throw notFound('Organisation not found');
 
     const deny = (d: { permission: Permission; target: object }) =>
-      this.audit.record({ action: 'access.denied', outcome: 'DENIED', organisationId, actorUserId: auth.userId, metadata: { reason: 'missing_permission', missing: [d.permission], target: d.target, path: req.path } });
+      this.audit.record({ action: 'access.denied', outcome: 'DENIED', organisationId, companyId: (d.target as { companyId?: string }).companyId ?? null, actorUserId: auth.userId, metadata: { reason: 'missing_permission', missing: [d.permission], target: d.target, path: req.path } });
     const loaded = await loadAccess(this.db, organisationId, auth.userId, deny);
     if (!loaded) {
       await this.audit.record({ action: 'access.denied', outcome: 'DENIED', organisationId, actorUserId: auth.userId, metadata: { reason: 'not_a_member', path: req.path } });
@@ -43,7 +43,9 @@ export class OrgGuard implements CanActivate {
     // Route-level gate: the user must hold every required permission for at least one target...
     const missing = required.filter((p) => !holdsAnywhere(access.snapshot, p));
     if (missing.length) {
-      await this.audit.record({ action: 'access.denied', outcome: 'DENIED', organisationId, actorUserId: auth.userId, metadata: { reason: 'missing_permission', missing, path: req.path } });
+      // Attribute the denial to the company named in the path - only if it really is one of this organisation's companies.
+      const named = req.params.companyId && UUID.test(req.params.companyId) ? await access.companyRef(req.params.companyId) : null;
+      await this.audit.record({ action: 'access.denied', outcome: 'DENIED', organisationId, companyId: named?.id ?? null, actorUserId: auth.userId, metadata: { reason: 'missing_permission', missing, path: req.path } });
       throw forbidden('You do not have permission to perform this action', 'permission_denied');
     }
     // ...and when the route names a company or practice, for exactly that target.

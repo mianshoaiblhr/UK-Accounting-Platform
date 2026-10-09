@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Query, Req, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { z } from 'zod';
-import { createDocumentSchema, newVersionSchema, paginationSchema } from '@uk/contracts';
+import { archiveDocumentSchema, createDocumentSchema, newVersionSchema, paginationSchema } from '@uk/contracts';
 import { Idempotent, Org, RequirePermissions } from '../common/decorators';
 import type { AppRequest, OrgAccess } from '../common/types';
 import { ZodPipe } from '../common/zod.pipe';
@@ -24,7 +24,7 @@ export class DocumentsController {
   get(@Org() org: OrgAccess, @Param('documentId', ParseUUIDPipe) id: string) { return this.svc.get(org, id); }
 
   @Post(':documentId/archive') @HttpCode(200) @RequirePermissions('document:archive')
-  archive(@Org() org: OrgAccess, @Param('documentId', ParseUUIDPipe) id: string) { return this.svc.archive(org, id); }
+  archive(@Org() org: OrgAccess, @Param('documentId', ParseUUIDPipe) id: string, @Body(new ZodPipe(archiveDocumentSchema)) b: z.output<typeof archiveDocumentSchema>) { return this.svc.archive(org, id, b.reason); }
 
   @Post(':documentId/versions') @RequirePermissions('document:upload') @Idempotent()
   newVersion(@Org() org: OrgAccess, @Param('documentId', ParseUUIDPipe) id: string, @Body(new ZodPipe(newVersionSchema)) b: z.output<typeof newVersionSchema>) {

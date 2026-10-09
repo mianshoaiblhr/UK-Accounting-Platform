@@ -136,7 +136,9 @@ describe('anti-escalation: canGrantRole', () => {
     expect(canGrantRole(partnerSnap, perms('accountant'), { type: 'PRACTICE', practiceId: P1 })).toBe(true);
     expect(canGrantRole(partnerSnap, perms('accountant'), { type: 'PRACTICE', practiceId: P2 })).toBe(false); // no relationship with P2
     expect(canGrantRole(partnerSnap, perms('partner'), { type: 'COMPANY', company: { id: 'X', practiceId: null } })).toBe(false); // manager cannot grant partner
-    expect(canGrantRole(partnerSnap, perms('reviewer'), { type: 'COMPANY', company: { id: 'X', practiceId: null } })).toBe(true);
+    expect(canGrantRole(partnerSnap, perms('bookkeeper'), { type: 'COMPANY', company: { id: 'X', practiceId: null } })).toBe(true);
+    // audit:read is company-scoped: a manager (who lacks it) cannot hand it out
+    expect(canGrantRole(partnerSnap, perms('reviewer'), { type: 'COMPANY', company: { id: 'X', practiceId: null } })).toBe(false);
   });
   it('organisation-level grants require the full organisation role', () => {
     expect(canGrantRole(snap({ orgRole: role('admin'), reach: 'ALL' }), perms('owner'), { type: 'ORG' })).toBe(false);

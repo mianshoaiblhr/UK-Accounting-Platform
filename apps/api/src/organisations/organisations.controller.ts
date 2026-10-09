@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import type { z } from 'zod';
-import { acceptInvitationSchema, createRoleSchema, inviteMemberSchema, updateMemberSchema } from '@uk/contracts';
+import { acceptInvitationSchema, createRoleSchema, inviteMemberSchema, reasonQuerySchema, updateMemberSchema } from '@uk/contracts';
 import { Auth, Idempotent, Org, RequirePermissions } from '../common/decorators';
 import type { AuthInfo, OrgAccess } from '../common/types';
 import { ZodPipe } from '../common/zod.pipe';
@@ -34,7 +34,7 @@ export class OrganisationsController {
   }
 
   @Delete('organisations/:organisationId/members/:membershipId') @HttpCode(204) @RequirePermissions('member:manage')
-  removeMember(@Org() org: OrgAccess, @Param('membershipId', ParseUUIDPipe) id: string) { return this.svc.removeMember(org, id); }
+  removeMember(@Org() org: OrgAccess, @Param('membershipId', ParseUUIDPipe) id: string, @Query(new ZodPipe(reasonQuerySchema)) q: z.output<typeof reasonQuerySchema>) { return this.svc.removeMember(org, id, q.reason); }
 
   @Post('organisations/:organisationId/invitations') @RequirePermissions('member:invite') @Idempotent()
   invite(@Org() org: OrgAccess, @Body(new ZodPipe(inviteMemberSchema)) b: z.output<typeof inviteMemberSchema>) { return this.svc.invite(org, b); }

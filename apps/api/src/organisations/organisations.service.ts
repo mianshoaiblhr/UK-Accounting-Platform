@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Events, JobTypes, canGrantRole, isPermission, PERMISSIONS, type Permission } from '@uk/contracts';
-import { publishEvent } from '@uk/platform';
+import { changeSet, publishEvent } from '@uk/platform';
 import { badRequest, conflict, forbidden, generateToken, notFound, sha256Hex, unprocessable, type AppConfig } from '@uk/core';
 import type { Database, Tx } from '@uk/db';
 import type { JobProducer } from '@uk/jobs';
@@ -9,7 +9,7 @@ import { CONFIG, DB, JOBS } from '../common/tokens';
 import type { OrgAccess } from '../common/types';
 
 interface InviteInput { email: string; roleId: string; companyScope: 'ALL' | 'ASSIGNED'; companyIds: string[] }
-interface UpdateMemberInput { roleId?: string; companyScope?: 'ALL' | 'ASSIGNED'; companyIds?: string[]; status?: 'ACTIVE' | 'SUSPENDED' }
+interface UpdateMemberInput { roleId?: string; companyScope?: 'ALL' | 'ASSIGNED'; companyIds?: string[]; status?: 'ACTIVE' | 'SUSPENDED'; reason?: string }
 
 @Injectable()
 export class OrganisationsService {
@@ -39,7 +39,7 @@ export class OrganisationsService {
       const exists = await tx.role.findFirst({ where: { key: input.key, OR: [{ organisationId: org.organisationId }, { organisationId: null }] } });
       if (exists) throw conflict('A role with this key already exists', 'role_exists');
       const role = await tx.role.create({ data: { organisationId: org.organisationId, key: input.key, name: input.name, description: input.description, permissions: input.permissions } });
-      await this.audit.record({ action: 'role.created', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'role', entityId: role.id, metadata: { permissions: input.permissions } }, tx);
+      await this.audit.record({ action: 'role.created', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'role', entityId: role.id, after: { key: role.key, name: role.name, permissions: input.permissions } }, tx);
       return role;
     });
   }
@@ -97,7 +97,7 @@ export class OrganisationsService {
       if (input.status === 'SUSPENDED') await this.assertNotLastOwner(tx, membershipId);
       if (input.companyIds) await this.assertCompanies(tx, input.companyIds);
       const scope = input.companyScope ?? m.companyScope;
-      await tx.organisationMembership.update({ where: { id: membershipId }, data: { roleId: input.roleId, status: input.status, companyScope: scope } });
+      const updated = await tx.organisationMembership.update({ where: { id: membershipId }, data: { roleId: input.roleId, status: input.status, companyScope: scope } });
       // Company grants created implicitly ("assigned companies use the member's role") follow a change of the organisation role;
       // explicitly different per-company roles are left untouched (explicit grants are only changed through the access endpoints).
       if (input.roleId && input.roleId !== m.roleId) {
@@ -121,12 +121,12 @@ export class OrganisationsService {
         await tx.companyMembership.deleteMany({ where: { membershipId, companyId: { notIn: input.companyIds } } });
         if (added.length) await tx.companyMembership.createMany({ data: added.map((companyId) => ({ organisationId: org.organisationId, membershipId, companyId, roleId })) });
       }
-      await this.audit.record({ action: 'member.updated', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'membership', entityId: membershipId, metadata: { ...input } }, tx);
+      await this.audit.record({ action: 'member.updated', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'membership', entityId: membershipId, reason: input.reason, metadata: input.companyIds ? { companyIds: input.companyIds } : {}, ...changeSet(m, updated, ['roleId', 'status', 'companyScope']) }, tx);
       return { id: membershipId };
     });
   }
 
-  async removeMember(org: OrgAccess, membershipId: string) {
+  async removeMember(org: OrgAccess, membershipId: string, reason?: string) {
     return this.t(org, async (tx) => {
       const m = await tx.organisationMembership.findUnique({ where: { id: membershipId } });
       if (!m || m.status === 'REMOVED') throw notFound('Member not found');
@@ -134,7 +134,7 @@ export class OrganisationsService {
       await tx.organisationMembership.update({ where: { id: membershipId }, data: { status: 'REMOVED' } });
       await tx.companyMembership.deleteMany({ where: { membershipId } });
       await tx.practiceMembership.deleteMany({ where: { membershipId } });
-      await this.audit.record({ action: 'member.removed', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'membership', entityId: membershipId }, tx);
+      await this.audit.record({ action: 'member.removed', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'membership', entityId: membershipId, before: { status: m.status, roleId: m.roleId }, after: { status: 'REMOVED' }, reason }, tx);
     });
   }
 

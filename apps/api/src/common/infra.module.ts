@@ -37,7 +37,7 @@ export class InfraModule {
         inject: [REDIS],
         useFactory: (redis: IORedis) => new Limits(config.RATE_LIMIT_ENABLED ? new RateLimiter(redis) : null),
       },
-      { provide: WORKFLOWS, useFactory: () => new WorkflowEngine(new WorkflowRegistry()) },
+      { provide: WORKFLOWS, useFactory: () => new WorkflowEngine(new WorkflowRegistry(), { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
       { provide: NOTIFICATIONS, inject: [JOBS], useFactory: (jobs: JobProducer) => new NotificationService(jobs) },
       { provide: INTEGRATIONS, inject: [CRYPTO], useFactory: (crypto: FieldEncryption) => new IntegrationService(createIntegrationRegistry(config), crypto) },
       { provide: AI_PROVIDERS, useFactory: () => createAiProviders(config) },

@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import type { z } from 'zod';
-import { createPracticeSchema, setGrantSchema, updatePracticeSchema } from '@uk/contracts';
+import { createPracticeSchema, reasonQuerySchema, setGrantSchema, updatePracticeSchema } from '@uk/contracts';
 import { Idempotent, Org, RequirePermissions } from '../common/decorators';
 import type { OrgAccess } from '../common/types';
 import { ZodPipe } from '../common/zod.pipe';
@@ -35,7 +35,7 @@ export class PracticesController {
   }
 
   @Delete('practices/:practiceId/members/:membershipId') @HttpCode(204) @RequirePermissions('practice:member:manage')
-  removeMember(@Org() org: OrgAccess, @Param('practiceId', ParseUUIDPipe) id: string, @Param('membershipId', ParseUUIDPipe) m: string) { return this.svc.removeMember(org, id, m); }
+  removeMember(@Org() org: OrgAccess, @Param('practiceId', ParseUUIDPipe) id: string, @Param('membershipId', ParseUUIDPipe) m: string, @Query(new ZodPipe(reasonQuerySchema)) q: z.output<typeof reasonQuerySchema>) { return this.svc.removeMember(org, id, m, q.reason); }
 
   @Get('companies/:companyId/access') @RequirePermissions('company:access:manage')
   companyAccess(@Org() org: OrgAccess, @Param('companyId', ParseUUIDPipe) id: string) { return this.svc.listCompanyAccess(org, id); }
@@ -46,5 +46,5 @@ export class PracticesController {
   }
 
   @Delete('companies/:companyId/access/:membershipId') @HttpCode(204) @RequirePermissions('company:access:manage')
-  removeCompanyAccess(@Org() org: OrgAccess, @Param('companyId', ParseUUIDPipe) id: string, @Param('membershipId', ParseUUIDPipe) m: string) { return this.svc.removeCompanyAccess(org, id, m); }
+  removeCompanyAccess(@Org() org: OrgAccess, @Param('companyId', ParseUUIDPipe) id: string, @Param('membershipId', ParseUUIDPipe) m: string, @Query(new ZodPipe(reasonQuerySchema)) q: z.output<typeof reasonQuerySchema>) { return this.svc.removeCompanyAccess(org, id, m, q.reason); }
 }

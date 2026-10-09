@@ -54,7 +54,7 @@ export class DocumentsService {
       const version = await tx.documentVersion.create({
         data: { id: versionId, organisationId: org.organisationId, documentId, versionNo: 1, storageKey, contentType: input.contentType, sizeBytes: input.sizeBytes, createdByUserId: org.userId },
       });
-      await this.audit.record({ action: 'document.created', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'document', entityId: documentId, metadata: { name: input.name, versionId } }, tx);
+      await this.audit.record({ action: 'document.created', organisationId: org.organisationId, actorUserId: org.userId, companyId: input.companyId ?? null, entityType: 'document', entityId: documentId, after: { name: input.name, documentClass: input.documentClass }, metadata: { versionId } }, tx);
       return { document, version };
     });
     return { ...out, upload: await this.uploadInstructions(org, documentId, out.version) };
@@ -71,7 +71,7 @@ export class DocumentsService {
       const v = await tx.documentVersion.create({
         data: { id: versionId, organisationId: org.organisationId, documentId, versionNo, storageKey: this.key(org.organisationId, documentId, versionNo, versionId), contentType: input.contentType, sizeBytes: input.sizeBytes, createdByUserId: org.userId },
       });
-      await this.audit.record({ action: 'document.version_created', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'document', entityId: documentId, metadata: { versionId, versionNo } }, tx);
+      await this.audit.record({ action: 'document.version_created', organisationId: org.organisationId, actorUserId: org.userId, companyId: doc.companyId, entityType: 'document', entityId: documentId, metadata: { versionId, versionNo } }, tx);
       return v;
     });
     return { version, upload: await this.uploadInstructions(org, documentId, version) };
@@ -143,12 +143,12 @@ export class DocumentsService {
     return this.t(org, (tx) => tx.document.findUniqueOrThrow({ where: { id: documentId }, include: { versions: { orderBy: { versionNo: 'desc' } } } }));
   }
 
-  async archive(org: OrgAccess, documentId: string) {
+  async archive(org: OrgAccess, documentId: string, reason?: string) {
     const d = await this.getDocument(org, documentId, 'document:archive');
     if (d.legalHold) throw conflict('Document is under legal hold', 'legal_hold');
     return this.t(org, async (tx) => {
       const r = await tx.document.update({ where: { id: documentId }, data: { status: 'ARCHIVED' } });
-      await this.audit.record({ action: 'document.archived', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'document', entityId: documentId }, tx);
+      await this.audit.record({ action: 'document.archived', organisationId: org.organisationId, actorUserId: org.userId, companyId: d.companyId, entityType: 'document', entityId: documentId, before: { status: d.status }, after: { status: 'ARCHIVED' }, reason }, tx);
       return r;
     });
   }
@@ -159,7 +159,7 @@ export class DocumentsService {
     const doc = await this.getDocument(org, documentId, 'document:read');
     const url = (await this.storage.presignDownload(v.storageKey, doc.name, PRESIGN_SECONDS))
       ?? `/api/v1/organisations/${org.organisationId}/documents/${documentId}/versions/${versionId}/content`;
-    await this.audit.record({ action: 'document.download_link_issued', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'document_version', entityId: versionId });
+    await this.audit.record({ action: 'document.download_link_issued', organisationId: org.organisationId, actorUserId: org.userId, companyId: doc.companyId, entityType: 'document_version', entityId: versionId });
     return { url, expiresInSeconds: PRESIGN_SECONDS, sha256: v.sha256 };
   }
 
@@ -168,7 +168,7 @@ export class DocumentsService {
     const v = await this.getVersion(org, documentId, versionId, 'document:read');
     if (v.status !== 'AVAILABLE') throw conflict('Document version is not available', 'document_not_available');
     const doc = await this.getDocument(org, documentId, 'document:read');
-    await this.audit.record({ action: 'document.downloaded', organisationId: org.organisationId, actorUserId: org.userId, entityType: 'document_version', entityId: versionId });
+    await this.audit.record({ action: 'document.downloaded', organisationId: org.organisationId, actorUserId: org.userId, companyId: doc.companyId, entityType: 'document_version', entityId: versionId });
     return { data: await this.storage.getObject(v.storageKey), contentType: v.contentType, filename: doc.name };
   }
 }

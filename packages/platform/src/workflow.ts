@@ -1,6 +1,7 @@
 import { Events, WORKFLOW_DEFINITIONS, type WorkflowDefinition, type WorkflowTransitionDef } from '@uk/contracts';
 import { AppError, conflict, forbidden, notFound, unprocessable } from '@uk/core';
 import type { Tx, WorkflowInstance } from '@uk/db';
+import { auditRow } from './audit';
 import { publishEvent } from './outbox';
 
 /** Versioned registry: an instance keeps the definition version it started with; new instances use the latest. */
@@ -47,7 +48,17 @@ const holds = async (actor: Actor, permission: string, companyId: string | null)
  * may only ADD controls; none re-implements approvals. State can only change through a declared transition.
  */
 export class WorkflowEngine {
-  constructor(readonly registry: WorkflowRegistry) {}
+  /** `captureDeviceMetadata` mirrors AUDIT_CAPTURE_DEVICE_METADATA for audit rows the engine writes. */
+  constructor(readonly registry: WorkflowRegistry, readonly opts: { captureDeviceMetadata?: boolean } = {}) {}
+
+  /** Every state change is also an audit event carrying the workflow it belongs to (specification: audit "source workflow"). */
+  private audit(tx: Tx, e: { organisationId: string; companyId: string | null; actorUserId: string | null; action: string; instanceId: string; from: string | null; to: string; reason?: string | null; subjectType: string; subjectId: string; workflowType: string; outcome?: 'SUCCESS' }) {
+    return tx.auditEvent.createMany({ data: [auditRow({
+      action: e.action, organisationId: e.organisationId, companyId: e.companyId, actorUserId: e.actorUserId, entityType: 'workflow_instance', entityId: e.instanceId,
+      before: e.from ? { state: e.from } : null, after: { state: e.to }, reason: e.reason, sourceWorkflowId: e.instanceId,
+      metadata: { workflowType: e.workflowType, subjectType: e.subjectType, subjectId: e.subjectId },
+    }, this.opts.captureDeviceMetadata ?? true)] });
+  }
 
   async start(tx: Tx, a: { type: string; organisationId: string; companyId?: string | null; subjectType: string; subjectId: string; actorUserId: string; context?: Record<string, unknown>; assigneeUserId?: string | null }): Promise<WorkflowInstance> {
     const def = this.registry.get(a.type);
@@ -56,6 +67,7 @@ export class WorkflowEngine {
         subjectType: a.subjectType, subjectId: a.subjectId, context: (a.context ?? {}) as never, startedByUserId: a.actorUserId, assigneeUserId: a.assigneeUserId ?? null },
     });
     await tx.workflowTransition.createMany({ data: [{ organisationId: a.organisationId, instanceId: inst.id, fromState: null, toState: def.initialState, action: 'start', actorUserId: a.actorUserId }] });
+    await this.audit(tx, { organisationId: a.organisationId, companyId: inst.companyId, actorUserId: a.actorUserId, action: 'workflow.started', instanceId: inst.id, from: null, to: def.initialState, subjectType: a.subjectType, subjectId: a.subjectId, workflowType: def.type });
     await publishEvent(tx, Events.workflowTransitioned, { aggregateId: inst.id, organisationId: a.organisationId, actorUserId: a.actorUserId,
       payload: { instanceId: inst.id, workflowType: def.type, from: null, to: def.initialState, action: 'start', subjectType: a.subjectType, subjectId: a.subjectId } });
     return inst;
@@ -123,6 +135,7 @@ export class WorkflowEngine {
       data: { state: t.to, version: { increment: 1 }, attempt, completedAt: terminal ? new Date() : null },
     });
     if (upd.count !== 1) throw conflict('Workflow changed concurrently', 'version_conflict'); // the caller's transaction rolls the history row back
+    await this.audit(tx, { organisationId: a.organisationId, companyId: inst.companyId, actorUserId: a.actor.userId, action: `workflow.${t.action}`, instanceId: inst.id, from: inst.state, to: t.to, reason: a.comment, subjectType: inst.subjectType, subjectId: inst.subjectId, workflowType: inst.type });
     await publishEvent(tx, Events.workflowTransitioned, { aggregateId: inst.id, organisationId: a.organisationId, actorUserId: a.actor.userId,
       payload: { instanceId: inst.id, workflowType: inst.type, from: inst.state, to: t.to, action: t.action, subjectType: inst.subjectType, subjectId: inst.subjectId } });
     return tx.workflowInstance.findUniqueOrThrow({ where: { id: inst.id } });
@@ -147,6 +160,7 @@ export class WorkflowEngine {
       organisationId: a.organisationId, instanceId: inst.id, fromState: inst.state, toState: inst.state, action: 'reassign', actorUserId: a.actor.userId,
       comment: a.comment ?? (a.assigneeUserId ? `Reassigned to ${a.assigneeUserId}` : 'Unassigned'), attempt: inst.attempt,
     }] });
+    await this.audit(tx, { organisationId: a.organisationId, companyId: inst.companyId, actorUserId: a.actor.userId, action: 'workflow.reassign', instanceId: inst.id, from: inst.state, to: inst.state, reason: a.comment, subjectType: inst.subjectType, subjectId: inst.subjectId, workflowType: inst.type });
     await publishEvent(tx, Events.workflowTransitioned, { aggregateId: inst.id, organisationId: a.organisationId, actorUserId: a.actor.userId,
       payload: { instanceId: inst.id, workflowType: inst.type, from: inst.state, to: inst.state, action: 'reassign', subjectType: inst.subjectType, subjectId: inst.subjectId } });
     return tx.workflowInstance.findUniqueOrThrow({ where: { id: inst.id } });

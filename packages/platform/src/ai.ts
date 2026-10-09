@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { Events } from '@uk/contracts';
 import { getCorrelationId, notFound, sha256Hex, unprocessable, AppError, type Logger } from '@uk/core';
 import type { AiProposal, Database, Tx } from '@uk/db';
+import { auditRow } from './audit';
 import { publishEvent } from './outbox';
 import { WorkflowEngine, type Actor } from './workflow';
 
@@ -143,6 +144,10 @@ export class AiProposalService {
     if (p.status !== 'ACCEPTED') throw unprocessable('Only an ACCEPTED proposal can be applied', 'proposal_not_accepted');
     if (p.appliedAt) throw unprocessable('Proposal was already applied', 'proposal_already_applied');
     await tx.aiProposal.update({ where: { id: p.id }, data: { appliedAt: new Date(), appliedByUserId: a.appliedByUserId, appliedReference: a.reference } });
+    await tx.auditEvent.createMany({ data: [auditRow({
+      action: 'ai.proposal_applied', organisationId: p.organisationId, companyId: p.companyId, actorUserId: a.appliedByUserId, entityType: 'ai_proposal', entityId: p.id,
+      before: { appliedAt: null }, after: { appliedReference: a.reference }, sourceWorkflowId: p.workflowInstanceId, metadata: { kind: p.kind },
+    }, this.engine.opts.captureDeviceMetadata ?? true)] });
     return tx.aiProposal.findUniqueOrThrow({ where: { id: p.id } });
   }
 }

@@ -36,6 +36,11 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((s) => !Number.is
 export const createPeriodSchema = z.object({ startDate: isoDate, endDate: isoDate })
   .strict().refine((p) => p.startDate < p.endDate, { message: 'startDate must be before endDate', path: ['endDate'] });
 
+/** Why a sensitive change is being made; recorded on the audit trail. */
+export const reasonSchema = z.string().trim().min(1).max(500);
+export const reasonQuerySchema = z.object({ reason: reasonSchema.optional() });
+export const archiveDocumentSchema = z.object({ reason: reasonSchema.optional() }).strict();
+
 export const inviteMemberSchema = z.object({
   email,
   roleId: z.string().uuid(),
@@ -48,6 +53,7 @@ export const updateMemberSchema = z.object({
   companyScope: z.enum(['ALL', 'ASSIGNED']).optional(),
   companyIds: z.array(z.string().uuid()).max(500).optional(),
   status: z.enum(['ACTIVE', 'SUSPENDED']).optional(),
+  reason: reasonSchema.optional(),
 }).strict();
 
 export const createRoleSchema = z.object({
@@ -121,3 +127,9 @@ export const requestAiSuggestionSchema = z.object({
   purpose: z.string().regex(/^[a-z][a-z0-9_]{2,60}$/), input: z.string().min(1).max(20_000), companyId: z.string().uuid().optional(),
 }).strict();
 export const decideProposalSchema = z.object({ decision: z.enum(['ACCEPT', 'REJECT']), comment: z.string().max(2000).optional() }).strict();
+
+export const auditQuerySchema = paginationSchema.extend({
+  action: z.string().max(100).optional(), entityType: z.string().max(60).optional(), entityId: z.string().max(100).optional(),
+  companyId: z.string().uuid().optional(), actorUserId: z.string().uuid().optional(), outcome: z.enum(['SUCCESS', 'FAILURE', 'DENIED']).optional(),
+  sourceWorkflowId: z.string().uuid().optional(), from: z.string().datetime().optional(), to: z.string().datetime().optional(),
+});
