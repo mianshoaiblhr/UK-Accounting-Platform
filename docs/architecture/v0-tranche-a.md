@@ -211,3 +211,6 @@ Approved after the final V0 readiness report: four small, additive items that cl
 
 **What is NOT done, deliberately:** no purge job, no erasure-versus-retention rule, no enforcement, no per-document `retain_until` computation on upload (S4(b), not approved); no period is CONFIRMED. The statutory anchors in `basis` are recorded for the DPO/legal review, not as legal advice. Opening decision for the user: confirm or change each period and record the lawful basis (V0-8.3); until then the rows in the register stay open for production.
 
+### 9.5 Product-owner decisions after the readiness review (2026-10-09)
+Recorded in `decision-log.md` (DEC-001..007) and ADR-40..43. In short: V0 approved to start V1 (not production); UI API-first with the V0 screens in parallel behind feature flags; retention/privacy deferred for approval with a legal verification schedule (`docs/legal/`), S4(b) frozen and synthetic data only; naming deviations accepted (conditions for separating the models are in ADR-42); S3 and S7 deferred; AWS and production hardening remain gates. This section is part of the pre-V1 evidence and is not rewritten by later work.
+

@@ -79,3 +79,17 @@ S1, S2, S4(a) and S6 were approved and are delivered (below). S3, S4(b), S5 and 
 | S7 | EmbeddingProvider / SearchProvider ports with fakes (V0-10.3) | S (1-2 d) | Optional now; otherwise V6 | Pure abstraction; lets V0 section 10 be marked complete |
 
 S3, S4(b), S5 and S7 are not required to start V1. Production-gate work (real AWS) is a separate backlog, not a scope change.
+
+## 12. Product-owner decisions recorded after the review (addendum)
+
+The full, append-only log is `docs/architecture/decision-log.md`; this section mirrors it. The statuses in section 9 were NOT changed by these decisions: an accepted deviation or a deferral is not an implementation.
+
+| Id | Date | Subject | Decision |
+|---|---|---|---|
+| DEC-001 | 2026-10-09 | V0 readiness | APPROVED to start V1 on the basis of this report. The pre-V1 bundle S1, S2, S4(a), S6 is accepted as complete. NOT production approval: no production deployment or live-customer processing on this basis alone. |
+| DEC-002 | 2026-10-09 | UI strategy (S5; MAN-DOD-05, XP-11) | APPROVED: API-first V1; V0 UI screens in parallel behind feature flags; prioritise end-to-end bookkeeping workflows; UI tested against the real API, authorisation and tenant boundaries. Rows stay open until the screens exist and pass accessibility checks. |
+| DEC-003 | 2026-10-09 | Retention and privacy (V0-S8, XP-10, V0-8.3; S4(b)) | DEFERRED FOR APPROVAL: all periods stay PROVISIONAL; S4(b) frozen; legal verification schedule prepared (docs/legal/retention-verification-schedule.md and .xlsx, UNVERIFIED); IP address and user agent flagged for privacy review; synthetic/test data only until decided. Rows stay PARTIALLY IMPLEMENTED. |
+| DEC-004 | 2026-10-09 | Naming deviations (V0-1.5, V0-T2) | ACCEPTED as documented, including job_record as the integration job table (ADR-36); conditions for separating the models in ADR-42. Row statuses are NOT changed by this acceptance (they remain PARTIALLY IMPLEMENTED with the deviation accepted). |
+| DEC-005 | 2026-10-09 | S3 device identity (V0-1.9) and S7 embedding/search ports (V0-10.3) | DEFERRED to later tranches; baseline authentication, session revocation, authorisation and tenant isolation must not be weakened. |
+| DEC-006 | 2026-10-09 | Production | NOT approved. AWS deployment and production hardening remain explicit gates; Terraform validate in CI is not evidence of an applied or verified infrastructure. |
+| DEC-007 | 2026-10-09 | V1 conduct | V1 follows the approved order and manifest; no scope expansion into deferred items without a recorded decision; each V1 milestone is accepted with commit SHA, CI run, test results, migrations, security/permission checks, matrix changes and known limitations; this matrix and report stay as versioned evidence (git history is the audit trail). |
