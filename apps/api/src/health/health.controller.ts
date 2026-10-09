@@ -45,8 +45,7 @@ export class HealthController {
       if (s.outbox.failed > 0) degraded.push('outbox_failed');
       if ((s.jobs.DEAD ?? 0) > 0) degraded.push('dead_jobs');
       figures = { outboxLagSeconds: Math.round(s.outbox.oldestUnprocessedAgeSeconds), outboxPending: s.outbox.pending, outboxFailed: s.outbox.failed, jobsDead: s.jobs.DEAD ?? 0, jobsFailed: s.jobs.FAILED ?? 0, jobsQueued: s.jobs.QUEUED ?? 0, remindersDue: s.remindersDue };
-      checks.platform = 'ok';
-    } catch { checks.platform = 'unknown'; }
+    } catch { /* background figures are best-effort; never part of the dependency checks */ }
     return { status: degraded.length ? 'degraded' : 'ok', checks, degraded, ...(sameToken(bearer(req), this.config.METRICS_TOKEN) ? { figures } : {}) };
   }
 
