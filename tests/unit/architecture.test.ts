@@ -13,7 +13,7 @@ function files(dir: string, out: string[] = []): string[] {
   }
   return out;
 }
-const SRC = ['apps/api/src', 'apps/worker/src', 'packages/platform/src', 'packages/jobs/src', 'packages/contracts/src', 'packages/core/src', 'packages/db/src', 'packages/adapters/src'].flatMap((d) => files(join(ROOT, d)));
+const SRC = ['apps/api/src', 'apps/worker/src', 'packages/platform/src', 'packages/accounting/src', 'packages/jobs/src', 'packages/contracts/src', 'packages/core/src', 'packages/db/src', 'packages/adapters/src'].flatMap((d) => files(join(ROOT, d)));
 const rel = (f: string) => relative(ROOT, f);
 const read = (f: string) => readFileSync(f, 'utf8');
 const camel = (t: string) => t.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
@@ -135,8 +135,23 @@ describe('database access paths that carry security meaning', () => {
     const writers = SRC.filter((f) => WRITE.test(read(f))).map(rel).sort();
     expect(writers).toEqual(['apps/api/src/tasks/tasks.service.ts']);
   });
+  it('only the PostingService writes the ledger (V1 manifest control 1): journals, lines and the numbering counter', () => {
+    const WRITE = /\.(journal|journalLine|ledgerSequence)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(journal|journal_line|ledger_sequence)"?\b/i;
+    expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/posting.ts']);
+  });
+  it('the database posting switch is set by the PostingService and by nothing else', () => {
+    expect(SRC.filter((f) => /app\.posting/.test(read(f))).map(rel)).toEqual(['packages/accounting/src/posting.ts']);
+  });
+  it('only the account service writes the chart of accounts', () => {
+    const WRITE = /\.account\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?account"?\b/i;
+    expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/accounts.ts']);
+  });
+  it('AI code cannot reach the posting code: nothing in platform or the AI module imports @uk/accounting (manifest control 10)', () => {
+    const offenders = SRC.filter((f) => (rel(f).startsWith('packages/platform/') || rel(f).startsWith('apps/api/src/ai/') || rel(f).startsWith('apps/worker/')) && /@uk\/accounting/.test(read(f))).map(rel);
+    expect(offenders).toEqual([]);
+  });
   it('append-only tables are only ever inserted into by application code', () => {
-    const APPEND_ONLY = ['auditEvent', 'workflowTransition', 'aiRun', 'taskComment'];
+    const APPEND_ONLY = ['auditEvent', 'workflowTransition', 'aiRun', 'taskComment', 'journal', 'journalLine'];
     const WRITE = new RegExp(`\\.(${APPEND_ONLY.join('|')})\\.(update|updateMany|upsert|delete|deleteMany)\\b`);
     expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual([]);
   });

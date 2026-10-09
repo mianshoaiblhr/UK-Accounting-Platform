@@ -6,6 +6,7 @@
 export interface FeatureFlagDef { description: string; default: boolean }
 
 export const FEATURE_FLAGS = {
+  'bookkeeping.core': { description: 'V1 bookkeeping engine: chart of accounts, journals, general ledger, trial balance (incomplete while V1 is being built)', default: false },
   'ai.beta': { description: 'AI suggestions (beta): requesting and reviewing AI proposals', default: false },
   'documents.ocr': { description: 'OCR stage in the document pipeline (requires an OCR provider)', default: false },
   'tax.rules.next': { description: 'The next effective-dated tax rule set (not yet live)', default: false },

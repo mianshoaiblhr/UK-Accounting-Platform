@@ -7753,6 +7753,1242 @@
         }
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/accounts": {
+      "get": {
+        "operationId": "Ledger_listAccounts",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ASSET",
+                "LIABILITY",
+                "EQUITY",
+                "INCOME",
+                "EXPENSE"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "account:read"
+        ],
+        "summary": "Chart of accounts",
+        "description": "**Requires permission:** `account:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "Ledger_createAccount",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "account:manage"
+        ],
+        "summary": "Create an account (code unique per company; subtype and reporting line must fit the type)",
+        "description": "**Requires permission:** `account:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAccountRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/accounts/initialise": {
+      "post": {
+        "operationId": "Ledger_initialise",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "account:manage"
+        ],
+        "summary": "Create the default UK chart of accounts in an empty chart",
+        "description": "**Requires permission:** `account:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/accounts/{accountId}": {
+      "get": {
+        "operationId": "Ledger_getAccount",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "accountId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "account:read"
+        ],
+        "summary": "One account",
+        "description": "**Requires permission:** `account:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "Ledger_updateAccount",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "accountId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "account:manage"
+        ],
+        "summary": "Update an account (identity fields freeze once it has postings; reporting mapping and active-date changes need a reason)",
+        "description": "**Requires permission:** `account:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAccountRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/journals": {
+      "post": {
+        "operationId": "Ledger_post",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Posted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "journal:post"
+        ],
+        "summary": "Post a manual or opening-balance journal through the PostingService (balanced, open period, active non-control accounts; immutable once posted)",
+        "description": "**Requires permission:** `journal:post`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostJournalRequest"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "Ledger_listJournals",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 40
+            }
+          },
+          {
+            "name": "accountId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Journals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "Journals, newest first",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/journals/{journalId}": {
+      "get": {
+        "operationId": "Ledger_getJournal",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "journalId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Journal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "A journal with its lines, source and reversal links",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/journals/{journalId}/reverse": {
+      "post": {
+        "operationId": "Ledger_reverse",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "journalId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Reversed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "journal:post"
+        ],
+        "summary": "Reverse a journal with a linked mirror journal (once; a reversal cannot be reversed)",
+        "description": "**Requires permission:** `journal:post`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReverseJournalRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ledger": {
+      "get": {
+        "operationId": "Ledger_generalLedger",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "accountId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ledger",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralLedger"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "General ledger for one account with a running balance (drill-down target of the trial balance)",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reports/trial-balance": {
+      "get": {
+        "operationId": "Ledger_trialBalance",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "asOf",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trial balance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrialBalance"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "Trial balance as at a date or at the end of a period, computed from journal lines only",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/periods/{periodId}/close": {
+      "post": {
+        "operationId": "Ledger_close",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Closed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeriodState"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "period:manage"
+        ],
+        "summary": "Close an open period (posting stops)",
+        "description": "**Requires permission:** `period:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PeriodTransitionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/periods/{periodId}/reopen": {
+      "post": {
+        "operationId": "Ledger_reopen",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reopened",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeriodState"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "period:manage"
+        ],
+        "summary": "Reopen a closed period (reason required)",
+        "description": "**Requires permission:** `period:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PeriodTransitionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/periods/{periodId}/lock": {
+      "post": {
+        "operationId": "Ledger_lock",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Locked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeriodState"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "period:lock"
+        ],
+        "summary": "Lock a closed period (period:lock, reason required)",
+        "description": "**Requires permission:** `period:lock`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PeriodTransitionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/periods/{periodId}/unlock": {
+      "post": {
+        "operationId": "Ledger_unlock",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unlocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeriodState"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "period:lock"
+        ],
+        "summary": "Unlock a locked period back to closed (period:lock, reason required)",
+        "description": "**Requires permission:** `period:lock`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PeriodTransitionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -8717,6 +9953,9 @@
     },
     {
       "name": "Workflows"
+    },
+    {
+      "name": "Ledger"
     },
     {
       "name": "Notifications"
@@ -11314,6 +12553,854 @@
         "required": [
           "ok",
           "provider"
+        ],
+        "additionalProperties": false
+      },
+      "AccountView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "ASSET",
+              "LIABILITY",
+              "EQUITY",
+              "INCOME",
+              "EXPENSE"
+            ]
+          },
+          "subtype": {
+            "type": "string"
+          },
+          "normalBalance": {
+            "type": "string",
+            "enum": [
+              "DEBIT",
+              "CREDIT"
+            ]
+          },
+          "isControl": {
+            "type": "boolean"
+          },
+          "controlKind": {
+            "type": "string",
+            "nullable": true
+          },
+          "taxTreatment": {
+            "type": "string"
+          },
+          "reportingMapping": {
+            "type": "string"
+          },
+          "reportingMappingVersion": {
+            "type": "integer"
+          },
+          "activeFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "activeTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "isSystem": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "code",
+          "name",
+          "type",
+          "subtype",
+          "normalBalance",
+          "isControl",
+          "controlKind",
+          "taxTreatment",
+          "reportingMapping",
+          "reportingMappingVersion",
+          "activeFrom",
+          "activeTo",
+          "isSystem",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "AccountList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "ASSET",
+                    "LIABILITY",
+                    "EQUITY",
+                    "INCOME",
+                    "EXPENSE"
+                  ]
+                },
+                "subtype": {
+                  "type": "string"
+                },
+                "normalBalance": {
+                  "type": "string",
+                  "enum": [
+                    "DEBIT",
+                    "CREDIT"
+                  ]
+                },
+                "isControl": {
+                  "type": "boolean"
+                },
+                "controlKind": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "taxTreatment": {
+                  "type": "string"
+                },
+                "reportingMapping": {
+                  "type": "string"
+                },
+                "reportingMappingVersion": {
+                  "type": "integer"
+                },
+                "activeFrom": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "activeTo": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "isSystem": {
+                  "type": "boolean"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "code",
+                "name",
+                "type",
+                "subtype",
+                "normalBalance",
+                "isControl",
+                "controlKind",
+                "taxTreatment",
+                "reportingMapping",
+                "reportingMappingVersion",
+                "activeFrom",
+                "activeTo",
+                "isSystem",
+                "createdAt"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "JournalDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "journalNumber": {
+            "type": "integer"
+          },
+          "journalDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "periodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceType": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string",
+            "nullable": true
+          },
+          "sourceReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string"
+          },
+          "total": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d+)?$",
+            "description": "Decimal string, never a JSON number"
+          },
+          "lineCount": {
+            "type": "integer"
+          },
+          "actorType": {
+            "type": "string",
+            "enum": [
+              "USER",
+              "SYSTEM"
+            ]
+          },
+          "postedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "postedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reversesJournalId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "reversedByJournalId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "reversedByJournalNumber": {
+            "type": "integer",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "reverses": {
+            "type": "object",
+            "properties": {
+              "journalId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "journalNumber": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "journalId",
+              "journalNumber"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "replayed": {
+            "type": "boolean",
+            "description": "true when an earlier posting with the same idempotency key was returned"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "lineNo": {
+                  "type": "integer"
+                },
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "accountCode": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "accountName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "debit": {
+                  "type": "string",
+                  "pattern": "^\\d+(\\.\\d+)?$",
+                  "description": "Decimal string, never a JSON number"
+                },
+                "credit": {
+                  "type": "string",
+                  "pattern": "^\\d+(\\.\\d+)?$",
+                  "description": "Decimal string, never a JSON number"
+                },
+                "description": {
+                  "type": "string",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "lineNo",
+                "accountId",
+                "accountCode",
+                "accountName",
+                "debit",
+                "credit",
+                "description"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "journalNumber",
+          "journalDate",
+          "periodId",
+          "sourceType",
+          "sourceId",
+          "sourceReference",
+          "description",
+          "total",
+          "lineCount",
+          "actorType",
+          "postedByUserId",
+          "postedAt",
+          "reversesJournalId",
+          "reversedByJournalId",
+          "reversedByJournalNumber",
+          "currency",
+          "reverses",
+          "lines"
+        ],
+        "additionalProperties": false
+      },
+      "JournalPage": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "journalNumber": {
+                  "type": "integer"
+                },
+                "journalDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "periodId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "sourceType": {
+                  "type": "string"
+                },
+                "sourceId": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "sourceReference": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "description": {
+                  "type": "string"
+                },
+                "total": {
+                  "type": "string",
+                  "pattern": "^\\d+(\\.\\d+)?$",
+                  "description": "Decimal string, never a JSON number"
+                },
+                "lineCount": {
+                  "type": "integer"
+                },
+                "actorType": {
+                  "type": "string",
+                  "enum": [
+                    "USER",
+                    "SYSTEM"
+                  ]
+                },
+                "postedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "postedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "reversesJournalId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "reversedByJournalId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "reversedByJournalNumber": {
+                  "type": "integer",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "journalNumber",
+                "journalDate",
+                "periodId",
+                "sourceType",
+                "sourceId",
+                "sourceReference",
+                "description",
+                "total",
+                "lineCount",
+                "actorType",
+                "postedByUserId",
+                "postedAt",
+                "reversesJournalId",
+                "reversedByJournalId",
+                "reversedByJournalNumber"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "currency",
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false
+      },
+      "GeneralLedger": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "account": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "code": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "code",
+              "name",
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          "from": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "to": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "openingBalance": {
+            "type": "string",
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "description": "Decimal string; negative = opposite of the natural side"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "journalId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "journalNumber": {
+                  "type": "integer"
+                },
+                "journalDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "lineNo": {
+                  "type": "integer"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "sourceType": {
+                  "type": "string"
+                },
+                "sourceId": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "sourceReference": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "debit": {
+                  "type": "string",
+                  "pattern": "^\\d+(\\.\\d+)?$",
+                  "description": "Decimal string, never a JSON number"
+                },
+                "credit": {
+                  "type": "string",
+                  "pattern": "^\\d+(\\.\\d+)?$",
+                  "description": "Decimal string, never a JSON number"
+                },
+                "balance": {
+                  "type": "string",
+                  "pattern": "^-?\\d+(\\.\\d+)?$",
+                  "description": "Running balance on the account's natural side"
+                }
+              },
+              "required": [
+                "journalId",
+                "journalNumber",
+                "journalDate",
+                "lineNo",
+                "description",
+                "sourceType",
+                "sourceId",
+                "sourceReference",
+                "debit",
+                "credit",
+                "balance"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "currency",
+          "account",
+          "from",
+          "to",
+          "openingBalance",
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false
+      },
+      "TrialBalance": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "asOf": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "period": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "startDate": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "endDate": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "OPEN",
+                  "CLOSED",
+                  "LOCKED"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "startDate",
+              "endDate",
+              "status"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "subtype": {
+                  "type": "string"
+                },
+                "reportingMapping": {
+                  "type": "string"
+                },
+                "debit": {
+                  "type": "string",
+                  "pattern": "^\\d+(\\.\\d+)?$",
+                  "description": "Decimal string, never a JSON number"
+                },
+                "credit": {
+                  "type": "string",
+                  "pattern": "^\\d+(\\.\\d+)?$",
+                  "description": "Decimal string, never a JSON number"
+                },
+                "movementDebit": {
+                  "type": "string",
+                  "pattern": "^\\d+(\\.\\d+)?$",
+                  "description": "Decimal string, never a JSON number"
+                },
+                "movementCredit": {
+                  "type": "string",
+                  "pattern": "^\\d+(\\.\\d+)?$",
+                  "description": "Decimal string, never a JSON number"
+                },
+                "drilldown": {
+                  "type": "object",
+                  "properties": {
+                    "accountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "from": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                      "nullable": true
+                    },
+                    "to": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    }
+                  },
+                  "required": [
+                    "accountId",
+                    "from",
+                    "to"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Parameters of the general-ledger query that explains this row"
+                }
+              },
+              "required": [
+                "accountId",
+                "code",
+                "name",
+                "type",
+                "subtype",
+                "reportingMapping",
+                "debit",
+                "credit",
+                "drilldown"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "totalDebit": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d+)?$",
+            "description": "Decimal string, never a JSON number"
+          },
+          "totalCredit": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d+)?$",
+            "description": "Decimal string, never a JSON number"
+          },
+          "balanced": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "accountCode": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "balance": {
+                  "type": "string",
+                  "pattern": "^-?\\d+(\\.\\d+)?$",
+                  "description": "Decimal string; negative = opposite of the natural side"
+                }
+              },
+              "required": [
+                "code",
+                "accountId",
+                "accountCode",
+                "message",
+                "balance"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "currency",
+          "asOf",
+          "period",
+          "rows",
+          "totalDebit",
+          "totalCredit",
+          "balanced",
+          "warnings"
+        ],
+        "additionalProperties": false
+      },
+      "PeriodState": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "endDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "CLOSED",
+              "LOCKED"
+            ]
+          },
+          "statusChangedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "statusChangedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "statusReason": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "startDate",
+          "endDate",
+          "status",
+          "statusChangedAt",
+          "statusChangedByUserId",
+          "statusReason"
         ],
         "additionalProperties": false
       },
@@ -14037,7 +16124,12 @@
                 "document:confidential",
                 "evidence:lock",
                 "evidence:read",
-                "evidence:manage"
+                "evidence:manage",
+                "account:read",
+                "account:manage",
+                "ledger:read",
+                "journal:post",
+                "period:lock"
               ]
             },
             "minItems": 1
@@ -15366,6 +17458,227 @@
         "required": [
           "decision"
         ],
+        "additionalProperties": false
+      },
+      "CreateAccountRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9.\\-]{0,19}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "ASSET",
+              "LIABILITY",
+              "EQUITY",
+              "INCOME",
+              "EXPENSE"
+            ]
+          },
+          "subtype": {
+            "type": "string"
+          },
+          "isControl": {
+            "type": "boolean",
+            "default": false
+          },
+          "controlKind": {
+            "type": "string",
+            "enum": [
+              "TRADE_RECEIVABLES",
+              "TRADE_PAYABLES",
+              "VAT_CONTROL",
+              "BANK",
+              "CASH",
+              "SUSPENSE",
+              "RETAINED_EARNINGS"
+            ],
+            "nullable": true,
+            "default": null
+          },
+          "taxTreatment": {
+            "type": "string",
+            "enum": [
+              "NOT_APPLICABLE",
+              "VATABLE",
+              "EXEMPT",
+              "OUT_OF_SCOPE",
+              "VAT_CONTROL"
+            ],
+            "default": "NOT_APPLICABLE"
+          },
+          "reportingMapping": {
+            "type": "string"
+          },
+          "activeFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true,
+            "default": null
+          },
+          "activeTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true,
+            "default": null
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "type",
+          "subtype",
+          "reportingMapping"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateAccountRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "subtype": {
+            "type": "string"
+          },
+          "taxTreatment": {
+            "type": "string",
+            "enum": [
+              "NOT_APPLICABLE",
+              "VATABLE",
+              "EXEMPT",
+              "OUT_OF_SCOPE",
+              "VAT_CONTROL"
+            ],
+            "default": "NOT_APPLICABLE"
+          },
+          "reportingMapping": {
+            "type": "string"
+          },
+          "activeFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "activeTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false
+      },
+      "PostJournalRequest": {
+        "type": "object",
+        "properties": {
+          "journalDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "MANUAL",
+              "OPENING_BALANCE"
+            ],
+            "default": "MANUAL"
+          },
+          "reference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "debit": {
+                  "type": "string",
+                  "pattern": "^\\d{1,15}(\\.\\d{1,4})?$",
+                  "default": "0"
+                },
+                "credit": {
+                  "type": "string",
+                  "pattern": "^\\d{1,15}(\\.\\d{1,4})?$",
+                  "default": "0"
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 300
+                }
+              },
+              "required": [
+                "accountId"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 2,
+            "maxItems": 500
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "journalDate",
+          "description",
+          "lines"
+        ],
+        "additionalProperties": false
+      },
+      "ReverseJournalRequest": {
+        "type": "object",
+        "properties": {
+          "journalDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "PeriodTransitionRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
         "additionalProperties": false
       },
       "RegisterRequest": {

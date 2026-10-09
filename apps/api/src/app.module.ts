@@ -33,6 +33,9 @@ import { PracticesController } from './practices/practices.controller';
 import { PracticesService } from './practices/practices.service';
 import { OrganisationsController } from './organisations/organisations.controller';
 import { OrganisationsService } from './organisations/organisations.service';
+import { LedgerController } from './ledger/ledger.controller';
+import { LedgerApiService } from './ledger/ledger.service';
+import { AccountService, LedgerQueries, PeriodService, PostingService } from '@uk/accounting';
 
 @Module({})
 export class AppModule {
@@ -41,8 +44,13 @@ export class AppModule {
       module: AppModule,
       imports: [InfraModule.forRoot(config), AuditModule, AuthModule],
       controllers: [HealthController, OrganisationsController, CompaniesController, DocumentsController, FoldersController, EvidenceController, JobsController,
-        TasksController, PracticesController, FeatureFlagsController, MasterDataController, ReferenceController, WorkflowsController, NotificationsController, IntegrationsController, AiController],
+        TasksController, PracticesController, FeatureFlagsController, MasterDataController, ReferenceController, WorkflowsController, NotificationsController, IntegrationsController, AiController, LedgerController],
       providers: [
+        { provide: PostingService, useFactory: () => new PostingService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
+        { provide: AccountService, useFactory: () => new AccountService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
+        { provide: PeriodService, useFactory: () => new PeriodService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
+        { provide: LedgerQueries, useFactory: () => new LedgerQueries() },
+        LedgerApiService,
         OrganisationsService, PracticesService, MasterDataService, CompaniesService, DocumentsService, FoldersService, EvidenceService, TasksService,
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_GUARD, useClass: OrgGuard },

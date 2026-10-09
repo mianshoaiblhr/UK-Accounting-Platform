@@ -53,13 +53,21 @@ Money is a decimal string everywhere ("1234.50"), never a JSON number.
 ### 3.5 Reports come from the ledger only
 The trial balance sums `journal_line`; it never reads source documents. It returns per-account debit/credit/balance, totals, `balanced`, and warnings (non-zero suspense balance). Every row carries the drill-down parameters of the general-ledger query; every ledger line carries its journal and source reference (report -> account -> journal -> source). Source-transaction and document links per source module arrive with M2+.
 
+### 3.6 As built (M1)
+Migration `20260106000000_v1_ledger_core`; package `packages/accounting` (`PostingService`, `AccountService`, `PeriodService`, `LedgerQueries`); API controller `apps/api/src/ledger` (flag `bookkeeping.core`, default off; the test environment turns it on); permissions `account:read`, `account:manage`, `ledger:read`, `journal:post`, `period:lock` added to the catalogue and the system roles (partner/admin/owner: all; manager/accountant: all but lock; bookkeeper/reviewer: read; client viewer: none).
+Two hardening decisions made during the build (found by reviewing the design against the manifest, each with a test):
+1. **Closing cannot race a posting.** The PostingService (and the database guard) take `FOR SHARE` on the period row; a concurrent close/lock is an `UPDATE` of that row and waits for the posting to commit, and a close that committed first is seen. Without this a journal could land in a period closed a moment earlier.
+2. **Opening balances are fenced.** `OPENING_BALANCE` is the one manual source allowed onto control accounts (a company must be able to start with debtors, creditors and bank), so it is only accepted dated on the first day of the company's earliest period. It is audited like any journal; a dedicated permission or approval step for it is an open decision (section 4).
+Verified by `tests/platform/posting-service.test.ts` (positive, negative, reversal, period-lock, idempotency, concurrency, atomicity, reads), `tests/db/ledger.test.ts` (the database defends the ledger when the service is bypassed), `tests/api/ledger.test.ts` (roles, tenants, feature flag, periods, drill-down), `packages/contracts/src/ledger.test.ts`, the architecture rules (single writer of the ledger, single setter of the posting switch, AI/platform/worker cannot import the accounting package), the privilege matrix and the populated-database upgrade.
+
 ## 4. Open V1 decisions (none blocks M1; each needs a recorded decision before its milestone)
 1. **Foreign currency** (V1-POST-06): M1 posts in the company's base currency only. Multi-currency invoices, FX rates and revaluation need a decision on scope and rate source before M2.
 2. **VAT scope** (M2): schemes supported in the "foundation" (standard accounting, cash accounting, flat rate?), rate source and effective-dating; MTD returns are V5.
 3. **Customers/suppliers model** (M2/M3): reuse `contact` with a role (recommended) versus separate tables.
 4. **Bank statement formats** (M4): CSV first; OFX/MT940/Open Banking are V11.
 5. **Manual-journal review**: M1 posts on `journal:post`; a maker/checker workflow for manual journals can reuse the V0 workflow engine and is a candidate for M5 controls.
-6. **Opening balances / migration from other systems**: a manual-journal source `OPENING_BALANCE` is reserved; the import path is V11.
+6. **Opening balances / migration from other systems**: `OPENING_BALANCE` exists (fenced to the first day of the first period); whether it needs its own permission or an approval step, and the import path (V11), are open.
+7. **Control-account policy**: manual journals may not touch control accounts (ADR-46). Whether a firm may relax that with an explicit permission is open.
 
 ## 5. Known limitations carried into M1 (to be listed again in its acceptance package)
 Trial balance is computed on demand (no materialised balances; fine for synthetic and small data, to be measured before production); journal numbering serialises postings per company; no UI (M6); no foreign currency; the VAT validator is not yet present.

@@ -23,3 +23,5 @@ Envelope (`outbox_event`): `id`, `event_type`, `event_version`, `aggregate_type`
 No infrastructure change is needed. Breaking payload changes bump `version`; consumers must accept older versions.
 
 V0 emits: `company.created`, `organisation.member_added`, `document.uploaded`, `document.extracted`, `document.evidence_locked`, `accounting_period.created`, `task.assigned`, `task.review_requested`, `task.reviewed`, `task.commented`, `workflow.transitioned`, `ai.proposal_created`, `ai.proposal_decided` (decision `ACCEPTED`\|`REJECTED`; `APPROVED` appears only on events emitted before the AI state-model change). Workflow `reassign` is published as `workflow.transitioned` with `from == to`. No accounting events exist yet.
+
+V1 (M1) adds: `transaction.posted` (aggregate `journal`; journal id, company, period, number, date, source type and id, total as a decimal string, reversed journal if any) and `accounting_period.state_changed` (period, company, from, to, action). Both are published in the same transaction as the posting / state change.

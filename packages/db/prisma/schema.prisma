@@ -595,6 +595,10 @@ model AccountingPeriod {
   endDate        DateTime     @map("end_date") @db.Date
   status         PeriodStatus @default(OPEN)
   createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  /// Who/when/why the state last changed (V1 period controls).
+  statusChangedAt       DateTime? @map("status_changed_at") @db.Timestamptz(3)
+  statusChangedByUserId String?   @map("status_changed_by_user_id") @db.Uuid
+  statusReason          String?   @map("status_reason")
 
   company Company @relation(fields: [organisationId, companyId], references: [organisationId, id], onDelete: Cascade)
 
@@ -1192,4 +1196,98 @@ model RetentionRule {
 
   @@id([subjectKind, subject])
   @@map("retention_rule")
+}
+
+// ───────────── V1 ledger core (ADR-44..48) ─────────────
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  INCOME
+  EXPENSE
+}
+
+/// Chart of accounts, per company. Deactivated (active dates), never deleted; identity fields are immutable once the account has postings.
+model Account {
+  id               String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId   String      @map("organisation_id") @db.Uuid
+  companyId        String      @map("company_id") @db.Uuid
+  code             String
+  name             String
+  type             AccountType
+  subtype          String
+  isControl        Boolean     @default(false) @map("is_control")
+  controlKind      String?     @map("control_kind")
+  taxTreatment     String      @default("NOT_APPLICABLE") @map("tax_treatment")
+  reportingMapping String      @map("reporting_mapping")
+  activeFrom       DateTime?   @map("active_from") @db.Date
+  activeTo         DateTime?   @map("active_to") @db.Date
+  isSystem         Boolean     @default(false) @map("is_system")
+  createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, companyId, code])
+  @@unique([organisationId, companyId, id])
+  @@map("account")
+}
+
+model LedgerSequence {
+  organisationId String @map("organisation_id") @db.Uuid
+  companyId      String @map("company_id") @db.Uuid
+  lastNumber     Int    @default(0) @map("last_number")
+
+  @@id([organisationId, companyId])
+  @@map("ledger_sequence")
+}
+
+/// One posted accounting event. Written ONLY by the PostingService (packages/accounting); immutable.
+model Journal {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId    String   @map("organisation_id") @db.Uuid
+  companyId         String   @map("company_id") @db.Uuid
+  periodId          String   @map("period_id") @db.Uuid
+  journalNumber     Int      @map("journal_number")
+  journalDate       DateTime @map("journal_date") @db.Date
+  sourceType        String   @map("source_type")
+  sourceId          String?  @map("source_id")
+  sourceReference   String?  @map("source_reference")
+  description       String
+  currency          String   @db.Char(3)
+  total             Decimal  @db.Decimal(19, 4)
+  lineCount         Int      @map("line_count")
+  actorType         String   @map("actor_type")
+  postedByUserId    String?  @map("posted_by_user_id") @db.Uuid
+  postedAt          DateTime @default(now()) @map("posted_at") @db.Timestamptz(3)
+  correlationId     String?  @map("correlation_id")
+  idempotencyKey    String   @map("idempotency_key")
+  contentHash       String   @map("content_hash")
+  reversesJournalId String?  @unique @map("reverses_journal_id") @db.Uuid
+
+  lines JournalLine[]
+
+  @@unique([organisationId, companyId, journalNumber])
+  @@unique([organisationId, companyId, idempotencyKey])
+  @@unique([organisationId, companyId, id])
+  @@unique([organisationId, id])
+  @@index([organisationId, companyId, journalDate])
+  @@index([organisationId, companyId, sourceType, sourceId])
+  @@map("journal")
+}
+
+model JournalLine {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  companyId      String   @map("company_id") @db.Uuid
+  journalId      String   @map("journal_id") @db.Uuid
+  lineNo         Int      @map("line_no")
+  accountId      String   @map("account_id") @db.Uuid
+  debit          Decimal  @default(0) @db.Decimal(19, 4)
+  credit         Decimal  @default(0) @db.Decimal(19, 4)
+  description    String?
+
+  journal Journal @relation(fields: [journalId], references: [id])
+
+  @@unique([journalId, lineNo])
+  @@index([organisationId, companyId, accountId, journalId])
+  @@map("journal_line")
 }

@@ -59,6 +59,13 @@ probes.push(
   { name: 'create evidence link', perm: 'evidence:manage', run: call('post', '/evidence-links', { sourceType: 'document', sourceId: GHOST, targetType: 'task', targetId: GHOST, kind: 'SUPPORTS' }) },
   { name: 'lock filing evidence', perm: 'evidence:lock', run: call('post', `/documents/${GHOST}/evidence-lock`, { versionId: GHOST, reason: 'probe' }) },
 );
+probes.push(
+  { name: 'read chart of accounts', perm: 'account:read', run: (u) => call('get', `/companies/${company.id}/accounts`)(u) },
+  { name: 'initialise chart of accounts', perm: 'account:manage', run: (u) => call('post', `/companies/${company.id}/accounts/initialise`)(u) },
+  { name: 'read journals', perm: 'ledger:read', run: (u) => call('get', `/companies/${company.id}/journals`)(u) },
+  { name: 'post journal', perm: 'journal:post', run: (u) => call('post', `/companies/${company.id}/journals`, {})(u) },
+  { name: 'lock period', perm: 'period:lock', run: (u) => call('post', `/companies/${company.id}/periods/${GHOST}/lock`, { reason: 'probe' })(u) },
+);
 probes.find((p) => p.name === 'create company')!.run = (u) => call('post', '/companies', { name: `Perm ${Math.random()}` })(u);
 probes.push({ name: 'create period', perm: 'period:manage', run: (u) => call('post', `/companies/${company.id}/periods`, { startDate: `${2000 + Math.floor(Math.random() * 90)}-01-01`, endDate: `${2000 + Math.floor(Math.random() * 90)}-12-31` })(u) });
 

@@ -1,7 +1,12 @@
 {
   "title": "V1 Core Bookkeeping - compliance matrix",
   "source": "docs/specifications/V1_Core_Bookkeeping.md, 00_MASTER_IMPLEMENTATION_MANIFEST.md (non-negotiable accounting controls), 13_CROSS_PLATFORM_PRODUCT_REQUIREMENTS.md",
-  "statuses": {"I": "IMPLEMENTED", "P": "PARTIALLY IMPLEMENTED", "M": "MISSING", "N": "NOT APPLICABLE"},
+  "statuses": {
+    "I": "IMPLEMENTED",
+    "P": "PARTIALLY IMPLEMENTED",
+    "M": "MISSING",
+    "N": "NOT APPLICABLE"
+  },
   "milestones": {
     "M1": "Ledger core: chart of accounts, period states, PostingService, journals, general ledger, trial balance",
     "M2": "Contacts as customers/suppliers, VAT foundation, sales, credit notes, receipts",
@@ -12,82 +17,698 @@
   },
   "acceptance": "A milestone is accepted by the product owner on an acceptance package: commit SHA, CI run (every job), test results, migrations, security/permission checks, matrix changes, known limitations (DEC-007).",
   "rows": [
-    {"id": "V1-MOD-01", "ref": "V1 Modules", "req": "Chart of Accounts", "m": "M1", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-MOD-02", "ref": "V1 Modules", "req": "Customers", "m": "M2", "s": "M", "ev": "", "note": "V0 contacts exist (master data); customer role/terms are V1"},
-    {"id": "V1-MOD-03", "ref": "V1 Modules", "req": "Suppliers", "m": "M3", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-MOD-04", "ref": "V1 Modules", "req": "Sales", "m": "M2", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-MOD-05", "ref": "V1 Modules", "req": "Purchases", "m": "M3", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-MOD-06", "ref": "V1 Modules", "req": "Credit Notes", "m": "M2", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-MOD-07", "ref": "V1 Modules", "req": "Debit Notes", "m": "M3", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-MOD-08", "ref": "V1 Modules", "req": "Receipts", "m": "M2", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-MOD-09", "ref": "V1 Modules", "req": "Payments", "m": "M3", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-MOD-10", "ref": "V1 Modules", "req": "Bank Accounts", "m": "M4", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-MOD-11", "ref": "V1 Modules", "req": "Cash", "m": "M3", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-MOD-12", "ref": "V1 Modules", "req": "VAT foundation", "m": "M2", "s": "M", "ev": "", "note": "Foundation only; MTD returns are V5"},
-    {"id": "V1-MOD-13", "ref": "V1 Modules", "req": "Journals", "m": "M1", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-MOD-14", "ref": "V1 Modules", "req": "General Ledger", "m": "M1", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-MOD-15", "ref": "V1 Modules", "req": "Trial Balance", "m": "M1", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-MOD-16", "ref": "V1 Modules", "req": "P&L", "m": "M5", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-MOD-17", "ref": "V1 Modules", "req": "Balance Sheet", "m": "M5", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-MOD-18", "ref": "V1 Modules", "req": "Reconciliation", "m": "M4", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-MOD-19", "ref": "V1 Modules", "req": "Accounting Periods (explicit states and close controls)", "m": "M1", "s": "P", "ev": "V0: accounting_period table with OPEN/CLOSED/LOCKED enum, no-overlap constraint, create/list API. No transition rules, no enforcement on postings.", "note": ""},
-    {"id": "V1-ARC-01", "ref": "V1 Accounting Architecture", "req": "Source document -> transaction service -> PostingService -> journal -> journal lines -> ledger", "m": "M1", "s": "M", "ev": "", "note": "M1 delivers PostingService + journals + ledger with manual and reversal sources; each later milestone adds a transaction service"},
-    {"id": "V1-ARC-02", "ref": "V1 Accounting Architecture", "req": "Financial statements are never calculated from source transactions (Trial Balance -> P&L / Balance Sheet)", "m": "M1", "s": "M", "ev": "", "note": "Trial balance in M1; statements in M5, both from journal lines only"},
-    {"id": "V1-COA-01", "ref": "V1 Chart of Accounts", "req": "Account code", "m": "M1", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-COA-02", "ref": "V1 Chart of Accounts", "req": "Account name", "m": "M1", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-COA-03", "ref": "V1 Chart of Accounts", "req": "Account type", "m": "M1", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-COA-04", "ref": "V1 Chart of Accounts", "req": "Account subtype", "m": "M1", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-COA-05", "ref": "V1 Chart of Accounts", "req": "Control account flag", "m": "M1", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-COA-06", "ref": "V1 Chart of Accounts", "req": "Tax treatment", "m": "M1", "s": "M", "ev": "", "note": "Account-level treatment in M1; VAT codes on lines arrive with the VAT foundation (M2)"},
-    {"id": "V1-COA-07", "ref": "V1 Chart of Accounts", "req": "Reporting mapping", "m": "M1", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-COA-08", "ref": "V1 Chart of Accounts", "req": "Active dates", "m": "M1", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-POST-01", "ref": "V1 Posting Engine", "req": "PostingService is the sole service authorised to post ledger entries", "m": "M1", "s": "M", "ev": "", "note": "Enforced by an architecture test, a database guard (transaction flag) and privileges"},
-    {"id": "V1-POST-02", "ref": "V1 Posting Engine", "req": "Validate: balanced journal", "m": "M1", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-POST-03", "ref": "V1 Posting Engine", "req": "Validate: valid accounts", "m": "M1", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-POST-04", "ref": "V1 Posting Engine", "req": "Validate: valid period", "m": "M1", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-POST-05", "ref": "V1 Posting Engine", "req": "Validate: VAT treatment", "m": "M2", "s": "M", "ev": "", "note": "Validator chain exists from M1; the VAT validator ships with the VAT foundation"},
-    {"id": "V1-POST-06", "ref": "V1 Posting Engine", "req": "Validate: currency", "m": "M1", "s": "M", "ev": "", "note": "Base currency of the company only; foreign-currency postings and FX revaluation are not in V1 scope until a decision is recorded"},
-    {"id": "V1-POST-07", "ref": "V1 Posting Engine", "req": "Validate: source reference", "m": "M1", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-POST-08", "ref": "V1 Posting Engine", "req": "Validate: permissions", "m": "M1", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-EX-01", "ref": "V1 Sales Example", "req": "Sale: Dr Trade Receivables / Cr Revenue / Cr Output VAT", "m": "M2", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-EX-02", "ref": "V1 Purchase Example", "req": "Purchase: Dr Expense/Asset / Dr Input VAT / Cr Trade Payables", "m": "M3", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-EX-03", "ref": "V1 Receipt", "req": "Receipt: Dr Bank / Cr Trade Receivables", "m": "M2", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-EX-04", "ref": "V1 Payment", "req": "Payment: Dr Trade Payables / Cr Bank", "m": "M3", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-EX-05", "ref": "V1 Credit Notes", "req": "Credit notes reverse or adjust the original economic effect with full source linkage", "m": "M2", "s": "M", "ev": "", "note": "Sales credit notes M2; purchase (debit) notes M3. The reversal primitive and source linkage ship in M1"},
-    {"id": "V1-BANK-01", "ref": "V1 Bank", "req": "Bank accounts", "m": "M4", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-BANK-02", "ref": "V1 Bank", "req": "Statement imports", "m": "M4", "s": "M", "ev": "", "note": "Asynchronous job with progress; file formats to be decided in the M4 design"},
-    {"id": "V1-BANK-03", "ref": "V1 Bank", "req": "Transactions", "m": "M4", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-BANK-04", "ref": "V1 Bank", "req": "Reconciliation", "m": "M4", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-BANK-05", "ref": "V1 Bank", "req": "Unmatched items", "m": "M4", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-BANK-06", "ref": "V1 Bank", "req": "Transfers", "m": "M4", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-BANK-07", "ref": "V1 Bank", "req": "Bank charges", "m": "M4", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-BANK-08", "ref": "V1 Bank", "req": "Interest", "m": "M4", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-REC-01", "ref": "V1 Reconciliation", "req": "Matched", "m": "M4", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-REC-02", "ref": "V1 Reconciliation", "req": "Partially matched", "m": "M4", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-REC-03", "ref": "V1 Reconciliation", "req": "Unmatched", "m": "M4", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-REC-04", "ref": "V1 Reconciliation", "req": "Suggested matches", "m": "M4", "s": "M", "ev": "", "note": "Rule-based suggestions; AI suggestions are V6 and may only propose"},
-    {"id": "V1-REC-05", "ref": "V1 Reconciliation", "req": "Manual override with audit", "m": "M4", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-RPT-01", "ref": "V1 Reporting", "req": "Trial Balance -> P&L / Balance Sheet", "m": "M5", "s": "M", "ev": "", "note": "Trial balance in M1"},
-    {"id": "V1-RPT-02", "ref": "V1 Reporting", "req": "Drill-down: Report -> account -> journal -> source transaction -> document", "m": "M5", "s": "M", "ev": "", "note": "Report -> account -> journal in M1; source transaction and document links arrive with each source module"},
-    {"id": "V1-CTL-01", "ref": "V1 Controls", "req": "Locked periods", "m": "M1", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-CTL-02", "ref": "V1 Controls", "req": "Duplicate document checks", "m": "M2", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-CTL-03", "ref": "V1 Controls", "req": "Suspense account visibility", "m": "M1", "s": "M", "ev": "", "note": "Trial balance warning in M1; dashboard alert in M5"},
-    {"id": "V1-CTL-04", "ref": "V1 Controls", "req": "Negative cash alerts", "m": "M5", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-CTL-05", "ref": "V1 Controls", "req": "Unposted transaction alerts", "m": "M5", "s": "M", "ev": "", "note": ""},
-    {"id": "V1-CTL-06", "ref": "V1 Controls", "req": "Audit trail", "m": "M1", "s": "P", "ev": "V0 audit framework (append-only, before/after, reason, source workflow). Ledger actions are not yet audited.", "note": ""},
-    {"id": "V1-TEST-01", "ref": "V1 Tests", "req": "Every posting rule: positive, negative, reversal, VAT and period-lock tests", "m": "M1", "s": "M", "ev": "", "note": "Applied per rule as each milestone adds rules; the matrix lists the rule set tested"},
-    {"id": "MAN-ACC-01", "ref": "Manifest accounting controls", "req": "Only the central PostingService can create posted ledger entries", "m": "M1", "s": "M", "ev": "", "note": "Same as V1-POST-01"},
-    {"id": "MAN-ACC-02", "ref": "Manifest accounting controls", "req": "Posted journals are immutable", "m": "M1", "s": "M", "ev": "", "note": "Privileges, triggers, tests"},
-    {"id": "MAN-ACC-03", "ref": "Manifest accounting controls", "req": "Corrections use reversal/adjustment journals", "m": "M1", "s": "M", "ev": "", "note": ""},
-    {"id": "MAN-ACC-04", "ref": "Manifest accounting controls", "req": "Debits must equal credits", "m": "M1", "s": "M", "ev": "", "note": "Application and deferred database check"},
-    {"id": "MAN-ACC-05", "ref": "Manifest accounting controls", "req": "Every posted journal has source, user/system actor, timestamp and audit metadata", "m": "M1", "s": "M", "ev": "", "note": ""},
-    {"id": "MAN-ACC-06", "ref": "Manifest accounting controls", "req": "Every source transaction is traceable to its journal", "m": "M2", "s": "M", "ev": "", "note": "Journal -> source in M1 (source_type/source_id); source -> journal per module"},
-    {"id": "MAN-ACC-07", "ref": "Manifest accounting controls", "req": "Every report number is drillable to ledger/source evidence", "m": "M5", "s": "M", "ev": "", "note": "Same as V1-RPT-02"},
-    {"id": "MAN-ACC-08", "ref": "Manifest accounting controls", "req": "Accounting periods have explicit states and close controls", "m": "M1", "s": "M", "ev": "", "note": "Same as V1-MOD-19"},
-    {"id": "MAN-ACC-09", "ref": "Manifest accounting controls", "req": "Tax and reporting rules are effective-dated/versioned", "m": "M2", "s": "M", "ev": "", "note": "Reporting mappings versioned in M1; VAT rates effective-dated in M2"},
-    {"id": "MAN-ACC-10", "ref": "Manifest accounting controls", "req": "AI cannot silently post accounting entries or submit filings", "m": "M1", "s": "M", "ev": "", "note": "PostingService refuses AI actors; architecture test keeps the AI module away from the posting code"},
-    {"id": "XP-01", "ref": "Cross-platform 1", "req": "Universal drill-down", "m": "M5", "s": "M", "ev": "", "note": ""},
-    {"id": "XP-07", "ref": "Cross-platform 7", "req": "Events: TransactionPosted, BankImported, InvoiceCreated", "m": "M1", "s": "M", "ev": "", "note": "TransactionPosted in M1; BankImported M4; InvoiceCreated M2"},
-    {"id": "V1-DOD-01", "ref": "Manifest definition of done", "req": "UI workflows are usable (V1 screens)", "m": "M6", "s": "M", "ev": "", "note": "DEC-002: parallel behind feature flags"}
+    {
+      "id": "V1-MOD-01",
+      "ref": "V1 Modules",
+      "req": "Chart of Accounts",
+      "m": "M1",
+      "s": "I",
+      "ev": "account table + AccountService + /accounts API + default UK chart (UK_SMALL_COMPANY v1). migration 20260106000000_v1_ledger_core; packages/accounting; apps/api/src/ledger; ADR-44..48. Tests: tests/api/ledger.test.ts (chart), tests/db/ledger.test.ts (account guards), packages/contracts/src/ledger.test.ts",
+      "note": ""
+    },
+    {
+      "id": "V1-MOD-02",
+      "ref": "V1 Modules",
+      "req": "Customers",
+      "m": "M2",
+      "s": "M",
+      "ev": "",
+      "note": "V0 contacts exist (master data); customer role/terms are V1"
+    },
+    {
+      "id": "V1-MOD-03",
+      "ref": "V1 Modules",
+      "req": "Suppliers",
+      "m": "M3",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-MOD-04",
+      "ref": "V1 Modules",
+      "req": "Sales",
+      "m": "M2",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-MOD-05",
+      "ref": "V1 Modules",
+      "req": "Purchases",
+      "m": "M3",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-MOD-06",
+      "ref": "V1 Modules",
+      "req": "Credit Notes",
+      "m": "M2",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-MOD-07",
+      "ref": "V1 Modules",
+      "req": "Debit Notes",
+      "m": "M3",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-MOD-08",
+      "ref": "V1 Modules",
+      "req": "Receipts",
+      "m": "M2",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-MOD-09",
+      "ref": "V1 Modules",
+      "req": "Payments",
+      "m": "M3",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-MOD-10",
+      "ref": "V1 Modules",
+      "req": "Bank Accounts",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-MOD-11",
+      "ref": "V1 Modules",
+      "req": "Cash",
+      "m": "M3",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-MOD-12",
+      "ref": "V1 Modules",
+      "req": "VAT foundation",
+      "m": "M2",
+      "s": "M",
+      "ev": "",
+      "note": "Foundation only; MTD returns are V5"
+    },
+    {
+      "id": "V1-MOD-13",
+      "ref": "V1 Modules",
+      "req": "Journals",
+      "m": "M1",
+      "s": "I",
+      "ev": "POST /journals (manual and opening-balance sources), GET /journals[/id], POST /journals/{id}/reverse; all through the PostingService. Tests: tests/platform/posting-service.test.ts, tests/api/ledger.test.ts",
+      "note": "Posting only: no draft or approval step for manual journals (open decision 5 in v1-plan.md)"
+    },
+    {
+      "id": "V1-MOD-14",
+      "ref": "V1 Modules",
+      "req": "General Ledger",
+      "m": "M1",
+      "s": "I",
+      "ev": "GET /ledger (general ledger per account, running balance, keyset paging recomputed per page). Tests: tests/platform/posting-service.test.ts (one page equals paged), tests/api/ledger.test.ts",
+      "note": ""
+    },
+    {
+      "id": "V1-MOD-15",
+      "ref": "V1 Modules",
+      "req": "Trial Balance",
+      "m": "M1",
+      "s": "I",
+      "ev": "GET /reports/trial-balance (as at a date or a period with movement; journal lines only; balanced flag; suspense warning; drill-down parameters). Tests: tests/platform/posting-service.test.ts, tests/api/ledger.test.ts (independent SQL check)",
+      "note": ""
+    },
+    {
+      "id": "V1-MOD-16",
+      "ref": "V1 Modules",
+      "req": "P&L",
+      "m": "M5",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-MOD-17",
+      "ref": "V1 Modules",
+      "req": "Balance Sheet",
+      "m": "M5",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-MOD-18",
+      "ref": "V1 Modules",
+      "req": "Reconciliation",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-MOD-19",
+      "ref": "V1 Modules",
+      "req": "Accounting Periods (explicit states and close controls)",
+      "m": "M1",
+      "s": "I",
+      "ev": "OPEN<->CLOSED->LOCKED->CLOSED with database-enforced graph, period:manage / period:lock, mandatory reasons, audit before/after, events, concurrency-safe. Tests: tests/platform/posting-service.test.ts (period controls), tests/db/ledger.test.ts, tests/api/ledger.test.ts",
+      "note": "Close controls beyond 'ledger balances' are added by M2-M5 as their data exists (see MAN-ACC-08)"
+    },
+    {
+      "id": "V1-ARC-01",
+      "ref": "V1 Accounting Architecture",
+      "req": "Source document -> transaction service -> PostingService -> journal -> journal lines -> ledger",
+      "m": "M1",
+      "s": "P",
+      "ev": "PostingService -> journal -> journal_line -> ledger exists with MANUAL, OPENING_BALANCE and REVERSAL sources. No source-document transaction services yet (M2+). Tests: tests/platform/posting-service.test.ts",
+      "note": "M1 delivers PostingService + journals + ledger with manual and reversal sources; each later milestone adds a transaction service"
+    },
+    {
+      "id": "V1-ARC-02",
+      "ref": "V1 Accounting Architecture",
+      "req": "Financial statements are never calculated from source transactions (Trial Balance -> P&L / Balance Sheet)",
+      "m": "M1",
+      "s": "P",
+      "ev": "Trial balance and general ledger aggregate journal_line only (architecture: no report reads source tables). P&L and balance sheet are M5. Tests: tests/platform/posting-service.test.ts, tests/api/ledger.test.ts",
+      "note": "Trial balance in M1; statements in M5, both from journal lines only"
+    },
+    {
+      "id": "V1-COA-01",
+      "ref": "V1 Chart of Accounts",
+      "req": "Account code",
+      "m": "M1",
+      "s": "I",
+      "ev": "account.code (unique per company, 1-20 chars). migration 20260106000000_v1_ledger_core; packages/accounting; apps/api/src/ledger; ADR-44..48. Tests: packages/contracts/src/ledger.test.ts, tests/api/ledger.test.ts, tests/db/ledger.test.ts",
+      "note": ""
+    },
+    {
+      "id": "V1-COA-02",
+      "ref": "V1 Chart of Accounts",
+      "req": "Account name",
+      "m": "M1",
+      "s": "I",
+      "ev": "account.name. migration 20260106000000_v1_ledger_core; packages/accounting; apps/api/src/ledger; ADR-44..48. Tests: packages/contracts/src/ledger.test.ts, tests/api/ledger.test.ts, tests/db/ledger.test.ts",
+      "note": ""
+    },
+    {
+      "id": "V1-COA-03",
+      "ref": "V1 Chart of Accounts",
+      "req": "Account type",
+      "m": "M1",
+      "s": "I",
+      "ev": "account.type (ASSET/LIABILITY/EQUITY/INCOME/EXPENSE). migration 20260106000000_v1_ledger_core; packages/accounting; apps/api/src/ledger; ADR-44..48. Tests: packages/contracts/src/ledger.test.ts, tests/api/ledger.test.ts, tests/db/ledger.test.ts",
+      "note": ""
+    },
+    {
+      "id": "V1-COA-04",
+      "ref": "V1 Chart of Accounts",
+      "req": "Account subtype",
+      "m": "M1",
+      "s": "I",
+      "ev": "account.subtype (registry constrained to the type). migration 20260106000000_v1_ledger_core; packages/accounting; apps/api/src/ledger; ADR-44..48. Tests: packages/contracts/src/ledger.test.ts, tests/api/ledger.test.ts, tests/db/ledger.test.ts",
+      "note": ""
+    },
+    {
+      "id": "V1-COA-05",
+      "ref": "V1 Chart of Accounts",
+      "req": "Control account flag",
+      "m": "M1",
+      "s": "I",
+      "ev": "account.is_control + control_kind (receivables, payables, VAT, bank, cash, suspense, retained earnings); manual journals cannot post to control accounts. migration 20260106000000_v1_ledger_core; packages/accounting; apps/api/src/ledger; ADR-44..48. Tests: packages/contracts/src/ledger.test.ts, tests/api/ledger.test.ts, tests/db/ledger.test.ts",
+      "note": ""
+    },
+    {
+      "id": "V1-COA-06",
+      "ref": "V1 Chart of Accounts",
+      "req": "Tax treatment",
+      "m": "M1",
+      "s": "I",
+      "ev": "account.tax_treatment (account level). migration 20260106000000_v1_ledger_core; packages/accounting; apps/api/src/ledger; ADR-44..48. Tests: packages/contracts/src/ledger.test.ts, tests/api/ledger.test.ts, tests/db/ledger.test.ts",
+      "note": "Account-level treatment in M1; VAT codes on lines arrive with the VAT foundation (M2)"
+    },
+    {
+      "id": "V1-COA-07",
+      "ref": "V1 Chart of Accounts",
+      "req": "Reporting mapping",
+      "m": "M1",
+      "s": "I",
+      "ev": "account.reporting_mapping from a versioned report-line registry, checked against the type. migration 20260106000000_v1_ledger_core; packages/accounting; apps/api/src/ledger; ADR-44..48. Tests: packages/contracts/src/ledger.test.ts, tests/api/ledger.test.ts, tests/db/ledger.test.ts",
+      "note": ""
+    },
+    {
+      "id": "V1-COA-08",
+      "ref": "V1 Chart of Accounts",
+      "req": "Active dates",
+      "m": "M1",
+      "s": "I",
+      "ev": "account.active_from / active_to enforced on every posting date; deactivation cannot precede the last posting. migration 20260106000000_v1_ledger_core; packages/accounting; apps/api/src/ledger; ADR-44..48. Tests: packages/contracts/src/ledger.test.ts, tests/api/ledger.test.ts, tests/db/ledger.test.ts",
+      "note": ""
+    },
+    {
+      "id": "V1-POST-01",
+      "ref": "V1 Posting Engine",
+      "req": "PostingService is the sole service authorised to post ledger entries",
+      "m": "M1",
+      "s": "I",
+      "ev": "Single writer enforced three ways: architecture test (only packages/accounting/src/posting.ts writes journal/journal_line/ledger_sequence; only it sets app.posting; platform/AI/worker cannot import the package), database guard (insert refused without the transaction flag), privileges. Tests: tests/unit/architecture.test.ts, tests/db/ledger.test.ts",
+      "note": "Honest limit: the flag is application-asserted (same trust boundary as tenant context)"
+    },
+    {
+      "id": "V1-POST-02",
+      "ref": "V1 Posting Engine",
+      "req": "Validate: balanced journal",
+      "m": "M1",
+      "s": "I",
+      "ev": "Application check + deferred constraint trigger at commit (header agrees with lines, contiguous numbering, reversal mirrors original). Tests: tests/platform/posting-service.test.ts, tests/db/ledger.test.ts",
+      "note": ""
+    },
+    {
+      "id": "V1-POST-03",
+      "ref": "V1 Posting Engine",
+      "req": "Validate: valid accounts",
+      "m": "M1",
+      "s": "I",
+      "ev": "Accounts must exist in the company (composite FK), be active on the journal date, and not be control accounts for manual sources. Tests: tests/platform/posting-service.test.ts, tests/db/ledger.test.ts, tests/api/ledger.test.ts",
+      "note": ""
+    },
+    {
+      "id": "V1-POST-04",
+      "ref": "V1 Posting Engine",
+      "req": "Validate: valid period",
+      "m": "M1",
+      "s": "I",
+      "ev": "Period must exist, contain the date and be OPEN; period row locked FOR SHARE so a concurrent close cannot race. Tests: tests/platform/posting-service.test.ts, tests/db/ledger.test.ts (race test), tests/api/ledger.test.ts",
+      "note": ""
+    },
+    {
+      "id": "V1-POST-05",
+      "ref": "V1 Posting Engine",
+      "req": "Validate: VAT treatment",
+      "m": "M2",
+      "s": "M",
+      "ev": "",
+      "note": "Validator chain exists from M1; the VAT validator ships with the VAT foundation"
+    },
+    {
+      "id": "V1-POST-06",
+      "ref": "V1 Posting Engine",
+      "req": "Validate: currency",
+      "m": "M1",
+      "s": "P",
+      "ev": "Currency validated: journals are in the company base currency and amounts respect its minor units (application + database). Foreign-currency documents, FX rates and revaluation are NOT supported (open decision 1). Tests: tests/platform/posting-service.test.ts, tests/db/ledger.test.ts",
+      "note": "Base currency of the company only; foreign-currency postings and FX revaluation are not in V1 scope until a decision is recorded"
+    },
+    {
+      "id": "V1-POST-07",
+      "ref": "V1 Posting Engine",
+      "req": "Validate: source reference",
+      "m": "M1",
+      "s": "I",
+      "ev": "Registered source type required; REVERSAL must name the reversed journal; other sources require a source id; idempotency key per company with content hash. Tests: tests/platform/posting-service.test.ts, packages/contracts/src/ledger.test.ts",
+      "note": ""
+    },
+    {
+      "id": "V1-POST-08",
+      "ref": "V1 Posting Engine",
+      "req": "Validate: permissions",
+      "m": "M1",
+      "s": "I",
+      "ev": "Source-specific permission evaluated for the journal's company through the central authoriser; AI actors refused; system actors limited to system sources. Tests: tests/platform/posting-service.test.ts, tests/api/ledger.test.ts (roles x posting), tests/api/permissions.test.ts",
+      "note": ""
+    },
+    {
+      "id": "V1-EX-01",
+      "ref": "V1 Sales Example",
+      "req": "Sale: Dr Trade Receivables / Cr Revenue / Cr Output VAT",
+      "m": "M2",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-EX-02",
+      "ref": "V1 Purchase Example",
+      "req": "Purchase: Dr Expense/Asset / Dr Input VAT / Cr Trade Payables",
+      "m": "M3",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-EX-03",
+      "ref": "V1 Receipt",
+      "req": "Receipt: Dr Bank / Cr Trade Receivables",
+      "m": "M2",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-EX-04",
+      "ref": "V1 Payment",
+      "req": "Payment: Dr Trade Payables / Cr Bank",
+      "m": "M3",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-EX-05",
+      "ref": "V1 Credit Notes",
+      "req": "Credit notes reverse or adjust the original economic effect with full source linkage",
+      "m": "M2",
+      "s": "M",
+      "ev": "",
+      "note": "Sales credit notes M2; purchase (debit) notes M3. The reversal primitive and source linkage ship in M1"
+    },
+    {
+      "id": "V1-BANK-01",
+      "ref": "V1 Bank",
+      "req": "Bank accounts",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-BANK-02",
+      "ref": "V1 Bank",
+      "req": "Statement imports",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "Asynchronous job with progress; file formats to be decided in the M4 design"
+    },
+    {
+      "id": "V1-BANK-03",
+      "ref": "V1 Bank",
+      "req": "Transactions",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-BANK-04",
+      "ref": "V1 Bank",
+      "req": "Reconciliation",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-BANK-05",
+      "ref": "V1 Bank",
+      "req": "Unmatched items",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-BANK-06",
+      "ref": "V1 Bank",
+      "req": "Transfers",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-BANK-07",
+      "ref": "V1 Bank",
+      "req": "Bank charges",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-BANK-08",
+      "ref": "V1 Bank",
+      "req": "Interest",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-REC-01",
+      "ref": "V1 Reconciliation",
+      "req": "Matched",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-REC-02",
+      "ref": "V1 Reconciliation",
+      "req": "Partially matched",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-REC-03",
+      "ref": "V1 Reconciliation",
+      "req": "Unmatched",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-REC-04",
+      "ref": "V1 Reconciliation",
+      "req": "Suggested matches",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "Rule-based suggestions; AI suggestions are V6 and may only propose"
+    },
+    {
+      "id": "V1-REC-05",
+      "ref": "V1 Reconciliation",
+      "req": "Manual override with audit",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-RPT-01",
+      "ref": "V1 Reporting",
+      "req": "Trial Balance -> P&L / Balance Sheet",
+      "m": "M5",
+      "s": "M",
+      "ev": "",
+      "note": "Trial balance in M1"
+    },
+    {
+      "id": "V1-RPT-02",
+      "ref": "V1 Reporting",
+      "req": "Drill-down: Report -> account -> journal -> source transaction -> document",
+      "m": "M5",
+      "s": "P",
+      "ev": "Report -> account -> journal -> source reference works (trial balance rows carry drill-down parameters; ledger lines carry journal and source). Source transaction and document links arrive with each source module. Tests: tests/api/ledger.test.ts",
+      "note": "Report -> account -> journal in M1; source transaction and document links arrive with each source module"
+    },
+    {
+      "id": "V1-CTL-01",
+      "ref": "V1 Controls",
+      "req": "Locked periods",
+      "m": "M1",
+      "s": "I",
+      "ev": "Closed and locked periods refuse postings (service + database); lock needs period:lock. Tests: tests/platform/posting-service.test.ts, tests/db/ledger.test.ts, tests/api/ledger.test.ts",
+      "note": ""
+    },
+    {
+      "id": "V1-CTL-02",
+      "ref": "V1 Controls",
+      "req": "Duplicate document checks",
+      "m": "M2",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-CTL-03",
+      "ref": "V1 Controls",
+      "req": "Suspense account visibility",
+      "m": "M1",
+      "s": "P",
+      "ev": "Trial balance warns about a non-zero suspense balance (account with control kind SUSPENSE). Dashboard alert is M5. Tests: tests/platform/posting-service.test.ts",
+      "note": "Trial balance warning in M1; dashboard alert in M5"
+    },
+    {
+      "id": "V1-CTL-04",
+      "ref": "V1 Controls",
+      "req": "Negative cash alerts",
+      "m": "M5",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-CTL-05",
+      "ref": "V1 Controls",
+      "req": "Unposted transaction alerts",
+      "m": "M5",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "V1-CTL-06",
+      "ref": "V1 Controls",
+      "req": "Audit trail",
+      "m": "M1",
+      "s": "P",
+      "ev": "journal.posted/reversed, account.created/updated/chart_initialised and period.closed/reopened/locked/unlocked are audited in the business transaction (before/after, reason, actor, source workflow where relevant). Source modules add their own events in M2+. Tests: tests/platform/posting-service.test.ts, tests/api/ledger.test.ts",
+      "note": ""
+    },
+    {
+      "id": "V1-TEST-01",
+      "ref": "V1 Tests",
+      "req": "Every posting rule: positive, negative, reversal, VAT and period-lock tests",
+      "m": "M1",
+      "s": "P",
+      "ev": "Positive, negative, reversal and period-lock tests exist for every M1 posting rule; the VAT test arrives with the VAT validator (M2). Tests: tests/platform/posting-service.test.ts, tests/db/ledger.test.ts",
+      "note": "Applied per rule as each milestone adds rules; the matrix lists the rule set tested"
+    },
+    {
+      "id": "MAN-ACC-01",
+      "ref": "Manifest accounting controls",
+      "req": "Only the central PostingService can create posted ledger entries",
+      "m": "M1",
+      "s": "I",
+      "ev": "Single writer enforced three ways: architecture test (only packages/accounting/src/posting.ts writes journal/journal_line/ledger_sequence; only it sets app.posting; platform/AI/worker cannot import the package), database guard (insert refused without the transaction flag), privileges. Tests: tests/unit/architecture.test.ts, tests/db/ledger.test.ts",
+      "note": "Same as V1-POST-01"
+    },
+    {
+      "id": "MAN-ACC-02",
+      "ref": "Manifest accounting controls",
+      "req": "Posted journals are immutable",
+      "m": "M1",
+      "s": "I",
+      "ev": "No UPDATE/DELETE/TRUNCATE privilege for the runtime role and append-only triggers (the table owner is refused too). Tests: tests/db/ledger.test.ts, tests/db/privileges.test.ts",
+      "note": "Privileges, triggers, tests"
+    },
+    {
+      "id": "MAN-ACC-03",
+      "ref": "Manifest accounting controls",
+      "req": "Corrections use reversal/adjustment journals",
+      "m": "M1",
+      "s": "I",
+      "ev": "Reversal journals: linked both ways, mirror enforced per account at commit, at most once, a reversal cannot be reversed, dated on/after the original, in an open period. Tests: tests/platform/posting-service.test.ts, tests/db/ledger.test.ts, tests/api/ledger.test.ts",
+      "note": ""
+    },
+    {
+      "id": "MAN-ACC-04",
+      "ref": "Manifest accounting controls",
+      "req": "Debits must equal credits",
+      "m": "M1",
+      "s": "I",
+      "ev": "Application validation and a deferred database check at commit. Tests: tests/platform/posting-service.test.ts, tests/db/ledger.test.ts",
+      "note": "Application and deferred database check"
+    },
+    {
+      "id": "MAN-ACC-05",
+      "ref": "Manifest accounting controls",
+      "req": "Every posted journal has source, user/system actor, timestamp and audit metadata",
+      "m": "M1",
+      "s": "I",
+      "ev": "journal: source_type/source_id/source_reference, actor_type + posted_by_user_id, posted_at, correlation id, idempotency key; audit event and transaction.posted outbox event in the same transaction. Tests: tests/platform/posting-service.test.ts",
+      "note": ""
+    },
+    {
+      "id": "MAN-ACC-06",
+      "ref": "Manifest accounting controls",
+      "req": "Every source transaction is traceable to its journal",
+      "m": "M2",
+      "s": "P",
+      "ev": "Journal -> source via source_type/source_id/source_reference (done); source transaction -> journal is delivered per source module (M2+).",
+      "note": "Journal -> source in M1 (source_type/source_id); source -> journal per module"
+    },
+    {
+      "id": "MAN-ACC-07",
+      "ref": "Manifest accounting controls",
+      "req": "Every report number is drillable to ledger/source evidence",
+      "m": "M5",
+      "s": "M",
+      "ev": "",
+      "note": "Same as V1-RPT-02"
+    },
+    {
+      "id": "MAN-ACC-08",
+      "ref": "Manifest accounting controls",
+      "req": "Accounting periods have explicit states and close controls",
+      "m": "M1",
+      "s": "P",
+      "ev": "Explicit period states and the transition graph are delivered and enforced; the close controls so far are 'posting stops' and 'ledger balances'. Unposted documents and unreconciled bank items are added by M2-M4. Tests: tests/platform/posting-service.test.ts, tests/db/ledger.test.ts",
+      "note": "Same as V1-MOD-19"
+    },
+    {
+      "id": "MAN-ACC-09",
+      "ref": "Manifest accounting controls",
+      "req": "Tax and reporting rules are effective-dated/versioned",
+      "m": "M2",
+      "s": "P",
+      "ev": "Report mappings are a versioned registry (REPORT_MAPPING_VERSION = 1, returned with every account) but not yet effective-dated in the database; VAT rates are M2.",
+      "note": "Reporting mappings versioned in M1; VAT rates effective-dated in M2"
+    },
+    {
+      "id": "MAN-ACC-10",
+      "ref": "Manifest accounting controls",
+      "req": "AI cannot silently post accounting entries or submit filings",
+      "m": "M1",
+      "s": "I",
+      "ev": "PostingService refuses AI actors (ai_cannot_post); no journal source lists AI; architecture test forbids platform, the AI module and the worker from importing the accounting package. Tests: tests/platform/posting-service.test.ts, packages/contracts/src/ledger.test.ts, tests/unit/architecture.test.ts",
+      "note": "PostingService refuses AI actors; architecture test keeps the AI module away from the posting code"
+    },
+    {
+      "id": "XP-01",
+      "ref": "Cross-platform 1",
+      "req": "Universal drill-down",
+      "m": "M5",
+      "s": "M",
+      "ev": "",
+      "note": ""
+    },
+    {
+      "id": "XP-07",
+      "ref": "Cross-platform 7",
+      "req": "Events: TransactionPosted, BankImported, InvoiceCreated",
+      "m": "M1",
+      "s": "P",
+      "ev": "transaction.posted and accounting_period.state_changed events are published through the outbox; BankImported and InvoiceCreated arrive with M4 and M2.",
+      "note": "TransactionPosted in M1; BankImported M4; InvoiceCreated M2"
+    },
+    {
+      "id": "V1-DOD-01",
+      "ref": "Manifest definition of done",
+      "req": "UI workflows are usable (V1 screens)",
+      "m": "M6",
+      "s": "M",
+      "ev": "",
+      "note": "DEC-002: parallel behind feature flags"
+    }
   ]
 }

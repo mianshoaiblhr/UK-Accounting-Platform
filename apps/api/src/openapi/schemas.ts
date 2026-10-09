@@ -69,3 +69,34 @@ export const CheckResult = z.object({ ok: z.boolean(), detail: z.string().option
 
 export const Pages = { Contact: page(Contact), Company: page(Company), DocumentRecord: page(DocumentRecord), Job: page(Job), Task: page(Task), Notification: page(Notification), WorkflowInstance: page(WorkflowInstance), AiProposal: page(AiProposal), AuditEvent: page(AuditEvent) };
 export const items = <T extends z.ZodTypeAny>(i: T) => z.object({ items: z.array(i) });
+
+// ───────── V1 ledger (ADR-44..48). Money is ALWAYS a decimal string. ─────────
+const money = z.string().regex(/^\d+(\.\d+)?$/).describe('Decimal string, never a JSON number');
+const signedMoney = z.string().regex(/^-?\d+(\.\d+)?$/).describe('Decimal string; negative = opposite of the natural side');
+export const AccountView = z.object({
+  id: uuid, companyId: uuid, code: z.string(), name: z.string(), type: z.enum(['ASSET', 'LIABILITY', 'EQUITY', 'INCOME', 'EXPENSE']), subtype: z.string(), normalBalance: z.enum(['DEBIT', 'CREDIT']),
+  isControl: z.boolean(), controlKind: z.string().nullable(), taxTreatment: z.string(), reportingMapping: z.string(), reportingMappingVersion: z.number().int(),
+  activeFrom: day.nullable(), activeTo: day.nullable(), isSystem: z.boolean(), createdAt: ts,
+});
+export const JournalHeader = z.object({
+  id: uuid, journalNumber: z.number().int(), journalDate: day, periodId: uuid, sourceType: z.string(), sourceId: z.string().nullable(), sourceReference: z.string().nullable(), description: z.string(),
+  total: money, lineCount: z.number().int(), actorType: z.enum(['USER', 'SYSTEM']), postedByUserId: uuid.nullable(), postedAt: ts, reversesJournalId: uuid.nullable(),
+  reversedByJournalId: uuid.nullable(), reversedByJournalNumber: z.number().int().nullable(),
+});
+export const JournalDetail = JournalHeader.extend({
+  currency: z.string().length(3), reverses: z.object({ journalId: uuid, journalNumber: z.number().int() }).nullable(), replayed: z.boolean().optional().describe('true when an earlier posting with the same idempotency key was returned'),
+  lines: z.array(z.object({ lineNo: z.number().int(), accountId: uuid, accountCode: z.string().nullable(), accountName: z.string().nullable(), debit: money, credit: money, description: z.string().nullable() })),
+});
+export const JournalPage = z.object({ currency: z.string().length(3), items: z.array(JournalHeader), nextCursor: z.string().nullable() });
+export const GeneralLedger = z.object({
+  currency: z.string().length(3), account: z.object({ id: uuid, code: z.string(), name: z.string(), type: z.string() }), from: day.nullable(), to: day.nullable(), openingBalance: signedMoney,
+  items: z.array(z.object({ journalId: uuid, journalNumber: z.number().int(), journalDate: day, lineNo: z.number().int(), description: z.string(), sourceType: z.string(), sourceId: z.string().nullable(), sourceReference: z.string().nullable(), debit: money, credit: money, balance: signedMoney.describe('Running balance on the account\'s natural side') })),
+  nextCursor: z.string().nullable(),
+});
+export const TrialBalance = z.object({
+  currency: z.string().length(3), asOf: day, period: z.object({ id: uuid, startDate: day, endDate: day, status: z.enum(['OPEN', 'CLOSED', 'LOCKED']) }).nullable(),
+  rows: z.array(z.object({ accountId: uuid, code: z.string(), name: z.string(), type: z.string(), subtype: z.string(), reportingMapping: z.string(), debit: money, credit: money, movementDebit: money.optional(), movementCredit: money.optional(),
+    drilldown: z.object({ accountId: uuid, from: day.nullable(), to: day }).describe('Parameters of the general-ledger query that explains this row') })),
+  totalDebit: money, totalCredit: money, balanced: z.boolean(), warnings: z.array(z.object({ code: z.string(), accountId: uuid, accountCode: z.string(), message: z.string(), balance: signedMoney })),
+});
+export const PeriodState = z.object({ id: uuid, companyId: uuid, startDate: day, endDate: day, status: z.enum(['OPEN', 'CLOSED', 'LOCKED']), statusChangedAt: ts.nullable(), statusChangedByUserId: uuid.nullable(), statusReason: z.string().nullable() });

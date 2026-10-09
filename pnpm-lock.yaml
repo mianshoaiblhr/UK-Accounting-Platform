@@ -84,6 +84,9 @@ importers:
       '@nestjs/swagger':
         specifier: ^12.0.2
         version: 12.0.2(@nestjs/common@11.2.7(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.2.7)(reflect-metadata@0.2.2)(typescript@5.8.3)
+      '@uk/accounting':
+        specifier: workspace:*
+        version: link:../../packages/accounting
       '@uk/adapters':
         specifier: workspace:*
         version: link:../../packages/adapters
@@ -182,6 +185,24 @@ importers:
       '@uk/platform':
         specifier: workspace:*
         version: link:../../packages/platform
+
+  packages/accounting:
+    dependencies:
+      '@uk/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@uk/core':
+        specifier: workspace:*
+        version: link:../core
+      '@uk/db':
+        specifier: workspace:*
+        version: link:../db
+      '@uk/platform':
+        specifier: workspace:*
+        version: link:../platform
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
 
   packages/adapters:
     dependencies:

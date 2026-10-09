@@ -1,0 +1,11 @@
+{
+  "name": "@uk/accounting",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": { "build": "tsc -p tsconfig.build.json", "typecheck": "tsc --noEmit" },
+  "dependencies": {
+    "@uk/contracts": "workspace:*", "@uk/core": "workspace:*", "@uk/db": "workspace:*", "@uk/platform": "workspace:*", "zod": "^3.24.1"
+  }
+}
