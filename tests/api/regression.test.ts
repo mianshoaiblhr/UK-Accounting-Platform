@@ -44,14 +44,14 @@ describe('regression: V0 foundation contract', () => {
     for (const t of ['user', 'session', 'organisation', 'organisation_membership', 'practice', 'practice_membership', 'company_membership', 'role', 'company', 'accounting_period', 'document', 'document_version', 'audit_event', 'job_record']) expect(tables).toContain(t);
   });
 
-  it('regression: version boundary — only the tables of versions that were approved exist (V0 + V1-M1 ledger core); nothing of invoicing, VAT, tax, payroll or filing', async () => {
+  it('regression: version boundary — only the tables of versions that were approved exist (V0 + V1-M1 ledger core + V1-M2 ledger controls); nothing of invoicing, VAT, tax, payroll or filing', async () => {
     const tables = adminSql(`SELECT string_agg(table_name, ',') FROM information_schema.tables WHERE table_schema='public'`);
-    // Allowed by decision: `tax_jurisdiction` is V0 master data; the V1-M1 ledger core adds account, journal, journal_line, ledger_sequence (DEC-001, v1-plan.md).
+    // Allowed by decision: `tax_jurisdiction` is V0 master data; the V1-M1 ledger core adds account, journal, journal_line, ledger_sequence (DEC-001, v1-plan.md); V1-M2 adds journal_request and ledger_policy (DEC-012).
     // Each later V1 milestone widens this list in its own commit, with its acceptance package; anything else named like a future module still fails here.
-    const unapproved = tables.replace(/tax_jurisdiction|ledger_sequence|journal_line|journal/g, '');
+    const unapproved = tables.replace(/tax_jurisdiction|ledger_sequence|ledger_policy|journal_request|journal_line|journal/g, '');
     expect(unapproved).not.toMatch(/ledger|invoice|vat|tax|payroll|hmrc|companies_house|ixbrl|posting/i);
     expect(tables).toContain('tax_jurisdiction');
-    for (const t of ['account', 'journal', 'journal_line', 'ledger_sequence']) expect(tables.split(',')).toContain(t);
+    for (const t of ['account', 'journal', 'journal_line', 'ledger_sequence', 'journal_request', 'ledger_policy']) expect(tables.split(',')).toContain(t);
     const u = await createUser(s);
     for (const p of ['/invoices', '/vat', '/tax', '/filings']) {
       expect((await s.api().get(orgPath(u, p)).set(bearer(u.token))).status).toBe(404);

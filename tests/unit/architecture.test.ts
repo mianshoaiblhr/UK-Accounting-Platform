@@ -174,6 +174,7 @@ describe('database access paths that carry security meaning', () => {
       'apps/api/src/documents/documents.service.ts', // getDocument()/list() apply visibility
       'apps/api/src/evidence/evidence.service.ts', // resolver applies canReadDocument
       'apps/api/src/tasks/tasks.service.ts',       // readableDocument()/listAttachments() apply canReadDocument
+      'packages/accounting/src/requests.ts',       // request evidence check uses the requester's canReadDocument
       'packages/platform/src/workflow.ts',         // evidence check uses Actor.canReadDocument
     ]);
   });

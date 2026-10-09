@@ -35,9 +35,12 @@ describe('collection: the audit switch does NOT govern sessions or MFA challenge
   it('an MFA challenge stores the IP regardless of the switch', async () => {
     const u = await createUser(s);
     const enrol = await s.api().post('/api/v1/auth/mfa/enroll').set(bearer(u.token));
-    await s.api().post('/api/v1/auth/mfa/confirm').set(bearer(u.token)).send({ code: totpAt(enrol.body.secret as string, totpStep()) });
+    // A TOTP code is valid for one 30-second step; under load the step can roll over between computing and checking it, so try this step, then the next.
+    let confirm = await s.api().post('/api/v1/auth/mfa/confirm').set(bearer(u.token)).send({ code: totpAt(enrol.body.secret as string, totpStep()) });
+    if (confirm.status !== 200) confirm = await s.api().post('/api/v1/auth/mfa/confirm').set(bearer(u.token)).send({ code: totpAt(enrol.body.secret as string, totpStep() + 1) });
+    expect(confirm.status, `MFA confirm: ${JSON.stringify(confirm.body)}`).toBe(200);
     const first = await post(s, '/auth/login/bearer', { email: u.email, password: PASSWORD }, { 'X-Forwarded-For': '198.51.100.23' });
-    expect(first.body.mfaRequired).toBe(true);
+    expect(first.body.mfaRequired, `login: ${first.status} ${JSON.stringify(first.body)}`).toBe(true);
     expect(adminSql(`SELECT ip FROM auth_challenge WHERE user_id='${u.userId}' ORDER BY created_at DESC LIMIT 1`)).toBe('198.51.100.23');
   });
 
