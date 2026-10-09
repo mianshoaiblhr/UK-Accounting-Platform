@@ -37,11 +37,11 @@ describe('notification preferences', () => {
   it('a user opts in and out of e-mail per category; the change is audited with before/after', async () => {
     const on = await as(member, 'put', '/notifications/preferences', { channel: 'email', category: 'task', enabled: true });
     expect(on.status).toBe(200);
-    expect(channel(on.body, 'email').categories.find((c: { category: string }) => c.category === 'task').enabled).toBe(true);
-    expect(channel((await view(member)).body, 'email').categories.find((c: { category: string }) => c.category === 'workflow').enabled).toBe(false);
+    expect(channel(on.body, 'email').categories.find((c: { category: string }) => c.category === 'task')!.enabled).toBe(true);
+    expect(channel((await view(member)).body, 'email').categories.find((c: { category: string }) => c.category === 'workflow')!.enabled).toBe(false);
     expect((await as(member, 'put', '/notifications/preferences', { channel: 'email', category: 'task', enabled: true })).status).toBe(200); // idempotent, no second audit row
     const off = await as(member, 'put', '/notifications/preferences', { channel: 'email', category: 'task', enabled: false });
-    expect(channel(off.body, 'email').categories.find((c: { category: string }) => c.category === 'task').enabled).toBe(false);
+    expect(channel(off.body, 'email').categories.find((c: { category: string }) => c.category === 'task')!.enabled).toBe(false);
     const audit = adminSql(`SELECT count(*) FROM audit_event WHERE action='notification.preference_changed' AND actor_user_id='${member.userId}'`);
     expect(audit).toBe('2');
     expect(adminSql(`SELECT count(*) FROM audit_event WHERE action='notification.preference_changed' AND before IS NOT NULL AND after IS NOT NULL AND actor_user_id='${member.userId}'`)).toBe('2');
@@ -49,7 +49,7 @@ describe('notification preferences', () => {
 
   it('preferences are strictly personal: another member does not see them, and nobody can set another user\'s', async () => {
     await as(member, 'put', '/notifications/preferences', { channel: 'email', category: 'workflow', enabled: true });
-    expect(channel((await view(owner)).body, 'email').categories.find((c: { category: string }) => c.category === 'workflow').enabled).toBe(false);
+    expect(channel((await view(owner)).body, 'email').categories.find((c: { category: string }) => c.category === 'workflow')!.enabled).toBe(false);
     expect((await as(owner, 'put', '/notifications/preferences', { channel: 'email', category: 'system', enabled: true, userId: member.userId })).status).toBe(422); // strict schema: no user in the body
     expect(adminSql(`SELECT count(*) FROM notification_preference WHERE user_id='${owner.userId}' AND category='workflow'`)).toBe('0');
   });
