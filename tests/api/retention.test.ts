@@ -16,7 +16,7 @@ describe('GET /reference/retention-categories', () => {
   it('lists the classification with provisional periods and the document types in each category; read-only', async () => {
     const r = await s.api().get(orgPath(owner, '/reference/retention-categories')).set(bearer(viewer.token)); // any member
     expect(r.status).toBe(200);
-    expect(r.body.items.map((c: { code: string }) => c.code)).toEqual(RETENTION_CATEGORIES.map((c) => c.code).sort());
+    expect(r.body.items.map((c: { code: string }) => c.code).sort()).toEqual(RETENTION_CATEGORIES.map((c) => c.code).sort()); // sorted here: the API orders by database collation
     const acc = r.body.items.find((c: { code: string }) => c.code === 'ACCOUNTING_RECORDS');
     expect(acc).toMatchObject({ kind: 'PERIOD', years: 6, days: null, trigger: 'ACCOUNTING_PERIOD_END', status: 'PROVISIONAL' });
     expect(acc.documentTypes).toEqual(expect.arrayContaining(['BANK_STATEMENT', 'SALES_INVOICE', 'VAT_WORKING']));

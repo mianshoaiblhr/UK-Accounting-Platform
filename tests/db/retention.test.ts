@@ -8,7 +8,8 @@ import { adminSql } from '../helpers/db';
 let db: Database;
 beforeAll(() => { db = new Database(process.env.DATABASE_URL!); });
 afterAll(() => db.close());
-const rows = (sql: string) => adminSql(sql).split('\n').filter(Boolean);
+// sorted in JS on both sides: ORDER BY follows the database collation (en_US in CI puts '_' differently from a plain code-point sort)
+const rows = (sql: string) => adminSql(sql).split('\n').filter(Boolean).sort();
 const n = (v: number | null) => (v === null ? '' : String(v));
 
 describe('retention reference tables', () => {
