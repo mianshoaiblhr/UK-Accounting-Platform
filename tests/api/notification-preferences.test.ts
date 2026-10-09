@@ -94,7 +94,10 @@ describe('e-mail delivery through the real worker', () => {
     const noteId = adminSql(`SELECT id FROM notification WHERE entity_id='${t.id}'`);
     const delivery = adminSql(`SELECT status||'|'||channel FROM notification_delivery WHERE notification_id='${noteId}'`);
     expect(delivery).toBe('SENT|email');
-    expect(adminSql(`SELECT count(*) FROM job_record WHERE idempotency_key LIKE '%notification-delivery:%' AND organisation_id='${owner.organisationId}' AND status='COMPLETED'`)).not.toBe('0');
+    // the e-mail went through the job runtime, keyed by the delivery id (the job is marked COMPLETED just after the mail is written, so wait for it)
+    const jobDone = async () => adminSql(`SELECT count(*) FROM job_record WHERE idempotency_key LIKE '%notification-delivery:' || (SELECT id FROM notification_delivery WHERE notification_id='${noteId}') AND status='COMPLETED'`) === '1';
+    for (let i = 0; i < 100 && !(await jobDone()); i++) await new Promise((r) => setTimeout(r, 100));
+    expect(await jobDone()).toBe(true);
     // the in-app notification still has the body (it is private to the recipient)
     expect((await as(member, 'get', '/notifications?limit=50')).body.items.find((n: { entityId: string }) => n.entityId === t.id).body).toContain('SECRET-TWO');
     await as(member, 'put', '/notifications/preferences', { channel: 'email', category: 'task', enabled: false });
