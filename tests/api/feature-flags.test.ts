@@ -21,7 +21,7 @@ afterAll(() => s.stop());
 describe('listing', () => {
   it('shows every registered flag with its effective value and where it comes from', async () => {
     const items = (await call(owner, 'get', '/feature-flags')).body.items as Array<{ key: string; enabled: boolean; source: string; description: string }>;
-    expect(items.map((f) => f.key)).toEqual(['ai.beta', 'documents.ocr', 'tax.rules.next', 'hmrc.endpoints.new', 'filing.formats.new', 'reporting.standards.new']);
+    expect(items.map((f) => f.key)).toEqual(['bookkeeping.core', 'ai.beta', 'documents.ocr', 'tax.rules.next', 'hmrc.endpoints.new', 'filing.formats.new', 'reporting.standards.new']);
     expect(items.find((f) => f.key === 'ai.beta')).toMatchObject({ enabled: true, source: 'environment' });
     expect(items.find((f) => f.key === 'tax.rules.next')).toMatchObject({ enabled: false, source: 'default' });
     expect(items.every((f) => f.description.length > 0)).toBe(true);

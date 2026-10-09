@@ -17465,7 +17465,7 @@
         "properties": {
           "code": {
             "type": "string",
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9.\\-]{0,19}$"
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9.-]{0,19}$"
           },
           "name": {
             "type": "string",
