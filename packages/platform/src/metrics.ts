@@ -6,6 +6,7 @@ export interface PlatformSnapshot {
   outbox: { pending: number; failed: number; inFlight: number; oldestUnprocessedAgeSeconds: number };
   jobs: Record<string, number>;
   remindersDue: number;
+  workflowsOverdue: number;
   databaseMs: number;
 }
 
@@ -16,14 +17,15 @@ export interface PlatformSnapshot {
 export async function collectPlatformSnapshot(db: Database): Promise<PlatformSnapshot> {
   const t0 = process.hrtime.bigint();
   const outbox = await new OutboxRelay(db, async () => undefined, createLogger('silent')).stats();
-  const { jobs, remindersDue } = await db.system(async (tx) => {
+  const { jobs, remindersDue, workflowsOverdue } = await db.system(async (tx) => {
     const rows = await tx.$queryRaw<{ status: string; n: bigint }[]>`SELECT status::text AS status, count(*) AS n FROM job_record WHERE status IN ('QUEUED','RUNNING','RETRYING','FAILED','DEAD') GROUP BY status`;
     const due = await tx.$queryRaw<{ n: bigint }[]>`SELECT count(*) AS n FROM task_reminder WHERE sent_at IS NULL AND cancelled_at IS NULL AND coalesce(retry_at, remind_at) <= now()`;
-    return { jobs: Object.fromEntries(rows.map((r) => [r.status, Number(r.n)])), remindersDue: Number(due[0]?.n ?? 0) };
+    const overdue = await tx.$queryRaw<{ n: bigint }[]>`SELECT count(*) AS n FROM workflow_instance WHERE due_at IS NOT NULL AND due_at < now() AND completed_at IS NULL`;
+    return { jobs: Object.fromEntries(rows.map((r) => [r.status, Number(r.n)])), remindersDue: Number(due[0]?.n ?? 0), workflowsOverdue: Number(overdue[0]?.n ?? 0) };
   });
   return {
     outbox: { pending: outbox.pending, failed: outbox.failed, inFlight: outbox.inFlight, oldestUnprocessedAgeSeconds: outbox.oldestUnprocessedAgeSeconds },
-    jobs, remindersDue, databaseMs: Number(process.hrtime.bigint() - t0) / 1e6,
+    jobs, remindersDue, workflowsOverdue, databaseMs: Number(process.hrtime.bigint() - t0) / 1e6,
   };
 }
 
@@ -35,6 +37,7 @@ export function applySnapshot(reg: MetricsRegistry, s: PlatformSnapshot): void {
   reg.set('outbox_oldest_unprocessed_seconds', 'Age of the oldest unprocessed outbox event (outbox lag)', s.outbox.oldestUnprocessedAgeSeconds, {}, 'Seconds');
   for (const status of ['QUEUED', 'RUNNING', 'RETRYING', 'FAILED', 'DEAD']) reg.set('jobs', 'Background jobs by status', s.jobs[status] ?? 0, { status });
   reg.set('task_reminders_due', 'Task reminders due and not yet delivered', s.remindersDue);
+  reg.set('workflows_overdue', 'Open workflow instances past their deadline', s.workflowsOverdue);
   reg.set('platform_snapshot_duration_ms', 'Time to collect the platform snapshot', s.databaseMs, {}, 'Milliseconds');
 }
 

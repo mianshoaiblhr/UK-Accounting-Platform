@@ -63,17 +63,48 @@ export class WorkflowEngine {
     }, this.opts.captureDeviceMetadata ?? true)] });
   }
 
-  async start(tx: Tx, a: { type: string; organisationId: string; companyId?: string | null; subjectType: string; subjectId: string; actorUserId: string; context?: Record<string, unknown>; assigneeUserId?: string | null }): Promise<WorkflowInstance> {
+  async start(tx: Tx, a: { type: string; organisationId: string; companyId?: string | null; subjectType: string; subjectId: string; actorUserId: string; context?: Record<string, unknown>; assigneeUserId?: string | null; dueAt?: Date | null }): Promise<WorkflowInstance> {
     const def = this.registry.get(a.type);
+    // Deadline: the caller's, else the definition's service level (hours after start), else none.
+    const dueAt = a.dueAt ?? (def.slaHours ? new Date(Date.now() + def.slaHours * 3_600_000) : null);
     const inst = await tx.workflowInstance.create({
       data: { organisationId: a.organisationId, companyId: a.companyId ?? null, type: def.type, definitionVersion: def.version, state: def.initialState,
-        subjectType: a.subjectType, subjectId: a.subjectId, context: (a.context ?? {}) as never, startedByUserId: a.actorUserId, assigneeUserId: a.assigneeUserId ?? null },
+        subjectType: a.subjectType, subjectId: a.subjectId, context: (a.context ?? {}) as never, startedByUserId: a.actorUserId, assigneeUserId: a.assigneeUserId ?? null, dueAt },
     });
     await tx.workflowTransition.createMany({ data: [{ organisationId: a.organisationId, instanceId: inst.id, fromState: null, toState: def.initialState, action: 'start', actorUserId: a.actorUserId }] });
     await this.audit(tx, { organisationId: a.organisationId, companyId: inst.companyId, actorUserId: a.actorUserId, action: 'workflow.started', instanceId: inst.id, from: null, to: def.initialState, subjectType: a.subjectType, subjectId: a.subjectId, workflowType: def.type });
     await publishEvent(tx, Events.workflowTransitioned, { aggregateId: inst.id, organisationId: a.organisationId, actorUserId: a.actorUserId,
       payload: { instanceId: inst.id, workflowType: def.type, from: null, to: def.initialState, action: 'start', subjectType: a.subjectType, subjectId: a.subjectId } });
     return inst;
+  }
+
+  /**
+   * Sets, moves or clears the deadline (state unchanged). Recorded like a reassignment: history row, audit event with before/after, outbox event.
+   * Moving the deadline re-arms the one-time overdue notification (and resets its failure accounting). A finished instance has no deadline to manage.
+   */
+  async setDueDate(tx: Tx, a: { organisationId: string; instanceId: string; dueAt: Date | null; actor: Actor; comment?: string; expectedVersion?: number }): Promise<WorkflowInstance> {
+    const inst = await tx.workflowInstance.findUnique({ where: { id: a.instanceId } });
+    if (!inst) throw notFound('Workflow not found');
+    const def = this.registry.get(inst.type, inst.definitionVersion);
+    if (def.terminalStates.includes(inst.state)) throw conflict(`Workflow is already ${inst.state}`, 'workflow_finished');
+    if (!(await holds(a.actor, 'workflow:manage', inst.companyId))) throw forbidden('Requires permission workflow:manage', 'permission_denied');
+    if (a.expectedVersion !== undefined && a.expectedVersion !== inst.version) throw conflict('Workflow changed since you loaded it', 'version_conflict');
+    const upd = await tx.workflowInstance.updateMany({ where: { id: inst.id, version: inst.version }, data: {
+      dueAt: a.dueAt, version: { increment: 1 }, overdueNotifiedAt: null, overdueAttempts: 0, overdueRetryAt: null, overdueLastError: null } });
+    if (upd.count !== 1) throw conflict('Workflow changed concurrently', 'version_conflict');
+    const label = a.dueAt ? `Due date set to ${a.dueAt.toISOString()}` : 'Due date cleared';
+    await tx.workflowTransition.createMany({ data: [{
+      organisationId: a.organisationId, instanceId: inst.id, fromState: inst.state, toState: inst.state, action: 'set_due_date', actorUserId: a.actor.userId,
+      comment: a.comment ?? label, attempt: inst.attempt,
+    }] });
+    await tx.auditEvent.createMany({ data: [auditRow({
+      action: 'workflow.due_date_changed', organisationId: a.organisationId, companyId: inst.companyId, actorUserId: a.actor.userId, entityType: 'workflow_instance', entityId: inst.id,
+      before: { dueAt: inst.dueAt?.toISOString() ?? null }, after: { dueAt: a.dueAt?.toISOString() ?? null }, reason: a.comment, sourceWorkflowId: inst.id,
+      metadata: { workflowType: inst.type, subjectType: inst.subjectType, subjectId: inst.subjectId },
+    }, this.opts.captureDeviceMetadata ?? true)] });
+    await publishEvent(tx, Events.workflowTransitioned, { aggregateId: inst.id, organisationId: a.organisationId, actorUserId: a.actor.userId,
+      payload: { instanceId: inst.id, workflowType: inst.type, from: inst.state, to: inst.state, action: 'set_due_date', subjectType: inst.subjectType, subjectId: inst.subjectId } });
+    return tx.workflowInstance.findUniqueOrThrow({ where: { id: inst.id } });
   }
 
   /** Actions the actor could take right now (permission + segregation of duties; comment/evidence are request-time rules). */

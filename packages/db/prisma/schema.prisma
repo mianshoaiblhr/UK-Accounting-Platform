@@ -914,6 +914,13 @@ model WorkflowInstance {
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   completedAt       DateTime? @map("completed_at") @db.Timestamptz(3)
+  /// Deadline. Overdue = dueAt < now and completedAt is null.
+  dueAt             DateTime? @map("due_at") @db.Timestamptz(3)
+  /// Set atomically with the one-time overdue notification.
+  overdueNotifiedAt DateTime? @map("overdue_notified_at") @db.Timestamptz(3)
+  overdueAttempts   Int       @default(0) @map("overdue_attempts")
+  overdueRetryAt    DateTime? @map("overdue_retry_at") @db.Timestamptz(3)
+  overdueLastError  String?   @map("overdue_last_error")
 
   transitions WorkflowTransition[]
 

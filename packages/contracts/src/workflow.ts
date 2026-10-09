@@ -30,6 +30,8 @@ export interface WorkflowDefinition {
   apiStartable?: boolean;
   /** Permission needed to start through the API. */
   startPermission?: string;
+  /** Optional service level: a new instance is due this many hours after it starts (unless the caller supplies a deadline). */
+  slaHours?: number;
 }
 
 /**

@@ -124,11 +124,17 @@ export const ALLOWED_UPLOAD_TYPES = [
 export const startWorkflowSchema = z.object({
   type: z.string().max(60), subjectType: z.string().max(60), subjectId: z.string().max(100),
   companyId: z.string().uuid().optional(), context: z.record(z.unknown()).default({}),
+  /** Deadline (ISO 8601 with offset); must be in the future. Overrides the definition's SLA. */
+  dueAt: z.string().datetime({ offset: true }).refine((v) => Date.parse(v) > Date.now(), 'dueAt must be in the future').optional(),
 }).strict();
 export const transitionWorkflowSchema = z.object({
   action: z.string().max(60), comment: z.string().max(2000).optional(), expectedVersion: z.number().int().positive().optional(),
   /** Documents offered as evidence for this transition (same organisation/company, readable by the actor). */
   evidenceDocumentIds: z.array(z.string().uuid()).max(50).optional(),
+}).strict();
+/** `dueAt: null` clears the deadline. */
+export const setWorkflowDueDateSchema = z.object({
+  dueAt: z.string().datetime({ offset: true }).nullable(), comment: z.string().max(2000).optional(), expectedVersion: z.number().int().positive().optional(),
 }).strict();
 export const reassignWorkflowSchema = z.object({ assigneeUserId: z.string().uuid().nullable(), comment: z.string().max(2000).optional() }).strict();
 

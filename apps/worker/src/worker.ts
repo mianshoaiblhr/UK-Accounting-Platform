@@ -3,13 +3,13 @@ import { EMF_DIMENSION_KEYS, FieldEncryption, MetricsRegistry, createLogger, sta
 import { Database } from '@uk/db';
 import { JobProducer, JobRuntime } from '@uk/jobs';
 import { parseFeatureDefaults } from '@uk/contracts';
-import { AiGateway, AiProposalService, EventBus, FeatureFlagService, IntegrationService, NotificationService, OutboxRelay, TaskReminderSweeper, WorkflowEngine, collectPlatformMetrics, WorkflowRegistry, createAiProviders, createIntegrationRegistry, createOcrProvider, dispatchViaJobs, type AiProvider, type OcrProvider } from '@uk/platform';
+import { AiGateway, AiProposalService, EventBus, FeatureFlagService, IntegrationService, NotificationService, OutboxRelay, TaskReminderSweeper, WorkflowEngine, WorkflowOverdueSweeper, collectPlatformMetrics, WorkflowRegistry, createAiProviders, createIntegrationRegistry, createOcrProvider, dispatchViaJobs, type AiProvider, type OcrProvider } from '@uk/platform';
 import { registerAi, registerConsumers, registerEventDispatch, registerIntegrations } from './handlers/platform';
 import { registerDocument } from './handlers/document';
 import { registerEcho } from './handlers/echo';
 import { registerEmail } from './handlers/email';
 
-export interface WorkerHandle { stop(): Promise<void>; runtime: JobRuntime; producer: JobProducer; db: Database; relay: OutboxRelay; reminders: TaskReminderSweeper; ocr?: OcrProvider; metrics: MetricsRegistry; bus: EventBus; aiProviders: AiProvider[] }
+export interface WorkerHandle { stop(): Promise<void>; runtime: JobRuntime; producer: JobProducer; db: Database; relay: OutboxRelay; reminders: TaskReminderSweeper; overdue: WorkflowOverdueSweeper; ocr?: OcrProvider; metrics: MetricsRegistry; bus: EventBus; aiProviders: AiProvider[] }
 
 /** Builds and starts the worker; also used by integration tests. */
 export function startWorker(config: AppConfig, logger: Logger = createLogger(config.LOG_LEVEL, 'worker')): WorkerHandle {
@@ -48,6 +48,11 @@ export function startWorker(config: AppConfig, logger: Logger = createLogger(con
   const reminderLoop = setInterval(() => { reminders.sweepOnce().catch((err) => logger.error({ err }, 'task reminder sweep failed')); }, config.TASK_REMINDER_POLL_MS);
   reminderLoop.unref();
 
+  // Workflow deadlines (ADR-37): overdue open instances get a one-time notification, exactly once, in their own tenant transaction.
+  const overdue = new WorkflowOverdueSweeper(db, notifications, logger, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA });
+  const overdueLoop = setInterval(() => { overdue.sweepOnce().catch((err) => logger.error({ err }, 'workflow overdue sweep failed')); }, config.WORKFLOW_OVERDUE_POLL_MS);
+  overdueLoop.unref();
+
   // Metrics (ADR-35): process + platform gauges. The worker is the single writer of the global gauges (outbox, jobs, reminders) so
   // N API tasks do not double count; `worker_heartbeat` lets CloudWatch alarm on a silent worker (missing data = breaching).
   const metrics = new MetricsRegistry();
@@ -64,12 +69,13 @@ export function startWorker(config: AppConfig, logger: Logger = createLogger(con
   sweeper.unref();
 
   return {
-    runtime, producer, db, relay, reminders, ocr, metrics, bus, aiProviders,
+    runtime, producer, db, relay, reminders, overdue, ocr, metrics, bus, aiProviders,
     async stop() {
       clearInterval(sweeper);
       clearInterval(relayLoop);
       clearInterval(cleanupLoop);
       clearInterval(reminderLoop);
+      clearInterval(overdueLoop);
       stopEmf();
       stopLag();
       await runtime.stop();

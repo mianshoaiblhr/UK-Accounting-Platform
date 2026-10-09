@@ -6366,6 +6366,19 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "overdue",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "true: only open instances past their deadline"
+            }
           }
         ],
         "responses": {
@@ -6604,6 +6617,78 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ReassignWorkflowRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/workflows/{workflowId}/due-date": {
+      "post": {
+        "operationId": "Workflows_setDueDate",
+        "parameters": [
+          {
+            "name": "workflowId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowInstance"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Workflows"
+        ],
+        "x-required-permissions": [
+          "workflow:manage"
+        ],
+        "summary": "Set, move or clear the deadline (re-arms the one-time overdue notification; recorded in the history and audit trail)",
+        "description": "**Requires permission:** `workflow:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetWorkflowDueDateRequest"
               }
             }
           }
@@ -9899,6 +9984,21 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "dueAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Deadline; null when none"
+          },
+          "overdue": {
+            "type": "boolean",
+            "description": "Past its deadline and not finished"
+          },
+          "overdueNotifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         },
         "required": [
@@ -9913,7 +10013,10 @@
           "subjectId",
           "version",
           "startedByUserId",
-          "completedAt"
+          "completedAt",
+          "dueAt",
+          "overdue",
+          "overdueNotifiedAt"
         ],
         "additionalProperties": false
       },
@@ -9960,6 +10063,21 @@
             "format": "uuid"
           },
           "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "dueAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Deadline; null when none"
+          },
+          "overdue": {
+            "type": "boolean",
+            "description": "Past its deadline and not finished"
+          },
+          "overdueNotifiedAt": {
             "type": "string",
             "format": "date-time",
             "nullable": true
@@ -10036,6 +10154,9 @@
           "version",
           "startedByUserId",
           "completedAt",
+          "dueAt",
+          "overdue",
+          "overdueNotifiedAt",
           "availableActions",
           "transitions"
         ],
@@ -11688,6 +11809,21 @@
                   "type": "string",
                   "format": "date-time",
                   "nullable": true
+                },
+                "dueAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true,
+                  "description": "Deadline; null when none"
+                },
+                "overdue": {
+                  "type": "boolean",
+                  "description": "Past its deadline and not finished"
+                },
+                "overdueNotifiedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
                 }
               },
               "required": [
@@ -11702,7 +11838,10 @@
                 "subjectId",
                 "version",
                 "startedByUserId",
-                "completedAt"
+                "completedAt",
+                "dueAt",
+                "overdue",
+                "overdueNotifiedAt"
               ],
               "additionalProperties": false
             }
@@ -13474,6 +13613,11 @@
                 "apiStartable": {
                   "type": "boolean"
                 },
+                "slaHours": {
+                  "type": "number",
+                  "nullable": true,
+                  "description": "Default deadline in hours after start; null when the definition has none"
+                },
                 "transitions": {
                   "type": "array",
                   "items": {
@@ -13511,6 +13655,7 @@
                 "initialState",
                 "terminalStates",
                 "apiStartable",
+                "slaHours",
                 "transitions"
               ],
               "additionalProperties": false
@@ -14732,6 +14877,10 @@
             "type": "object",
             "additionalProperties": {},
             "default": {}
+          },
+          "dueAt": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "required": [
@@ -14786,6 +14935,29 @@
         },
         "required": [
           "assigneeUserId"
+        ],
+        "additionalProperties": false
+      },
+      "SetWorkflowDueDateRequest": {
+        "type": "object",
+        "properties": {
+          "dueAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0
+          }
+        },
+        "required": [
+          "dueAt"
         ],
         "additionalProperties": false
       },

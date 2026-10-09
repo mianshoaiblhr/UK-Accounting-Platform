@@ -62,6 +62,7 @@ describe('tenant isolation is structural, not conventional', () => {
       'packages/platform/src/metrics.ts',                // read-only cross-tenant aggregates (counts only) for metrics/readiness
       'packages/platform/src/outbox.ts',                 // relay
       'packages/platform/src/task-reminders.ts',         // lists due reminders (read-only); every write runs in the owning tenant's context
+      'packages/platform/src/workflow-overdue.ts',       // lists overdue workflow instances (read-only); every write runs in the owning tenant's context
     ]);
   });
 
