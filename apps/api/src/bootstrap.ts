@@ -5,9 +5,10 @@ import cookieParser from 'cookie-parser';
 import type { NextFunction, Request, Response } from 'express';
 import express from 'express';
 import helmet from 'helmet';
-import { loadConfig, type AppConfig } from '@uk/core';
+import { EMF_DIMENSION_KEYS, loadConfig, startEmfEmitter, type AppConfig, type MetricsRegistry } from '@uk/core';
 import { AppModule } from './app.module';
-import { LOGGER } from './common/tokens';
+import { LOGGER, METRICS } from './common/tokens';
+import { accessLog } from './common/access-log.middleware';
 import { mountApiDocs } from './openapi/build';
 import { requestContextMiddleware } from './common/request-context.middleware';
 
@@ -16,6 +17,13 @@ export async function createApp(config: AppConfig = loadConfig()): Promise<NestE
   app.set('trust proxy', config.TRUST_PROXY_HOPS);
   app.disable('x-powered-by');
   app.use(requestContextMiddleware);
+  const metrics = app.get<MetricsRegistry>(METRICS);
+  app.use(accessLog(app.get(LOGGER), metrics, config));
+  if (config.METRICS_EMF) {
+    const stop = startEmfEmitter(metrics, { namespace: config.METRICS_NAMESPACE, service: 'api', intervalMs: config.METRICS_EMF_INTERVAL_MS, dimensionKeys: EMF_DIMENSION_KEYS });
+    app.enableShutdownHooks();
+    app.getHttpServer().once('close', stop);
+  }
   const hsts = config.isProduction ? { maxAge: 31536000, includeSubDomains: true } : false;
   const strict = helmet({ contentSecurityPolicy: { directives: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] } }, hsts, referrerPolicy: { policy: 'no-referrer' } });
   // Swagger UI needs inline scripts/styles: relax CSP for the docs path only (never the API itself).

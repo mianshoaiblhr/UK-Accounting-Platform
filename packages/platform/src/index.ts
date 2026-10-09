@@ -10,3 +10,4 @@ export * from './features';
 export * from './task-reminders';
 export * from './ocr';
 export * from './evidence';
+export * from './metrics';

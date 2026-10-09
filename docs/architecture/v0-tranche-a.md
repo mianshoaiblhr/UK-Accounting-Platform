@@ -152,3 +152,23 @@ Written before implementation. Scope is the approved Tranche A minimum; OpenTele
 
 ### 8.3 Compatibility and risk
 Additive: one nullable column and an index on `job_record`, no behaviour change for existing clients except the company filter on `GET /jobs`. Risk: the access-log middleware runs on every request - it must never throw (wrapped) and never log bodies; covered by tests. Terraform cannot be validated or applied in this sandbox: CI validates; the alarms are unproven against a real account.
+
+### 8.4 As built
+| Item | Built | Verified by |
+|---|---|---|
+| Access logs | `apps/api/src/common/access-log.middleware.ts` (route template, status, duration, bytes, correlation/trace/user/organisation; level by outcome; probes at debug; IP and user agent follow `AUDIT_CAPTURE_DEVICE_METADATA`) | `tests/api/observability.test.ts` (fields, no query string/ids/credentials, levels, privacy switch) |
+| Metrics registry | `packages/core/src/metrics.ts` (counter/gauge/histogram, Prometheus + EMF renderers, label whitelist, 500-series cap per metric, `metrics_dropped_series_total`) | `packages/core/src/metrics.test.ts` (5), observability test (no UUID in any label) |
+| Platform gauges | `packages/platform/src/metrics.ts` (outbox pending/failed/in-flight/lag, jobs by status incl. DEAD, due reminders), cached for `METRICS_SNAPSHOT_TTL_MS` | observability test (gauges, DEAD job counted) |
+| `/metrics` | disabled (404) without `METRICS_TOKEN`, bearer + constant-time compare, `no-store` | observability test |
+| Worker EMF | `startEmfEmitter` every `METRICS_EMF_INTERVAL_MS`: heartbeat + platform gauges + process metrics; counters are emitted as deltas | observability test (valid EMF, namespace, heartbeat, DEAD dimension, no ids) |
+| Readiness | `/readyz`: 503 only for database/Redis; `degraded` list (outbox lag/failed, dead jobs) with 200; figures only with the metrics token | observability test |
+| `job_record.company_id`, `trace_id` | migration `20260104000900`; set by the document pipeline; `GET /jobs[?companyId&status]` hides jobs of companies the caller cannot read (404 on fetch/retry) | observability test (visibility, FK, trace) |
+| Trace context | `traceparent` accepted (invalid/zero ids replaced), echoed with a fresh span id, in every log line, stored on jobs and restored in the worker | observability test |
+| Alarms | `infra/terraform/observability.tf`: SNS topic + 8 application alarms + ALB 5xx, unhealthy targets, ECS CPU/memory per service, RDS CPU/connections/free storage; EMF switched on for every service | `tests/unit/observability-infra.test.ts` (alarm <-> metric drift guard); `terraform fmt`/`validate` in CI |
+
+### 8.5 Known limits (deliberate, listed for the final report)
+* **Never run against AWS.** The alarms have not been applied, the EMF extraction has not been seen in a real CloudWatch, and the SNS topic is not encrypted with a customer-managed key (alarm messages carry metric names and values only). Staging verification, including a game-day that stops the worker and fills the DLQ, is a production-gate item.
+* No OpenTelemetry SDK, spans, exporter or collector (OBS-04), no dashboards, no SLO definitions or load/performance tests (XP-12): Tranche B.
+* Trace context is propagated through jobs but not through outbox events or outbound HTTP calls yet.
+* Redis alarms (evictions, memory) are not defined: ElastiCache metric dimensions depend on the cluster layout chosen at the first apply.
+* The login-failure counter counts responses of the login route; per-account lockout signals stay in the audit trail.

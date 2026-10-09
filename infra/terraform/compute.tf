@@ -158,6 +158,8 @@ locals {
     { name = "APP_BASE_URL", value = "https://${var.domain_name}" },
     { name = "CORS_ORIGINS", value = "https://${var.domain_name}" },
     { name = "TRUST_PROXY_HOPS", value = "1" },
+    { name = "METRICS_EMF", value = "true" },
+    { name = "METRICS_NAMESPACE", value = var.metrics_namespace },
   ]
   common_secrets = [
     { name = "DATABASE_URL", valueFrom = aws_secretsmanager_secret.app_db_url.arn },

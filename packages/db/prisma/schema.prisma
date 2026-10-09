@@ -801,6 +801,10 @@ model JobRecord {
   status          JobRecordStatus @default(QUEUED)
   idempotencyKey  String          @map("idempotency_key")
   correlationId   String          @map("correlation_id")
+  /// W3C trace id (32 hex) of the enqueuing request; restored in the worker.
+  traceId         String?         @map("trace_id")
+  /// Company the job concerns (composite FK with organisation_id); jobs are listed only to people who can read that company.
+  companyId       String?         @map("company_id") @db.Uuid
   payload         Json
   result          Json?
   error           String?
@@ -815,6 +819,7 @@ model JobRecord {
 
   @@unique([queue, idempotencyKey])
   @@index([organisationId, createdAt(sort: Desc)])
+  @@index([organisationId, companyId, createdAt(sort: Desc)])
   @@index([status, createdAt])
   @@map("job_record")
 }

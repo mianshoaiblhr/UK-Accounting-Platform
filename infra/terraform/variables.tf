@@ -81,3 +81,21 @@ variable "log_retention_days" {
   type    = number
   default = 400
 }
+
+variable "alert_email" {
+  description = "E-mail address subscribed to the alarm topic (confirm the subscription once). Null = topic only."
+  type        = string
+  default     = null
+}
+
+variable "metrics_namespace" {
+  description = "CloudWatch namespace for the platform's Embedded Metric Format metrics"
+  type        = string
+  default     = "UkPlatform"
+}
+
+variable "db_connections_alarm_threshold" {
+  description = "Alarm when RDS connections exceed this (size it to the instance class and the connection pool of api + worker tasks)"
+  type        = number
+  default     = 80
+}

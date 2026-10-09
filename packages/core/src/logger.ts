@@ -15,7 +15,7 @@ export const createLogger = (level = 'info', name = 'uk-platform'): Logger =>
     redact: { paths: REDACT_PATHS, censor: '[REDACTED]' },
     mixin() {
       const c = getContext();
-      return c ? { correlationId: c.correlationId, userId: c.userId, organisationId: c.organisationId } : {};
+      return c ? { correlationId: c.correlationId, traceId: c.traceId, userId: c.userId, organisationId: c.organisationId } : {};
     },
   });
 

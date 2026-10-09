@@ -149,12 +149,12 @@ export class DocumentsService {
           payload: { documentId: ver.documentId, versionId: ver.id, companyId: ver.document.companyId, contentType: ver.contentType, sizeBytes: ver.sizeBytes } });
       }
       const { document: _d, ...plain } = ver;
-      return plain;
+      return { version: plain, companyId: ver.document.companyId };
     });
     await this.jobs.enqueue(JobTypes.documentProcess, { documentVersionId: versionId }, {
-      organisationId: org.organisationId, userId: org.userId, idempotencyKey: `docproc:${versionId}`,
+      organisationId: org.organisationId, userId: org.userId, companyId: v.companyId ?? undefined, idempotencyKey: `docproc:${versionId}`,
     });
-    return v;
+    return v.version;
   }
 
   async list(org: OrgAccess, q: { limit: number; cursor?: string; companyId?: string; folderId?: string; periodId?: string; documentClass?: string; visibility?: string; q?: string; status?: string; evidenceLocked?: boolean }) {
@@ -308,6 +308,7 @@ export class DocumentsService {
   /** Queues extraction for an AVAILABLE version (the route is behind the `documents.ocr` flag; the worker re-checks it). */
   async requestExtraction(org: OrgAccess, documentId: string, versionId: string) {
     if (this.config.OCR_PROVIDER === 'none') throw unprocessable('No OCR provider is configured', 'ocr_not_configured');
+    const doc = await this.getDocument(org, documentId, 'document:upload');
     const v = await this.getVersion(org, documentId, versionId, 'document:upload');
     if (v.status !== 'AVAILABLE') throw conflict(`Document version is ${v.status}; only AVAILABLE versions can be read by OCR`, 'document_not_available');
     const provider = this.config.OCR_PROVIDER;
@@ -321,7 +322,7 @@ export class DocumentsService {
       return r;
     });
     await this.jobs.enqueue(JobTypes.documentOcr, { documentVersionId: versionId }, {
-      organisationId: org.organisationId, userId: org.userId, idempotencyKey: `ocr:${versionId}:${Math.floor(Date.now() / 60_000)}`,
+      organisationId: org.organisationId, userId: org.userId, companyId: doc.companyId ?? undefined, idempotencyKey: `ocr:${versionId}:${Math.floor(Date.now() / 60_000)}`,
     });
     return this.extractionView(row as never, false);
   }

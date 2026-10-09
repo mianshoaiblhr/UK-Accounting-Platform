@@ -66,7 +66,7 @@ export class JobRuntime {
     const entry = this.handlers.get(job.name);
     const attempt = job.attemptsMade + 1;
     return runWithContext(
-      { correlationId: msg.correlationId, userId: msg.userId ?? undefined, organisationId: msg.organisationId ?? undefined },
+      { correlationId: msg.correlationId, traceId: msg.traceId ?? undefined, userId: msg.userId ?? undefined, organisationId: msg.organisationId ?? undefined },
       async () => {
         const log = this.logger.child({ jobRecordId: msg.recordId, jobType: job.name, attempt });
         if (!entry) {

@@ -8,3 +8,4 @@ export * from './ids';
 export * from './rate-limit';
 export * from './password-policy';
 export * from './config';
+export * from './metrics';

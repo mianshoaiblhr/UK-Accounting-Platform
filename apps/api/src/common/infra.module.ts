@@ -1,12 +1,13 @@
 import { Global, Module, type DynamicModule } from '@nestjs/common';
 import IORedis from 'ioredis';
 import { createStorage } from '@uk/adapters';
-import { FieldEncryption, RateLimiter, createLogger, type AppConfig, type Logger, tooManyRequests } from '@uk/core';
+import { FieldEncryption, MetricsRegistry, RateLimiter, createLogger, startLagSampler, type AppConfig, type Logger, tooManyRequests } from '@uk/core';
 import { Database } from '@uk/db';
+import { PlatformSnapshotCache } from './platform-snapshot';
 import { JobProducer } from '@uk/jobs';
 import { parseFeatureDefaults } from '@uk/contracts';
 import { AiGateway, AiProposalService, FeatureFlagService, IntegrationService, NotificationService, WorkflowEngine, WorkflowRegistry, createAiProviders, createIntegrationRegistry } from '@uk/platform';
-import { AI_GATEWAY, AI_PROPOSALS, AI_PROVIDERS, CONFIG, CRYPTO, DB, FEATURES, INTEGRATIONS, JOBS, LOGGER, NOTIFICATIONS, RATE_LIMITER, REDIS, STORAGE, WORKFLOWS } from './tokens';
+import { AI_GATEWAY, AI_PROPOSALS, AI_PROVIDERS, CONFIG, CRYPTO, DB, FEATURES, INTEGRATIONS, JOBS, LOGGER, METRICS, NOTIFICATIONS, RATE_LIMITER, REDIS, SNAPSHOT, STORAGE, WORKFLOWS } from './tokens';
 
 /** Limiter that can be disabled for tests/dev (never in production — enforced by config validation). */
 export class Limits {
@@ -30,6 +31,8 @@ export class InfraModule {
       { provide: CONFIG, useValue: config },
       { provide: LOGGER, useFactory: (): Logger => createLogger(config.LOG_LEVEL, 'api') },
       { provide: DB, useFactory: () => new Database(config.DATABASE_URL) },
+      { provide: METRICS, useFactory: () => { const r = new MetricsRegistry(); startLagSampler(r); return r; } },
+      { provide: SNAPSHOT, inject: [DB, METRICS], useFactory: (db: Database, m: MetricsRegistry) => new PlatformSnapshotCache(db, m, config.METRICS_SNAPSHOT_TTL_MS) },
       { provide: REDIS, useFactory: () => new IORedis(config.REDIS_URL, { maxRetriesPerRequest: 2, lazyConnect: false }) },
       { provide: CRYPTO, useFactory: () => new FieldEncryption(config.FIELD_ENCRYPTION_KEY) },
       { provide: STORAGE, useFactory: () => createStorage(config) },

@@ -13,3 +13,5 @@ export const AI_GATEWAY = Symbol('AI_GATEWAY');
 export const FEATURES = Symbol('FEATURES');
 export const AI_PROPOSALS = Symbol('AI_PROPOSALS');
 export const AI_PROVIDERS = Symbol('AI_PROVIDERS');
+export const METRICS = Symbol('METRICS');
+export const SNAPSHOT = Symbol('SNAPSHOT');

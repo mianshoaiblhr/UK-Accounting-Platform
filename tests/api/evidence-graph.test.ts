@@ -132,11 +132,11 @@ describe('existing evidence-like features write to the graph in the same transac
 });
 
 describe('integrity', () => {
-  it('no active link points at an entity that does not exist or belongs to another company', () => {
+  it('no active link points at an entity that does not exist or belongs to another company (organisation-level documents may support a company\'s work)', () => {
     const dangling = adminSql(`
       SELECT count(*) FROM evidence_link l WHERE l.revoked_at IS NULL AND (
-        (l.source_type='document' AND NOT EXISTS (SELECT 1 FROM document d WHERE d.id=l.source_id AND d.organisation_id=l.organisation_id AND d.company_id IS NOT DISTINCT FROM COALESCE(l.company_id, d.company_id)))
-        OR (l.target_type='document' AND NOT EXISTS (SELECT 1 FROM document d WHERE d.id=l.target_id AND d.organisation_id=l.organisation_id AND d.company_id IS NOT DISTINCT FROM COALESCE(l.company_id, d.company_id)))
+        (l.source_type='document' AND NOT EXISTS (SELECT 1 FROM document d WHERE d.id=l.source_id AND d.organisation_id=l.organisation_id AND (d.company_id IS NULL OR d.company_id = l.company_id)))
+        OR (l.target_type='document' AND NOT EXISTS (SELECT 1 FROM document d WHERE d.id=l.target_id AND d.organisation_id=l.organisation_id AND (d.company_id IS NULL OR d.company_id = l.company_id)))
         OR (l.source_type='task' AND NOT EXISTS (SELECT 1 FROM task t WHERE t.id=l.source_id AND t.organisation_id=l.organisation_id))
         OR (l.target_type='task' AND NOT EXISTS (SELECT 1 FROM task t WHERE t.id=l.target_id AND t.organisation_id=l.organisation_id))
         OR (l.source_type='workflow_instance' AND NOT EXISTS (SELECT 1 FROM workflow_instance w WHERE w.id=l.source_id AND w.organisation_id=l.organisation_id)))`);

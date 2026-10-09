@@ -13,19 +13,19 @@ import { UnrecoverableError, type JobProducer, type JobRuntime } from '@uk/jobs'
 const MAX_TEXT = 1_000_000;
 export function registerDocument(rt: JobRuntime, deps: { db: Database; storage: StoragePort; av: AntivirusPort; features: FeatureFlagService; jobs: JobProducer; ocr?: OcrProvider }): void {
   /** Idempotent (stable key): safe to call again when the process job is retried or re-run. */
-  const queueOcr = async (v: { id: string; contentType: string }, organisationId: string, userId: string | null) => {
+  const queueOcr = async (v: { id: string; contentType: string }, organisationId: string, userId: string | null, companyId: string | null) => {
     if (!deps.ocr || !deps.ocr.supports(v.contentType)) return;
     if (!(await deps.features.isEnabled('documents.ocr', organisationId))) return;
-    await deps.jobs.enqueue(JobTypes.documentOcr, { documentVersionId: v.id }, { organisationId, userId: userId ?? undefined, idempotencyKey: `ocr:${v.id}` });
+    await deps.jobs.enqueue(JobTypes.documentOcr, { documentVersionId: v.id }, { organisationId, userId: userId ?? undefined, companyId: companyId ?? undefined, idempotencyKey: `ocr:${v.id}` });
   };
 
   rt.register(JobTypes.documentProcess, async ({ payload, organisationId, userId, progress, log }) => {
     if (!organisationId) throw new UnrecoverableError('document.process requires an organisation');
     const ctx = { organisationId, userId: userId ?? undefined };
-    const v = await deps.db.tenant(ctx, (tx) => tx.documentVersion.findUnique({ where: { id: payload.documentVersionId } }));
+    const v = await deps.db.tenant(ctx, (tx) => tx.documentVersion.findUnique({ where: { id: payload.documentVersionId }, include: { document: { select: { companyId: true } } } }));
     if (!v) throw new UnrecoverableError('document version not found');
     if (v.status === 'AVAILABLE' || v.status === 'QUARANTINED') {
-      if (v.status === 'AVAILABLE') await queueOcr(v, organisationId, userId); // the previous attempt may have stopped before queueing
+      if (v.status === 'AVAILABLE') await queueOcr(v, organisationId, userId, v.document.companyId); // the previous attempt may have stopped before queueing
       return { status: v.status, skipped: true }; // idempotent
     }
     await deps.db.tenant(ctx, (tx) => tx.documentVersion.update({ where: { id: v.id }, data: { status: 'SCANNING' } }));
@@ -57,7 +57,7 @@ export function registerDocument(rt: JobRuntime, deps: { db: Database; storage: 
         },
       });
     });
-    if (verdict.ok) await queueOcr(v, organisationId, userId);
+    if (verdict.ok) await queueOcr(v, organisationId, userId, v.document.companyId);
     log.info({ versionId: v.id, status }, 'document processed');
     await progress(100, status);
     return { status, sha256 };

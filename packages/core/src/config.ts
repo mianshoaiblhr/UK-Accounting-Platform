@@ -50,6 +50,12 @@ const schema = z.object({
   OUTBOX_POLL_MS: z.coerce.number().int().min(50).default(500),
   OUTBOX_RETENTION_DAYS: z.coerce.number().int().min(1).default(14), // processed events older than this are deleted
   OUTBOX_CLEANUP_MS: z.coerce.number().int().min(1000).default(600_000),
+  METRICS_TOKEN: z.string().min(16).optional(), // GET /metrics is disabled (404) unless set; bearer token
+  METRICS_SNAPSHOT_TTL_MS: z.coerce.number().int().min(0).default(10_000), // how long /readyz and /metrics reuse the aggregate platform snapshot
+  METRICS_EMF: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'), // write CloudWatch EMF lines to the log stream
+  METRICS_EMF_INTERVAL_MS: z.coerce.number().int().min(1000).default(60_000),
+  METRICS_NAMESPACE: z.string().regex(/^[A-Za-z0-9_.\-/#:]{1,255}$/).default('UkPlatform'),
+  READINESS_OUTBOX_LAG_SECONDS: z.coerce.number().int().min(1).default(600), // /readyz reports "degraded" beyond this outbox lag
   OCR_PROVIDER: z.enum(['none', 'fake']).default('none'), // 'fake' is a deterministic development/test engine; real engines are added behind the OcrProvider port
   TASK_REMINDER_POLL_MS: z.coerce.number().int().min(200).default(30_000), // how often due task reminders are delivered
 });

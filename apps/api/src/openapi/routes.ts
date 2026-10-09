@@ -40,7 +40,8 @@ const v = '/organisations/{organisationId}';
 export const ROUTES: Record<string, RouteDoc> = {
   // ── Operations ──
   'GET /healthz': { tag: 'Operations', summary: 'Liveness probe', ok: [200, 'Health', 'Process is up'] },
-  'GET /readyz': { tag: 'Operations', summary: 'Readiness probe (database + Redis)', ok: [200, 'Health', 'Dependencies reachable'], extraErrors: [503] },
+  'GET /metrics': { tag: 'Operations', summary: 'Prometheus metrics. Disabled (404) unless METRICS_TOKEN is configured; requires `Authorization: Bearer <METRICS_TOKEN>`', binaryResponse: true, ok: [200, null, 'Prometheus text format'], extraErrors: [401, 404] },
+  'GET /readyz': { tag: 'Operations', summary: 'Readiness probe: 503 when the database or Redis is down; 200 with status "degraded" when background work is in trouble (outbox lag/failures, dead jobs)', ok: [200, 'Health', 'Dependencies reachable'], extraErrors: [503] },
   // ── Authentication ──
   'POST /auth/register': { tag: 'Authentication', summary: 'Register a user and create their organisation', description: 'Identical response whether or not the email is already registered (no account enumeration). A verification email is sent asynchronously.', body: ['RegisterRequest', C.registerSchema], ok: [202, 'Message', 'Accepted'] },
   'POST /auth/verify-email': { tag: 'Authentication', summary: 'Verify an email address with the emailed single-use token', body: ['VerifyEmailRequest', C.verifyEmailSchema], ok: [200, null, 'Email verified'] },
@@ -108,7 +109,7 @@ export const ROUTES: Record<string, RouteDoc> = {
   [`GET ${v}/evidence-links`]: { tag: 'Evidence', summary: 'Links of one entity (links to entities the caller cannot see are omitted)', query: C.evidenceLinkQuerySchema, ok: [200, 'EvidenceLinkList', 'Links'] },
   [`POST ${v}/evidence-links/{linkId}/revoke`]: { tag: 'Evidence', summary: 'Revoke a link (recorded with who and why; never deleted)', body: ['RevokeEvidenceLinkRequest', C.revokeEvidenceLinkSchema], ok: [200, 'EvidenceLink', 'Revoked'] },
   // ── Jobs ──
-  [`GET ${v}/jobs`]: { tag: 'Jobs', summary: 'List background jobs', query: page, ok: [200, 'JobPage', 'Page of jobs'] },
+  [`GET ${v}/jobs`]: { tag: 'Jobs', summary: 'List background jobs (jobs of companies the caller cannot read are omitted)', query: page.extend({ companyId: z.string().uuid().optional(), status: z.enum(['QUEUED', 'RUNNING', 'RETRYING', 'COMPLETED', 'FAILED', 'DEAD']).optional() }), ok: [200, 'JobPage', 'Page of jobs'] },
   [`GET ${v}/jobs/{jobId}`]: { tag: 'Jobs', summary: 'Job status, progress and result (payloads are never returned)', ok: [200, 'Job', 'Job'] },
   [`POST ${v}/jobs/{jobId}/retry`]: { tag: 'Jobs', summary: 'Retry a FAILED/DEAD job', ok: [202, 'Job', 'Re-queued'] },
   [`POST ${v}/jobs/echo`]: { tag: 'Jobs', summary: 'Enqueue a harmless test job (exercises retries/backoff/DLQ)', body: ['EnqueueEchoRequest', C.enqueueEchoSchema], ok: [202, 'Job', 'Queued'] },

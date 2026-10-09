@@ -3,6 +3,8 @@ import { randomUUID } from 'node:crypto';
 
 export interface RequestContext {
   correlationId: string;
+  /** W3C trace id (32 hex): follows one request through API -> job -> worker logs. Propagation only; no spans are exported. */
+  traceId?: string;
   userId?: string;
   organisationId?: string;
   ip?: string;

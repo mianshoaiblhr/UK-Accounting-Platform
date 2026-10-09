@@ -59,6 +59,7 @@ describe('tenant isolation is structural, not conventional', () => {
       'packages/jobs/src/producer.ts',                   // org-less system jobs + sweeper
       'packages/jobs/src/runtime.ts',                    // org-less job bookkeeping
       'packages/platform/src/event-bus.ts',              // event load + org-less consumers
+      'packages/platform/src/metrics.ts',                // read-only cross-tenant aggregates (counts only) for metrics/readiness
       'packages/platform/src/outbox.ts',                 // relay
       'packages/platform/src/task-reminders.ts',         // lists due reminders (read-only); every write runs in the owning tenant's context
     ]);

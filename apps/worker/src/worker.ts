@@ -1,15 +1,15 @@
 import { createAntivirus, createEmail, createStorage } from '@uk/adapters';
-import { FieldEncryption, createLogger, type AppConfig, type Logger } from '@uk/core';
+import { EMF_DIMENSION_KEYS, FieldEncryption, MetricsRegistry, createLogger, startEmfEmitter, startLagSampler, type AppConfig, type Logger } from '@uk/core';
 import { Database } from '@uk/db';
 import { JobProducer, JobRuntime } from '@uk/jobs';
 import { parseFeatureDefaults } from '@uk/contracts';
-import { AiGateway, AiProposalService, EventBus, FeatureFlagService, IntegrationService, NotificationService, OutboxRelay, TaskReminderSweeper, WorkflowEngine, WorkflowRegistry, createAiProviders, createIntegrationRegistry, createOcrProvider, dispatchViaJobs, type AiProvider, type OcrProvider } from '@uk/platform';
+import { AiGateway, AiProposalService, EventBus, FeatureFlagService, IntegrationService, NotificationService, OutboxRelay, TaskReminderSweeper, WorkflowEngine, collectPlatformMetrics, WorkflowRegistry, createAiProviders, createIntegrationRegistry, createOcrProvider, dispatchViaJobs, type AiProvider, type OcrProvider } from '@uk/platform';
 import { registerAi, registerConsumers, registerEventDispatch, registerIntegrations } from './handlers/platform';
 import { registerDocument } from './handlers/document';
 import { registerEcho } from './handlers/echo';
 import { registerEmail } from './handlers/email';
 
-export interface WorkerHandle { stop(): Promise<void>; runtime: JobRuntime; producer: JobProducer; db: Database; relay: OutboxRelay; reminders: TaskReminderSweeper; ocr?: OcrProvider; bus: EventBus; aiProviders: AiProvider[] }
+export interface WorkerHandle { stop(): Promise<void>; runtime: JobRuntime; producer: JobProducer; db: Database; relay: OutboxRelay; reminders: TaskReminderSweeper; ocr?: OcrProvider; metrics: MetricsRegistry; bus: EventBus; aiProviders: AiProvider[] }
 
 /** Builds and starts the worker; also used by integration tests. */
 export function startWorker(config: AppConfig, logger: Logger = createLogger(config.LOG_LEVEL, 'worker')): WorkerHandle {
@@ -48,6 +48,15 @@ export function startWorker(config: AppConfig, logger: Logger = createLogger(con
   const reminderLoop = setInterval(() => { reminders.sweepOnce().catch((err) => logger.error({ err }, 'task reminder sweep failed')); }, config.TASK_REMINDER_POLL_MS);
   reminderLoop.unref();
 
+  // Metrics (ADR-35): process + platform gauges. The worker is the single writer of the global gauges (outbox, jobs, reminders) so
+  // N API tasks do not double count; `worker_heartbeat` lets CloudWatch alarm on a silent worker (missing data = breaching).
+  const metrics = new MetricsRegistry();
+  const stopLag = startLagSampler(metrics);
+  const stopEmf = config.METRICS_EMF ? startEmfEmitter(metrics, {
+    namespace: config.METRICS_NAMESPACE, service: 'worker', intervalMs: config.METRICS_EMF_INTERVAL_MS, dimensionKeys: EMF_DIMENSION_KEYS,
+    before: async () => { metrics.set('worker_heartbeat', 'Set to 1 on every metrics interval while the worker is alive', 1); await collectPlatformMetrics(db, metrics); },
+  }) : () => undefined;
+
   // Recover jobs persisted to Postgres but never delivered to Redis (e.g. Redis outage mid-request).
   const sweeper = setInterval(() => {
     producer.sweepStale().then((n) => n && logger.warn({ requeued: n }, 'swept stale queued jobs')).catch((err) => logger.error({ err }, 'sweep failed'));
@@ -55,12 +64,14 @@ export function startWorker(config: AppConfig, logger: Logger = createLogger(con
   sweeper.unref();
 
   return {
-    runtime, producer, db, relay, reminders, ocr, bus, aiProviders,
+    runtime, producer, db, relay, reminders, ocr, metrics, bus, aiProviders,
     async stop() {
       clearInterval(sweeper);
       clearInterval(relayLoop);
       clearInterval(cleanupLoop);
       clearInterval(reminderLoop);
+      stopEmf();
+      stopLag();
       await runtime.stop();
       await producer.close();
       await db.close();

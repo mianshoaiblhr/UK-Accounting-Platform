@@ -9,6 +9,8 @@ import { encodePayload } from './payload';
 export interface EnqueueOptions {
   organisationId?: string;
   userId?: string;
+  /** Company the job concerns (queue state is then visible only to people who can read it). */
+  companyId?: string;
   /** Same key + queue => same job (no duplicate execution). Default: unique per call. */
   idempotencyKey?: string;
   correlationId?: string;
@@ -21,6 +23,7 @@ export interface JobMessage {
   organisationId: string | null;
   userId: string | null;
   correlationId: string;
+  traceId?: string | null;
   payload: unknown;
 }
 
@@ -67,7 +70,7 @@ export class JobProducer {
         tx.jobRecord.create({
           data: {
             organisationId: organisationId ?? null, createdByUserId: userId ?? null, queue: def.queue, type: def.type,
-            idempotencyKey: key, correlationId, payload: stored, maxAttempts: def.retry.attempts,
+            idempotencyKey: key, correlationId, traceId: ctx?.traceId ?? null, companyId: opts.companyId ?? null, payload: stored, maxAttempts: def.retry.attempts,
           },
         }),
       );
@@ -86,7 +89,7 @@ export class JobProducer {
   private async dispatch(record: JobRecord, def: JobDefinition, delayMs?: number): Promise<void> {
     const message: JobMessage = {
       recordId: record.id, organisationId: record.organisationId, userId: record.createdByUserId,
-      correlationId: record.correlationId, payload: record.payload,
+      correlationId: record.correlationId, traceId: record.traceId, payload: record.payload,
     };
     const jobOpts: JobsOptions = {
       jobId: record.id,

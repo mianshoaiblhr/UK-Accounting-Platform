@@ -32,7 +32,7 @@ describe('OpenAPI contract', () => {
     expect(doc.components!.securitySchemes).toMatchObject({ bearer: { type: 'http', scheme: 'bearer' }, cookie: { type: 'apiKey', in: 'cookie', name: 'uk_session' } });
     const publicOps = ops(doc).filter((o) => o.op.security?.length === 0).map((o) => `${o.method.toUpperCase()} ${o.path.replace('/api/v1', '')}`).sort();
     expect(publicOps).toEqual([
-      'GET /healthz', 'GET /readyz', 'POST /auth/forgot-password', 'POST /auth/login', 'POST /auth/login/bearer', 'POST /auth/login/mfa', 'POST /auth/login/mfa/bearer',
+      'GET /healthz', 'GET /metrics', 'GET /readyz', 'POST /auth/forgot-password', 'POST /auth/login', 'POST /auth/login/bearer', 'POST /auth/login/mfa', 'POST /auth/login/mfa/bearer',
       'POST /auth/register', 'POST /auth/resend-verification', 'POST /auth/reset-password', 'POST /auth/verify-email',
     ]);
   });

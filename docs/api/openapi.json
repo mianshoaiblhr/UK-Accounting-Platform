@@ -54,7 +54,41 @@
           "Operations"
         ],
         "x-public": true,
-        "summary": "Readiness probe (database + Redis)",
+        "summary": "Readiness probe: 503 when the database or Redis is down; 200 with status \"degraded\" when background work is in trouble (outbox lag/failures, dead jobs)",
+        "security": []
+      }
+    },
+    "/api/v1/metrics": {
+      "get": {
+        "operationId": "Health_scrape",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Prometheus text format",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Operations"
+        ],
+        "x-public": true,
+        "summary": "Prometheus metrics. Disabled (404) unless METRICS_TOKEN is configured; requires `Authorization: Bearer <METRICS_TOKEN>`",
         "security": []
       }
     },
@@ -2810,6 +2844,31 @@
               "type": "string",
               "description": "`nextCursor` from the previous page"
             }
+          },
+          {
+            "name": "companyId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "QUEUED",
+                "RUNNING",
+                "RETRYING",
+                "COMPLETED",
+                "FAILED",
+                "DEAD"
+              ]
+            }
           }
         ],
         "responses": {
@@ -2845,7 +2904,7 @@
         "x-required-permissions": [
           "job:read"
         ],
-        "summary": "List background jobs",
+        "summary": "List background jobs (jobs of companies the caller cannot read are omitted)",
         "description": "**Requires permission:** `job:read`",
         "security": [
           {
@@ -9442,6 +9501,17 @@
             "type": "string",
             "nullable": true
           },
+          "companyId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Company the job concerns; jobs of companies the caller cannot read are not listed"
+          },
+          "traceId": {
+            "type": "string",
+            "nullable": true,
+            "description": "W3C trace id of the enqueuing request"
+          },
           "attempts": {
             "type": "integer"
           },
@@ -9480,6 +9550,8 @@
           "status",
           "progress",
           "progressMessage",
+          "companyId",
+          "traceId",
           "attempts",
           "maxAttempts",
           "error",
@@ -10847,7 +10919,8 @@
           "status": {
             "type": "string",
             "enum": [
-              "ok"
+              "ok",
+              "degraded"
             ]
           },
           "checks": {
@@ -10855,6 +10928,25 @@
             "additionalProperties": {
               "type": "string"
             }
+          },
+          "degraded": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "outbox_lag",
+                "outbox_failed",
+                "dead_jobs"
+              ]
+            },
+            "description": "Background trouble; the API is still serving. Alarms handle it."
+          },
+          "figures": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            },
+            "description": "Only with the metrics bearer token"
           }
         },
         "required": [
@@ -11299,6 +11391,17 @@
                   "type": "string",
                   "nullable": true
                 },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true,
+                  "description": "Company the job concerns; jobs of companies the caller cannot read are not listed"
+                },
+                "traceId": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "W3C trace id of the enqueuing request"
+                },
                 "attempts": {
                   "type": "integer"
                 },
@@ -11337,6 +11440,8 @@
                 "status",
                 "progress",
                 "progressMessage",
+                "companyId",
+                "traceId",
                 "attempts",
                 "maxAttempts",
                 "error",
