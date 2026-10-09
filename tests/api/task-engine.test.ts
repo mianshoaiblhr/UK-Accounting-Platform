@@ -89,7 +89,8 @@ describe('reviewer and the review flow', () => {
     expect((await call(worker, 'patch', `/tasks/${noReviewer.id}`, { status: 'IN_REVIEW' })).body.code).toBe('reviewer_required');
     expect((await call(worker, 'patch', `/tasks/${noReviewer.id}`, { status: 'DONE' })).status).toBe(200); // backward compatible: no reviewer => direct completion
     const t = await mk();
-    expect((await call(owner, 'patch', `/tasks/${t.id}`, { reviewerUserId: worker.userId })).body.code).toBe('reviewer_is_assignee');
+    expect((await call(owner, 'patch', `/tasks/${t.id}`, { reviewerUserId: worker.userId })).body.code).toBe('invalid_reviewer'); // a bookkeeper may not review
+    expect((await call(owner, 'patch', `/tasks/${t.id}`, { assigneeUserId: reviewer.userId })).body.code).toBe('reviewer_is_assignee');
     await call(worker, 'patch', `/tasks/${t.id}`, { status: 'IN_REVIEW' });
     expect((await call(owner, 'patch', `/tasks/${t.id}`, { reviewerUserId: other.userId })).body.code).toBe('reviewer_locked');
   });

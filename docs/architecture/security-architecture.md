@@ -61,3 +61,7 @@ AI output is only a **proposal** (`ai_proposal`) approved by a human holding `ai
 
 ## 9. Known limitations
 Nuisance rate limits (per-IP volume cap on login) can affect users behind a shared NAT during an attack; global auth tables rely on the controls in §1.1; the local ClamAV stand-in used in development has a minimal signature set (CI uses the official database).
+
+
+## Append-only records and the runtime role (verified, V0 Tranche A)
+Append-only and immutable records are protected twice: **privileges first** (the runtime role `uk_app` holds no `UPDATE`/`DELETE`/`TRUNCATE` on `audit_event`, `workflow_transition`, `ai_run`, `task_comment`; no `DELETE`/`TRUNCATE` on `document_version` and `task_reminder`; no `UPDATE` on `task_attachment`) and **triggers second** (`forbid_mutation`, content-immutability triggers). The role owns no table or function, has no `SECURITY DEFINER` helper and cannot disable triggers or RLS. `tests/db/privileges.test.ts` asserts the *effective* privileges (default privileges, PUBLIC and role membership resolved) and fails when a new append-only table is added without being covered. Residual trust boundary: the database trusts the application to assert tenant and user for RLS - see `v0-tranche-a.md` section 6.1.

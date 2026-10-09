@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createLogger, uuidv7 } from '@uk/core';
 import { Database } from '@uk/db';
-import { NotificationService, TaskReminderSweeper } from '@uk/platform';
+import { MAX_REMINDER_ATTEMPTS, NotificationService, TaskReminderSweeper } from '@uk/platform';
 import { adminSql } from '../helpers/db';
 
 /** The reminder sweeper in isolation (no worker running): exactly-once delivery across concurrent sweepers, per-tenant handling. */
@@ -77,6 +77,7 @@ describe('TaskReminderSweeper', () => {
     const first = await flaky.sweepOnce();
     expect(first.sent).toBe(1);
     expect(['true|false', 'false|false'].sort()).toEqual([state(bad), state(good)].sort());
+    adminSql(`UPDATE task_reminder SET retry_at = NULL WHERE id='${bad}'`); // the failed one is backed off; let the backoff elapse
     await sweeper().sweepOnce();
     expect([state(bad), state(good)]).toEqual(['true|false', 'true|false']);
   });
@@ -87,5 +88,91 @@ describe('TaskReminderSweeper', () => {
     expect(await db.tenant({ organisationId: orgB }, (tx) => tx.taskReminder.findUnique({ where: { id } }))).toBeNull();
     await expect(db.tenant({ organisationId: orgA }, (tx) => tx.taskReminder.deleteMany({ where: { id } }))).rejects.toThrow();
     expect(await db.prisma.taskReminder.count()).toBe(0); // no context => no visibility
+  });
+});
+
+/** Crash and retry behaviour: the notification and the `sent_at` marker commit together or not at all. */
+describe('TaskReminderSweeper: failures, retries and crashes', () => {
+  const attempts = (id: string) => adminSql(`SELECT attempts||'|'||coalesce(left(last_error,40),'-')||'|'||(retry_at IS NOT NULL) FROM task_reminder WHERE id='${id}'`);
+  /** Wraps the real notification service; `hook` runs AFTER the notification row was written, inside the sweeper's transaction. */
+  const afterNotify = (hook: () => Promise<void>) => {
+    const real = new NotificationService();
+    return { notify: async (tx: never, n: never) => { await real.notify(tx, n); await hook(); } } as unknown as NotificationService;
+  };
+  const clearBackoff = (id: string) => adminSql(`UPDATE task_reminder SET retry_at = NULL WHERE id='${id}'`);
+  beforeEach(() => { adminSql(`UPDATE task_reminder SET cancelled_at = now() WHERE sent_at IS NULL AND cancelled_at IS NULL`); }); // each case starts from an empty queue
+
+  it('crash after the notification was written but before commit: both roll back, then exactly one notification is delivered', async () => {
+    const task = mkTask(orgA, userA), id = mkReminder(orgA, task, userA);
+    const crashing = new TaskReminderSweeper(db, afterNotify(async () => { throw new Error('worker died here'); }), log);
+    const r = await crashing.sweepOnce();
+    expect(r).toMatchObject({ sent: 0, failed: 1 });
+    expect(notes(orgA, task)).toBe(0);                      // the half-written notification did not survive
+    expect(state(id)).toBe('false|false');                  // still pending
+    expect(attempts(id)).toBe('1|worker died here|true');   // counted and backed off
+    expect((await sweeper().sweepOnce()).sent).toBe(0);     // backoff: not retried immediately
+    clearBackoff(id);
+    expect((await sweeper().sweepOnce()).sent).toBe(1);
+    expect(notes(orgA, task)).toBe(1);
+    expect(state(id)).toBe('true|false');
+  });
+
+  it('the database connection is killed mid-transaction: lock released, nothing delivered twice, next sweep delivers', async () => {
+    const task = mkTask(orgA, userA), id = mkReminder(orgA, task, userA);
+    const appName = `crashing-worker-${uuidv7()}`;
+    const dbA = new Database(`${process.env.DATABASE_URL!}${process.env.DATABASE_URL!.includes('?') ? '&' : '?'}application_name=${appName}`); // the "crashing worker": its own pool, identifiable in pg_stat_activity
+    let entered!: () => void; const inTx = new Promise<void>((res) => { entered = res; });
+    let release!: () => void; const gate = new Promise<void>((res) => { release = res; });
+    const stuck = new TaskReminderSweeper(dbA, afterNotify(async () => { entered(); await gate; }), log);
+    const running = stuck.sweepOnce();
+    await inTx;                                              // notification written, row locked, transaction open
+    // a second worker meanwhile neither waits for the lock nor delivers a duplicate
+    const t0 = Date.now();
+    expect((await sweeper().sweepOnce()).sent).toBe(0);
+    expect(Date.now() - t0).toBeLessThan(3000);
+    expect(notes(orgA, task)).toBe(0);                        // uncommitted work is invisible
+    // the first worker's host dies: PostgreSQL terminates its backend
+    const killed = adminSql(`SELECT count(pg_terminate_backend(pid)) FROM pg_stat_activity WHERE datname = current_database() AND usename='uk_app' AND application_name='${appName}' AND state = 'idle in transaction'`);
+    expect(Number(killed)).toBeGreaterThanOrEqual(1);
+    release();
+    const r = await running;                                  // the sweeper survives and reports the failure
+    expect(r.sent).toBe(0);
+    await dbA.close().catch(() => undefined);
+    expect(notes(orgA, task)).toBe(0);
+    expect(state(id)).toBe('false|false');
+    clearBackoff(id);
+    expect((await sweeper().sweepOnce()).sent).toBe(1);
+    expect((await sweeper().sweepOnce()).sent).toBe(0);
+    expect(notes(orgA, task)).toBe(1);
+  });
+
+  it('a poisoned reminder is backed off and finally abandoned (audited) and cannot starve newer reminders', async () => {
+    const task = mkTask(orgB, userB);
+    const poison = mkReminder(orgB, task, userB, "now() - interval '2 hours'");
+    const healthy = mkReminder(orgB, task, userB, "now() - interval '1 minute'");
+    const failing = { notify: async () => { throw new Error('mail relay exploded'); } } as unknown as NotificationService;
+    // batch of ONE: the poisoned (older) reminder is picked first, fails, and moves behind the healthy one
+    const first = await new TaskReminderSweeper(db, failing, log, { batchSize: 1 }).sweepOnce();
+    expect(first.failed).toBe(1);
+    const second = await new TaskReminderSweeper(db, new NotificationService(), log, { batchSize: 1 }).sweepOnce();
+    expect(second.sent).toBe(1);
+    expect(state(healthy)).toBe('true|false');
+    // keep failing the poisoned one until the limit
+    for (let i = 1; i < MAX_REMINDER_ATTEMPTS; i++) { clearBackoff(poison); await new TaskReminderSweeper(db, failing, log).sweepOnce(); }
+    expect(state(poison)).toBe('false|true');                 // abandoned = cancelled, never sent
+    expect(attempts(poison).startsWith(`${MAX_REMINDER_ATTEMPTS}|mail relay exploded`)).toBe(true);
+    expect(adminSql(`SELECT count(*) FROM audit_event WHERE action='task.reminder_failed' AND metadata->>'reminderId'='${poison}'`)).toBe('1');
+    expect((await sweeper().sweepOnce()).sent).toBe(0);
+  });
+
+  it('cancelling while workers sweep never produces a reminder that is both sent and cancelled, nor a cancelled reminder that notified', async () => {
+    const task = mkTask(orgA, userA);
+    const ids = Array.from({ length: 12 }, () => mkReminder(orgA, task, userA));
+    const cancel = (id: string) => db.tenant({ organisationId: orgA, userId: userA }, (tx) => tx.taskReminder.updateMany({ where: { id, sentAt: null, cancelledAt: null }, data: { cancelledAt: new Date() } }));
+    await Promise.all([...ids.map(cancel), sweeper(5).sweepOnce(), sweeper(5).sweepOnce(), sweeper(5).sweepOnce()]);
+    for (let i = 0; i < 3; i++) await sweeper(5).sweepOnce();
+    const states = ids.map(state);
+    expect(states.every((x) => x === 'true|false' || x === 'false|true')).toBe(true);
+    expect(notes(orgA, task)).toBe(states.filter((x) => x === 'true|false').length);
   });
 });

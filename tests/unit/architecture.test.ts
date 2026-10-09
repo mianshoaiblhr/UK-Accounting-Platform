@@ -125,3 +125,19 @@ describe('AI boundary: AI code cannot reach ledger, filing or document writers',
     expect(src).toMatch(/execute\(operation: string, params: Record<string, unknown>, credentials: z\.output<S>, http: SafeHttp\)/);
   });
 });
+
+describe('database access paths that carry security meaning', () => {
+  it('only the task service writes tasks (the review rule has one application path, backed by the database trigger)', () => {
+    const WRITE = /\.task\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?task"?\b/i;
+    const writers = SRC.filter((f) => WRITE.test(read(f))).map(rel).sort();
+    expect(writers).toEqual(['apps/api/src/tasks/tasks.service.ts']);
+  });
+  it('append-only tables are only ever inserted into by application code', () => {
+    const APPEND_ONLY = ['auditEvent', 'workflowTransition', 'aiRun', 'taskComment'];
+    const WRITE = new RegExp(`\\.(${APPEND_ONLY.join('|')})\\.(update|updateMany|upsert|delete|deleteMany)\\b`);
+    expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual([]);
+  });
+  it('no raw SQL built from strings anywhere in the runtime code (Prisma tagged templates only)', () => {
+    expect(SRC.filter((f) => /\$(queryRawUnsafe|executeRawUnsafe)\b/.test(read(f))).map(rel)).toEqual([]);
+  });
+});

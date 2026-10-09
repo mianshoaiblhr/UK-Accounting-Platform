@@ -901,6 +901,10 @@ model TaskReminder {
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   sentAt          DateTime? @map("sent_at") @db.Timestamptz(3)
   cancelledAt     DateTime? @map("cancelled_at") @db.Timestamptz(3)
+  /// Delivery bookkeeping: failures are counted and backed off; after the limit the reminder is cancelled with last_error set.
+  attempts        Int       @default(0)
+  lastError       String?   @map("last_error")
+  retryAt         DateTime? @map("retry_at") @db.Timestamptz(3)
 
   task Task @relation(fields: [organisationId, taskId], references: [organisationId, id], onDelete: Cascade)
 

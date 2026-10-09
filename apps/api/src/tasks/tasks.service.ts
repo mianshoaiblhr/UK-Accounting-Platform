@@ -36,6 +36,13 @@ export class TasksService {
     if (!(await target.access.can('task:read', { companyId }))) throw unprocessable(`${what} does not have access to this company`, code);
   }
 
+  /** A reviewer is a participant who is also trusted to review (`workflow:review` on the task's company): task managers cannot nominate arbitrary colleagues. */
+  private async assertReviewer(userId: string, org: OrgAccess, companyId: string | null) {
+    await this.assertParticipant(userId, org, companyId, 'invalid_reviewer', 'Reviewer');
+    const target = (await loadAccess(this.db, org.organisationId, userId))!;
+    if (!(await target.access.can('workflow:review', { companyId }))) throw unprocessable('Reviewer is not permitted to review work for this company', 'invalid_reviewer');
+  }
+
   /** A declared source must exist in this tenant and concern the same company as the task. */
   private async assertSource(tx: Tx, source: string, sourceId: string | undefined, companyId: string | null) {
     if (source === 'MANUAL') return;
@@ -59,7 +66,7 @@ export class TasksService {
     return this.t(org, async (tx) => {
       if (input.companyId && !(await tx.company.findUnique({ where: { id: input.companyId } }))) throw notFound('Company not found');
       if (input.assigneeUserId) await this.assertParticipant(input.assigneeUserId, org, input.companyId ?? null);
-      if (input.reviewerUserId) await this.assertParticipant(input.reviewerUserId, org, input.companyId ?? null, 'invalid_reviewer', 'Reviewer');
+      if (input.reviewerUserId) await this.assertReviewer(input.reviewerUserId, org, input.companyId ?? null);
       await this.assertSource(tx, input.source, input.sourceId, input.companyId ?? null);
       const task = await tx.task.create({ data: {
         organisationId: org.organisationId, companyId: input.companyId, title: input.title, description: input.description, priority: input.priority,
@@ -103,14 +110,15 @@ export class TasksService {
     const existing = await this.get(org, id);
     await org.access.requireResource('task:manage', existing.companyId, 'Task not found');
     if (input.assigneeUserId) await this.assertParticipant(input.assigneeUserId, org, existing.companyId);
-    if (input.reviewerUserId) await this.assertParticipant(input.reviewerUserId, org, existing.companyId, 'invalid_reviewer', 'Reviewer');
+    if (input.reviewerUserId) await this.assertReviewer(input.reviewerUserId, org, existing.companyId);
     return this.t(org, async (tx) => {
       const before = await tx.task.findUniqueOrThrow({ where: { id } });
       const reviewerAfter = input.reviewerUserId === undefined ? before.reviewerUserId : input.reviewerUserId;
       const assigneeAfter = input.assigneeUserId === undefined ? before.assigneeUserId : input.assigneeUserId;
       if (reviewerAfter && reviewerAfter === assigneeAfter) throw unprocessable('The reviewer cannot be the assignee', 'reviewer_is_assignee');
-      if (input.reviewerUserId !== undefined && input.reviewerUserId !== before.reviewerUserId && (before.status === 'IN_REVIEW' || before.status === 'DONE')) {
-        throw conflict('The reviewer cannot be changed while the task is in review or done', 'reviewer_locked');
+      if (input.reviewerUserId !== undefined && input.reviewerUserId !== before.reviewerUserId) {
+        if (before.status === 'IN_REVIEW' || before.status === 'DONE') throw conflict('The reviewer cannot be changed while the task is in review or done', 'reviewer_locked');
+        if (before.reviewerUserId && before.assigneeUserId === org.userId) throw forbidden('The assignee cannot change or remove the reviewer of their own task', 'assignee_cannot_change_reviewer');
       }
       if (input.status && input.status !== before.status) {
         if (input.status === 'DONE' && reviewerAfter) throw conflict('This task has a reviewer: submit it for review and let the reviewer complete it', 'review_required');
@@ -141,14 +149,20 @@ export class TasksService {
   async review(org: OrgAccess, id: string, input: { decision: 'APPROVE' | 'RETURN'; comment?: string }) {
     const existing = await this.get(org, id);
     if (existing.reviewerUserId !== org.userId) throw forbidden('Only the designated reviewer can review this task', 'not_reviewer');
+    // Being named is not enough: the reviewer must still hold the review permission for this company (it may have been withdrawn since).
+    if (!(await org.access.can('workflow:review', { companyId: existing.companyId }))) throw forbidden('You no longer have permission to review work for this company', 'not_reviewer');
     return this.t(org, async (tx) => {
       const before = await tx.task.findUniqueOrThrow({ where: { id } });
       if (before.status !== 'IN_REVIEW') throw conflict('The task is not waiting for review', 'not_in_review');
       const approve = input.decision === 'APPROVE';
-      let task: Task;
+      // Conditional write: two simultaneous decisions cannot both win (the loser matches no row and gets 409).
+      let changed: number;
       try {
-        task = await tx.task.update({ where: { id }, data: { status: approve ? 'DONE' : 'IN_PROGRESS', completedAt: approve ? new Date() : null } });
+        changed = (await tx.task.updateMany({ where: { id, status: 'IN_REVIEW', reviewerUserId: org.userId },
+          data: { status: approve ? 'DONE' : 'IN_PROGRESS', completedAt: approve ? new Date() : null } })).count;
       } catch (e) { throw mapTaskDbError(e); }
+      if (changed !== 1) throw conflict('The task is not waiting for your review', 'not_in_review');
+      const task = await tx.task.findUniqueOrThrow({ where: { id } });
       await tx.taskComment.create({ data: { organisationId: org.organisationId, taskId: id, authorUserId: org.userId, kind: approve ? 'REVIEW_APPROVED' : 'REVIEW_RETURNED', body: input.comment ?? 'Approved' } });
       await this.audit.record({ action: approve ? 'task.review_approved' : 'task.review_returned', organisationId: org.organisationId, actorUserId: org.userId, companyId: task.companyId, entityType: 'task', entityId: id,
         ...changeSet(before, task, ['status']), reason: input.comment }, tx);
@@ -258,6 +272,7 @@ function mapTaskDbError(e: unknown): unknown {
   const msg = String((e as Error)?.message ?? '');
   if (msg.includes('only the designated reviewer')) return forbidden('Only the designated reviewer can complete a reviewed task', 'not_reviewer');
   if (msg.includes('must be submitted for review')) return conflict('This task has a reviewer: submit it for review first', 'review_required');
+  if (msg.includes('assignee cannot change or remove the reviewer')) return forbidden('The assignee cannot change or remove the reviewer of their own task', 'assignee_cannot_change_reviewer');
   if (msg.includes('reviewer cannot be changed')) return conflict('The reviewer cannot be changed while the task is in review or done', 'reviewer_locked');
   if (msg.includes('task_reviewer_not_assignee_ck')) return unprocessable('The reviewer cannot be the assignee', 'reviewer_is_assignee');
   return e;
