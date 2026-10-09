@@ -2,7 +2,7 @@
 
 Source requirements: docs/specifications/V1_Core_Bookkeeping.md, 00_MASTER_IMPLEMENTATION_MANIFEST.md (non-negotiable accounting controls), 13_CROSS_PLATFORM_PRODUCT_REQUIREMENTS.md.
 
-Generated from `v1-compliance-matrix.json`. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.**
+Generated from `v1-compliance-matrix.json` at commit `fae5270`; CI: <https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/37923766068>. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.**
 
 ## Summary
 
