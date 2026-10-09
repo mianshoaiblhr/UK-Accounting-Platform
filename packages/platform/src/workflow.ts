@@ -2,6 +2,7 @@ import { Events, WORKFLOW_DEFINITIONS, type WorkflowDefinition, type WorkflowTra
 import { AppError, conflict, forbidden, notFound, unprocessable } from '@uk/core';
 import type { Tx, WorkflowInstance } from '@uk/db';
 import { auditRow } from './audit';
+import { recordEvidenceLink } from './evidence';
 import { publishEvent } from './outbox';
 
 /** Versioned registry: an instance keeps the definition version it started with; new instances use the latest. */
@@ -37,6 +38,8 @@ export interface Actor {
   userId: string;
   permissions?: ReadonlySet<string>;
   can?: (permission: string, companyId: string | null) => boolean | Promise<boolean>;
+  /** Per-document visibility (restricted documents). When absent, company-level `document:read` decides (server-side callers and tests). */
+  canReadDocument?: (doc: { id: string; companyId: string | null; visibility: string; createdByUserId: string }) => boolean | Promise<boolean>;
 }
 const holds = async (actor: Actor, permission: string, companyId: string | null) =>
   actor.can ? actor.can(permission, companyId) : !!actor.permissions?.has(permission);
@@ -95,11 +98,14 @@ export class WorkflowEngine {
   /** Evidence documents must exist in this organisation, belong to the instance's company (or be organisation-level) and be readable by the actor. */
   private async checkEvidence(tx: Tx, inst: WorkflowInstance, ids: string[], actor: Actor) {
     const unique = [...new Set(ids)];
-    const docs = await tx.document.findMany({ where: { id: { in: unique } }, select: { id: true, companyId: true } }); // RLS: this organisation only
+    const docs = await tx.document.findMany({ where: { id: { in: unique } }, select: { id: true, companyId: true, visibility: true, createdByUserId: true } }); // RLS: this organisation only
     if (docs.length !== unique.length) throw unprocessable('One or more evidence documents do not exist', 'invalid_evidence');
     for (const d of docs) {
       if (d.companyId && inst.companyId && d.companyId !== inst.companyId) throw unprocessable('Evidence must belong to the same company as the workflow', 'invalid_evidence');
-      if (!(await holds(actor, 'document:read', d.companyId))) throw forbidden('You cannot read one of the evidence documents', 'permission_denied');
+      if (actor.canReadDocument) {
+        // an invisible (restricted) document is indistinguishable from a missing one
+        if (!(await actor.canReadDocument(d))) throw unprocessable('One or more evidence documents do not exist', 'invalid_evidence');
+      } else if (!(await holds(actor, 'document:read', d.companyId))) throw forbidden('You cannot read one of the evidence documents', 'permission_denied');
     }
   }
 
@@ -135,6 +141,8 @@ export class WorkflowEngine {
       data: { state: t.to, version: { increment: 1 }, attempt, completedAt: terminal ? new Date() : null },
     });
     if (upd.count !== 1) throw conflict('Workflow changed concurrently', 'version_conflict'); // the caller's transaction rolls the history row back
+    // Evidence offered for the transition becomes part of the evidence graph, atomically with the history row.
+    for (const docId of new Set(evidence)) await recordEvidenceLink(tx, { organisationId: a.organisationId, companyId: inst.companyId, source: { type: 'workflow_instance', id: inst.id }, target: { type: 'document', id: docId }, kind: 'SUPPORTS', createdByUserId: a.actor.userId });
     await this.audit(tx, { organisationId: a.organisationId, companyId: inst.companyId, actorUserId: a.actor.userId, action: `workflow.${t.action}`, instanceId: inst.id, from: inst.state, to: t.to, reason: a.comment, subjectType: inst.subjectType, subjectId: inst.subjectId, workflowType: inst.type });
     await publishEvent(tx, Events.workflowTransitioned, { aggregateId: inst.id, organisationId: a.organisationId, actorUserId: a.actor.userId,
       payload: { instanceId: inst.id, workflowType: inst.type, from: inst.state, to: t.to, action: t.action, subjectType: inst.subjectType, subjectId: inst.subjectId } });

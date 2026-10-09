@@ -16,7 +16,12 @@ CREATE INDEX "task_organisation_id_reviewer_user_id_idx" ON "task"("organisation
 CREATE INDEX "task_organisation_id_company_id_idx" ON "task"("organisation_id", "company_id");
 -- Tenant-safe references to a task (composite) and the company link as a composite FK like every other company-owned table.
 CREATE UNIQUE INDEX "task_organisation_id_id_key" ON "task"("organisation_id", "id");
+-- Lift FORCE RLS for the validation of existing rows (ADR-27): as the table owner the validation query would otherwise see no rows and check nothing.
+ALTER TABLE "task" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "company" NO FORCE ROW LEVEL SECURITY; -- the referenced table is row-secured too
 ALTER TABLE "task" ADD CONSTRAINT "task_organisation_id_company_id_fkey" FOREIGN KEY ("organisation_id", "company_id") REFERENCES "company"("organisation_id", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "task" FORCE ROW LEVEL SECURITY;
+ALTER TABLE "company" FORCE ROW LEVEL SECURITY;
 
 -- The review rule is enforced by the database as well as the API: a task with a reviewer is completed only from IN_REVIEW and only by
 -- that reviewer (the acting user comes from the tenant context). The reviewer cannot be swapped while the review is under way or after completion.

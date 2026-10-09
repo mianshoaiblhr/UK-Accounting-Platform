@@ -189,21 +189,21 @@ model FeatureFlagOverride {
 }
 
 model User {
-  id                String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email             String     @unique
-  displayName       String     @map("display_name")
-  passwordHash      String?    @map("password_hash")
-  emailVerifiedAt   DateTime?  @map("email_verified_at") @db.Timestamptz(3)
-  status            UserStatus @default(ACTIVE)
+  id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email             String       @unique
+  displayName       String       @map("display_name")
+  passwordHash      String?      @map("password_hash")
+  emailVerifiedAt   DateTime?    @map("email_verified_at") @db.Timestamptz(3)
+  status            UserStatus   @default(ACTIVE)
   /// Platform-level role. Confers NO tenant data access (see authz.ts).
   platformRole      PlatformRole @default(NONE) @map("platform_role")
-  failedLoginCount  Int        @default(0) @map("failed_login_count")
-  lockedUntil       DateTime?  @map("locked_until") @db.Timestamptz(3)
-  lockoutLevel      Int        @default(0) @map("lockout_level")
-  lastLoginAt       DateTime?  @map("last_login_at") @db.Timestamptz(3)
-  passwordChangedAt DateTime?  @map("password_changed_at") @db.Timestamptz(3)
-  createdAt         DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt         DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  failedLoginCount  Int          @default(0) @map("failed_login_count")
+  lockedUntil       DateTime?    @map("locked_until") @db.Timestamptz(3)
+  lockoutLevel      Int          @default(0) @map("lockout_level")
+  lastLoginAt       DateTime?    @map("last_login_at") @db.Timestamptz(3)
+  passwordChangedAt DateTime?    @map("password_changed_at") @db.Timestamptz(3)
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   identities    UserIdentity[]
   sessions      Session[]
@@ -334,8 +334,8 @@ model Role {
   isSystem       Boolean  @default(false) @map("is_system")
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  organisation Organisation? @relation(fields: [organisationId], references: [id], onDelete: Cascade)
-  memberships  OrganisationMembership[]
+  organisation        Organisation?            @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  memberships         OrganisationMembership[]
   practiceMemberships PracticeMembership[]
   companyMemberships  CompanyMembership[]
 
@@ -376,7 +376,7 @@ model Practice {
   createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  organisation Organisation          @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisation Organisation         @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   companies    Company[]
   members      PracticeMembership[]
 
@@ -440,26 +440,26 @@ model Invitation {
 }
 
 model Company {
-  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organisationId String        @map("organisation_id") @db.Uuid
-  name           String
+  id                  String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId      String        @map("organisation_id") @db.Uuid
+  name                String
   /// Registered number held as plain data only; no Companies House integration in V0.
-  companyNumber  String?       @map("company_number")
-  incorporationDate DateTime?  @map("incorporation_date") @db.Date
+  companyNumber       String?       @map("company_number")
+  incorporationDate   DateTime?     @map("incorporation_date") @db.Date
   /// Financial year-end as a month/day pair (29 Feb = last day of February).
-  yearEndMonth   Int?          @map("year_end_month") @db.SmallInt
-  yearEndDay     Int?          @map("year_end_day") @db.SmallInt
-  baseCurrency   String        @default("GBP") @map("base_currency") @db.Char(3)
+  yearEndMonth        Int?          @map("year_end_month") @db.SmallInt
+  yearEndDay          Int?          @map("year_end_day") @db.SmallInt
+  baseCurrency        String        @default("GBP") @map("base_currency") @db.Char(3)
   /// Country of incorporation / registration.
-  countryCode    String        @default("GB") @map("country_code") @db.Char(2)
+  countryCode         String        @default("GB") @map("country_code") @db.Char(2)
   /// Primary tax jurisdiction code (effective-dated definitions live in tax_jurisdiction).
-  taxJurisdictionCode String?  @map("tax_jurisdiction_code")
+  taxJurisdictionCode String?       @map("tax_jurisdiction_code")
   /// Managing practice (explicit relationship). Required for PRACTICE organisations, forbidden for BUSINESS (trigger).
-  practiceId     String?       @map("practice_id") @db.Uuid
-  legalForm      String        @default("LTD") @map("legal_form")
-  status         CompanyStatus @default(ACTIVE)
-  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  practiceId          String?       @map("practice_id") @db.Uuid
+  legalForm           String        @default("LTD") @map("legal_form")
+  status              CompanyStatus @default(ACTIVE)
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   organisation Organisation        @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   practice     Practice?           @relation(fields: [organisationId, practiceId], references: [organisationId, id])
@@ -531,7 +531,7 @@ model Contact {
   createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  company   Company?        @relation(fields: [organisationId, companyId], references: [organisationId, id], onDelete: Cascade)
+  company   Company?         @relation(fields: [organisationId, companyId], references: [organisationId, id], onDelete: Cascade)
   addresses Address[]
   officers  CompanyOfficer[]
 
@@ -604,23 +604,139 @@ model AccountingPeriod {
 }
 
 model Document {
-  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organisationId  String         @map("organisation_id") @db.Uuid
+  id                     String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId         String         @map("organisation_id") @db.Uuid
   /// Optional company link; composite FK (organisation_id, company_id) added in raw SQL.
-  companyId       String?        @map("company_id") @db.Uuid
-  name            String
-  documentClass   String         @default("GENERAL") @map("document_class")
-  status          DocumentStatus @default(ACTIVE)
-  retainUntil     DateTime?      @map("retain_until") @db.Date
-  legalHold       Boolean        @default(false) @map("legal_hold")
-  createdByUserId String         @map("created_by_user_id") @db.Uuid
-  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  companyId              String?        @map("company_id") @db.Uuid
+  name                   String
+  /// Document type code (FK to document_type).
+  documentClass          String         @default("GENERAL") @map("document_class")
+  status                 DocumentStatus @default(ACTIVE)
+  retainUntil            DateTime?      @map("retain_until") @db.Date
+  legalHold              Boolean        @default(false) @map("legal_hold")
+  createdByUserId        String         @map("created_by_user_id") @db.Uuid
+  createdAt              DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  /// Folder and period must belong to the document's company (trigger).
+  folderId               String?        @map("folder_id") @db.Uuid
+  periodId               String?        @map("period_id") @db.Uuid
+  description            String?
+  documentDate           DateTime?      @map("document_date") @db.Date
+  reference              String?
+  labels                 String[]       @default([])
+  metadata               Json           @default("{}")
+  /// STANDARD | RESTRICTED (restricted: creator, explicit grants, document:confidential holders).
+  visibility             String         @default("STANDARD")
+  /// Filing evidence lock (one-way, trigger-enforced). All five are set together or not at all.
+  evidenceLockedAt       DateTime?      @map("evidence_locked_at") @db.Timestamptz(3)
+  evidenceLockedByUserId String?        @map("evidence_locked_by_user_id") @db.Uuid
+  evidenceVersionId      String?        @map("evidence_version_id") @db.Uuid
+  evidenceSha256         String?        @map("evidence_sha256")
+  evidenceReason         String?        @map("evidence_reason")
 
   versions DocumentVersion[]
+  folder   DocumentFolder?   @relation(fields: [organisationId, folderId], references: [organisationId, id])
+  access   DocumentAccess[]
 
   @@unique([organisationId, id])
   @@index([organisationId, companyId])
+  @@index([organisationId, folderId])
+  @@index([organisationId, periodId])
+  @@index([organisationId, documentClass])
   @@map("document")
+}
+
+/// Reference data, SELECT-only for the runtime role.
+model DocumentType {
+  code String @id
+  name String
+
+  @@map("document_type")
+}
+
+model DocumentFolder {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId  String   @map("organisation_id") @db.Uuid
+  companyId       String?  @map("company_id") @db.Uuid
+  parentId        String?  @map("parent_id") @db.Uuid
+  name            String
+  createdByUserId String   @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  parent    DocumentFolder?  @relation("FolderTree", fields: [organisationId, parentId], references: [organisationId, id])
+  children  DocumentFolder[] @relation("FolderTree")
+  documents Document[]
+
+  @@unique([organisationId, id])
+  @@index([organisationId, companyId])
+  @@map("document_folder")
+}
+
+/// OCR / text extraction output: data only, never a decision. Visibility follows the document.
+model DocumentExtraction {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId    String    @map("organisation_id") @db.Uuid
+  documentId        String    @map("document_id") @db.Uuid
+  documentVersionId String    @map("document_version_id") @db.Uuid
+  provider          String
+  engineVersion     String?   @map("engine_version")
+  /// PENDING | RUNNING | SUCCEEDED | FAILED | SKIPPED
+  status            String    @default("PENDING")
+  text              String?
+  charCount         Int?      @map("char_count")
+  pageCount         Int?      @map("page_count")
+  confidence        Decimal?  @db.Decimal(4, 3)
+  language          String?
+  truncated         Boolean   @default(false)
+  error             String?
+  requestedByUserId String?   @map("requested_by_user_id") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  startedAt         DateTime? @map("started_at") @db.Timestamptz(3)
+  completedAt       DateTime? @map("completed_at") @db.Timestamptz(3)
+
+  @@unique([documentVersionId, provider])
+  @@index([organisationId, documentId])
+  @@map("document_extraction")
+}
+
+/// Evidence graph: typed, same-company links between entities. Immutable; revoked, never deleted (trigger-enforced).
+model EvidenceLink {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId  String    @map("organisation_id") @db.Uuid
+  companyId       String?   @map("company_id") @db.Uuid
+  sourceType      String    @map("source_type")
+  sourceId        String    @map("source_id") @db.Uuid
+  targetType      String    @map("target_type")
+  targetId        String    @map("target_id") @db.Uuid
+  /// SUPPORTS | DERIVED_FROM | ATTACHED_TO | REFERENCES | FILED_AS
+  kind            String
+  note            String?
+  createdByUserId String?   @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  revokedAt       DateTime? @map("revoked_at") @db.Timestamptz(3)
+  revokedByUserId String?   @map("revoked_by_user_id") @db.Uuid
+  revokedReason   String?   @map("revoked_reason")
+
+  @@index([organisationId, sourceType, sourceId])
+  @@index([organisationId, targetType, targetId])
+  @@index([organisationId, companyId])
+  @@map("evidence_link")
+}
+
+model DocumentAccess {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId  String   @map("organisation_id") @db.Uuid
+  documentId      String   @map("document_id") @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  grantedByUserId String   @map("granted_by_user_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  document Document @relation(fields: [organisationId, documentId], references: [organisationId, id], onDelete: Cascade)
+
+  @@unique([documentId, userId])
+  @@index([organisationId, userId])
+  @@map("document_access")
 }
 
 model DocumentVersion {
@@ -641,32 +757,33 @@ model DocumentVersion {
   document Document @relation(fields: [organisationId, documentId], references: [organisationId, id], onDelete: Cascade)
 
   @@unique([documentId, versionNo])
+  @@unique([organisationId, id])
   @@index([organisationId])
   @@map("document_version")
 }
 
 /// Append-only. organisation_id NULL for pre-tenant events (login etc.).
 model AuditEvent {
-  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  occurredAt     DateTime     @default(now()) @map("occurred_at") @db.Timestamptz(3)
-  organisationId String?      @map("organisation_id") @db.Uuid
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  occurredAt       DateTime     @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  organisationId   String?      @map("organisation_id") @db.Uuid
   /// Company the event concerns; the audit trail is filtered by the reader's per-company access.
-  companyId      String?      @map("company_id") @db.Uuid
-  actorUserId    String?      @map("actor_user_id") @db.Uuid
-  action         String
-  entityType     String?      @map("entity_type")
-  entityId       String?      @map("entity_id")
-  outcome        AuditOutcome @default(SUCCESS)
-  ip             String?
-  userAgent      String?      @map("user_agent")
-  correlationId  String?      @map("correlation_id")
-  metadata       Json         @default("{}")
+  companyId        String?      @map("company_id") @db.Uuid
+  actorUserId      String?      @map("actor_user_id") @db.Uuid
+  action           String
+  entityType       String?      @map("entity_type")
+  entityId         String?      @map("entity_id")
+  outcome          AuditOutcome @default(SUCCESS)
+  ip               String?
+  userAgent        String?      @map("user_agent")
+  correlationId    String?      @map("correlation_id")
+  metadata         Json         @default("{}")
   /// Changed fields only, redacted and size-bounded.
-  before         Json?
-  after          Json?
-  reason         String?
+  before           Json?
+  after            Json?
+  reason           String?
   /// Workflow instance this action was performed as part of.
-  sourceWorkflowId String?    @map("source_workflow_id") @db.Uuid
+  sourceWorkflowId String?      @map("source_workflow_id") @db.Uuid
 
   @@index([organisationId, companyId, occurredAt(sort: Desc)])
   @@index([organisationId, entityType, entityId])
@@ -803,18 +920,18 @@ model WorkflowInstance {
 
 /// Append-only history of every state change.
 model WorkflowTransition {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organisationId String   @map("organisation_id") @db.Uuid
-  instanceId     String   @map("instance_id") @db.Uuid
-  fromState      String?  @map("from_state")
-  toState        String   @map("to_state")
-  action         String
-  actorUserId    String?  @map("actor_user_id") @db.Uuid
-  comment        String?
-  attempt        Int      @default(1)
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId      String   @map("organisation_id") @db.Uuid
+  instanceId          String   @map("instance_id") @db.Uuid
+  fromState           String?  @map("from_state")
+  toState             String   @map("to_state")
+  action              String
+  actorUserId         String?  @map("actor_user_id") @db.Uuid
+  comment             String?
+  attempt             Int      @default(1)
   /// Documents offered as evidence for this transition (validated to the same organisation/company).
   evidenceDocumentIds String[] @default([]) @map("evidence_document_ids") @db.Uuid
-  occurredAt     DateTime @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  occurredAt          DateTime @default(now()) @map("occurred_at") @db.Timestamptz(3)
 
   instance WorkflowInstance @relation(fields: [organisationId, instanceId], references: [organisationId, id], onDelete: Cascade)
 
@@ -859,12 +976,12 @@ model Task {
 
 /// Link between a task and a document of the same company (trigger-enforced).
 model TaskAttachment {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organisationId String  @map("organisation_id") @db.Uuid
-  taskId        String   @map("task_id") @db.Uuid
-  documentId    String   @map("document_id") @db.Uuid
-  addedByUserId String   @map("added_by_user_id") @db.Uuid
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  taskId         String   @map("task_id") @db.Uuid
+  documentId     String   @map("document_id") @db.Uuid
+  addedByUserId  String   @map("added_by_user_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   task Task @relation(fields: [organisationId, taskId], references: [organisationId, id], onDelete: Cascade)
 
@@ -973,31 +1090,31 @@ model AiRun {
 
 /// AI output is only ever a PROPOSAL. Applying it needs an authorised human decision.
 model AiProposal {
-  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organisationId     String           @map("organisation_id") @db.Uuid
-  companyId          String?          @map("company_id") @db.Uuid
-  aiRunId            String?          @map("ai_run_id") @db.Uuid
-  kind               String
-  payload            Json
-  status             AiProposalStatus @default(SUGGESTED)
+  id                    String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId        String           @map("organisation_id") @db.Uuid
+  companyId             String?          @map("company_id") @db.Uuid
+  aiRunId               String?          @map("ai_run_id") @db.Uuid
+  kind                  String
+  payload               Json
+  status                AiProposalStatus @default(SUGGESTED)
   /// Provenance: which model/provider produced it, with what prompt, how confident, from which evidence.
-  provider           String?
-  model              String?
-  promptVersion      String?          @map("prompt_version")
-  confidence         Decimal?         @db.Decimal(5, 4)
-  sourceEvidence     Json             @default("[]") @map("source_evidence")
-  reviewStartedByUserId String?       @map("review_started_by_user_id") @db.Uuid
-  reviewStartedAt    DateTime?        @map("review_started_at") @db.Timestamptz(3)
+  provider              String?
+  model                 String?
+  promptVersion         String?          @map("prompt_version")
+  confidence            Decimal?         @db.Decimal(5, 4)
+  sourceEvidence        Json             @default("[]") @map("source_evidence")
+  reviewStartedByUserId String?          @map("review_started_by_user_id") @db.Uuid
+  reviewStartedAt       DateTime?        @map("review_started_at") @db.Timestamptz(3)
   /// Set only by the authorised application service that acted on an ACCEPTED proposal (never by AI).
-  appliedAt          DateTime?        @map("applied_at") @db.Timestamptz(3)
-  appliedByUserId    String?          @map("applied_by_user_id") @db.Uuid
-  appliedReference   String?          @map("applied_reference")
-  workflowInstanceId String?          @map("workflow_instance_id") @db.Uuid
-  requestedByUserId  String?          @map("requested_by_user_id") @db.Uuid
-  decidedByUserId    String?          @map("decided_by_user_id") @db.Uuid
-  decidedAt          DateTime?        @map("decided_at") @db.Timestamptz(3)
-  decisionComment    String?          @map("decision_comment")
-  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  appliedAt             DateTime?        @map("applied_at") @db.Timestamptz(3)
+  appliedByUserId       String?          @map("applied_by_user_id") @db.Uuid
+  appliedReference      String?          @map("applied_reference")
+  workflowInstanceId    String?          @map("workflow_instance_id") @db.Uuid
+  requestedByUserId     String?          @map("requested_by_user_id") @db.Uuid
+  decidedByUserId       String?          @map("decided_by_user_id") @db.Uuid
+  decidedAt             DateTime?        @map("decided_at") @db.Timestamptz(3)
+  decisionComment       String?          @map("decision_comment")
+  createdAt             DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@index([organisationId, status])
   @@map("ai_proposal")

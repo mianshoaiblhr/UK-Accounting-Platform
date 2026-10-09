@@ -23,7 +23,7 @@ export interface RouteDoc {
 
 const page = z.object({ limit: z.number().int().min(1).max(100).default(25).describe('Page size'), cursor: z.string().optional().describe('`nextCursor` from the previous page') });
 export const NAMED_RESPONSES: Record<string, ZodTypeAny> = {
-  Company: R.Company, Period: R.Period, DocumentRecord: R.DocumentRecord, DocumentVersion: R.DocumentVersion, DocumentCreated: R.DocumentCreated,
+  Company: R.Company, Period: R.Period, DocumentRecord: R.DocumentRecord, DocumentVersion: R.DocumentVersion, DocumentCreated: R.DocumentCreated, DocumentFolder: R.DocumentFolder, EvidenceLink: R.EvidenceLink, DocumentExtraction: R.DocumentExtraction, DocumentAccessGrant: R.DocumentAccessGrant,
   Job: R.Job, JobAccepted: R.JobAccepted, Task: R.Task, TaskComment: R.TaskComment, TaskAttachment: R.TaskAttachment, TaskReminder: R.TaskReminder, Notification: R.Notification, WorkflowInstance: R.WorkflowInstance, WorkflowDetail: R.WorkflowDetail,
   Connection: R.Connection, AiProposal: R.AiProposal, Practice: R.Practice, FeatureFlag: R.FeatureFlag, Contact: R.Contact, Address: R.Address, Officer: R.Officer, ProposedPeriod: R.ProposedPeriod, GrantList: R.GrantList, GrantResult: R.GrantResult, Role: R.Role, Invitation: R.Invitation, Organisation: R.Organisation, OrgMe: R.OrgMe, Me: R.Me,
   LoginResult: R.LoginResult, Message: R.Message, Health: R.Health, MfaStatus: R.MfaStatus, MfaEnrol: R.MfaEnrol, MfaConfirmed: R.MfaConfirmed,
@@ -31,7 +31,7 @@ export const NAMED_RESPONSES: Record<string, ZodTypeAny> = {
   CompanyPage: R.Pages.Company, DocumentPage: R.Pages.DocumentRecord, JobPage: R.Pages.Job, TaskPage: R.Pages.Task, NotificationPage: R.Pages.Notification,
   WorkflowPage: R.Pages.WorkflowInstance, AiProposalPage: R.Pages.AiProposal, AuditEventPage: R.Pages.AuditEvent,
   PeriodList: R.items(R.Period), RoleList: z.object({ items: z.array(R.Role), permissionCatalogue: z.array(z.string()) }), MemberList: R.items(R.Member), ContactPage: R.Pages.Contact, AddressList: R.items(R.Address), OfficerList: R.items(R.Officer), CurrencyList: R.items(R.Currency), CountryList: R.items(R.Country), TaxJurisdictionList: R.items(R.TaxJurisdiction), FeatureFlagList: R.items(R.FeatureFlag), PracticeList: R.items(R.Practice),
-  TaskCommentList: R.items(R.TaskComment), TaskAttachmentList: R.items(R.TaskAttachment), TaskReminderList: R.items(R.TaskReminder), InvitationList: R.items(R.Invitation), ConnectionList: R.items(R.Connection), ProviderList: R.items(R.Provider), SessionList: R.items(R.Session),
+  TaskCommentList: R.items(R.TaskComment), TaskAttachmentList: R.items(R.TaskAttachment), TaskReminderList: R.items(R.TaskReminder), DocumentFolderList: R.items(R.DocumentFolder), EvidenceLinkList: R.items(R.EvidenceLink), DocumentExtractionList: R.items(R.DocumentExtraction), DocumentAccessList: R.items(R.DocumentAccessGrant), InvitationList: R.items(R.Invitation), ConnectionList: R.items(R.Connection), ProviderList: R.items(R.Provider), SessionList: R.items(R.Session),
   LoginHistory: R.items(R.LoginEvent), WorkflowDefinitionList: R.items(R.WorkflowDefinitionView),
   UnreadCount: z.object({ count: z.number().int() }), UpdatedCount: z.object({ updated: z.number().int() }),
 };
@@ -83,14 +83,30 @@ export const ROUTES: Record<string, RouteDoc> = {
   [`POST ${v}/companies/{companyId}/periods`]: { tag: 'Companies', summary: 'Create an accounting period (no overlaps)', body: ['CreatePeriodRequest', C.createPeriodSchema], ok: [201, 'Period', 'Created'], extraErrors: [409] },
   // ── Documents ──
   [`POST ${v}/documents`]: { tag: 'Documents', summary: 'Create a document and its first version; returns upload instructions', body: ['CreateDocumentRequest', C.createDocumentSchema], ok: [201, 'DocumentCreated', 'Created'] },
-  [`GET ${v}/documents`]: { tag: 'Documents', summary: 'List documents', query: page.extend({ companyId: z.string().uuid().optional() }), ok: [200, 'DocumentPage', 'Page of documents'] },
+  [`GET ${v}/documents`]: { tag: 'Documents', summary: 'List documents the caller may see (filters: company, folder, period, type, visibility, name, status, evidence lock)', query: C.documentListQuerySchema, ok: [200, 'DocumentPage', 'Page of documents'] },
   [`GET ${v}/documents/{documentId}`]: { tag: 'Documents', summary: 'Get a document with all versions', ok: [200, 'DocumentRecord', 'Document'] },
+  [`PATCH ${v}/documents/{documentId}`]: { tag: 'Documents', summary: 'Edit name, type, folder, period and metadata (audited with before/after; refused for locked filing evidence)', body: ['UpdateDocumentRequest', C.updateDocumentSchema], ok: [200, 'DocumentRecord', 'Updated'] },
+  [`GET ${v}/documents/{documentId}/access`]: { tag: 'Documents', summary: 'Explicit access grants of a restricted document (document:confidential)', ok: [200, 'DocumentAccessList', 'Grants'] },
+  [`POST ${v}/documents/{documentId}/access`]: { tag: 'Documents', summary: 'Grant a member access to a restricted document (document:confidential)', body: ['GrantDocumentAccessRequest', C.grantDocumentAccessSchema], ok: [201, 'DocumentAccessGrant', 'Granted'] },
+  [`DELETE ${v}/documents/{documentId}/access/{userId}`]: { tag: 'Documents', summary: 'Revoke an explicit access grant', ok: [204, null, 'Revoked'] },
+  [`POST ${v}/documents/{documentId}/evidence-lock`]: { tag: 'Documents', summary: 'IRREVERSIBLY lock one AVAILABLE version as immutable filing evidence (hash recorded, retention >= 6 years; no new versions, edits or archive afterwards)', body: ['EvidenceLockRequest', C.evidenceLockSchema], ok: [200, 'DocumentRecord', 'Locked'] },
+  [`POST ${v}/document-folders`]: { tag: 'Documents', summary: 'Create a folder (company or organisation level)', body: ['CreateFolderRequest', C.createFolderSchema], ok: [201, 'DocumentFolder', 'Created'] },
+  [`GET ${v}/document-folders`]: { tag: 'Documents', summary: 'List folders', query: C.folderListQuerySchema, ok: [200, 'DocumentFolderList', 'Folders'] },
+  [`GET ${v}/document-folders/{folderId}`]: { tag: 'Documents', summary: 'Get a folder', ok: [200, 'DocumentFolder', 'Folder'] },
+  [`PATCH ${v}/document-folders/{folderId}`]: { tag: 'Documents', summary: 'Rename or move a folder within its company', body: ['UpdateFolderRequest', C.updateFolderSchema], ok: [200, 'DocumentFolder', 'Updated'] },
+  [`DELETE ${v}/document-folders/{folderId}`]: { tag: 'Documents', summary: 'Delete an empty folder', ok: [204, null, 'Deleted'] },
   [`POST ${v}/documents/{documentId}/archive`]: { tag: 'Documents', summary: 'Archive a document (never deleted; blocked by legal hold)', body: ['ArchiveDocumentRequest', C.archiveDocumentSchema], ok: [200, 'DocumentRecord', 'Archived'] },
   [`POST ${v}/documents/{documentId}/versions`]: { tag: 'Documents', summary: 'Add a new immutable version', body: ['NewVersionRequest', C.newVersionSchema], ok: [201, null, 'Version + upload instructions'] },
   [`PUT ${v}/documents/{documentId}/versions/{versionId}/content`]: { tag: 'Documents', summary: 'Upload content through the API (when no presigned URL is available)', binaryBody: true, ok: [200, 'DocumentVersion', 'Stored; processing is queued'], extraErrors: [413] },
   [`POST ${v}/documents/{documentId}/versions/{versionId}/complete`]: { tag: 'Documents', summary: 'Signal that a presigned upload finished; queues scanning', ok: [200, 'DocumentVersion', 'Queued'] },
+  [`GET ${v}/documents/{documentId}/versions/{versionId}/extraction`]: { tag: 'Documents', summary: 'OCR / text-extraction state of a version (data only; ?text=true includes the extracted text and is audited)', query: z.object({ text: z.enum(['true', 'false']).optional() }), ok: [200, 'DocumentExtractionList', 'Extractions'] },
+  [`POST ${v}/documents/{documentId}/versions/{versionId}/extract`]: { tag: 'Documents', summary: 'Queue OCR for an AVAILABLE version (requires the documents.ocr feature flag and a configured provider)', ok: [202, 'DocumentExtraction', 'Queued'] },
   [`GET ${v}/documents/{documentId}/versions/{versionId}/download`]: { tag: 'Documents', summary: 'Get a short-lived download link (AVAILABLE versions only)', ok: [200, 'DownloadLink', 'Link'] },
   [`GET ${v}/documents/{documentId}/versions/{versionId}/content`]: { tag: 'Documents', summary: 'Stream content through the API (AVAILABLE versions only)', binaryResponse: true, ok: [200, null, 'File bytes'] },
+  // ── Evidence graph ──
+  [`POST ${v}/evidence-links`]: { tag: 'Evidence', summary: 'Link two entities of the same company (both must be visible to the caller); links are immutable', body: ['CreateEvidenceLinkRequest', C.createEvidenceLinkSchema], ok: [201, 'EvidenceLink', 'Created'] },
+  [`GET ${v}/evidence-links`]: { tag: 'Evidence', summary: 'Links of one entity (links to entities the caller cannot see are omitted)', query: C.evidenceLinkQuerySchema, ok: [200, 'EvidenceLinkList', 'Links'] },
+  [`POST ${v}/evidence-links/{linkId}/revoke`]: { tag: 'Evidence', summary: 'Revoke a link (recorded with who and why; never deleted)', body: ['RevokeEvidenceLinkRequest', C.revokeEvidenceLinkSchema], ok: [200, 'EvidenceLink', 'Revoked'] },
   // ── Jobs ──
   [`GET ${v}/jobs`]: { tag: 'Jobs', summary: 'List background jobs', query: page, ok: [200, 'JobPage', 'Page of jobs'] },
   [`GET ${v}/jobs/{jobId}`]: { tag: 'Jobs', summary: 'Job status, progress and result (payloads are never returned)', ok: [200, 'Job', 'Job'] },

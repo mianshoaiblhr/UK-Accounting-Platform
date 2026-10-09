@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Events } from '@uk/contracts';
 import { conflict, forbidden, notFound, unprocessable } from '@uk/core';
 import { Prisma, type Database, type Task, type Tx } from '@uk/db';
-import { changeSet, publishEvent } from '@uk/platform';
+import { changeSet, publishEvent, recordEvidenceLink, revokeEvidenceLinks } from '@uk/platform';
 import { AuditService } from '../audit/audit.service';
 import { DB } from '../common/tokens';
 import { loadAccess } from '../common/access';
@@ -44,15 +44,21 @@ export class TasksService {
   }
 
   /** A declared source must exist in this tenant and concern the same company as the task. */
-  private async assertSource(tx: Tx, source: string, sourceId: string | undefined, companyId: string | null) {
+  private async assertSource(org: OrgAccess, tx: Tx, source: string, sourceId: string | undefined, companyId: string | null) {
     if (source === 'MANUAL') return;
     const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!sourceId || !uuid.test(sourceId)) throw unprocessable('sourceId must be the id of the source record', 'invalid_source');
     const found = source === 'WORKFLOW' ? await tx.workflowInstance.findUnique({ where: { id: sourceId }, select: { companyId: true } })
       : source === 'AI_PROPOSAL' ? await tx.aiProposal.findUnique({ where: { id: sourceId }, select: { companyId: true } })
-      : await tx.document.findUnique({ where: { id: sourceId }, select: { companyId: true } });
+      : await this.readableDocument(org, tx, sourceId);
     if (!found) throw unprocessable('The source record was not found', 'invalid_source');
     if (found.companyId !== companyId) throw unprocessable('The source record belongs to a different company', 'invalid_source');
+  }
+
+  /** A document the caller may see (restricted documents are invisible to others - ADR-32); null otherwise. */
+  private async readableDocument(org: OrgAccess, tx: Tx, id: string) {
+    const d = await tx.document.findUnique({ where: { id }, select: { id: true, companyId: true, visibility: true, createdByUserId: true, name: true, status: true } });
+    return d && (await org.access.canReadDocument(d)) ? d : null;
   }
 
   private async notifyAssigned(tx: Tx, org: OrgAccess, task: Task) {
@@ -67,7 +73,7 @@ export class TasksService {
       if (input.companyId && !(await tx.company.findUnique({ where: { id: input.companyId } }))) throw notFound('Company not found');
       if (input.assigneeUserId) await this.assertParticipant(input.assigneeUserId, org, input.companyId ?? null);
       if (input.reviewerUserId) await this.assertReviewer(input.reviewerUserId, org, input.companyId ?? null);
-      await this.assertSource(tx, input.source, input.sourceId, input.companyId ?? null);
+      await this.assertSource(org, tx, input.source, input.sourceId, input.companyId ?? null);
       const task = await tx.task.create({ data: {
         organisationId: org.organisationId, companyId: input.companyId, title: input.title, description: input.description, priority: input.priority,
         dueDate: input.dueDate ? new Date(input.dueDate) : undefined, assigneeUserId: input.assigneeUserId, reviewerUserId: input.reviewerUserId,
@@ -194,10 +200,14 @@ export class TasksService {
 
   // ───────── attachments (links to documents of the task's company) ─────────
   async listAttachments(org: OrgAccess, taskId: string) {
-    const task = await this.get(org, taskId);
-    const showDocuments = await org.access.can('document:read', { companyId: task.companyId });
+    await this.get(org, taskId);
     const rows = await this.t(org, (tx) => tx.taskAttachment.findMany({ where: { taskId }, orderBy: { createdAt: 'asc' } }));
-    const docs = showDocuments ? await this.t(org, (tx) => tx.document.findMany({ where: { id: { in: rows.map((r) => r.documentId) } }, select: { id: true, name: true, status: true } })) : [];
+    const docs = await this.t(org, async (tx) => {
+      const found = await tx.document.findMany({ where: { id: { in: rows.map((r) => r.documentId) } }, select: { id: true, companyId: true, visibility: true, createdByUserId: true, name: true, status: true } });
+      const readable = [];
+      for (const d of found) if (await org.access.canReadDocument(d)) readable.push(d); // names only for documents the caller may see
+      return readable;
+    });
     const byId = new Map(docs.map((d) => [d.id, d]));
     return { items: rows.map((r) => ({ ...r, documentName: byId.get(r.documentId)?.name ?? null, documentStatus: byId.get(r.documentId)?.status ?? null })) };
   }
@@ -206,13 +216,13 @@ export class TasksService {
     const task = await this.get(org, taskId);
     await org.access.requireResource('task:manage', task.companyId, 'Task not found');
     return this.t(org, async (tx) => {
-      const doc = await tx.document.findUnique({ where: { id: documentId } });
+      const doc = await this.readableDocument(org, tx, documentId);
       if (!doc) throw notFound('Document not found');
-      await org.access.requireResource('document:read', doc.companyId, 'Document not found');
       if (doc.status !== 'ACTIVE') throw unprocessable('Archived documents cannot be attached', 'document_archived');
       if (doc.companyId !== task.companyId) throw unprocessable('A task can only link documents of its own company', 'attachment_company_mismatch');
       try {
         const a = await tx.taskAttachment.create({ data: { organisationId: org.organisationId, taskId, documentId, addedByUserId: org.userId } });
+        await recordEvidenceLink(tx, { organisationId: org.organisationId, companyId: task.companyId, source: { type: 'task', id: taskId }, target: { type: 'document', id: documentId }, kind: 'ATTACHED_TO', createdByUserId: org.userId });
         await this.audit.record({ action: 'task.attachment_added', organisationId: org.organisationId, actorUserId: org.userId, companyId: task.companyId, entityType: 'task', entityId: taskId, metadata: { documentId } }, tx);
         return a;
       } catch (e) {
@@ -228,6 +238,7 @@ export class TasksService {
     await this.t(org, async (tx) => {
       const r = await tx.taskAttachment.deleteMany({ where: { taskId, documentId } });
       if (!r.count) throw notFound('Attachment not found');
+      await revokeEvidenceLinks(tx, { source: { type: 'task', id: taskId }, target: { type: 'document', id: documentId }, kind: 'ATTACHED_TO', revokedByUserId: org.userId, reason: 'attachment removed' });
       await this.audit.record({ action: 'task.attachment_removed', organisationId: org.organisationId, actorUserId: org.userId, companyId: task.companyId, entityType: 'task', entityId: taskId, metadata: { documentId } }, tx);
     });
   }

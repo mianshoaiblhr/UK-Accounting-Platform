@@ -25,13 +25,14 @@ const deploy = (schema: string, url: string) =>
   execFileSync('pnpm', ['--filter', '@uk/db', 'exec', 'prisma', 'migrate', 'deploy', '--schema', schema], { cwd: ROOT, env: { ...process.env, MIGRATION_DATABASE_URL: url }, stdio: 'pipe' });
 
 let tmp: string;
-const dbs = ['uk_upgrade_nonsu', 'uk_upgrade_data', 'uk_upgrade_tasks'];
+const dbs = ['uk_upgrade_nonsu', 'uk_upgrade_data', 'uk_upgrade_tasks', 'uk_upgrade_docs'];
 beforeAll(() => {
   tmp = mkdtempSync(join(tmpdir(), 'uk-mig-'));
   psql(adminUrl('postgres'), "DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='uk_migrator_t') THEN CREATE ROLE uk_migrator_t LOGIN PASSWORD 'm' NOSUPERUSER NOBYPASSRLS CREATEROLE; END IF; END $$");
   for (const d of dbs) { psql(adminUrl('postgres'), `DROP DATABASE IF EXISTS ${d} WITH (FORCE)`); psql(adminUrl('postgres'), `CREATE DATABASE ${d} OWNER uk_migrator_t`); }
   psql(adminUrl('uk_upgrade_nonsu'), 'GRANT ALL ON SCHEMA public TO uk_migrator_t; CREATE EXTENSION IF NOT EXISTS btree_gist');
   psql(adminUrl('uk_upgrade_tasks'), 'GRANT ALL ON SCHEMA public TO uk_migrator_t; CREATE EXTENSION IF NOT EXISTS btree_gist');
+  psql(adminUrl('uk_upgrade_docs'), 'GRANT ALL ON SCHEMA public TO uk_migrator_t; CREATE EXTENSION IF NOT EXISTS btree_gist');
 });
 afterAll(() => {
   rmSync(tmp, { recursive: true, force: true });
@@ -126,6 +127,35 @@ describe('task engine migration upgrades a populated database', () => {
     expect(psql(url, `SELECT count(*) FROM pg_constraint WHERE conname='task_organisation_id_company_id_fkey'`)).toBe('1');
     // the new status value is usable now that the migration is committed
     psql(url, `UPDATE task SET status='IN_REVIEW', reviewer_user_id='${U}' WHERE id='${T_OPEN}'`);
+  });
+});
+
+describe('document management and evidence graph migrations upgrade a populated database', () => {
+  const U = '11111111-1111-4111-8111-111111111111', ORG = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', CO = 'd1111111-1111-4111-8111-111111111111';
+  const D1 = 'b1111111-1111-4111-8111-111111111111', D2 = 'b2222222-2222-4222-8222-222222222222', D3 = 'b3333333-3333-4333-8333-333333333333';
+  const T = 'e1111111-1111-4111-8111-111111111111', W = 'f1111111-1111-4111-8111-111111111111';
+  const url = adminUrl('uk_upgrade_docs'), owner = 'postgresql://uk_migrator_t:m@' + HOST + '/uk_upgrade_docs';
+  it('keeps documents (legacy classes become types or OTHER, defaults applied) and back-fills the evidence graph from task attachments and workflow evidence', () => {
+    const DOCS_MIGRATION = all.find((d) => d.endsWith('_v0_document_management'))!;
+    deploy(stage('pre-docs', all.filter((d) => d < DOCS_MIGRATION)), owner);
+    psql(url, `
+      INSERT INTO "user"(id,email,display_name) VALUES ('${U}','d@x.com','D');
+      INSERT INTO organisation(id,type,name) VALUES ('${ORG}','BUSINESS','Docs Upgrade Ltd');
+      INSERT INTO company(id,organisation_id,name) VALUES ('${CO}','${ORG}','Upgrade Co');
+      INSERT INTO document(id,organisation_id,company_id,name,document_class,created_by_user_id) VALUES
+        ('${D1}','${ORG}','${CO}','a.pdf','GENERAL','${U}'), ('${D2}','${ORG}','${CO}','b.pdf','LEGACY_INVOICE','${U}'), ('${D3}','${ORG}','${CO}','c.pdf','weird class!','${U}');
+      INSERT INTO task(id,organisation_id,company_id,title,created_by_user_id) VALUES ('${T}','${ORG}','${CO}','t','${U}');
+      INSERT INTO task_attachment(organisation_id,task_id,document_id,added_by_user_id) VALUES ('${ORG}','${T}','${D1}','${U}');
+      INSERT INTO workflow_instance(id,organisation_id,company_id,type,definition_version,state,subject_type,subject_id,started_by_user_id) VALUES ('${W}','${ORG}','${CO}','standard_workflow',1,'DRAFT','task','x','${U}');
+      INSERT INTO workflow_transition(organisation_id,instance_id,from_state,to_state,action,actor_user_id,evidence_document_ids) VALUES
+        ('${ORG}','${W}',NULL,'DRAFT','start','${U}','{}'), ('${ORG}','${W}','DRAFT','DRAFT','note','${U}', ARRAY['${D1}','${D2}']::uuid[]), ('${ORG}','${W}','DRAFT','DRAFT','note','${U}', ARRAY['${D1}']::uuid[]);`);
+    deploy(stage('with-docs', all), owner);
+    expect(psql(url, `SELECT string_agg(name||':'||document_class||':'||visibility||':'||coalesce(folder_id::text,'-'), ',' ORDER BY name) FROM document`)).toBe('a.pdf:GENERAL:STANDARD:-,b.pdf:LEGACY_INVOICE:STANDARD:-,c.pdf:OTHER:STANDARD:-');
+    expect(psql(url, `SELECT count(*) FROM document_type WHERE code='LEGACY_INVOICE'`)).toBe('1');
+    // task attachment -> ATTACHED_TO; workflow evidence -> SUPPORTS (a document cited twice is one link)
+    expect(psql(url, `SELECT string_agg(source_type||'>'||kind||'>'||target_id::text, ',' ORDER BY kind, target_id) FROM evidence_link WHERE company_id='${CO}'`))
+      .toBe(`task>ATTACHED_TO>${D1},workflow_instance>SUPPORTS>${D1},workflow_instance>SUPPORTS>${D2}`);
+    expect(psql(url, `SELECT count(*) FROM evidence_link WHERE created_by_user_id='${U}' AND organisation_id='${ORG}'`)).toBe('3');
   });
 });
 

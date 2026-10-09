@@ -6,3 +6,4 @@ export * from './workflow';
 export * from './authz';
 export * from './features';
 export * from './financial-year';
+export * from './documents';

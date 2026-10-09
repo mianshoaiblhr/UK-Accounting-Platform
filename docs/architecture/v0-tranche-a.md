@@ -108,3 +108,25 @@ Written **before** implementation because it adds new architecture (ADR-32 .. AD
 
 ### 7.4 Compatibility and risk
 Additive migrations (`20260104000600`, `20260104000700`); existing documents become STANDARD, unlocked, in no folder. API responses gain optional fields; existing fields and routes are unchanged. Behaviour changes: `documentClass` must be a known type (422 `unknown_document_type`; previously any string); the runtime role loses `DELETE` on `document` (documents are archived, never deleted). **High-risk step:** adding the foreign key on `document.document_class` - the migration first inserts any existing distinct value as a type, so it cannot fail on legacy data.
+
+### 7.5 As built - what changed against the design
+| Design item | Built | Notes |
+|---|---|---|
+| Migrations | `20260104000600_v0_document_management` (types, folders, access, columns, triggers, role permissions), `20260104000700_v0_document_extraction`, `20260104000800_v0_evidence_link` (with back-fill) | additive; existing documents become STANDARD / unlocked / unfiled |
+| Central visibility | `AccessContext.canReadDocument` / `documentWhere` / `actor().canReadDocument` (`apps/api/src/common/access.ts`) | used by documents, tasks (attachments, source), evidence resolver, workflow evidence. Architecture test: documents are read only in those four places |
+| Evidence lock | `POST /documents/{id}/evidence-lock`, triggers `document_evidence_guard`, `document_version_evidence_guard`; `DELETE`/`TRUNCATE` on `document` revoked from the runtime role | the lock also freezes the locked version; a legal hold can still be added, never lifted; retention can only grow |
+| OCR | `OcrProvider` port + `FakeOcrProvider` (`packages/platform/src/ocr.ts`), `OCR_PROVIDER=none\|fake` (`fake` refused in production), job `document.ocr`, table `document_extraction`, `GET .../extraction[?text=true]`, `POST .../extract` | the text is returned only on request and that read is audited; the audit trail and logs never contain extracted text |
+| Evidence graph | `evidence_link`, `recordEvidenceLink` / `revokeEvidenceLinks` (platform), `EvidenceService` + `/evidence-links` | task attachments and workflow evidence write links in their own transaction; entity resolvers for document, document_version, task, workflow_instance, ai_proposal, contact, company, accounting_period |
+
+### 7.6 Findings made while building (fixed)
+| # | Finding | Fix |
+|---|---|---|
+| G1 | **Foreign-key validation under FORCE RLS checks nothing.** A migration that adds a foreign key to a table with existing rows validates as the (RLS-bound) table owner, which sees zero rows: a legacy `document_class` of `weird class!` passed the new foreign key. The same latent flaw existed in the task-engine migration (`task.company_id` composite FK) | RLS is lifted around the data statements and the `ADD CONSTRAINT` (also on the referenced `company` table), then forced again; both migrations edited in place (never applied outside CI); rule added to `docs/runbooks/migrations.md`; `tests/db/upgrade.test.ts` now upgrades a populated database through both migrations |
+| G2 | Permission-probe matrix and security doc did not know the new permissions / tables | probes added for `document:confidential`, `evidence:lock`, `evidence:read`, `evidence:manage`; classification and security doc entries for `document_type`, `document_folder`, `document_access`, `document_extraction`, `evidence_link` |
+
+### 7.7 Known limits (deliberate)
+* No real OCR engine: the pipeline is *ready* (port, flag, store, job, visibility); a real engine is a V6 deliverable behind the port. No Embedding/Search provider port yet (specification section 10 lists it; it is outside the eight approved Tranche A items - flagged for the final gate).
+* **Immutable filing evidence is immutable in the database, not yet in object storage**: S3 Object Lock (COMPLIANCE mode) is Terraform that has never been applied to a real account (production gate). Until then a privileged operator with bucket access could still delete the object; the application and the database cannot.
+* Folders organise; they do not secure: visibility is per document, not per folder.
+* The evidence graph cannot enforce that a polymorphic target exists (no foreign keys): it is validated at write time and by an integrity test; entities are never hard-deleted by the application.
+* Document retention schedules per type (V0-S8) are not part of this increment.

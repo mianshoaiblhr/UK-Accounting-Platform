@@ -50,6 +50,7 @@ const schema = z.object({
   OUTBOX_POLL_MS: z.coerce.number().int().min(50).default(500),
   OUTBOX_RETENTION_DAYS: z.coerce.number().int().min(1).default(14), // processed events older than this are deleted
   OUTBOX_CLEANUP_MS: z.coerce.number().int().min(1000).default(600_000),
+  OCR_PROVIDER: z.enum(['none', 'fake']).default('none'), // 'fake' is a deterministic development/test engine; real engines are added behind the OcrProvider port
   TASK_REMINDER_POLL_MS: z.coerce.number().int().min(200).default(30_000), // how often due task reminders are delivered
 });
 
@@ -71,6 +72,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     }
     if (c.STORAGE_DRIVER !== 's3' || !c.S3_BUCKET) throw new Error('Invalid configuration: production requires STORAGE_DRIVER=s3 and S3_BUCKET');
     if (c.EMAIL_DRIVER === 'file' || c.EMAIL_DRIVER === 'memory') throw new Error('Invalid configuration: EMAIL_DRIVER not allowed in production');
+    if (c.OCR_PROVIDER === 'fake') throw new Error('Invalid configuration: OCR_PROVIDER=fake is not allowed in production');
     if (c.AV_DRIVER === 'noop') throw new Error('Invalid configuration: production requires AV_DRIVER=clamav');
     if (!c.RATE_LIMIT_ENABLED) throw new Error('Invalid configuration: rate limiting cannot be disabled in production');
   }

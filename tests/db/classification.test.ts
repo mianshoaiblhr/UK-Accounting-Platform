@@ -46,8 +46,8 @@ describe('classification matches reality', () => {
 });
 
 describe('reference tables (global, read-only)', () => {
-  it('are exactly the ISO / jurisdiction tables, carry no organisation_id and are populated', () => {
-    expect([...REFERENCE_TABLES].sort()).toEqual(['country', 'currency', 'tax_jurisdiction']);
+  it('are exactly the ISO / jurisdiction / document-type tables, carry no organisation_id and are populated', () => {
+    expect([...REFERENCE_TABLES].sort()).toEqual(['country', 'currency', 'document_type', 'tax_jurisdiction']);
     for (const t of REFERENCE_TABLES) {
       expect(adminSql(`SELECT count(*) FROM information_schema.columns WHERE table_name='${t}' AND column_name='organisation_id'`), t).toBe('0');
       expect(Number(adminSql(`SELECT count(*) FROM ${t}`)), `${t} rows`).toBeGreaterThan(0);

@@ -10,6 +10,7 @@ import type { Database, Tx } from '@uk/db';
  * turns "who is this user in this organisation" into decisions; controllers and services call it instead of
  * re-implementing role/scope logic (docs/architecture/v0-hierarchy-and-authorisation-design.md §3).
  */
+export interface DocumentRef { id: string; companyId: string | null; visibility: string; createdByUserId: string }
 export interface DeniedInfo { permission: Permission; target: { companyId?: string; practiceId?: string } }
 
 export class AccessContext {
@@ -106,9 +107,33 @@ export class AccessContext {
     return ids === 'ALL' ? {} : { id: { in: ids } };
   }
 
+  /**
+   * Per-document visibility (ADR-32). A document is readable when the caller may read documents of its company AND it is STANDARD,
+   * or RESTRICTED and the caller created it, holds `document:confidential` for its company, or has an explicit grant.
+   * Every code path that reads a document must go through this (or {@link documentWhere}); an invisible document is a 404.
+   */
+  async canReadDocument(doc: DocumentRef): Promise<boolean> {
+    if (!(await this.can('document:read', { companyId: doc.companyId }))) return false;
+    if (doc.visibility !== 'RESTRICTED') return true;
+    if (doc.createdByUserId === this.snapshot.userId) return true;
+    if (await this.can('document:confidential', { companyId: doc.companyId })) return true;
+    return !!(await this.run((tx) => tx.documentAccess.findFirst({ where: { documentId: doc.id, userId: this.snapshot.userId }, select: { id: true } })));
+  }
+
+  /** The same rule as {@link canReadDocument}, as a Prisma `where` fragment for lists. */
+  async documentWhere(): Promise<Record<string, unknown>> {
+    const readable = await this.companyWhere('document:read');
+    const confidential = await this.companyWhere('document:confidential');
+    return { AND: [readable, { OR: [{ visibility: 'STANDARD' }, { createdByUserId: this.snapshot.userId }, { access: { some: { userId: this.snapshot.userId } } }, confidential] }] };
+  }
+
   /** Workflow/AI engines ask this to authorise a transition for the instance's company. */
   actor() {
-    return { userId: this.snapshot.userId, can: (perm: string, companyId: string | null) => this.can(perm as Permission, { companyId }) };
+    return {
+      userId: this.snapshot.userId,
+      can: (perm: string, companyId: string | null) => this.can(perm as Permission, { companyId }),
+      canReadDocument: (doc: DocumentRef) => this.canReadDocument(doc),
+    };
   }
 
   /** Effective permissions on one company (for API responses / UI). */

@@ -1172,8 +1172,7 @@
               "type": "integer",
               "minimum": 1,
               "maximum": 100,
-              "default": 25,
-              "description": "Page size"
+              "default": 25
             }
           },
           {
@@ -1181,8 +1180,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
-              "description": "`nextCursor` from the previous page"
+              "type": "string"
             }
           },
           {
@@ -1192,6 +1190,79 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "folderId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "documentClass",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 60
+            }
+          },
+          {
+            "name": "visibility",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "STANDARD",
+                "RESTRICTED"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "ARCHIVED"
+              ]
+            }
+          },
+          {
+            "name": "evidenceLocked",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
             }
           }
         ],
@@ -1228,7 +1299,7 @@
         "x-required-permissions": [
           "document:read"
         ],
-        "summary": "List documents",
+        "summary": "List documents the caller may see (filters: company, folder, period, type, visibility, name, status, evidence lock)",
         "description": "**Requires permission:** `document:read`",
         "security": [
           {
@@ -1294,6 +1365,323 @@
             "cookie": []
           }
         ]
+      },
+      "patch": {
+        "operationId": "Documents_update",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Documents"
+        ],
+        "x-required-permissions": [
+          "document:upload"
+        ],
+        "summary": "Edit name, type, folder, period and metadata (audited with before/after; refused for locked filing evidence)",
+        "description": "**Requires permission:** `document:upload`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDocumentRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/documents/{documentId}/access": {
+      "get": {
+        "operationId": "Documents_listAccess",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Grants",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentAccessList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Documents"
+        ],
+        "x-required-permissions": [
+          "document:confidential"
+        ],
+        "summary": "Explicit access grants of a restricted document (document:confidential)",
+        "description": "**Requires permission:** `document:confidential`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "Documents_grantAccess",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Granted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentAccessGrant"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Documents"
+        ],
+        "x-required-permissions": [
+          "document:confidential"
+        ],
+        "summary": "Grant a member access to a restricted document (document:confidential)",
+        "description": "**Requires permission:** `document:confidential`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantDocumentAccessRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/documents/{documentId}/access/{userId}": {
+      "delete": {
+        "operationId": "Documents_revokeAccess",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoked"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Documents"
+        ],
+        "x-required-permissions": [
+          "document:confidential"
+        ],
+        "summary": "Revoke an explicit access grant",
+        "description": "**Requires permission:** `document:confidential`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/documents/{documentId}/evidence-lock": {
+      "post": {
+        "operationId": "Documents_lockEvidence",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Locked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Documents"
+        ],
+        "x-required-permissions": [
+          "evidence:lock"
+        ],
+        "summary": "IRREVERSIBLY lock one AVAILABLE version as immutable filing evidence (hash recorded, retention >= 6 years; no new versions, edits or archive afterwards)",
+        "description": "**Requires permission:** `evidence:lock`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvidenceLockRequest"
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/organisations/{organisationId}/documents/{documentId}/archive": {
@@ -1644,6 +2032,160 @@
         ]
       }
     },
+    "/api/v1/organisations/{organisationId}/documents/{documentId}/versions/{versionId}/extraction": {
+      "get": {
+        "operationId": "Documents_extraction",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "text",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "text",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Extractions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentExtractionList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Documents"
+        ],
+        "x-required-permissions": [
+          "document:read"
+        ],
+        "summary": "OCR / text-extraction state of a version (data only; ?text=true includes the extracted text and is audited)",
+        "description": "**Requires permission:** `document:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/documents/{documentId}/versions/{versionId}/extract": {
+      "post": {
+        "operationId": "Documents_extract",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentExtraction"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Documents"
+        ],
+        "x-required-feature": "documents.ocr",
+        "x-required-permissions": [
+          "document:upload"
+        ],
+        "summary": "Queue OCR for an AVAILABLE version (requires the documents.ocr feature flag and a configured provider)",
+        "description": "**Requires permission:** `document:upload`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/organisations/{organisationId}/documents/{documentId}/versions/{versionId}/download": {
       "get": {
         "operationId": "Documents_download",
@@ -1707,6 +2249,541 @@
             "cookie": []
           }
         ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/document-folders": {
+      "post": {
+        "operationId": "Folders_create",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentFolder"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Documents"
+        ],
+        "x-required-permissions": [
+          "document:upload"
+        ],
+        "summary": "Create a folder (company or organisation level)",
+        "description": "**Requires permission:** `document:upload`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFolderRequest"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "Folders_list",
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "parentId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Folders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentFolderList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Documents"
+        ],
+        "x-required-permissions": [
+          "document:read"
+        ],
+        "summary": "List folders",
+        "description": "**Requires permission:** `document:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/document-folders/{folderId}": {
+      "get": {
+        "operationId": "Folders_get",
+        "parameters": [
+          {
+            "name": "folderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Folder",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentFolder"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Documents"
+        ],
+        "x-required-permissions": [
+          "document:read"
+        ],
+        "summary": "Get a folder",
+        "description": "**Requires permission:** `document:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "Folders_update",
+        "parameters": [
+          {
+            "name": "folderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentFolder"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Documents"
+        ],
+        "x-required-permissions": [
+          "document:upload"
+        ],
+        "summary": "Rename or move a folder within its company",
+        "description": "**Requires permission:** `document:upload`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFolderRequest"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "Folders_remove",
+        "parameters": [
+          {
+            "name": "folderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Documents"
+        ],
+        "x-required-permissions": [
+          "document:archive"
+        ],
+        "summary": "Delete an empty folder",
+        "description": "**Requires permission:** `document:archive`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/evidence-links": {
+      "post": {
+        "operationId": "Evidence_create",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceLink"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Evidence"
+        ],
+        "x-required-permissions": [
+          "evidence:manage"
+        ],
+        "summary": "Link two entities of the same company (both must be visible to the caller); links are immutable",
+        "description": "**Requires permission:** `evidence:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEvidenceLinkRequest"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "Evidence_list",
+        "parameters": [
+          {
+            "name": "entityType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "document",
+                "document_version",
+                "task",
+                "workflow_instance",
+                "ai_proposal",
+                "contact",
+                "company",
+                "accounting_period"
+              ]
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "out",
+                "in",
+                "both"
+              ],
+              "default": "both"
+            }
+          },
+          {
+            "name": "includeRevoked",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Links",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceLinkList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Evidence"
+        ],
+        "x-required-permissions": [
+          "evidence:read"
+        ],
+        "summary": "Links of one entity (links to entities the caller cannot see are omitted)",
+        "description": "**Requires permission:** `evidence:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/evidence-links/{linkId}/revoke": {
+      "post": {
+        "operationId": "Evidence_revoke",
+        "parameters": [
+          {
+            "name": "linkId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revoked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceLink"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Evidence"
+        ],
+        "x-required-permissions": [
+          "evidence:manage"
+        ],
+        "summary": "Revoke a link (recorded with who and why; never deleted)",
+        "description": "**Requires permission:** `evidence:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokeEvidenceLinkRequest"
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/organisations/{organisationId}/jobs": {
@@ -7325,6 +8402,9 @@
       "name": "Documents"
     },
     {
+      "name": "Evidence"
+    },
+    {
       "name": "Jobs"
     },
     {
@@ -7582,6 +8662,77 @@
           "legalHold": {
             "type": "boolean"
           },
+          "retainUntil": {
+            "type": "string",
+            "nullable": true
+          },
+          "folderId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "periodId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "documentDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "reference": {
+            "type": "string",
+            "nullable": true
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            }
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "STANDARD",
+              "RESTRICTED"
+            ],
+            "description": "RESTRICTED: visible to the creator, explicit grants and document:confidential holders; everyone else gets 404"
+          },
+          "evidenceLockedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Set once the document is locked as immutable filing evidence (irreversible)"
+          },
+          "evidenceVersionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "evidenceSha256": {
+            "type": "string",
+            "nullable": true
+          },
           "versions": {
             "type": "array",
             "items": {
@@ -7648,7 +8799,19 @@
           "companyId",
           "documentClass",
           "status",
-          "legalHold"
+          "legalHold",
+          "retainUntil",
+          "folderId",
+          "periodId",
+          "description",
+          "documentDate",
+          "reference",
+          "labels",
+          "metadata",
+          "visibility",
+          "evidenceLockedAt",
+          "evidenceVersionId",
+          "evidenceSha256"
         ],
         "additionalProperties": false
       },
@@ -7739,6 +8902,77 @@
               "legalHold": {
                 "type": "boolean"
               },
+              "retainUntil": {
+                "type": "string",
+                "nullable": true
+              },
+              "folderId": {
+                "type": "string",
+                "format": "uuid",
+                "nullable": true
+              },
+              "periodId": {
+                "type": "string",
+                "format": "uuid",
+                "nullable": true
+              },
+              "description": {
+                "type": "string",
+                "nullable": true
+              },
+              "documentDate": {
+                "type": "string",
+                "nullable": true
+              },
+              "reference": {
+                "type": "string",
+                "nullable": true
+              },
+              "labels": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "metadata": {
+                "type": "object",
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                }
+              },
+              "visibility": {
+                "type": "string",
+                "enum": [
+                  "STANDARD",
+                  "RESTRICTED"
+                ],
+                "description": "RESTRICTED: visible to the creator, explicit grants and document:confidential holders; everyone else gets 404"
+              },
+              "evidenceLockedAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true,
+                "description": "Set once the document is locked as immutable filing evidence (irreversible)"
+              },
+              "evidenceVersionId": {
+                "type": "string",
+                "format": "uuid",
+                "nullable": true
+              },
+              "evidenceSha256": {
+                "type": "string",
+                "nullable": true
+              },
               "versions": {
                 "type": "array",
                 "items": {
@@ -7805,7 +9039,19 @@
               "companyId",
               "documentClass",
               "status",
-              "legalHold"
+              "legalHold",
+              "retainUntil",
+              "folderId",
+              "periodId",
+              "description",
+              "documentDate",
+              "reference",
+              "labels",
+              "metadata",
+              "visibility",
+              "evidenceLockedAt",
+              "evidenceVersionId",
+              "evidenceSha256"
             ],
             "additionalProperties": false
           },
@@ -7908,6 +9154,260 @@
           "document",
           "version",
           "upload"
+        ],
+        "additionalProperties": false
+      },
+      "DocumentFolder": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "parentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "parentId",
+          "name",
+          "createdByUserId",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "EvidenceLink": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "sourceType": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetType": {
+            "type": "string"
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "SUPPORTS",
+              "DERIVED_FROM",
+              "ATTACHED_TO",
+              "REFERENCES",
+              "FILED_AS"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revokedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "revokedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "revokedReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "out",
+              "in"
+            ],
+            "description": "Only in list responses: relative to the queried entity"
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "sourceType",
+          "sourceId",
+          "targetType",
+          "targetId",
+          "kind",
+          "note",
+          "createdByUserId",
+          "createdAt",
+          "revokedAt",
+          "revokedByUserId",
+          "revokedReason"
+        ],
+        "additionalProperties": false
+      },
+      "DocumentExtraction": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "documentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "documentVersionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "engineVersion": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "RUNNING",
+              "SUCCEEDED",
+              "FAILED",
+              "SKIPPED"
+            ]
+          },
+          "charCount": {
+            "type": "integer",
+            "nullable": true
+          },
+          "pageCount": {
+            "type": "integer",
+            "nullable": true
+          },
+          "confidence": {
+            "type": "string",
+            "nullable": true,
+            "description": "0..1 as a decimal string"
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          },
+          "text": {
+            "type": "string",
+            "description": "Only with ?text=true"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "documentId",
+          "documentVersionId",
+          "provider",
+          "engineVersion",
+          "status",
+          "charCount",
+          "pageCount",
+          "confidence",
+          "language",
+          "truncated",
+          "error",
+          "createdAt",
+          "completedAt"
+        ],
+        "additionalProperties": false
+      },
+      "DocumentAccessGrant": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "documentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "grantedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "documentId",
+          "userId",
+          "grantedByUserId",
+          "createdAt"
         ],
         "additionalProperties": false
       },
@@ -9598,6 +11098,77 @@
                 "legalHold": {
                   "type": "boolean"
                 },
+                "retainUntil": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "folderId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "periodId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "description": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "documentDate": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "reference": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "labels": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "metadata": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "boolean"
+                      }
+                    ]
+                  }
+                },
+                "visibility": {
+                  "type": "string",
+                  "enum": [
+                    "STANDARD",
+                    "RESTRICTED"
+                  ],
+                  "description": "RESTRICTED: visible to the creator, explicit grants and document:confidential holders; everyone else gets 404"
+                },
+                "evidenceLockedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true,
+                  "description": "Set once the document is locked as immutable filing evidence (irreversible)"
+                },
+                "evidenceVersionId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "evidenceSha256": {
+                  "type": "string",
+                  "nullable": true
+                },
                 "versions": {
                   "type": "array",
                   "items": {
@@ -9664,7 +11235,19 @@
                 "companyId",
                 "documentClass",
                 "status",
-                "legalHold"
+                "legalHold",
+                "retainUntil",
+                "folderId",
+                "periodId",
+                "description",
+                "documentDate",
+                "reference",
+                "labels",
+                "metadata",
+                "visibility",
+                "evidenceLockedAt",
+                "evidenceVersionId",
+                "evidenceSha256"
               ],
               "additionalProperties": false
             }
@@ -11217,6 +12800,308 @@
         ],
         "additionalProperties": false
       },
+      "DocumentFolderList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "parentId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "name": {
+                  "type": "string"
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "parentId",
+                "name",
+                "createdByUserId",
+                "createdAt",
+                "updatedAt"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "EvidenceLinkList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "sourceType": {
+                  "type": "string"
+                },
+                "sourceId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "targetType": {
+                  "type": "string"
+                },
+                "targetId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "SUPPORTS",
+                    "DERIVED_FROM",
+                    "ATTACHED_TO",
+                    "REFERENCES",
+                    "FILED_AS"
+                  ]
+                },
+                "note": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "revokedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "revokedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "revokedReason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "out",
+                    "in"
+                  ],
+                  "description": "Only in list responses: relative to the queried entity"
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "sourceType",
+                "sourceId",
+                "targetType",
+                "targetId",
+                "kind",
+                "note",
+                "createdByUserId",
+                "createdAt",
+                "revokedAt",
+                "revokedByUserId",
+                "revokedReason"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "DocumentExtractionList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "documentId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "documentVersionId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "engineVersion": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "PENDING",
+                    "RUNNING",
+                    "SUCCEEDED",
+                    "FAILED",
+                    "SKIPPED"
+                  ]
+                },
+                "charCount": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "pageCount": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "confidence": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "0..1 as a decimal string"
+                },
+                "language": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "truncated": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "text": {
+                  "type": "string",
+                  "description": "Only with ?text=true"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "completedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "documentId",
+                "documentVersionId",
+                "provider",
+                "engineVersion",
+                "status",
+                "charCount",
+                "pageCount",
+                "confidence",
+                "language",
+                "truncated",
+                "error",
+                "createdAt",
+                "completedAt"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "DocumentAccessList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "documentId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "userId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "grantedByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "documentId",
+                "userId",
+                "grantedByUserId",
+                "createdAt"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
       "InvitationList": {
         "type": "object",
         "properties": {
@@ -11611,7 +13496,11 @@
                 "workflow:review",
                 "workflow:approve",
                 "contact:read",
-                "contact:manage"
+                "contact:manage",
+                "document:confidential",
+                "evidence:lock",
+                "evidence:read",
+                "evidence:manage"
               ]
             },
             "minItems": 1
@@ -11886,12 +13775,182 @@
             "type": "string",
             "maxLength": 60,
             "default": "GENERAL"
+          },
+          "folderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "periodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "documentDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "reference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "maxItems": 10
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            }
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "STANDARD",
+              "RESTRICTED"
+            ],
+            "default": "STANDARD"
           }
         },
         "required": [
           "name",
           "contentType",
           "sizeBytes"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateDocumentRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "documentClass": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "folderId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "periodId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "nullable": true
+          },
+          "documentDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "reference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "nullable": true
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "maxItems": 10
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            }
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "STANDARD",
+              "RESTRICTED"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "additionalProperties": false
+      },
+      "GrantDocumentAccessRequest": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "userId"
+        ],
+        "additionalProperties": false
+      },
+      "EvidenceLockRequest": {
+        "type": "object",
+        "properties": {
+          "versionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "retainUntil": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          }
+        },
+        "required": [
+          "versionId",
+          "reason"
         ],
         "additionalProperties": false
       },
@@ -11923,6 +13982,120 @@
         "required": [
           "contentType",
           "sizeBytes"
+        ],
+        "additionalProperties": false
+      },
+      "CreateFolderRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "parentId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateFolderRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "parentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateEvidenceLinkRequest": {
+        "type": "object",
+        "properties": {
+          "sourceType": {
+            "type": "string",
+            "enum": [
+              "document",
+              "document_version",
+              "task",
+              "workflow_instance",
+              "ai_proposal",
+              "contact",
+              "company",
+              "accounting_period"
+            ]
+          },
+          "sourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetType": {
+            "type": "string",
+            "enum": [
+              "document",
+              "document_version",
+              "task",
+              "workflow_instance",
+              "ai_proposal",
+              "contact",
+              "company",
+              "accounting_period"
+            ]
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "SUPPORTS",
+              "DERIVED_FROM",
+              "ATTACHED_TO",
+              "REFERENCES",
+              "FILED_AS"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "sourceType",
+          "sourceId",
+          "targetType",
+          "targetId",
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      "RevokeEvidenceLinkRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "reason"
         ],
         "additionalProperties": false
       },

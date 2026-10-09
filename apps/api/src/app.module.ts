@@ -17,6 +17,10 @@ import { CompaniesController } from './companies/companies.controller';
 import { CompaniesService } from './companies/companies.service';
 import { DocumentsController } from './documents/documents.controller';
 import { DocumentsService } from './documents/documents.service';
+import { EvidenceController } from './evidence/evidence.controller';
+import { EvidenceService } from './evidence/evidence.service';
+import { FoldersController } from './documents/folders.controller';
+import { FoldersService } from './documents/folders.service';
 import { AiController } from './ai/ai.controller';
 import { IntegrationsController } from './integrations/integrations.controller';
 import { NotificationsController } from './notifications/notifications.controller';
@@ -36,10 +40,10 @@ export class AppModule {
     return {
       module: AppModule,
       imports: [InfraModule.forRoot(config), AuditModule, AuthModule],
-      controllers: [HealthController, OrganisationsController, CompaniesController, DocumentsController, JobsController,
+      controllers: [HealthController, OrganisationsController, CompaniesController, DocumentsController, FoldersController, EvidenceController, JobsController,
         TasksController, PracticesController, FeatureFlagsController, MasterDataController, ReferenceController, WorkflowsController, NotificationsController, IntegrationsController, AiController],
       providers: [
-        OrganisationsService, PracticesService, MasterDataService, CompaniesService, DocumentsService, TasksService,
+        OrganisationsService, PracticesService, MasterDataService, CompaniesService, DocumentsService, FoldersService, EvidenceService, TasksService,
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_GUARD, useClass: OrgGuard },
         { provide: APP_GUARD, useClass: FeatureGuard },

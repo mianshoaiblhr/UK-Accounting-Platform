@@ -3,13 +3,13 @@ import { FieldEncryption, createLogger, type AppConfig, type Logger } from '@uk/
 import { Database } from '@uk/db';
 import { JobProducer, JobRuntime } from '@uk/jobs';
 import { parseFeatureDefaults } from '@uk/contracts';
-import { AiGateway, AiProposalService, EventBus, FeatureFlagService, IntegrationService, NotificationService, OutboxRelay, TaskReminderSweeper, WorkflowEngine, WorkflowRegistry, createAiProviders, createIntegrationRegistry, dispatchViaJobs, type AiProvider } from '@uk/platform';
+import { AiGateway, AiProposalService, EventBus, FeatureFlagService, IntegrationService, NotificationService, OutboxRelay, TaskReminderSweeper, WorkflowEngine, WorkflowRegistry, createAiProviders, createIntegrationRegistry, createOcrProvider, dispatchViaJobs, type AiProvider, type OcrProvider } from '@uk/platform';
 import { registerAi, registerConsumers, registerEventDispatch, registerIntegrations } from './handlers/platform';
 import { registerDocument } from './handlers/document';
 import { registerEcho } from './handlers/echo';
 import { registerEmail } from './handlers/email';
 
-export interface WorkerHandle { stop(): Promise<void>; runtime: JobRuntime; producer: JobProducer; db: Database; relay: OutboxRelay; reminders: TaskReminderSweeper; bus: EventBus; aiProviders: AiProvider[] }
+export interface WorkerHandle { stop(): Promise<void>; runtime: JobRuntime; producer: JobProducer; db: Database; relay: OutboxRelay; reminders: TaskReminderSweeper; ocr?: OcrProvider; bus: EventBus; aiProviders: AiProvider[] }
 
 /** Builds and starts the worker; also used by integration tests. */
 export function startWorker(config: AppConfig, logger: Logger = createLogger(config.LOG_LEVEL, 'worker')): WorkerHandle {
@@ -19,7 +19,6 @@ export function startWorker(config: AppConfig, logger: Logger = createLogger(con
   const runtime = new JobRuntime(db, config.REDIS_URL, crypto, producer, logger, config.WORKER_CONCURRENCY);
 
   registerEmail(runtime, createEmail(config, logger));
-  registerDocument(runtime, { db, storage: createStorage(config), av: createAntivirus(config) });
   registerEcho(runtime);
 
   // Platform foundations: outbox relay -> events queue -> idempotent consumers; AI proposals; integrations
@@ -29,6 +28,8 @@ export function startWorker(config: AppConfig, logger: Logger = createLogger(con
   registerEventDispatch(runtime, bus);
   const aiProviders = createAiProviders(config);
   const features = new FeatureFlagService(db, parseFeatureDefaults(config.FEATURE_FLAG_DEFAULTS), { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA, ttlMs: config.FEATURE_FLAG_CACHE_MS });
+  const ocr = createOcrProvider(config);
+  registerDocument(runtime, { db, storage: createStorage(config), av: createAntivirus(config), features, jobs: producer, ocr });
   registerAi(runtime, { features, db, gateway: new AiGateway(aiProviders, logger, db), proposals: new AiProposalService(new WorkflowEngine(new WorkflowRegistry(), { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA })) });
   registerIntegrations(runtime, { db, service: new IntegrationService(createIntegrationRegistry(config), crypto) });
   runtime.start();
@@ -54,7 +55,7 @@ export function startWorker(config: AppConfig, logger: Logger = createLogger(con
   sweeper.unref();
 
   return {
-    runtime, producer, db, relay, reminders, bus, aiProviders,
+    runtime, producer, db, relay, reminders, ocr, bus, aiProviders,
     async stop() {
       clearInterval(sweeper);
       clearInterval(relayLoop);

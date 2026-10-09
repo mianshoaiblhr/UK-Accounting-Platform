@@ -140,4 +140,13 @@ describe('database access paths that carry security meaning', () => {
   it('no raw SQL built from strings anywhere in the runtime code (Prisma tagged templates only)', () => {
     expect(SRC.filter((f) => /\$(queryRawUnsafe|executeRawUnsafe)\b/.test(read(f))).map(rel)).toEqual([]);
   });
+  it('documents are read only where per-document visibility is applied (ADR-32)', () => {
+    const READ = /\.document\.(findUnique|findUniqueOrThrow|findFirst|findMany)\b/;
+    expect(SRC.filter((f) => READ.test(read(f))).map(rel).sort()).toEqual([
+      'apps/api/src/documents/documents.service.ts', // getDocument()/list() apply visibility
+      'apps/api/src/evidence/evidence.service.ts', // resolver applies canReadDocument
+      'apps/api/src/tasks/tasks.service.ts',       // readableDocument()/listAttachments() apply canReadDocument
+      'packages/platform/src/workflow.ts',         // evidence check uses Actor.canReadDocument
+    ]);
+  });
 });

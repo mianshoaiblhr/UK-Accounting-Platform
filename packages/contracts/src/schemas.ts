@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { isValidYearEnd } from './financial-year';
 import { passwordSchema } from '@uk/core';
 import { PERMISSIONS } from './permissions';
+import { DOCUMENT_VISIBILITY, documentMetadataSchema } from './documents';
 
 const email = z.string().trim().toLowerCase().email().max(254);
 
@@ -98,6 +99,11 @@ export const createDocumentSchema = z.object({
   contentType: z.string().regex(/^[\w.+-]+\/[\w.+-]+$/).max(120),
   sizeBytes: z.number().int().positive(),
   documentClass: z.string().max(60).default('GENERAL'),
+  folderId: z.string().uuid().optional(), periodId: z.string().uuid().optional(),
+  description: z.string().trim().max(2000).optional(), documentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((s) => !Number.isNaN(Date.parse(s)), 'Invalid date').optional(),
+  reference: z.string().trim().min(1).max(120).optional(),
+  labels: z.array(z.string().trim().min(1).max(40)).max(10).transform((a) => [...new Set(a)]).optional(),
+  metadata: documentMetadataSchema.optional(), visibility: z.enum(DOCUMENT_VISIBILITY).default('STANDARD'),
 }).strict();
 export const newVersionSchema = createDocumentSchema.pick({ contentType: true, sizeBytes: true }).strict();
 

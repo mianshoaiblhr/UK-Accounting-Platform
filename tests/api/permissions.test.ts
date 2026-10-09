@@ -54,6 +54,10 @@ probes.push(
   { name: 'update practice', perm: 'practice:manage', run: call('patch', `/practices/${GHOST}`, { name: 'x' }) },
   { name: 'grant practice role', perm: 'practice:member:manage', run: (u) => s.api().put(orgPath(owner, `/practices/${GHOST}/members/${GHOST}`)).set(bearer(u.token)).send({ roleId: GHOST }).then((r) => r.status) },
   { name: 'list company access', perm: 'company:access:manage', run: (u) => call('get', `/companies/${company.id}/access`)(u) },
+  { name: 'list restricted-document access', perm: 'document:confidential', run: call('get', `/documents/${GHOST}/access`) },
+  { name: 'list evidence links', perm: 'evidence:read', run: call('get', `/evidence-links?entityType=document&entityId=${GHOST}`) },
+  { name: 'create evidence link', perm: 'evidence:manage', run: call('post', '/evidence-links', { sourceType: 'document', sourceId: GHOST, targetType: 'task', targetId: GHOST, kind: 'SUPPORTS' }) },
+  { name: 'lock filing evidence', perm: 'evidence:lock', run: call('post', `/documents/${GHOST}/evidence-lock`, { versionId: GHOST, reason: 'probe' }) },
 );
 probes.find((p) => p.name === 'create company')!.run = (u) => call('post', '/companies', { name: `Perm ${Math.random()}` })(u);
 probes.push({ name: 'create period', perm: 'period:manage', run: (u) => call('post', `/companies/${company.id}/periods`, { startDate: `${2000 + Math.floor(Math.random() * 90)}-01-01`, endDate: `${2000 + Math.floor(Math.random() * 90)}-12-31` })(u) });

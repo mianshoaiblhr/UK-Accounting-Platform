@@ -39,6 +39,11 @@ export const JobTypes = {
     retry: { attempts: 4, backoffMs: 5_000 },
     schema: z.object({ documentVersionId: z.string().uuid() }),
   }),
+  documentOcr: defineJob({
+    type: 'document.ocr', queue: 'documents',
+    retry: { attempts: 3, backoffMs: 10_000 },
+    schema: z.object({ documentVersionId: z.string().uuid() }),
+  }),
   eventDispatch: defineJob({
     type: 'event.dispatch', queue: 'events',
     retry: { attempts: 8, backoffMs: 2_000 },
