@@ -1,6 +1,6 @@
 # One Dockerfile, four runtime targets:  --target api | worker | web | migrate
 # Runtime images carry the built workspace (simple and robust for V0; slimming via pnpm deploy is a later optimisation).
-FROM node:22-slim AS build
+FROM node:25-slim AS build
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH
 RUN corepack enable && apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates python3 make g++ && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
@@ -11,7 +11,7 @@ ARG API_INTERNAL_URL=http://api.uk-acc-prod.internal:4000
 ENV API_INTERNAL_URL=$API_INTERNAL_URL
 RUN pnpm -r build
 
-FROM node:22-slim AS runtime
+FROM node:25-slim AS runtime
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH NODE_ENV=production
 # Security: pick up patched OS packages (the base image lags behind Debian security fixes) and remove npm - the runtime never
 # runs it, and its bundled dependencies are a recurring source of image-scan findings. Everything starts with `node` directly.
