@@ -1,22 +1,15 @@
 # V0 open-requirements decision register
 
-Generated with the compliance matrix (same data). Verified code commit a57ebb3.
+Generated with the compliance matrix (same data). Verified code commit 3b754e7.
 
 ## 10. Open-requirements decision register
 Effort scale: S <= 2 days, M 3-5 days, L 1-2 weeks, XL > 2 weeks (one engineer, including tests and docs). "Blocks V1 / production" is my recommendation, not a fact: you decide. Items marked *Proposal S1..S7* are **scope changes outside the eight approved items** and are implemented only if you approve them (section 11).
 
-### MUST FIX BEFORE V1 (6)
+### MUST FIX BEFORE V1 (0)
 
-| ID | Spec reference | Status | Risk and impact | Blocks V1 | Blocks production | Recommended action | Effort | Dependencies | Milestone |
-|---|---|---|---|---|---|---|---|---|---|
-| **V0-4.7** | V0 §4 | MISSING | Medium — compliance calendar (V7) and escalation need deadlines. | Yes (recommended) | Yes | Add `due_at` (and optional SLA hours per definition) to workflow instances, overdue filter, `workflows_overdue` gauge and a one-time overdue notification to the assignee (same sweeper pattern as task reminders). Additive migration, no behaviour change for existing workflows. | S (2 d) | None (workflow engine exists) | Pre-V1 gate |
-| **V0-7.3** | V0 §7 | PARTIALLY IMPLEMENTED | Low–Medium — retrofitting channels later touches every notifier. | Yes (recommended) | No | Introduce a NotificationChannel port (in-app, e-mail implemented; SMS/WhatsApp as disabled, documented stubs), a channel registry and per-user channel preferences; route NotificationService through it. Today: two unrelated code paths and five call sites. | S-M (3 d) | None | Pre-V1 gate |
-| **V0-9.4** | V0 Core Tables + Tests | PARTIALLY IMPLEMENTED | Medium — a listed V0 test is only covered generically. | Yes (recommended) | No | Add the listed V0 test: an integration call that fails transiently, is retried with backoff and then succeeds (flaky adapter in the test registry). Record in an ADR that `job_record` (now with company and trace ids) is the integration job table, not a separate `integration_jobs`. | S (1 d) | Injectable test adapter | Pre-V1 gate |
-| **V0-S8** | V0 Security | PARTIALLY IMPLEMENTED | Medium — unbounded table growth; UK GDPR storage-limitation and statutory record retention both need explicit policy. | Partly: classification only | Yes | Split: (a) before V1 - a retention policy table and per-category retention years (document types, audit, job/outbox records) so ledger data created by V1 is classified from day one; (b) before production - scheduled purge jobs for operational tables (job_record, idempotency_record, expired sessions/tokens, notifications) and erasure-vs-retention rules. Outbox cleanup, legal hold and evidence retention dates already exist. | L (7-8 d), split S + M/L | Document types (done), V0-8.3 decision | Pre-V1 gate (policy + classification), Tranche B (parallel with V1, before first production release) (purge jobs) |
-| **V0-TEST-6** | V0 Tests | PARTIALLY IMPLEMENTED | Medium | Yes (recommended) | No | Delivered together with V0-9.4. | Included in V0-9.4 | V0-9.4 | Pre-V1 gate |
-| **XP-10** | Cross-Platform §10 | PARTIALLY IMPLEMENTED | Medium | Partly (same split as V0-S8) | Yes | Delivered together with V0-S8: configurable retention by category (policy table + purge). | Included in V0-S8 | V0-S8 | Pre-V1 gate / Tranche B (parallel with V1, before first production release) |
+_none_
 
-### MUST FIX BEFORE PRODUCTION (25)
+### MUST FIX BEFORE PRODUCTION (27)
 
 | ID | Spec reference | Status | Risk and impact | Blocks V1 | Blocks production | Recommended action | Effort | Dependencies | Milestone |
 |---|---|---|---|---|---|---|---|---|---|
@@ -33,6 +26,8 @@ Effort scale: S <= 2 days, M 3-5 days, L 1-2 weeks, XL > 2 weeks (one engineer, 
 | **V0-S4** | V0 Security | PARTIALLY IMPLEMENTED | Low–Medium — IAM unreviewed in a real account. | No | Yes | Review IAM in a real account; use separate database credentials for API and worker; enable `pgaudit`; add connection-level alerting. (Database-level least privilege - append-only privileges, role owns nothing - is tested.) | M (3 d) | First apply | Production gate (Tranche C, real AWS) |
 | **V0-S6** | V0 Security | PARTIALLY IMPLEMENTED | High — see MAN-TECH-09. | No | Yes | See MAN-TECH-09. | Included in MAN-TECH-09 | MAN-TECH-09 | Production gate (Tranche C, real AWS) |
 | **V0-S7** | V0 Security | PARTIALLY IMPLEMENTED | High — documented ≠ recoverable. Documents (the evidence base) have versioning/Object Lock but no DR copy. | No | Yes | Include S3 in AWS Backup / replication, back up Redis if queues must survive, drill a full restore. | M (3-4 d) | First apply | Production gate (Tranche C, real AWS) |
+| **V0-S8** | V0 Security | PARTIALLY IMPLEMENTED | Medium - unbounded growth of operational tables until the purge work (S4(b)) exists; UK GDPR storage-limitation needs the confirmed policy | No (classification delivered) | Yes | Scheduled purge jobs for operational tables (job_record, idempotency_record, expired sessions/tokens, notifications), a runtime-configurable policy and erasure-versus-retention rules, after the periods in the (delivered) classification are confirmed by the DPO/legal. | M-L (5 d) | DPO/legal decision on periods and lawful basis (V0-8.3); classification (S4(a)) is delivered | Tranche B (parallel with V1, before first production release) (before first production release) |
+| **XP-10** | Cross-Platform §10 | PARTIALLY IMPLEMENTED | Medium - classification exists, enforcement does not | No (classification delivered) | Yes | Delivered together with V0-S8 (b): runtime-configurable retention by category and its enforcement. | Included in V0-S8 (b) | V0-S8 | Tranche B (parallel with V1, before first production release) |
 | **XP-11** | Cross-Platform §11 | PARTIALLY IMPLEMENTED | Medium — unverified compliance; legal exposure for public-facing client portal later. | No | Yes | Add automated accessibility checks (axe) to the e2e suite for every UI slice; keyboard and contrast review. | M (with the UI slices) | MAN-DOD-05 | Tranche B (parallel with V1, before first production release) |
 | **XP-12** | Cross-Platform §12 | PARTIALLY IMPLEMENTED | Medium — 'feels immediate' is untested. | No | Yes | Define SLOs, add k6 smoke/load tests for the heavy paths (upload, import/export, report), expose job progress in the UI. | M (4 d) | Staging environment, SLO definitions | Tranche B (parallel with V1, before first production release) |
 | **OBS-04** | Manifest › Observability | MISSING | Medium | No | Yes | OpenTelemetry SDK + ADOT collector replacing the metrics renderers' transport; spans for HTTP, database, queue and job execution. Trace-id propagation API -> job -> worker already exists. | M (4 d) | ADOT collector in ECS (Terraform) | Tranche B (parallel with V1, before first production release) |
@@ -69,16 +64,18 @@ Effort scale: S <= 2 days, M 3-5 days, L 1-2 weeks, XL > 2 weeks (one engineer, 
 | **XP-01** | Cross-Platform §1 | NOT APPLICABLE | None for V0 (see XP-06 for the foundation) | No | No | The evidence graph (XP-06, delivered) is the V0 foundation for drill-down. | n/a | V1+ | V1+ |
 | **XP-13** | Cross-Platform §13–14 | NOT APPLICABLE | None for V0 | No | No | Mobile-first portal is V7. | n/a | V7 | V7 |
 
-## 11. Scope changes proposed for your approval (nothing here is implemented)
+## 11. Scope proposals - status
 
-| # | Proposal | Effort | Proposed milestone | Notes |
+S1, S2, S4(a) and S6 were approved and are delivered (below). S3, S4(b), S5 and S7 remain proposals: **nothing in them is implemented** and each needs your approval.
+
+| # | Proposal | Effort | Status / proposed milestone | Notes |
 |---|---|---|---|---|
-| S1 | Workflow deadlines / SLA (V0-4.7) | S (2 d) | Before V1 | Additive; migration + sweeper reusing the task-reminder pattern |
-| S2 | Notification channel port + preferences (V0-7.3) | S-M (3 d) | Before V1 | Refactors NotificationService behind a port; five call sites |
+| S1 | Workflow deadlines / SLA (V0-4.7) | S (2 d) | DELIVERED (approved) | Migration 20260105000000, ADR-37, tests/platform/workflow-overdue.test.ts, tests/api/workflow-deadlines.test.ts |
+| S2 | Notification channel port + preferences (V0-7.3) | S-M (3 d) | DELIVERED (approved) | Migration 20260105000100, ADR-38, tests/platform/notification-channels.test.ts, tests/api/notification-preferences.test.ts |
 | S3 | Device identity, new-device alert, admin session kill-switch (V0-1.9) | M (4 d) | Tranche B / V7 | Needs S2 for the alert |
-| S4 | Retention: (a) policy table + per-category classification; (b) purge jobs + erasure rules (V0-S8, XP-10) | S-M (2-3 d) + M-L (5 d) | (a) before V1, (b) before production | Needs your decision on retention periods and the lawful basis (V0-8.3) |
+| S4 | Retention: (a) policy table + per-category classification; (b) purge jobs + erasure rules (V0-S8, XP-10) | S-M (2-3 d) + M-L (5 d) | (a) DELIVERED (approved); (b) before production, NOT approved | (a) migration 20260105000200, ADR-39, tests/db/retention.test.ts. (b) needs your decision on retention periods and the lawful basis (V0-8.3) |
 | S5 | UI slices for V0 foundations (MAN-DOD-05, XP-11) | XL (3-4 w) | Tranche B, in parallel with V1 under feature flags - or hold V1 | Needs your decision: API-first V1 or UI-first |
-| S6 | Integration retry test + ADR 'job_record is the integration job table' (V0-9.4, V0-TEST-6) | S (1 d) | Before V1 | Test infrastructure only |
+| S6 | Integration retry test + ADR 'job_record is the integration job table' (V0-9.4, V0-TEST-6) | S (1 d) | DELIVERED (approved) | ADR-36, tests/jobs/integration-retry.test.ts |
 | S7 | EmbeddingProvider / SearchProvider ports with fakes (V0-10.3) | S (1-2 d) | Optional now; otherwise V6 | Pure abstraction; lets V0 section 10 be marked complete |
 
-Recommended pre-V1 bundle: **S1 + S2 + S4(a) + S6 = about 8-9 engineer-days.** S3, S4(b), S5 and S7 are not required to start V1. Production-gate work (real AWS) is a separate backlog, not a scope change.
+S3, S4(b), S5 and S7 are not required to start V1. Production-gate work (real AWS) is a separate backlog, not a scope change.

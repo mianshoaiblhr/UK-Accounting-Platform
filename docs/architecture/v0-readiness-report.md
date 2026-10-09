@@ -1,19 +1,18 @@
-# V0 readiness report (final review gate)
+# V0 readiness report (final review gate, after the pre-V1 bundle)
 
-**Recommendation: NOT READY FOR V1 - as the open-requirements register stands.** Six rows (four distinct pieces of work, about 8-9 engineer-days) are classified MUST FIX BEFORE V1 and need your approval or your written waiver. Everything else open is a production-gate item or belongs to a later version. No Critical finding exists; the code that is there is verified. V1 has not been started and will not be until you approve.
+**Recommendation: V0 IS READY FOR V1 - subject to your explicit approval.** The approved pre-V1 bundle (S1 workflow deadlines, S2 notification channel port, S4(a) retention classification, S6 integration retry test) is implemented and verified, no row is left MUST FIX BEFORE V1, and every test and CI job passed on the final code commit. V1 has not been started and will not be until you approve this report.
 
 ## 1. Verified commit and results
 | Item | Result |
 |---|---|
-| Verified code commit | `a57ebb3fc678789f83fda6af0c8ebe6adcdef999` (branch `claude/adoring-cori-mra6ze`). Later commits change documentation only; their own CI result is reported in the hand-over message |
-| CI run (all jobs) | <https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/37901071296> - **success** |
-| CodeQL | <https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/37901071300> - **success** |
-| Clean-clone verification | fresh `git clone` of the commit; `pnpm install --frozen-lockfile`, `pnpm build`, `pnpm typecheck`, `pnpm lint`: exit 0; `pnpm test`: **51 files, 956 tests passed, 0 failed, 0 skipped**; `pnpm test:e2e`: **4/4 passed** (real Chromium); `pnpm openapi`: no drift in `docs/api/openapi.json` |
-| Dependency audit (local) | `pnpm audit --prod --audit-level=high`: no known vulnerabilities |
-| Migrations from scratch | all 16 migrations applied to an empty database with the production script `infra/db/migrate.sh` in the CI job `migrations-from-scratch`, and by the test suites' global setup on every run; an earlier local run of the script (12 migrations at the time) left 0 unfinished; populated-database upgrades as a non-superuser owner are tested (`tests/db/upgrade.test.ts`, 6) |
-| Terraform | `fmt -check` local and CI; `init -backend=false` and `validate` in CI (including `observability.tf`). Local `validate` is impossible in this sandbox (provider registry blocked). **Nothing has been planned or applied** |
+| Verified code commit | `3b754e7` (branch `claude/adoring-cori-mra6ze`). Later commits change documentation only; their own CI result is in the hand-over message |
+| CI run (all jobs) | <https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/37913579987> - **success**, 9 of 9 jobs |
+| CodeQL | <https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/37913579949> - **success** |
+| Clean-clone verification | fresh `git clone` of `3b754e7`; `pnpm install --frozen-lockfile`, `pnpm build`, `pnpm typecheck`, `pnpm lint`: exit 0; `pnpm test`: **59 files, 1034 tests passed, 0 failed, 0 skipped** (was 51 / 956); `pnpm test:e2e`: **4/4 passed** (real Chromium); `pnpm openapi`: no drift |
+| Migrations from scratch | all 19 migrations applied to an empty database by the CI job `migrations-from-scratch` and by the suites' global setup on every run; the populated-database upgrade as a non-superuser owner (`tests/db/upgrade.test.ts`) now also covers the retention classification of a carried-over legacy document type |
+| Terraform | `fmt -check` local and CI; `init -backend=false` and `validate` in CI. Nothing planned or applied |
 
-### CI jobs on `a57ebb3`
+### CI jobs on `3b754e7`
 | Job | Result |
 |---|---|
 | build, lint, typecheck, unit, integration, e2e | success |
@@ -23,23 +22,21 @@
 | terraform (fmt, init, validate) | success |
 | images (api), (worker), (web), (migrate) - build + Trivy HIGH/CRITICAL gate | success x4 |
 | codeql | success |
-(`dependency-review` runs on pull requests only.)
 
-### CI history during this phase (for the record)
-* `7bc2ad5` pushed with a **type error in a new test file** (I had checked typecheck through a pipe that hid the exit code); fixed in `048b6bf`, which was fully green.
-* `9bb10ff` **failed CI**: my evidence-graph integrity test wrongly flagged organisation-level documents cited as evidence for a company workflow. Reproduced in a clean clone, fixed in `0a69b86`.
-* The full local suite on `0a69b86` failed one **existing** test (the `/readyz` response contract); fixed in `a57ebb3`, which was the head of that push, so `0a69b86` itself never ran in CI.
-* `a1d9a15` (documentation only, code identical to `a57ebb3`) **failed the real-browser E2E step in CI** (test 4 timed out after sign-in) although the same code had passed in CI and in four clean clones. Root cause, found from the log and the page code: the e-mail verification page calls the API after it has loaded, and that test navigated to the sign-in page without waiting for the "verified" confirmation (the first journey does wait), so an aborted verification left the account unverified and the sign-in was refused. A **race in the test**, not a product defect; fixed by waiting for the confirmation (3 consecutive local e2e runs green) in the commit that follows `a1d9a15`.
-No test was skipped, weakened or deleted to obtain green.
+### CI and test history during this phase (for the record - nothing was skipped, weakened or deleted)
+* A full-suite run found a defect **in one of my new tests**: it counted e-mail deliveries across the whole database and picked up one created by another test file's worker. Scoped to its own recipient (`91a0bd6`).
+* A clean-clone run then failed once on a **race in another new test**: the e-mail job is marked COMPLETED just after the mail is written, and the test asserted too early. The test now waits for it (`60b75b4`).
+* CI on `60b75b4` failed because **my retention test compared rows ordered by the database collation with a JavaScript sort**; the CI database's collation sorts `_` differently from the local `C.UTF-8`. Fixed by sorting on both sides in the test (`3b754e7`), which is green. No product code was involved in any of the three.
+* `526e329` was pushed with the first of these defects; its CI run was superseded by the fix.
 
 ## 2. Compliance counts (144 rows)
 | Status | Rows | Share of applicable (138) |
 |---|---|---|
-| IMPLEMENTED | 100 | 72% |
-| PARTIALLY IMPLEMENTED | 32 | 23% |
-| MISSING | 6 | 4% |
+| IMPLEMENTED | 104 | 75% |
+| PARTIALLY IMPLEMENTED | 29 | 21% |
+| MISSING | 5 | 4% |
 | NOT APPLICABLE | 6 | - |
-Before Tranche A: 80 / 39 / 19 / 6. Rows were closed only with code paths and passing tests; rows whose remaining gap is production infrastructure were **not** closed. Matrix: `docs/architecture/v0-compliance-matrix.md` and `.xlsx` (sheets: Matrix, Summary, High-risk findings, Decision register, Scope proposals).
+Previous report (end of Tranche A): 100 / 32 / 6 / 6. Before Tranche A: 80 / 39 / 19 / 6. This bundle closed **V0-4.7, V0-7.3, V0-9.4 and V0-TEST-6**. **V0-S8 and XP-10 stay PARTIALLY IMPLEMENTED on purpose:** only the classification half (S4(a)) was approved; purge jobs, runtime configuration and enforcement are not built, and every retention period is PROVISIONAL. Rows were closed only with code paths and passing tests; rows whose remaining gap is production infrastructure were **not** closed. Matrix: `docs/architecture/v0-compliance-matrix.md` and `.xlsx` (sheets: Matrix, Summary, High-risk findings, Decision register, Scope proposals).
 
 ## 3. Critical and high-risk findings
 * **Critical: none.** No cross-tenant leak, authentication bypass, data-loss path or exposed secret at any point.
@@ -56,32 +53,37 @@ Before Tranche A: 80 / 39 / 19 / 6. Rows were closed only with code paths and pa
 * *Privacy:* device metadata switch for IP and user agent in the audit trail and the access log; OCR and AI off per organisation by default; extracted text never logged or audited.
 
 **Residual risks (honest list):**
-1. The database trusts the application to assert tenant and user for row-level security. Code that could run arbitrary SQL as the runtime role could claim any identity. Mitigated by the absence of raw SQL, by privileges, and by tests; production hardening: separate DB credentials for API and worker, `pgaudit`.
-2. Object-level immutability of filing evidence (S3 Object Lock COMPLIANCE) is unproven; today only the application and database refuse changes.
-3. Everything AWS-side is configured, not verified (section 5).
-4. UI exists for authentication, security settings and companies only.
-5. GitHub push protection and branch protection are repository settings I cannot verify from code.
+1. **Retention periods are provisional and unenforced:** nothing is purged; operational tables grow until S4(b). Periods and lawful basis need the DPO/legal decision.
+2. The database trusts the application to assert tenant and user for row-level security. Code that could run arbitrary SQL as the runtime role could claim any identity. Mitigated by the absence of raw SQL, by privileges, and by tests; production hardening: separate DB credentials for API and worker, `pgaudit`.
+3. Object-level immutability of filing evidence (S3 Object Lock COMPLIANCE) is unproven; today only the application and database refuse changes.
+4. Everything AWS-side is configured, not verified (section 5).
+5. UI exists for authentication, security settings and companies only.
+6. GitHub push protection and branch protection are repository settings I cannot verify from code.
 
 ## 5. Outstanding production-only validation
 Real S3 (signatures, SSE-KMS, key policy, CORS, Object Lock mode) - ClamAV service in AWS (not provisioned; uploads would stay SCANNING) - Redis `noeviction` parameter group (not set) - first Terraform plan/apply and destroy/recreate - SES sandbox exit, DKIM, bounces - TLS on every hop - IAM review in a real account - restore drill (RDS PITR, S3, Redis) - connection pool sizing and RDS Proxy - alarm delivery and EMF extraction (game-day) - load and performance tests - privacy documentation (lawful basis and retention for IP data, DPIA, privacy notice) - accessibility checks with the UI.
 
 ## 6. Open requirements: decisions needed
-Full register with ID, specification reference, status, risk, blocks V1 / production, action, effort, dependencies and milestone: `docs/architecture/v0-open-requirements-register.md` (also in the Excel workbook). Summary: **6 MUST FIX BEFORE V1**, **25 MUST FIX BEFORE PRODUCTION**, **7 DEFER TO A LATER VERSION**, **6 NOT APPLICABLE (justified)**.
+Full register: `docs/architecture/v0-open-requirements-register.md` (also in the Excel workbook). Summary: **0 MUST FIX BEFORE V1**, **27 MUST FIX BEFORE PRODUCTION**, **7 DEFER TO A LATER VERSION**, **6 NOT APPLICABLE (justified)**.
 
-### Scope proposals (not implemented; each needs your approval)
-| # | Proposal | Effort | When |
-|---|---|---|---|
-| S1 | Workflow deadlines / SLA (V0-4.7): `due_at`, overdue filter, gauge, one-time overdue notification | S (2 d) | before V1 |
-| S2 | Notification channel port + preferences (V0-7.3): in-app and e-mail adapters, SMS/WhatsApp as disabled stubs | S-M (3 d) | before V1 |
-| S3 | Device identity, new-device alert, admin kill-switch (V0-1.9) | M (4 d) | Tranche B / V7 |
-| S4 | Retention: (a) policy table + classification before V1; (b) purge jobs + erasure rules before production (V0-S8, XP-10) | S-M + M-L | (a) before V1, (b) before production |
-| S5 | UI slices for the V0 foundations with accessibility checks (MAN-DOD-05, XP-11) | XL (3-4 w) | decision: V1 API-first with UI in parallel, or UI first |
-| S6 | Integration retry test + ADR that `job_record` is the integration job table (V0-9.4, V0-TEST-6) | S (1 d) | before V1 |
-| S7 | Embedding/Search provider ports with fakes (V0-10.3) | S (1-2 d) | optional now, otherwise V6 |
-**Recommended pre-V1 bundle: S1 + S2 + S4(a) + S6 = about 8-9 engineer-days.**
+### What the pre-V1 bundle delivered (all approved by you)
+| # | Item | Result |
+|---|---|---|
+| S6 | Integration retry test + ADR-36 (`job_record` is the integration job table) | A call through the real worker fails transiently, is retried with exponential backoff (>= 15 s over three attempts) and succeeds; client errors fail at once; credentials never reach the record. `tests/jobs/integration-retry.test.ts` (5) |
+| S1 | Workflow deadlines (V0-4.7), ADR-37, migration `20260105000000` | `due_at` + optional per-definition SLA, set/move/clear endpoint recorded in history and audit, overdue flag and filter, one-time overdue notification (exactly once under 6+ concurrent sweepers, crash-safe, back-off and audited abandonment), `workflows_overdue` gauge. `tests/platform/workflow-overdue.test.ts` (10), `tests/api/workflow-deadlines.test.ts` (9) |
+| S2 | Notification channel port (V0-7.3), ADR-38, migration `20260105000100` | Port + registry; in-app inline, e-mail planned in the business transaction and executed by a sweeper through the existing `email.send` job (idempotency key = delivery id); SMS/WhatsApp are unavailable stubs that cannot be enabled; per-user opt-in preferences (e-mail off by default, in-app mandatory, audited); content-free e-mail. `tests/platform/notification-channels.test.ts` (18), `tests/api/notification-preferences.test.ts` (7) |
+| S4(a) | Retention classification (V0-S8, XP-10), ADR-39, migration `20260105000200` | 15 categories with provisional periods and statutory basis; a rule for every document type and every table (adding a table without a rule fails the build); `GET /reference/retention-categories`. **No purge, no erasure rule, no enforcement.** `tests/db/retention.test.ts`, `packages/contracts/src/retention.test.ts`, `tests/api/retention.test.ts` |
+
+Defects found while building: the overdue filter's `NOT` over nullable columns dropped instances without a deadline (SQL three-valued logic; found by the API test, fixed); `INSERT ... RETURNING` on `notification` is refused by the recipient-private read policy when someone else notifies (the in-app channel now generates the id itself); event consumers run with the event's *actor* as database user, so notification preferences are tenant-scoped in the database and personal in the API.
+
+### Still open - decisions only you can make (none blocks starting V1)
+1. **S5 UI strategy:** V1 API-first with the V0 UI slices in parallel under feature flags (recommended), or hold V1 until they exist (MAN-DOD-05, XP-11; the Manifest's definition of done mentions usable UI).
+2. **Retention periods and lawful basis (V0-8.3):** confirm or change every PROVISIONAL period in the classification and record the lawful basis for IP address / user agent; this also unblocks S4(b).
+3. **Accept the documented deviations** V0-1.5 and V0-T2 (table naming; `integration_jobs` is `job_record` by ADR-36).
+4. **Timing of S3** (device identity, new-device alert; now unblocked by S2) **and S7** (embedding/search ports), and approval of **S4(b)** (purge jobs and erasure rules, before production).
 
 ## 7. Deliberately deferred (nothing started)
 Tranche B: OpenTelemetry spans, dashboards, SLOs, k6 tests, UI slices, connection pooling, privacy consent record. Tranche C: all real-AWS validation. Later versions: named integration adapters (V3/V4/V5/V11), client portal and cross-organisation engagement (V7), search technology decision, accounting controls (V1).
 
 ## 8. Where to look
-Matrix and register: `docs/architecture/v0-compliance-matrix.md|xlsx`, `v0-open-requirements-register.md` - Tranche A design and as-built: `v0-tranche-a.md` (sections 1-8) - decisions: `adr.md` (ADR-22..35) - Increment 6 verification: `v0-increment-6-verification.md` - runbooks: `docs/runbooks/` (migrations, supply-chain, observability).
+Matrix and register: `docs/architecture/v0-compliance-matrix.md|xlsx`, `v0-open-requirements-register.md` - Tranche A design and as-built: `v0-tranche-a.md` (sections 1-8; section 9 = pre-V1 bundle) - decisions: `adr.md` (ADR-22..39) - Increment 6 verification: `v0-increment-6-verification.md` - runbooks: `docs/runbooks/` (migrations, supply-chain, observability).
