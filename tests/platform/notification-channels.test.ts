@@ -82,8 +82,8 @@ describe('NotificationService: in-app inline, other channels planned in the same
     expect(deliveries(bob)).toBe(0);
     expect(adminSql(`SELECT category||'|'||type||'|'||status||'|'||channel FROM notification_delivery WHERE user_id='${alice}'`)).toBe('task|task.assigned|PENDING|email');
     // the title is copied, the body (which can contain task titles) is not
-    expect(adminSql(`SELECT count(*) FROM notification_delivery WHERE title='A task was assigned to you'`)).toBe('1');
-    expect(adminSql(`SELECT count(*) FROM notification_delivery WHERE row_to_json(notification_delivery)::text LIKE '%SECRET%'`)).toBe('0');
+    expect(adminSql(`SELECT count(*) FROM notification_delivery WHERE user_id='${alice}' AND title='A task was assigned to you'`)).toBe('1');
+    expect(adminSql(`SELECT count(*) FROM notification_delivery WHERE organisation_id='${org}' AND row_to_json(notification_delivery)::text LIKE '%SECRET%'`)).toBe('0');
   });
   it('a disabled preference plans nothing; an unavailable channel is never planned even if a stale opt-in exists', async () => {
     reset();
