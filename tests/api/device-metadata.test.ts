@@ -14,6 +14,12 @@ import { adminSql } from '../helpers/db';
  * The finding stays UNRESOLVED until the privacy review is recorded; retention periods and lawful basis stay unapproved (DEC-003).
  */
 const UA = 'DeviceMetadataTest/1.0 (synthetic)';
+/**
+ * A unique address per run from 198.18.0.0/15 (reserved for benchmarking, never a real client). Rate-limit counters live in Redis for up to an hour,
+ * so fixed addresses made repeated local runs hit 429 and fail; with a fresh address per run the tests are deterministic.
+ */
+const freshIp = () => `198.${18 + Math.floor(Math.random() * 2)}.${Math.floor(Math.random() * 256)}.${1 + Math.floor(Math.random() * 254)}`;
+const IP = { session: freshIp(), mfa: freshIp(), listing: freshIp(), revoke: freshIp(), redis: freshIp() };
 const post = (s: Stack, path: string, body: unknown, extra: Record<string, string> = {}) => s.api().post(`/api/v1${path}`).set('Origin', ORIGIN).set(extra).send(body as object);
 
 describe('collection: the audit switch does NOT govern sessions or MFA challenges', () => {
@@ -23,13 +29,13 @@ describe('collection: the audit switch does NOT govern sessions or MFA challenge
 
   it('with the switch OFF the audit trail and access log carry no IP or user agent, but the session row still stores both', async () => {
     const u = await createUser(s);
-    const login = await post(s, '/auth/login/bearer', { email: u.email, password: PASSWORD }, { 'User-Agent': UA, 'X-Forwarded-For': '203.0.113.7' });
+    const login = await post(s, '/auth/login/bearer', { email: u.email, password: PASSWORD }, { 'User-Agent': UA, 'X-Forwarded-For': IP.session });
     expect(login.status).toBe(200);
     // audit trail: governed by the switch
     expect(adminSql(`SELECT count(*) FROM audit_event WHERE actor_user_id='${u.userId}' AND (ip IS NOT NULL OR user_agent IS NOT NULL)`)).toBe('0');
     // session: NOT governed by the switch
     const row = adminSql(`SELECT ip||'|'||user_agent FROM session WHERE user_id='${u.userId}' ORDER BY created_at DESC LIMIT 1`);
-    expect(row).toBe(`203.0.113.7|${UA}`);
+    expect(row).toBe(`${IP.session}|${UA}`);
   });
 
   it('an MFA challenge stores the IP regardless of the switch', async () => {
@@ -39,9 +45,9 @@ describe('collection: the audit switch does NOT govern sessions or MFA challenge
     let confirm = await s.api().post('/api/v1/auth/mfa/confirm').set(bearer(u.token)).send({ code: totpAt(enrol.body.secret as string, totpStep()) });
     if (confirm.status !== 200) confirm = await s.api().post('/api/v1/auth/mfa/confirm').set(bearer(u.token)).send({ code: totpAt(enrol.body.secret as string, totpStep() + 1) });
     expect(confirm.status, `MFA confirm: ${JSON.stringify(confirm.body)}`).toBe(200);
-    const first = await post(s, '/auth/login/bearer', { email: u.email, password: PASSWORD }, { 'X-Forwarded-For': '198.51.100.23' });
+    const first = await post(s, '/auth/login/bearer', { email: u.email, password: PASSWORD }, { 'X-Forwarded-For': IP.mfa });
     expect(first.body.mfaRequired, `login: ${first.status} ${JSON.stringify(first.body)}`).toBe(true);
-    expect(adminSql(`SELECT ip FROM auth_challenge WHERE user_id='${u.userId}' ORDER BY created_at DESC LIMIT 1`)).toBe('198.51.100.23');
+    expect(adminSql(`SELECT ip FROM auth_challenge WHERE user_id='${u.userId}' ORDER BY created_at DESC LIMIT 1`)).toBe(IP.mfa);
   });
 
   it('the user agent is truncated to 300 characters at the source', async () => {
@@ -58,12 +64,12 @@ describe('use and access', () => {
 
   it('only the owner can list their sessions (IP, user agent) and only the owner can revoke them; other users get 404 / nothing', async () => {
     const a = await createUser(s), b = await createUser(s);
-    await post(s, '/auth/login/bearer', { email: a.email, password: PASSWORD }, { 'User-Agent': UA, 'X-Forwarded-For': '203.0.113.9' });
+    await post(s, '/auth/login/bearer', { email: a.email, password: PASSWORD }, { 'User-Agent': UA, 'X-Forwarded-For': IP.listing });
     const mine = await s.api().get('/api/v1/auth/sessions').set(bearer(a.token));
     expect(mine.status).toBe(200);
-    expect(mine.body.items.some((x: { ip: string; userAgent: string }) => x.ip === '203.0.113.9' && x.userAgent === UA)).toBe(true);
+    expect(mine.body.items.some((x: { ip: string; userAgent: string }) => x.ip === IP.listing && x.userAgent === UA)).toBe(true);
     const theirs = await s.api().get('/api/v1/auth/sessions').set(bearer(b.token));
-    expect(JSON.stringify(theirs.body)).not.toContain('203.0.113.9');
+    expect(JSON.stringify(theirs.body)).not.toContain(IP.listing);
     const victim = mine.body.items[0].id as string;
     expect((await s.api().delete(`/api/v1/auth/sessions/${victim}`).set(bearer(b.token))).status).toBe(404);
   });
@@ -102,12 +108,12 @@ describe('retention: nothing is purged today (KNOWN GAP - DEC-013)', () => {
 
   it('a revoked or expired session keeps its IP and user agent', async () => {
     const u = await createUser(s);
-    const l = await post(s, '/auth/login/bearer', { email: u.email, password: PASSWORD }, { 'User-Agent': UA, 'X-Forwarded-For': '203.0.113.50' });
-    const id = adminSql(`SELECT id FROM session WHERE user_id='${u.userId}' AND ip='203.0.113.50'`);
+    const l = await post(s, '/auth/login/bearer', { email: u.email, password: PASSWORD }, { 'User-Agent': UA, 'X-Forwarded-For': IP.revoke });
+    const id = adminSql(`SELECT id FROM session WHERE user_id='${u.userId}' AND ip='${IP.revoke}'`);
     await s.api().delete(`/api/v1/auth/sessions/${id}`).set(bearer(l.body.sessionToken));
     adminSql(`UPDATE session SET absolute_expires_at = now() - interval '400 days', idle_expires_at = now() - interval '400 days' WHERE id='${id}'`);
     await new Promise((r) => setTimeout(r, 1500)); // workers and sweepers run in this stack; none removes it
-    expect(adminSql(`SELECT ip||'|'||user_agent||'|'||(revoked_at IS NOT NULL) FROM session WHERE id='${id}'`)).toBe(`203.0.113.50|${UA}|true`);
+    expect(adminSql(`SELECT ip||'|'||user_agent||'|'||(revoked_at IS NOT NULL) FROM session WHERE id='${id}'`)).toBe(`${IP.revoke}|${UA}|true`);
   });
 
   it('there is no purge or cleanup job for sessions, challenges or trusted IPs in the code', () => {
@@ -126,7 +132,7 @@ describe('rate-limit keys in Redis hold the raw IP address (short-lived)', () =>
   afterAll(async () => { await redis.quit(); await s.stop(); });
 
   it('a rate-limited route writes a key containing the client IP in clear with a TTL no longer than its window', async () => {
-    const ip = '192.0.2.77';
+    const ip = IP.redis;
     await post(s, '/auth/login/bearer', { email: 'nobody-device-meta@example.test', password: 'Wrong-Password-12345' }, { 'X-Forwarded-For': ip });
     const keys = await redis.keys(`rl:*:ip:${ip}`);
     expect(keys.length).toBeGreaterThan(0);
