@@ -130,3 +130,25 @@ Additive migrations (`20260104000600`, `20260104000700`); existing documents bec
 * Folders organise; they do not secure: visibility is per document, not per folder.
 * The evidence graph cannot enforce that a polymorphic target exists (no foreign keys): it is validated at write time and by an integrity test; entities are never hard-deleted by the application.
 * Document retention schedules per type (V0-S8) are not part of this increment.
+
+## 8. Observability (Manifest technical contract; OBS-02, OBS-03, OBS-05) - design
+Written before implementation. Scope is the approved Tranche A minimum; OpenTelemetry spans/exporters, dashboards, SLOs and k6 smoke tests remain Tranche B (OBS-04, XP-12) and are listed as deliberately deferred.
+
+### 8.1 Scope
+| Need | Design |
+|---|---|
+| **Access logs** (OBS-02) | One structured log line per request when it finishes: method, **route template** (never the concrete path, so no ids or query strings), status, duration, response size, correlation id, user/organisation ids, trace id; level by outcome (2xx/3xx info, 4xx warn, 5xx error; health/metrics probes at debug). No request or response bodies, no headers, no query string. IP and user agent only when `AUDIT_CAPTURE_DEVICE_METADATA` is on (same lawful-basis switch as the audit trail) |
+| **Metrics** (OBS-03) | A small in-process registry in `@uk/core` (counter, gauge, histogram; no new dependency) with two renderings: Prometheus text and **CloudWatch Embedded Metric Format** (one JSON log line, extracted by CloudWatch with no agent). HTTP: request count and latency histogram by route template and status class; login failures (401/429 on the login route). Platform gauges collected from the database: outbox pending / failed / oldest-unprocessed age / in-flight, jobs by status (QUEUED, RUNNING, FAILED, DEAD), due task reminders. Process: event-loop lag, memory. The worker emits EMF every `METRICS_EMF_INTERVAL_MS`; the API exposes `GET /metrics` **only when `METRICS_TOKEN` is set** (bearer, constant-time comparison; otherwise 404) |
+| **Alerting** (OBS-05) | Terraform: an SNS topic (e-mail subscription variable) and CloudWatch alarms on the EMF metrics (failed outbox events, outbox lag, dead jobs, 5xx rate, login-failure burst) and on native ECS/ALB/RDS metrics (unhealthy targets, ALB 5xx, CPU, memory, database connections and free storage). Alarms treat missing data as breaching for the heartbeat metric, so a silent worker is an alarm. Validated by `terraform validate` in CI; never applied (production gate) |
+| **Readiness detail** | `/healthz` stays a pure liveness probe. `/readyz` keeps failing (503) only for the dependencies the API cannot serve without (database, Redis) and reports **degraded** (still 200) when the outbox lags beyond `READINESS_OUTBOX_LAG_SECONDS` or jobs are DEAD, with the figures in the body (no tenant data) |
+| **`job_record.company_id`** | Jobs gain a nullable, composite-FK company so queue state can be read per company and filtered by the caller's company access; set by the document pipeline. Behaviour change: `GET /jobs` hides jobs of companies the caller cannot read |
+| **Trace context** | W3C `traceparent` is accepted (or generated), kept in the request context and logs, stored on `job_record.trace_id` and restored in the worker, so one request can be followed API -> job -> worker in the logs. This is propagation, not an OpenTelemetry SDK |
+
+### 8.2 Decisions and trade-offs
+* **ADR-35 metrics without a vendor SDK.** EMF-over-logs needs no agent or sidecar in ECS and no new supply-chain surface; Prometheus text is available for local use. The cost: no exemplars/spans and metric math is limited to what CloudWatch provides. An OpenTelemetry SDK + ADOT collector can replace the renderers later behind the same registry.
+* **Label discipline.** Labels are route templates, methods, status classes and queue/status names only - bounded sets. A test fails if a concrete id or query string appears in a label, because one leaked label per tenant would make the metric unusable and could leak tenant ids into a shared system.
+* **`/metrics` is off by default** and needs a shared-secret bearer even when on; platform gauges are aggregate counts (no tenant data).
+* Gauges that describe global state are produced by the worker (single writer per interval) to avoid double counting from N API tasks; the API reports its own process and HTTP metrics.
+
+### 8.3 Compatibility and risk
+Additive: one nullable column and an index on `job_record`, no behaviour change for existing clients except the company filter on `GET /jobs`. Risk: the access-log middleware runs on every request - it must never throw (wrapped) and never log bodies; covered by tests. Terraform cannot be validated or applied in this sandbox: CI validates; the alarms are unproven against a real account.
