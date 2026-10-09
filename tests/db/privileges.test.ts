@@ -19,6 +19,9 @@ const FORBIDDEN: Record<string, string[]> = {
   document_version: ['DELETE', 'TRUNCATE'],      // immutable content; only status bookkeeping may be updated
   task_attachment: ['UPDATE', 'TRUNCATE'],       // link or unlink, never edit
   task_reminder: ['DELETE', 'TRUNCATE'],         // pending -> sent | cancelled, never removed
+  evidence_link: ['DELETE', 'TRUNCATE'],         // revoked, never deleted; the only permitted UPDATE is revocation (trigger)
+  document: ['DELETE', 'TRUNCATE'],              // archived, never deleted
+  document_extraction: ['DELETE', 'TRUNCATE'],
   outbox_event: ['TRUNCATE'],                    // DELETE is system-context only (RLS) and trigger-guarded
 };
 const has = (table: string, priv: string) => adminSql(`SELECT has_table_privilege('uk_app', '${table}', '${priv}')`) === 't';
