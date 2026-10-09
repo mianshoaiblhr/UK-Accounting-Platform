@@ -9,3 +9,4 @@ coverage
 .terraform
 *.tfstate*
 packages/db/src/generated
+dump.rdb
