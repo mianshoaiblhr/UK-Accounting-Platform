@@ -21,7 +21,7 @@ Scope: verification only, no V1 functionality. Verified code commit: **`048b6bfd
 | dependency audit + secret scan (gitleaks) | success |
 | migrations-from-scratch | success |
 | terraform (fmt, init, validate) | success |
-| images (api), (worker), (web), (migrate) - build + Trivy HIGH/CRITICAL gate | IMAGES_PLACEHOLDER |
+| images (api), (worker), (web), (migrate) - build + Trivy HIGH/CRITICAL gate | success (all four; Trivy gate: HIGH/CRITICAL fixed vulnerabilities fail the job) |
 | codeql | success |
 
 Not run on a push (by design): `dependency-review` (pull requests only).
