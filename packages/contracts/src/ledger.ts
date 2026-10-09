@@ -104,6 +104,8 @@ export const journalLineSchema = z.object({
 export const postJournalSchema = z.object({
   journalDate: isoDate, description: z.string().trim().min(1).max(500), source: z.enum(API_JOURNAL_SOURCES).default('MANUAL'),
   reference: z.string().trim().min(1).max(100).optional(),
+  /** Optional and only ever the company's own currency: foreign-currency postings are refused (`foreign_currency_not_supported`) until milestone M3 (DEC-009). */
+  currency: z.string().regex(/^[A-Z]{3}$/, 'ISO 4217 code, upper case').optional(),
   lines: z.array(journalLineSchema).min(2).max(500),
   idempotencyKey: z.string().trim().min(8).max(100).optional(),
 }).strict();

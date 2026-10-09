@@ -102,6 +102,13 @@ describe('journals', () => {
     expect(ok.body.sourceType).toBe('OPENING_BALANCE');
     expect((await as(bookkeeper, 'post', `${base()}/journals`, { ...ob, journalDate: '2025-01-01' })).status).toBe(403);
   });
+  it('foreign currency is explicitly not supported yet: a different currency is refused with a pointer to the plan; the company currency is accepted', async () => {
+    const usd = await as(accountant, 'post', `${base()}/journals`, rent('10.00', { currency: 'USD' }));
+    expect([usd.status, usd.body.code]).toEqual([422, 'foreign_currency_not_supported']);
+    expect(usd.body.detail ?? usd.body.title).toMatch(/M3|not supported/i);
+    expect((await as(accountant, 'post', `${base()}/journals`, rent('10.00', { currency: 'GBP' }))).status).toBe(201);
+    expect((await as(accountant, 'post', `${base()}/journals`, rent('10.00', { currency: 'usd' }))).status).toBe(422);   // not an ISO code in upper case
+  });
   it('a journal is idempotent by key: the same request twice posts once', async () => {
     const body = rent('12.00', { idempotencyKey: 'api-idem-key-0001' });
     const a = await as(accountant, 'post', `${base()}/journals`, body);

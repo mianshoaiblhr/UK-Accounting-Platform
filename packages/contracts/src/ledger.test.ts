@@ -50,6 +50,8 @@ describe('money strings and journal requests', () => {
     expect(postJournalSchema.safeParse({ ...req, source: 'REVERSAL' }).success).toBe(false);
     expect(postJournalSchema.safeParse({ ...req, source: 'SALES_INVOICE' }).success).toBe(false);
     expect(postJournalSchema.safeParse({ ...req, journalDate: '2026-02-30' }).success).toBe(false);
+    expect(postJournalSchema.safeParse({ ...req, currency: 'GBP' }).success).toBe(true);
+    expect(postJournalSchema.safeParse({ ...req, currency: 'gbp' }).success).toBe(false);
   });
 });
 

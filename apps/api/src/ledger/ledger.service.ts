@@ -35,7 +35,7 @@ export class LedgerApiService {
   // Journals
   async postJournal(org: OrgAccess, companyId: string, b: z.output<typeof postJournalSchema>) {
     const j = await this.t(org, (tx) => this.posting.post(tx, {
-      organisationId: org.organisationId, companyId, journalDate: b.journalDate, sourceType: b.source, sourceReference: b.reference ?? null, description: b.description,
+      organisationId: org.organisationId, companyId, journalDate: b.journalDate, sourceType: b.source, sourceReference: b.reference ?? null, description: b.description, currency: b.currency,
       lines: b.lines.map((l) => ({ accountId: l.accountId, debit: l.debit, credit: l.credit, description: l.description })),
       idempotencyKey: b.idempotencyKey ?? `api:${uuidv7()}`, actor: this.actor(org),
     }));

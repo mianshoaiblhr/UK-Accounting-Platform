@@ -30,6 +30,8 @@ export interface PostInput {
   sourceId?: string | null;
   sourceReference?: string | null;
   description: string;
+  /** Optional. Only the company's own (functional) currency is supported until milestone M3 (DEC-009); anything else is refused. */
+  currency?: string;
   lines: PostLineInput[];
   /** A repeat with the same key and the same content returns the existing journal; the same key with different content is a conflict. */
   idempotencyKey: string;
@@ -79,6 +81,9 @@ export class PostingService {
     // 4. company, currency, amounts
     const company = await tx.company.findUnique({ where: { id: input.companyId }, select: { id: true, baseCurrency: true } });
     if (!company) throw notFound('Company not found');
+    if (input.currency && input.currency !== company.baseCurrency) {
+      throw unprocessable(`Foreign-currency postings are not supported yet (planned: milestone M3, decision DEC-009). Post in the company's currency, ${company.baseCurrency}.`, 'foreign_currency_not_supported', { companyCurrency: company.baseCurrency, requested: input.currency });
+    }
     const cur = await tx.currency.findUnique({ where: { code: company.baseCurrency } });
     if (!cur) throw unprocessable('Company base currency is not a known currency', 'currency_invalid');
     if (input.lines.length < 2) throw unprocessable('A journal needs at least two lines', 'too_few_lines');

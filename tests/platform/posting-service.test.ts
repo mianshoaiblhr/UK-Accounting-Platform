@@ -120,6 +120,19 @@ describe('negative: every validation refuses with a typed error and writes nothi
   });
 });
 
+describe('single-currency limitation is explicit (DEC-009: foreign currency arrives in milestone M3)', () => {
+  it('a journal naming a foreign currency is refused with a clear code and nothing is written', async () => {
+    const n = Number(sql(`SELECT count(*) FROM journal WHERE company_id='${co}'`));
+    await expect(post({ currency: 'USD' })).rejects.toMatchObject({ code: 'foreign_currency_not_supported', status: 422, message: expect.stringMatching(/milestone M3.*GBP/) });
+    await expect(post({ currency: 'EUR' })).rejects.toMatchObject({ code: 'foreign_currency_not_supported' });
+    expect(Number(sql(`SELECT count(*) FROM journal WHERE company_id='${co}'`))).toBe(n);
+  });
+  it('naming the company\'s own currency is accepted and the journal is stored in it', async () => {
+    const j = await post({ currency: 'GBP' });
+    expect(sql(`SELECT currency FROM journal WHERE id='${j.id}'`)).toBe('GBP');
+  });
+});
+
 describe('permissions and actors (manifest control 10: AI never posts)', () => {
   it('an actor without journal:post is refused (403) and nothing is written', async () => {
     const n = Number(sql(`SELECT count(*) FROM journal WHERE company_id='${co}'`));

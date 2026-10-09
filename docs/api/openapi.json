@@ -8184,7 +8184,7 @@
           "journal:post"
         ],
         "summary": "Post a manual or opening-balance journal through the PostingService (balanced, open period, active non-control accounts; immutable once posted)",
-        "description": "**Requires permission:** `journal:post`",
+        "description": "Single-currency limitation: journals are posted in the company's own currency only. A different `currency` is refused with 422 `foreign_currency_not_supported` until the foreign-currency foundation (plan milestone M3, decision DEC-009) is delivered.\n\n**Requires permission:** `journal:post`",
         "security": [
           {
             "bearer": []
@@ -17606,6 +17606,10 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 100
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
           },
           "lines": {
             "type": "array",

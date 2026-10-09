@@ -8,12 +8,118 @@
     "N": "NOT APPLICABLE"
   },
   "milestones": {
-    "M1": "Ledger core: chart of accounts, period states, PostingService, journals, general ledger, trial balance",
-    "M2": "Contacts as customers/suppliers, VAT foundation, sales, credit notes, receipts",
-    "M3": "Purchases, debit notes, payments, cash",
-    "M4": "Bank accounts, statement import, transfers, charges, interest, reconciliation",
-    "M5": "Profit and loss, balance sheet, drill-down to documents, controls and alerts",
-    "M6": "V1 UI slices behind feature flags (DEC-002)"
+    "M1": {
+      "title": "Ledger core: chart of accounts, period states, PostingService, journals, general ledger, trial balance",
+      "status": "ACCEPTED (code baseline fae5270; DEC-008)",
+      "owner": "Engineering",
+      "depends": [],
+      "acceptance": "v1-m1-acceptance.md",
+      "deferred": "Foreign currency (M3), VAT (M4), source documents (M5+), UI (M9)"
+    },
+    "M2": {
+      "title": "Ledger controls: opening-balance permission, control-account adjustments, configurable second-person approval (DEC-012)",
+      "status": "SPECIFIED - ready to start",
+      "owner": "Engineering (build); product owner (approval thresholds, who may approve)",
+      "depends": [
+        "M1 accepted",
+        "V0 notification channel port (S2, delivered) for approver notifications",
+        "V0 documents + evidence links for supporting evidence"
+      ],
+      "acceptance": "Section 3 of v1-plan.md; the M2 acceptance package (DEC-007)",
+      "deferred": "Per-account approval rules and delegation; AI-assisted review (V6/V8); workflow-engine integration for multi-step approval"
+    },
+    "M3": {
+      "title": "Foreign-currency foundation: functional/transaction currency, rates, original-currency values, rounding, realised FX, revaluation (DEC-009)",
+      "status": "SPECIFIED - open decisions block the start (exchange-rate source, rounding policy)",
+      "owner": "Engineering (build); product owner (rate source, policies)",
+      "depends": [
+        "M1 accepted",
+        "M2 not required",
+        "Decision: exchange-rate source and revaluation policy (v1-plan.md section 4)"
+      ],
+      "acceptance": "Section 4 of v1-plan.md",
+      "deferred": "Hedge accounting, forward contracts, multi-currency bank feeds (M7 handles statements in account currency only), intercompany eliminations"
+    },
+    "M4": {
+      "title": "Contact roles (customer/supplier) and VAT foundation - standard VAT accounting (DEC-010, DEC-011)",
+      "status": "SPECIFIED - external gate: HMRC rules must be verified from official sources before activation",
+      "owner": "Engineering (build); product owner + qualified tax reviewer (rule verification)",
+      "depends": [
+        "M1 accepted",
+        "M3 delivered (VAT flows are finalised after FX)",
+        "Verified HMRC sources recorded per rule"
+      ],
+      "acceptance": "Section 5 of v1-plan.md",
+      "deferred": "Cash accounting scheme, Flat Rate Scheme, partial exemption, capital goods scheme, margin schemes, OSS/import schemes, MTD submission (V5)"
+    },
+    "M5": {
+      "title": "Sales: invoices, credit notes, receipts; duplicate-document check",
+      "status": "PLANNED - specification after M3/M4 design",
+      "owner": "Engineering",
+      "depends": [
+        "M2",
+        "M3",
+        "M4"
+      ],
+      "acceptance": "To be written when the milestone is specified",
+      "deferred": "Recurring invoices, quotes, online payments, customer statements beyond the ledger view"
+    },
+    "M6": {
+      "title": "Purchases: bills, debit notes, payments, cash",
+      "status": "PLANNED",
+      "owner": "Engineering",
+      "depends": [
+        "M5 patterns",
+        "M3",
+        "M4"
+      ],
+      "acceptance": "To be written when the milestone is specified",
+      "deferred": "Payment runs, expense claims, purchase orders"
+    },
+    "M7": {
+      "title": "Bank accounts, statement import (async), transfers, charges, interest, reconciliation",
+      "status": "PLANNED",
+      "owner": "Engineering",
+      "depends": [
+        "M5",
+        "M6"
+      ],
+      "acceptance": "To be written when the milestone is specified",
+      "deferred": "Open Banking and bank feeds (V11), AI match suggestions (V6)"
+    },
+    "M8": {
+      "title": "Profit and loss, balance sheet, drill-down to documents, controls and alerts, FX reporting",
+      "status": "PLANNED",
+      "owner": "Engineering",
+      "depends": [
+        "M3",
+        "M5",
+        "M6",
+        "M7"
+      ],
+      "acceptance": "To be written when the milestone is specified",
+      "deferred": "FRS 102/105 statements (V2), comparatives and notes (V2)"
+    },
+    "M9": {
+      "title": "V1 UI slices behind feature flags (DEC-002)",
+      "status": "PLANNED - runs in parallel from M2",
+      "owner": "Engineering (front end)",
+      "depends": [
+        "API of the milestone each screen uses"
+      ],
+      "acceptance": "Per screen: works against the real API, authorisation and tenant boundaries; accessibility checks",
+      "deferred": "Mobile client portal (V7)"
+    },
+    "Privacy track (parallel to V1)": {
+      "title": "Privacy finding on session / challenge IP and user agent (DEC-013)",
+      "status": "INVESTIGATION IN PROGRESS - never marked resolved without review",
+      "owner": "Engineering (investigation); DPO / legal (decisions)",
+      "depends": [
+        "DEC-003 retention review"
+      ],
+      "acceptance": "V1-PRIV-01",
+      "deferred": "Any purge or deletion enabling (S4(b) frozen)"
+    }
   },
   "acceptance": "A milestone is accepted by the product owner on an acceptance package: commit SHA, CI run (every job), test results, migrations, security/permission checks, matrix changes, known limitations (DEC-007).",
   "rows": [
@@ -24,106 +130,154 @@
       "m": "M1",
       "s": "I",
       "ev": "account table + AccountService + /accounts API + default UK chart (UK_SMALL_COMPANY v1). migration 20260106000000_v1_ledger_core; packages/accounting; apps/api/src/ledger; ADR-44..48. Tests: tests/api/ledger.test.ts (chart), tests/db/ledger.test.ts (account guards), packages/contracts/src/ledger.test.ts",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "V1-MOD-02",
       "ref": "V1 Modules",
       "req": "Customers",
-      "m": "M2",
+      "m": "M4",
       "s": "M",
       "ev": "",
-      "note": "V0 contacts exist (master data); customer role/terms are V1"
+      "note": "V0 contacts exist (master data); customer role/terms are V1",
+      "owner": "Engineering",
+      "deps": "V1-CON-01..05",
+      "accept": "A contact can hold the CUSTOMER role with payment terms, default currency, default tax treatment and credit limit; filter/search by role; company-scoped; both roles allowed; archived customers rejected on new documents.",
+      "deferred": "Statements, dunning"
     },
     {
       "id": "V1-MOD-03",
       "ref": "V1 Modules",
       "req": "Suppliers",
-      "m": "M3",
+      "m": "M4",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "V1-CON-01..05",
+      "accept": "SUPPLIER role with payment terms, default expense account, bank details (field-encrypted, never in lists or logs); both roles allowed; archived suppliers rejected on new documents.",
+      "deferred": "Supplier portal"
     },
     {
       "id": "V1-MOD-04",
       "ref": "V1 Modules",
       "req": "Sales",
-      "m": "M2",
+      "m": "M5",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M2, M3, M4, V1-MOD-02",
+      "accept": "Invoice lifecycle DRAFT -> APPROVED (posted) -> paid; numbering without gaps per company; lines with VAT and currency; posting Dr receivables / Cr revenue / Cr output VAT through the PostingService with source link both ways; documents attach; AI can propose but never approve; positive, negative, reversal, VAT and period-lock tests.",
+      "deferred": "Recurring invoices, quotes, online payment"
     },
     {
       "id": "V1-MOD-05",
       "ref": "V1 Modules",
       "req": "Purchases",
-      "m": "M3",
+      "m": "M6",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M3, M4, V1-MOD-03",
+      "accept": "Bills with VAT and currency; posting Dr expense/asset / Dr input VAT / Cr payables; duplicate-bill check; same test set as sales.",
+      "deferred": "Purchase orders, expense claims"
     },
     {
       "id": "V1-MOD-06",
       "ref": "V1 Modules",
       "req": "Credit Notes",
-      "m": "M2",
+      "m": "M5",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "V1-MOD-04",
+      "accept": "A sales credit note references its invoice (full linkage), reverses or adjusts the economic effect including VAT, cannot exceed the invoice balance, and is traceable from both documents.",
+      "deferred": "Refund automation"
     },
     {
       "id": "V1-MOD-07",
       "ref": "V1 Modules",
       "req": "Debit Notes",
-      "m": "M3",
+      "m": "M6",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "V1-MOD-05",
+      "accept": "Purchase credit note / debit note with the same linkage rules against the bill.",
+      "deferred": "Supplier refund workflow"
     },
     {
       "id": "V1-MOD-08",
       "ref": "V1 Modules",
       "req": "Receipts",
-      "m": "M2",
+      "m": "M5",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "V1-MOD-04",
+      "accept": "Receipt Dr bank / Cr receivables; allocation to one or more invoices; part payments; overpayments to an unallocated balance; realised FX difference when currencies differ.",
+      "deferred": "Direct debit integration"
     },
     {
       "id": "V1-MOD-09",
       "ref": "V1 Modules",
       "req": "Payments",
-      "m": "M3",
+      "m": "M6",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "V1-MOD-05",
+      "accept": "Payment Dr payables / Cr bank; allocation, part payments; realised FX difference.",
+      "deferred": "Payment runs and bank file export"
     },
     {
       "id": "V1-MOD-10",
       "ref": "V1 Modules",
       "req": "Bank Accounts",
-      "m": "M4",
+      "m": "M7",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1",
+      "accept": "Bank accounts as ledger accounts with bank details (field-encrypted), account currency, opening balance via M2 controls.",
+      "deferred": "Open Banking feeds (V11)"
     },
     {
       "id": "V1-MOD-11",
       "ref": "V1 Modules",
       "req": "Cash",
-      "m": "M3",
+      "m": "M6",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1",
+      "accept": "Cash accounts and cash transactions with negative-cash alerts.",
+      "deferred": "Petty-cash float management"
     },
     {
       "id": "V1-MOD-12",
       "ref": "V1 Modules",
       "req": "VAT foundation",
-      "m": "M2",
+      "m": "M4",
       "s": "M",
       "ev": "",
-      "note": "Foundation only; MTD returns are V5"
+      "note": "Foundation only; MTD returns are V5",
+      "owner": "Engineering + qualified tax reviewer",
+      "deps": "V1-VAT-01..15",
+      "accept": "Section 5 of v1-plan.md: all V1-VAT acceptance criteria met with verified sources.",
+      "deferred": "Cash accounting, Flat Rate Scheme, partial exemption, capital goods, margin schemes, OSS"
     },
     {
       "id": "V1-MOD-13",
@@ -132,7 +286,11 @@
       "m": "M1",
       "s": "I",
       "ev": "POST /journals (manual and opening-balance sources), GET /journals[/id], POST /journals/{id}/reverse; all through the PostingService. Tests: tests/platform/posting-service.test.ts, tests/api/ledger.test.ts",
-      "note": "Posting only: no draft or approval step for manual journals (open decision 5 in v1-plan.md)"
+      "note": "Posting only: no draft or approval step for manual journals (open decision 5 in v1-plan.md)",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "V1-MOD-14",
@@ -141,7 +299,11 @@
       "m": "M1",
       "s": "I",
       "ev": "GET /ledger (general ledger per account, running balance, keyset paging recomputed per page). Tests: tests/platform/posting-service.test.ts (one page equals paged), tests/api/ledger.test.ts",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "V1-MOD-15",
@@ -150,34 +312,50 @@
       "m": "M1",
       "s": "I",
       "ev": "GET /reports/trial-balance (as at a date or a period with movement; journal lines only; balanced flag; suspense warning; drill-down parameters). Tests: tests/platform/posting-service.test.ts, tests/api/ledger.test.ts (independent SQL check)",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "V1-MOD-16",
       "ref": "V1 Modules",
       "req": "P&L",
-      "m": "M5",
+      "m": "M8",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M8, trial balance",
+      "accept": "P&L is computed from the trial balance via the reporting mapping, never from source transactions; every figure drills to account -> journal -> source -> document; comparatives by period.",
+      "deferred": "FRS 102/105 layouts (V2)"
     },
     {
       "id": "V1-MOD-17",
       "ref": "V1 Modules",
       "req": "Balance Sheet",
-      "m": "M5",
+      "m": "M8",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M8, trial balance",
+      "accept": "Balance sheet from the trial balance including current-year profit; balances; drill-down as P&L.",
+      "deferred": "FRS 102/105 layouts (V2)"
     },
     {
       "id": "V1-MOD-18",
       "ref": "V1 Modules",
       "req": "Reconciliation",
-      "m": "M4",
+      "m": "M7",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M7",
+      "accept": "Bank reconciliation states matched / partial / unmatched / suggested / manual override with audit; reconciled balance proves to the statement.",
+      "deferred": "AI suggestions (V6)"
     },
     {
       "id": "V1-MOD-19",
@@ -186,7 +364,11 @@
       "m": "M1",
       "s": "I",
       "ev": "OPEN<->CLOSED->LOCKED->CLOSED with database-enforced graph, period:manage / period:lock, mandatory reasons, audit before/after, events, concurrency-safe. Tests: tests/platform/posting-service.test.ts (period controls), tests/db/ledger.test.ts, tests/api/ledger.test.ts",
-      "note": "Close controls beyond 'ledger balances' are added by M2-M5 as their data exists (see MAN-ACC-08)"
+      "note": "Close controls beyond 'ledger balances' are added by M2-M5 as their data exists (see MAN-ACC-08)",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "V1-ARC-01",
@@ -195,7 +377,11 @@
       "m": "M1",
       "s": "P",
       "ev": "PostingService -> journal -> journal_line -> ledger exists with MANUAL, OPENING_BALANCE and REVERSAL sources. No source-document transaction services yet (M2+). Tests: tests/platform/posting-service.test.ts",
-      "note": "M1 delivers PostingService + journals + ledger with manual and reversal sources; each later milestone adds a transaction service"
+      "note": "M1 delivers PostingService + journals + ledger with manual and reversal sources; each later milestone adds a transaction service",
+      "owner": "Engineering",
+      "deps": "Source modules M5-M7",
+      "accept": "Every source document posts through the PostingService; no module writes the ledger; each source transaction links to its journal and back.",
+      "deferred": "-"
     },
     {
       "id": "V1-ARC-02",
@@ -204,7 +390,11 @@
       "m": "M1",
       "s": "P",
       "ev": "Trial balance and general ledger aggregate journal_line only (architecture: no report reads source tables). P&L and balance sheet are M5. Tests: tests/platform/posting-service.test.ts, tests/api/ledger.test.ts",
-      "note": "Trial balance in M1; statements in M5, both from journal lines only"
+      "note": "Trial balance in M1; statements in M5, both from journal lines only",
+      "owner": "Engineering",
+      "deps": "M8",
+      "accept": "P&L and balance sheet read the trial balance only; a test fails if a report queries a source table.",
+      "deferred": "-"
     },
     {
       "id": "V1-COA-01",
@@ -213,7 +403,11 @@
       "m": "M1",
       "s": "I",
       "ev": "account.code (unique per company, 1-20 chars). migration 20260106000000_v1_ledger_core; packages/accounting; apps/api/src/ledger; ADR-44..48. Tests: packages/contracts/src/ledger.test.ts, tests/api/ledger.test.ts, tests/db/ledger.test.ts",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "V1-COA-02",
@@ -222,7 +416,11 @@
       "m": "M1",
       "s": "I",
       "ev": "account.name. migration 20260106000000_v1_ledger_core; packages/accounting; apps/api/src/ledger; ADR-44..48. Tests: packages/contracts/src/ledger.test.ts, tests/api/ledger.test.ts, tests/db/ledger.test.ts",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "V1-COA-03",
@@ -231,7 +429,11 @@
       "m": "M1",
       "s": "I",
       "ev": "account.type (ASSET/LIABILITY/EQUITY/INCOME/EXPENSE). migration 20260106000000_v1_ledger_core; packages/accounting; apps/api/src/ledger; ADR-44..48. Tests: packages/contracts/src/ledger.test.ts, tests/api/ledger.test.ts, tests/db/ledger.test.ts",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "V1-COA-04",
@@ -240,7 +442,11 @@
       "m": "M1",
       "s": "I",
       "ev": "account.subtype (registry constrained to the type). migration 20260106000000_v1_ledger_core; packages/accounting; apps/api/src/ledger; ADR-44..48. Tests: packages/contracts/src/ledger.test.ts, tests/api/ledger.test.ts, tests/db/ledger.test.ts",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "V1-COA-05",
@@ -249,7 +455,11 @@
       "m": "M1",
       "s": "I",
       "ev": "account.is_control + control_kind (receivables, payables, VAT, bank, cash, suspense, retained earnings); manual journals cannot post to control accounts. migration 20260106000000_v1_ledger_core; packages/accounting; apps/api/src/ledger; ADR-44..48. Tests: packages/contracts/src/ledger.test.ts, tests/api/ledger.test.ts, tests/db/ledger.test.ts",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "V1-COA-06",
@@ -258,7 +468,11 @@
       "m": "M1",
       "s": "I",
       "ev": "account.tax_treatment (account level). migration 20260106000000_v1_ledger_core; packages/accounting; apps/api/src/ledger; ADR-44..48. Tests: packages/contracts/src/ledger.test.ts, tests/api/ledger.test.ts, tests/db/ledger.test.ts",
-      "note": "Account-level treatment in M1; VAT codes on lines arrive with the VAT foundation (M2)"
+      "note": "Account-level treatment in M1; VAT codes on lines arrive with the VAT foundation (M2)",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "V1-COA-07",
@@ -267,7 +481,11 @@
       "m": "M1",
       "s": "I",
       "ev": "account.reporting_mapping from a versioned report-line registry, checked against the type. migration 20260106000000_v1_ledger_core; packages/accounting; apps/api/src/ledger; ADR-44..48. Tests: packages/contracts/src/ledger.test.ts, tests/api/ledger.test.ts, tests/db/ledger.test.ts",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "V1-COA-08",
@@ -276,7 +494,11 @@
       "m": "M1",
       "s": "I",
       "ev": "account.active_from / active_to enforced on every posting date; deactivation cannot precede the last posting. migration 20260106000000_v1_ledger_core; packages/accounting; apps/api/src/ledger; ADR-44..48. Tests: packages/contracts/src/ledger.test.ts, tests/api/ledger.test.ts, tests/db/ledger.test.ts",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "V1-POST-01",
@@ -285,7 +507,11 @@
       "m": "M1",
       "s": "I",
       "ev": "Single writer enforced three ways: architecture test (only packages/accounting/src/posting.ts writes journal/journal_line/ledger_sequence; only it sets app.posting; platform/AI/worker cannot import the package), database guard (insert refused without the transaction flag), privileges. Tests: tests/unit/architecture.test.ts, tests/db/ledger.test.ts",
-      "note": "Honest limit: the flag is application-asserted (same trust boundary as tenant context)"
+      "note": "Honest limit: the flag is application-asserted (same trust boundary as tenant context)",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "V1-POST-02",
@@ -294,7 +520,11 @@
       "m": "M1",
       "s": "I",
       "ev": "Application check + deferred constraint trigger at commit (header agrees with lines, contiguous numbering, reversal mirrors original). Tests: tests/platform/posting-service.test.ts, tests/db/ledger.test.ts",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "V1-POST-03",
@@ -303,7 +533,11 @@
       "m": "M1",
       "s": "I",
       "ev": "Accounts must exist in the company (composite FK), be active on the journal date, and not be control accounts for manual sources. Tests: tests/platform/posting-service.test.ts, tests/db/ledger.test.ts, tests/api/ledger.test.ts",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "V1-POST-04",
@@ -312,25 +546,37 @@
       "m": "M1",
       "s": "I",
       "ev": "Period must exist, contain the date and be OPEN; period row locked FOR SHARE so a concurrent close cannot race. Tests: tests/platform/posting-service.test.ts, tests/db/ledger.test.ts (race test), tests/api/ledger.test.ts",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "V1-POST-05",
       "ref": "V1 Posting Engine",
       "req": "Validate: VAT treatment",
-      "m": "M2",
+      "m": "M4",
       "s": "M",
       "ev": "",
-      "note": "Validator chain exists from M1; the VAT validator ships with the VAT foundation"
+      "note": "Validator chain exists from M1; the VAT validator ships with the VAT foundation",
+      "owner": "Engineering + qualified tax reviewer",
+      "deps": "M4, V1-VAT-*",
+      "accept": "A VAT validator in the posting chain refuses a posting whose VAT treatment, rate (effective on the tax point) or amounts are inconsistent.",
+      "deferred": "-"
     },
     {
       "id": "V1-POST-06",
       "ref": "V1 Posting Engine",
       "req": "Validate: currency",
-      "m": "M1",
+      "m": "M3",
       "s": "P",
       "ev": "Currency validated: journals are in the company base currency and amounts respect its minor units (application + database). Foreign-currency documents, FX rates and revaluation are NOT supported (open decision 1). Tests: tests/platform/posting-service.test.ts, tests/db/ledger.test.ts",
-      "note": "Base currency of the company only; foreign-currency postings and FX revaluation are not in V1 scope until a decision is recorded"
+      "note": "Base currency of the company only; foreign-currency postings and FX revaluation are not in V1 scope until a decision is recorded",
+      "owner": "Engineering",
+      "deps": "M3",
+      "accept": "Single-currency limitation is explicit now (V1-FX-10); full multi-currency validation (transaction currency, rate, original values) delivered by M3.",
+      "deferred": "-"
     },
     {
       "id": "V1-POST-07",
@@ -339,7 +585,11 @@
       "m": "M1",
       "s": "I",
       "ev": "Registered source type required; REVERSAL must name the reversed journal; other sources require a source id; idempotency key per company with content hash. Tests: tests/platform/posting-service.test.ts, packages/contracts/src/ledger.test.ts",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "V1-POST-08",
@@ -348,187 +598,271 @@
       "m": "M1",
       "s": "I",
       "ev": "Source-specific permission evaluated for the journal's company through the central authoriser; AI actors refused; system actors limited to system sources. Tests: tests/platform/posting-service.test.ts, tests/api/ledger.test.ts (roles x posting), tests/api/permissions.test.ts",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "V1-EX-01",
       "ref": "V1 Sales Example",
       "req": "Sale: Dr Trade Receivables / Cr Revenue / Cr Output VAT",
-      "m": "M2",
+      "m": "M5",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "V1-MOD-04",
+      "accept": "Sales example posts exactly Dr receivables / Cr revenue / Cr output VAT for standard, zero-rated and exempt lines, with tests.",
+      "deferred": "-"
     },
     {
       "id": "V1-EX-02",
       "ref": "V1 Purchase Example",
       "req": "Purchase: Dr Expense/Asset / Dr Input VAT / Cr Trade Payables",
-      "m": "M3",
+      "m": "M6",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "V1-MOD-05",
+      "accept": "Purchase example posts Dr expense or asset / Dr input VAT / Cr payables.",
+      "deferred": "-"
     },
     {
       "id": "V1-EX-03",
       "ref": "V1 Receipt",
       "req": "Receipt: Dr Bank / Cr Trade Receivables",
-      "m": "M2",
+      "m": "M5",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "V1-MOD-08",
+      "accept": "Receipt example Dr bank / Cr receivables.",
+      "deferred": "-"
     },
     {
       "id": "V1-EX-04",
       "ref": "V1 Payment",
       "req": "Payment: Dr Trade Payables / Cr Bank",
-      "m": "M3",
+      "m": "M6",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "V1-MOD-09",
+      "accept": "Payment example Dr payables / Cr bank.",
+      "deferred": "-"
     },
     {
       "id": "V1-EX-05",
       "ref": "V1 Credit Notes",
       "req": "Credit notes reverse or adjust the original economic effect with full source linkage",
-      "m": "M2",
+      "m": "M5",
       "s": "M",
       "ev": "",
-      "note": "Sales credit notes M2; purchase (debit) notes M3. The reversal primitive and source linkage ship in M1"
+      "note": "Sales credit notes M2; purchase (debit) notes M3. The reversal primitive and source linkage ship in M1",
+      "owner": "Engineering",
+      "deps": "V1-MOD-06, V1-MOD-07",
+      "accept": "Credit notes reverse or adjust the original with full source linkage in both directions.",
+      "deferred": "-"
     },
     {
       "id": "V1-BANK-01",
       "ref": "V1 Bank",
       "req": "Bank accounts",
-      "m": "M4",
+      "m": "M7",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M7",
+      "accept": "Bank accounts created and linked to ledger accounts.",
+      "deferred": "-"
     },
     {
       "id": "V1-BANK-02",
       "ref": "V1 Bank",
       "req": "Statement imports",
-      "m": "M4",
+      "m": "M7",
       "s": "M",
       "ev": "",
-      "note": "Asynchronous job with progress; file formats to be decided in the M4 design"
+      "note": "Asynchronous job with progress; file formats to be decided in the M4 design",
+      "owner": "Engineering",
+      "deps": "M7",
+      "accept": "CSV statement import as an asynchronous job with progress, retry and duplicate detection (job_record); other formats are decisions.",
+      "deferred": "OFX/MT940/Open Banking"
     },
     {
       "id": "V1-BANK-03",
       "ref": "V1 Bank",
       "req": "Transactions",
-      "m": "M4",
+      "m": "M7",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M7",
+      "accept": "Imported transactions stored immutably with their import batch; never edited.",
+      "deferred": "-"
     },
     {
       "id": "V1-BANK-04",
       "ref": "V1 Bank",
       "req": "Reconciliation",
-      "m": "M4",
+      "m": "M7",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M7",
+      "accept": "Reconciliation workflow on transactions.",
+      "deferred": "-"
     },
     {
       "id": "V1-BANK-05",
       "ref": "V1 Bank",
       "req": "Unmatched items",
-      "m": "M4",
+      "m": "M7",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M7",
+      "accept": "Unmatched list with ageing and a count visible on the dashboard.",
+      "deferred": "-"
     },
     {
       "id": "V1-BANK-06",
       "ref": "V1 Bank",
       "req": "Transfers",
-      "m": "M4",
+      "m": "M7",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M7",
+      "accept": "Transfers between bank accounts post one balanced journal; both statements match it.",
+      "deferred": "-"
     },
     {
       "id": "V1-BANK-07",
       "ref": "V1 Bank",
       "req": "Bank charges",
-      "m": "M4",
+      "m": "M7",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M7",
+      "accept": "Bank charges recognised from statements and posted to the charges account.",
+      "deferred": "-"
     },
     {
       "id": "V1-BANK-08",
       "ref": "V1 Bank",
       "req": "Interest",
-      "m": "M4",
+      "m": "M7",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M7",
+      "accept": "Interest recognised from statements and posted to interest income/expense.",
+      "deferred": "-"
     },
     {
       "id": "V1-REC-01",
       "ref": "V1 Reconciliation",
       "req": "Matched",
-      "m": "M4",
+      "m": "M7",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M7",
+      "accept": "Matched pairs link a statement line to ledger entries and cannot be changed without an audited un-match.",
+      "deferred": "-"
     },
     {
       "id": "V1-REC-02",
       "ref": "V1 Reconciliation",
       "req": "Partially matched",
-      "m": "M4",
+      "m": "M7",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M7",
+      "accept": "A statement line can be matched in parts; the unmatched remainder stays visible.",
+      "deferred": "-"
     },
     {
       "id": "V1-REC-03",
       "ref": "V1 Reconciliation",
       "req": "Unmatched",
-      "m": "M4",
+      "m": "M7",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M7",
+      "accept": "Unmatched items listed with age.",
+      "deferred": "-"
     },
     {
       "id": "V1-REC-04",
       "ref": "V1 Reconciliation",
       "req": "Suggested matches",
-      "m": "M4",
+      "m": "M7",
       "s": "M",
       "ev": "",
-      "note": "Rule-based suggestions; AI suggestions are V6 and may only propose"
+      "note": "Rule-based suggestions; AI suggestions are V6 and may only propose",
+      "owner": "Engineering",
+      "deps": "M7",
+      "accept": "Deterministic rule-based suggestions (amount, date window, reference); a suggestion never posts.",
+      "deferred": "AI suggestions (V6)"
     },
     {
       "id": "V1-REC-05",
       "ref": "V1 Reconciliation",
       "req": "Manual override with audit",
-      "m": "M4",
+      "m": "M7",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M7",
+      "accept": "Manual matches and overrides need a reason and are audited.",
+      "deferred": "-"
     },
     {
       "id": "V1-RPT-01",
       "ref": "V1 Reporting",
       "req": "Trial Balance -> P&L / Balance Sheet",
-      "m": "M5",
+      "m": "M8",
       "s": "M",
       "ev": "",
-      "note": "Trial balance in M1"
+      "note": "Trial balance in M1",
+      "owner": "Engineering",
+      "deps": "M8",
+      "accept": "Trial balance -> P&L / balance sheet reconcile to the cent for any period.",
+      "deferred": "-"
     },
     {
       "id": "V1-RPT-02",
       "ref": "V1 Reporting",
       "req": "Drill-down: Report -> account -> journal -> source transaction -> document",
-      "m": "M5",
+      "m": "M8",
       "s": "P",
       "ev": "Report -> account -> journal -> source reference works (trial balance rows carry drill-down parameters; ledger lines carry journal and source). Source transaction and document links arrive with each source module. Tests: tests/api/ledger.test.ts",
-      "note": "Report -> account -> journal in M1; source transaction and document links arrive with each source module"
+      "note": "Report -> account -> journal in M1; source transaction and document links arrive with each source module",
+      "owner": "Engineering",
+      "deps": "M5-M8",
+      "accept": "Click-through from any report number to account -> journal -> source transaction -> document works for every source type; a test asserts it per source.",
+      "deferred": "-"
     },
     {
       "id": "V1-CTL-01",
@@ -537,16 +871,24 @@
       "m": "M1",
       "s": "I",
       "ev": "Closed and locked periods refuse postings (service + database); lock needs period:lock. Tests: tests/platform/posting-service.test.ts, tests/db/ledger.test.ts, tests/api/ledger.test.ts",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "V1-CTL-02",
       "ref": "V1 Controls",
       "req": "Duplicate document checks",
-      "m": "M2",
+      "m": "M5",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M5",
+      "accept": "Duplicate documents (same contact, number, date, amount) are flagged before posting; override needs a reason.",
+      "deferred": "-"
     },
     {
       "id": "V1-CTL-03",
@@ -555,25 +897,37 @@
       "m": "M1",
       "s": "P",
       "ev": "Trial balance warns about a non-zero suspense balance (account with control kind SUSPENSE). Dashboard alert is M5. Tests: tests/platform/posting-service.test.ts",
-      "note": "Trial balance warning in M1; dashboard alert in M5"
+      "note": "Trial balance warning in M1; dashboard alert in M5",
+      "owner": "Engineering",
+      "deps": "M8",
+      "accept": "Suspense balance shown on the dashboard and blocks period lock unless acknowledged with a reason.",
+      "deferred": "-"
     },
     {
       "id": "V1-CTL-04",
       "ref": "V1 Controls",
       "req": "Negative cash alerts",
-      "m": "M5",
+      "m": "M8",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M7",
+      "accept": "Negative cash/bank balances alert at posting and on the dashboard.",
+      "deferred": "-"
     },
     {
       "id": "V1-CTL-05",
       "ref": "V1 Controls",
       "req": "Unposted transaction alerts",
-      "m": "M5",
+      "m": "M8",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M5",
+      "accept": "Draft/unposted documents older than a threshold are listed and block period close unless acknowledged.",
+      "deferred": "-"
     },
     {
       "id": "V1-CTL-06",
@@ -582,7 +936,11 @@
       "m": "M1",
       "s": "P",
       "ev": "journal.posted/reversed, account.created/updated/chart_initialised and period.closed/reopened/locked/unlocked are audited in the business transaction (before/after, reason, actor, source workflow where relevant). Source modules add their own events in M2+. Tests: tests/platform/posting-service.test.ts, tests/api/ledger.test.ts",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M5-M7",
+      "accept": "Every source module audits its actions (created, approved, posted, voided) with before/after and reason.",
+      "deferred": "-"
     },
     {
       "id": "V1-TEST-01",
@@ -591,7 +949,11 @@
       "m": "M1",
       "s": "P",
       "ev": "Positive, negative, reversal and period-lock tests exist for every M1 posting rule; the VAT test arrives with the VAT validator (M2). Tests: tests/platform/posting-service.test.ts, tests/db/ledger.test.ts",
-      "note": "Applied per rule as each milestone adds rules; the matrix lists the rule set tested"
+      "note": "Applied per rule as each milestone adds rules; the matrix lists the rule set tested",
+      "owner": "Engineering",
+      "deps": "M4",
+      "accept": "Every posting rule has positive, negative, reversal, VAT and period-lock tests; a coverage test lists the rules and fails when one lacks a category.",
+      "deferred": "-"
     },
     {
       "id": "MAN-ACC-01",
@@ -600,7 +962,11 @@
       "m": "M1",
       "s": "I",
       "ev": "Single writer enforced three ways: architecture test (only packages/accounting/src/posting.ts writes journal/journal_line/ledger_sequence; only it sets app.posting; platform/AI/worker cannot import the package), database guard (insert refused without the transaction flag), privileges. Tests: tests/unit/architecture.test.ts, tests/db/ledger.test.ts",
-      "note": "Same as V1-POST-01"
+      "note": "Same as V1-POST-01",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "MAN-ACC-02",
@@ -609,7 +975,11 @@
       "m": "M1",
       "s": "I",
       "ev": "No UPDATE/DELETE/TRUNCATE privilege for the runtime role and append-only triggers (the table owner is refused too). Tests: tests/db/ledger.test.ts, tests/db/privileges.test.ts",
-      "note": "Privileges, triggers, tests"
+      "note": "Privileges, triggers, tests",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "MAN-ACC-03",
@@ -618,7 +988,11 @@
       "m": "M1",
       "s": "I",
       "ev": "Reversal journals: linked both ways, mirror enforced per account at commit, at most once, a reversal cannot be reversed, dated on/after the original, in an open period. Tests: tests/platform/posting-service.test.ts, tests/db/ledger.test.ts, tests/api/ledger.test.ts",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "MAN-ACC-04",
@@ -627,7 +1001,11 @@
       "m": "M1",
       "s": "I",
       "ev": "Application validation and a deferred database check at commit. Tests: tests/platform/posting-service.test.ts, tests/db/ledger.test.ts",
-      "note": "Application and deferred database check"
+      "note": "Application and deferred database check",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "MAN-ACC-05",
@@ -636,25 +1014,37 @@
       "m": "M1",
       "s": "I",
       "ev": "journal: source_type/source_id/source_reference, actor_type + posted_by_user_id, posted_at, correlation id, idempotency key; audit event and transaction.posted outbox event in the same transaction. Tests: tests/platform/posting-service.test.ts",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "MAN-ACC-06",
       "ref": "Manifest accounting controls",
       "req": "Every source transaction is traceable to its journal",
-      "m": "M2",
+      "m": "M5",
       "s": "P",
       "ev": "Journal -> source via source_type/source_id/source_reference (done); source transaction -> journal is delivered per source module (M2+).",
-      "note": "Journal -> source in M1 (source_type/source_id); source -> journal per module"
+      "note": "Journal -> source in M1 (source_type/source_id); source -> journal per module",
+      "owner": "Engineering",
+      "deps": "M5-M7",
+      "accept": "Every source transaction type links to its journal and back; a test enumerates source types.",
+      "deferred": "-"
     },
     {
       "id": "MAN-ACC-07",
       "ref": "Manifest accounting controls",
       "req": "Every report number is drillable to ledger/source evidence",
-      "m": "M5",
+      "m": "M8",
       "s": "M",
       "ev": "",
-      "note": "Same as V1-RPT-02"
+      "note": "Same as V1-RPT-02",
+      "owner": "Engineering",
+      "deps": "M8",
+      "accept": "Every report number drills to ledger and source evidence.",
+      "deferred": "-"
     },
     {
       "id": "MAN-ACC-08",
@@ -663,16 +1053,24 @@
       "m": "M1",
       "s": "P",
       "ev": "Explicit period states and the transition graph are delivered and enforced; the close controls so far are 'posting stops' and 'ledger balances'. Unposted documents and unreconciled bank items are added by M2-M4. Tests: tests/platform/posting-service.test.ts, tests/db/ledger.test.ts",
-      "note": "Same as V1-MOD-19"
+      "note": "Same as V1-MOD-19",
+      "owner": "Engineering",
+      "deps": "M5-M7",
+      "accept": "Close checks include unposted documents and unreconciled bank items.",
+      "deferred": "-"
     },
     {
       "id": "MAN-ACC-09",
       "ref": "Manifest accounting controls",
       "req": "Tax and reporting rules are effective-dated/versioned",
-      "m": "M2",
+      "m": "M4",
       "s": "P",
       "ev": "Report mappings are a versioned registry (REPORT_MAPPING_VERSION = 1, returned with every account) but not yet effective-dated in the database; VAT rates are M2.",
-      "note": "Reporting mappings versioned in M1; VAT rates effective-dated in M2"
+      "note": "Reporting mappings versioned in M1; VAT rates effective-dated in M2",
+      "owner": "Engineering + qualified tax reviewer",
+      "deps": "M4",
+      "accept": "VAT rates and report mappings are effective-dated in the database with source and verification status; a test proves a rate change does not alter posted history.",
+      "deferred": "-"
     },
     {
       "id": "MAN-ACC-10",
@@ -681,16 +1079,24 @@
       "m": "M1",
       "s": "I",
       "ev": "PostingService refuses AI actors (ai_cannot_post); no journal source lists AI; architecture test forbids platform, the AI module and the worker from importing the accounting package. Tests: tests/platform/posting-service.test.ts, packages/contracts/src/ledger.test.ts, tests/unit/architecture.test.ts",
-      "note": "PostingService refuses AI actors; architecture test keeps the AI module away from the posting code"
+      "note": "PostingService refuses AI actors; architecture test keeps the AI module away from the posting code",
+      "owner": "Engineering",
+      "deps": "M1 (accepted)",
+      "accept": "Met - see evidence",
+      "deferred": "-"
     },
     {
       "id": "XP-01",
       "ref": "Cross-platform 1",
       "req": "Universal drill-down",
-      "m": "M5",
+      "m": "M8",
       "s": "M",
       "ev": "",
-      "note": ""
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M8",
+      "accept": "Universal drill-down pattern available to every report.",
+      "deferred": "-"
     },
     {
       "id": "XP-07",
@@ -699,16 +1105,497 @@
       "m": "M1",
       "s": "P",
       "ev": "transaction.posted and accounting_period.state_changed events are published through the outbox; BankImported and InvoiceCreated arrive with M4 and M2.",
-      "note": "TransactionPosted in M1; BankImported M4; InvoiceCreated M2"
+      "note": "TransactionPosted in M1; BankImported M4; InvoiceCreated M2",
+      "owner": "Engineering",
+      "deps": "M5, M7",
+      "accept": "InvoiceCreated (M5), BankImported (M7) published through the outbox.",
+      "deferred": "-"
     },
     {
       "id": "V1-DOD-01",
       "ref": "Manifest definition of done",
       "req": "UI workflows are usable (V1 screens)",
-      "m": "M6",
+      "m": "M9",
       "s": "M",
       "ev": "",
-      "note": "DEC-002: parallel behind feature flags"
+      "note": "DEC-002: parallel behind feature flags",
+      "owner": "Engineering (front end)",
+      "deps": "M9",
+      "accept": "Usable end-to-end bookkeeping screens behind flags, tested against the real API, authorisation and tenant boundaries, with accessibility checks.",
+      "deferred": "Mobile portal"
+    },
+    {
+      "id": "V1-CTL-07",
+      "ref": "DEC-012",
+      "req": "Distinct permission `ledger:opening-balance` required for opening-balance journals",
+      "m": "M2",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1",
+      "accept": "Only holders of the permission can post OPENING_BALANCE; owner/admin/partner hold it, others do not; 403 and audited denial otherwise; role/permission sync tests pass.",
+      "deferred": "-"
+    },
+    {
+      "id": "V1-CTL-08",
+      "ref": "DEC-012",
+      "req": "Control accounts protected from ordinary manual postings; narrowly authorised adjustments need reason, evidence and audit trail",
+      "m": "M2",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1, documents/evidence links",
+      "accept": "A CONTROL_ADJUSTMENT request needs permission `ledger:control-adjustment`, a reason of at least 20 characters and at least one evidence document readable by the requester; posting without them fails; the journal links to the request, the evidence and the approver; ordinary MANUAL journals still cannot touch control accounts.",
+      "deferred": "-"
+    },
+    {
+      "id": "V1-CTL-09",
+      "ref": "DEC-012",
+      "req": "Configurable second-person approval for material opening balances and exceptional control-account adjustments",
+      "m": "M2",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering (build); product owner (thresholds)",
+      "deps": "V1-CTL-07, V1-CTL-08",
+      "accept": "Per-company policy sets the materiality threshold and which request kinds need approval; above it the journal is not posted until a different person holding `ledger:approve` approves; the requester can never approve their own request; below the threshold policy may allow direct posting only if configured; approval posts through the PostingService; rejection and expiry leave the ledger untouched.",
+      "deferred": "Per-account rules; delegation; multi-step chains"
+    },
+    {
+      "id": "V1-CTL-10",
+      "ref": "DEC-012",
+      "req": "Approval requests are not ledger entries: pending requests cannot affect balances; posted journals stay immutable; correction by reversal only",
+      "m": "M2",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering",
+      "deps": "V1-CTL-09",
+      "accept": "Trial balance and general ledger ignore pending requests; an approved request produces exactly one journal (idempotent); tests prove no UPDATE/DELETE path; the AI actor cannot request or approve.",
+      "deferred": "-"
+    },
+    {
+      "id": "V1-CTL-11",
+      "ref": "DEC-012",
+      "req": "Opening-balance fence replaced by permission + approval (first-day rule retained)",
+      "m": "M2",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering",
+      "deps": "V1-CTL-07",
+      "accept": "The first-day-of-first-period rule remains; a test shows the permission, approval and date rule all apply together.",
+      "deferred": "-"
+    },
+    {
+      "id": "V1-FX-01",
+      "ref": "DEC-009",
+      "req": "Functional currency: company base currency is the functional currency; cannot change once postings exist",
+      "m": "M3",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1",
+      "accept": "A company has exactly one functional currency; changing it after the first posting is refused by the database; documented.",
+      "deferred": "Hedge accounting; forward contracts; intercompany eliminations"
+    },
+    {
+      "id": "V1-FX-02",
+      "ref": "DEC-009",
+      "req": "Transaction currency on documents and journal lines (ISO 4217 from the currency table)",
+      "m": "M3",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering",
+      "deps": "V1-FX-01",
+      "accept": "A line carries its transaction currency; only known, active currencies accepted; functional-currency lines need no rate.",
+      "deferred": "Hedge accounting; forward contracts; intercompany eliminations"
+    },
+    {
+      "id": "V1-FX-03",
+      "ref": "DEC-009",
+      "req": "Exchange-rate source and date: rates stored with source, rate date, provenance and verification status; lookup rule documented",
+      "m": "M3",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering (build); product owner (source decision)",
+      "deps": "Open decision: rate source",
+      "accept": "Rate table with (from, to, date, rate, source, retrieved_at, verified); manual entry audited; a documented lookup rule (transaction date, else last earlier rate within N days, else refuse); an unverified rate is flagged and can be blocked by policy; a rate-source adapter port exists with a fake for tests; no live source is enabled without a recorded decision.",
+      "deferred": "Hedge accounting; forward contracts; intercompany eliminations"
+    },
+    {
+      "id": "V1-FX-04",
+      "ref": "DEC-009",
+      "req": "Original-currency values preserved on every foreign-currency line (amount, currency, rate, rate id) and immutable",
+      "m": "M3",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering",
+      "deps": "V1-FX-02, V1-FX-03",
+      "accept": "Journal lines store original amount, currency and the rate used; a reversal reproduces them; the ledger refuses lines with an original amount but no rate and vice versa.",
+      "deferred": "Hedge accounting; forward contracts; intercompany eliminations"
+    },
+    {
+      "id": "V1-FX-05",
+      "ref": "DEC-009",
+      "req": "Functional-currency postings: journals balance in the functional currency and per currency; rounding differences to a designated rounding account",
+      "m": "M3",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering",
+      "deps": "V1-FX-04",
+      "accept": "For every journal sum(debit)=sum(credit) in functional currency; a conversion that does not round cleanly produces an explicit rounding line to a system rounding account, capped by a tolerance; tests with awkward rates.",
+      "deferred": "Hedge accounting; forward contracts; intercompany eliminations"
+    },
+    {
+      "id": "V1-FX-06",
+      "ref": "DEC-009",
+      "req": "Rounding rules: rate precision, per-line vs per-document conversion, rounding mode, minor units per currency",
+      "m": "M3",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering (build); product owner (policy)",
+      "deps": "Open decision: rounding policy",
+      "accept": "The policy is written (precision, mode, level), implemented in one function and covered by property tests (conversion then reverse conversion within tolerance; totals independent of line order).",
+      "deferred": "Hedge accounting; forward contracts; intercompany eliminations"
+    },
+    {
+      "id": "V1-FX-07",
+      "ref": "DEC-009",
+      "req": "Realised FX gains and losses on settlement (receipts/payments against invoices/bills)",
+      "m": "M3",
+      "s": "M",
+      "ev": "",
+      "note": "Engine in M3; used by receipts and payments in M5/M6",
+      "owner": "Engineering",
+      "deps": "V1-FX-05, M5, M6",
+      "accept": "Settling a foreign invoice at a different rate posts the difference to realised gain/loss accounts exactly once; partial settlements prorate; tested with several rates.",
+      "deferred": "Hedge accounting; forward contracts; intercompany eliminations"
+    },
+    {
+      "id": "V1-FX-08",
+      "ref": "DEC-009",
+      "req": "Period-end revaluation of monetary items (unrealised) with auto-reversal",
+      "m": "M3",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering (build); product owner (policy)",
+      "deps": "V1-FX-05, open decision: revaluation policy",
+      "accept": "Revaluation at period end posts unrealised gain/loss journals for foreign-currency receivables, payables and bank, and reverses on the first day of the next period; idempotent per period; blocked in locked periods; reconciles to the sub-ledger.",
+      "deferred": "Hedge accounting; forward contracts; intercompany eliminations"
+    },
+    {
+      "id": "V1-FX-09",
+      "ref": "DEC-009",
+      "req": "Acceptance tests for reconciliation and reporting in multiple currencies",
+      "m": "M3",
+      "s": "M",
+      "ev": "",
+      "note": "Multi-currency reporting checks repeat in M8",
+      "owner": "Engineering",
+      "deps": "V1-FX-05..08",
+      "accept": "Trial balance in functional currency balances; the sub-ledger in original currency revalued at the closing rate equals the control account; FX gain/loss report drills to journals.",
+      "deferred": "Hedge accounting; forward contracts; intercompany eliminations"
+    },
+    {
+      "id": "V1-FX-10",
+      "ref": "DEC-009",
+      "req": "Single-currency limitation is explicit until the foundation is implemented",
+      "m": "M3",
+      "s": "I",
+      "ev": "Delivered with this plan update: PostingService refuses a non-base `currency` with `foreign_currency_not_supported`; OpenAPI description on POST journals; v1-plan.md section 4. Tests: tests/platform/posting-service.test.ts, tests/api/ledger.test.ts, packages/contracts/src/ledger.test.ts.",
+      "note": "",
+      "owner": "Engineering",
+      "deps": "M1",
+      "accept": "A journal request naming a currency other than the company base currency is refused with code `foreign_currency_not_supported` and a message pointing to the plan; OpenAPI and documentation state the limitation; tests cover it.",
+      "deferred": "-"
+    },
+    {
+      "id": "V1-VAT-01",
+      "ref": "DEC-010",
+      "req": "Effective-dated tax codes (code, treatment, direction, description) with source and verification status",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering (build); qualified tax reviewer (rules)",
+      "deps": "M3; verified HMRC sources",
+      "accept": "Meets the requirement with tests: positive, negative, reversal, period-lock and effective-date boundary cases; sources verified and recorded before activation.",
+      "deferred": "Cash accounting; Flat Rate Scheme; partial exemption; capital goods scheme; margin schemes; OSS/import schemes; MTD submission (V5)"
+    },
+    {
+      "id": "V1-VAT-02",
+      "ref": "DEC-010",
+      "req": "Effective-dated rates per tax code (no overlapping rates for one code), each with official source reference, retrieval date and UNVERIFIED/VERIFIED status; an UNVERIFIED rate cannot be activated",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering (build); qualified tax reviewer (rules)",
+      "deps": "M3; verified HMRC sources",
+      "accept": "Meets the requirement with tests: positive, negative, reversal, period-lock and effective-date boundary cases; sources verified and recorded before activation.",
+      "deferred": "Cash accounting; Flat Rate Scheme; partial exemption; capital goods scheme; margin schemes; OSS/import schemes; MTD submission (V5)"
+    },
+    {
+      "id": "V1-VAT-03",
+      "ref": "DEC-010",
+      "req": "Treatments: standard, reduced, zero-rated, exempt, outside the scope of VAT",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering (build); qualified tax reviewer (rules)",
+      "deps": "M3; verified HMRC sources",
+      "accept": "Meets the requirement with tests: positive, negative, reversal, period-lock and effective-date boundary cases; sources verified and recorded before activation.",
+      "deferred": "Cash accounting; Flat Rate Scheme; partial exemption; capital goods scheme; margin schemes; OSS/import schemes; MTD submission (V5)"
+    },
+    {
+      "id": "V1-VAT-04",
+      "ref": "DEC-010",
+      "req": "Sales VAT (output tax) on invoices; purchase VAT (input tax) on bills",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering (build); qualified tax reviewer (rules)",
+      "deps": "M3; verified HMRC sources",
+      "accept": "Meets the requirement with tests: positive, negative, reversal, period-lock and effective-date boundary cases; sources verified and recorded before activation.",
+      "deferred": "Cash accounting; Flat Rate Scheme; partial exemption; capital goods scheme; margin schemes; OSS/import schemes; MTD submission (V5)"
+    },
+    {
+      "id": "V1-VAT-05",
+      "ref": "DEC-010",
+      "req": "VAT on credit notes and debit notes with linkage to the original supply",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering (build); qualified tax reviewer (rules)",
+      "deps": "M3; verified HMRC sources",
+      "accept": "Meets the requirement with tests: positive, negative, reversal, period-lock and effective-date boundary cases; sources verified and recorded before activation.",
+      "deferred": "Cash accounting; Flat Rate Scheme; partial exemption; capital goods scheme; margin schemes; OSS/import schemes; MTD submission (V5)"
+    },
+    {
+      "id": "V1-VAT-06",
+      "ref": "DEC-010",
+      "req": "VAT-inclusive and VAT-exclusive entry; calculations exact, rounding rule documented and tested",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering (build); qualified tax reviewer (rules)",
+      "deps": "M3; verified HMRC sources",
+      "accept": "Meets the requirement with tests: positive, negative, reversal, period-lock and effective-date boundary cases; sources verified and recorded before activation.",
+      "deferred": "Cash accounting; Flat Rate Scheme; partial exemption; capital goods scheme; margin schemes; OSS/import schemes; MTD submission (V5)"
+    },
+    {
+      "id": "V1-VAT-07",
+      "ref": "DEC-010",
+      "req": "Tax-point handling: supply date, invoice date, payment date; the rate and period are those of the tax point",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering (build); qualified tax reviewer (rules)",
+      "deps": "M3; verified HMRC sources",
+      "accept": "Meets the requirement with tests: positive, negative, reversal, period-lock and effective-date boundary cases; sources verified and recorded before activation.",
+      "deferred": "Cash accounting; Flat Rate Scheme; partial exemption; capital goods scheme; margin schemes; OSS/import schemes; MTD submission (V5)"
+    },
+    {
+      "id": "V1-VAT-08",
+      "ref": "DEC-010",
+      "req": "Control-account reconciliation: the VAT control account equals the sum of VAT lines by period; breaks are listed",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering (build); qualified tax reviewer (rules)",
+      "deps": "M3; verified HMRC sources",
+      "accept": "Meets the requirement with tests: positive, negative, reversal, period-lock and effective-date boundary cases; sources verified and recorded before activation.",
+      "deferred": "Cash accounting; Flat Rate Scheme; partial exemption; capital goods scheme; margin schemes; OSS/import schemes; MTD submission (V5)"
+    },
+    {
+      "id": "V1-VAT-09",
+      "ref": "DEC-010",
+      "req": "VAT-return workpaper (the nine-box figures with drill-down to transactions) - a workpaper, not a submission",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering (build); qualified tax reviewer (rules)",
+      "deps": "M3; verified HMRC sources",
+      "accept": "Meets the requirement with tests: positive, negative, reversal, period-lock and effective-date boundary cases; sources verified and recorded before activation.",
+      "deferred": "Cash accounting; Flat Rate Scheme; partial exemption; capital goods scheme; margin schemes; OSS/import schemes; MTD submission (V5)"
+    },
+    {
+      "id": "V1-VAT-10",
+      "ref": "DEC-010",
+      "req": "Reverse-charge cases accommodated by the model (e.g. domestic reverse charge, imported services): a line can account for output and input VAT simultaneously",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering (build); qualified tax reviewer (rules)",
+      "deps": "M3; verified HMRC sources",
+      "accept": "Meets the requirement with tests: positive, negative, reversal, period-lock and effective-date boundary cases; sources verified and recorded before activation.",
+      "deferred": "Cash accounting; Flat Rate Scheme; partial exemption; capital goods scheme; margin schemes; OSS/import schemes; MTD submission (V5)"
+    },
+    {
+      "id": "V1-VAT-11",
+      "ref": "DEC-010",
+      "req": "VAT treatment/rate is separate from VAT accounting scheme; scheme registry with STANDARD active and CASH / FLAT_RATE present but not implemented and not selectable",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering (build); qualified tax reviewer (rules)",
+      "deps": "M3; verified HMRC sources",
+      "accept": "Meets the requirement with tests: positive, negative, reversal, period-lock and effective-date boundary cases; sources verified and recorded before activation.",
+      "deferred": "Cash accounting; Flat Rate Scheme; partial exemption; capital goods scheme; margin schemes; OSS/import schemes; MTD submission (V5)"
+    },
+    {
+      "id": "V1-VAT-12",
+      "ref": "DEC-010",
+      "req": "Every tax rule records its official HMRC source, effective dates and who verified it; nothing is entered from memory",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering (build); qualified tax reviewer (rules)",
+      "deps": "M3; verified HMRC sources",
+      "accept": "Meets the requirement with tests: positive, negative, reversal, period-lock and effective-date boundary cases; sources verified and recorded before activation.",
+      "deferred": "Cash accounting; Flat Rate Scheme; partial exemption; capital goods scheme; margin schemes; OSS/import schemes; MTD submission (V5)"
+    },
+    {
+      "id": "V1-VAT-13",
+      "ref": "DEC-010",
+      "req": "VAT registration details on the company (number, effective date, return frequency, scheme) with validation",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering (build); qualified tax reviewer (rules)",
+      "deps": "M3; verified HMRC sources",
+      "accept": "Meets the requirement with tests: positive, negative, reversal, period-lock and effective-date boundary cases; sources verified and recorded before activation.",
+      "deferred": "Cash accounting; Flat Rate Scheme; partial exemption; capital goods scheme; margin schemes; OSS/import schemes; MTD submission (V5)"
+    },
+    {
+      "id": "V1-VAT-14",
+      "ref": "DEC-010",
+      "req": "Posting validator enforces consistency of treatment, rate and amounts (V1-POST-05)",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering (build); qualified tax reviewer (rules)",
+      "deps": "M3; verified HMRC sources",
+      "accept": "Meets the requirement with tests: positive, negative, reversal, period-lock and effective-date boundary cases; sources verified and recorded before activation.",
+      "deferred": "Cash accounting; Flat Rate Scheme; partial exemption; capital goods scheme; margin schemes; OSS/import schemes; MTD submission (V5)"
+    },
+    {
+      "id": "V1-VAT-15",
+      "ref": "DEC-010",
+      "req": "Foreign-currency VAT: VAT amounts in the functional currency per the verified rule, with the original-currency amounts kept",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering (build); qualified tax reviewer (rules)",
+      "deps": "M3; verified HMRC sources",
+      "accept": "Meets the requirement with tests: positive, negative, reversal, period-lock and effective-date boundary cases; sources verified and recorded before activation.",
+      "deferred": "Cash accounting; Flat Rate Scheme; partial exemption; capital goods scheme; margin schemes; OSS/import schemes; MTD submission (V5)"
+    },
+    {
+      "id": "V1-CON-01",
+      "ref": "DEC-011",
+      "req": "Customer and supplier roles on the shared `contact`, with role-specific profile tables for differing fields",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering",
+      "deps": "V0 contacts (master data), V0 field encryption",
+      "accept": "Meets the requirement with API, permission, tenant-isolation and audit tests.",
+      "deferred": "Contact merge; import from other systems (V11)"
+    },
+    {
+      "id": "V1-CON-02",
+      "ref": "DEC-011",
+      "req": "One contact may hold both roles; roles are added and removed with audit; removing a role is refused while open documents exist",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering",
+      "deps": "V0 contacts (master data), V0 field encryption",
+      "accept": "Meets the requirement with API, permission, tenant-isolation and audit tests.",
+      "deferred": "Contact merge; import from other systems (V11)"
+    },
+    {
+      "id": "V1-CON-03",
+      "ref": "DEC-011",
+      "req": "Tenant and company scope enforced on roles and profiles (a company-level contact is invisible to other companies)",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering",
+      "deps": "V0 contacts (master data), V0 field encryption",
+      "accept": "Meets the requirement with API, permission, tenant-isolation and audit tests.",
+      "deferred": "Contact merge; import from other systems (V11)"
+    },
+    {
+      "id": "V1-CON-04",
+      "ref": "DEC-011",
+      "req": "Documents keep a snapshot of the contact details used (name, address, VAT number) so history survives later edits",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering",
+      "deps": "V0 contacts (master data), V0 field encryption",
+      "accept": "Meets the requirement with API, permission, tenant-isolation and audit tests.",
+      "deferred": "Contact merge; import from other systems (V11)"
+    },
+    {
+      "id": "V1-CON-05",
+      "ref": "DEC-011",
+      "req": "Sensitive profile data (bank details) encrypted at field level and never returned in lists, logs or audit snapshots",
+      "m": "M4",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering",
+      "deps": "V0 contacts (master data), V0 field encryption",
+      "accept": "Meets the requirement with API, permission, tenant-isolation and audit tests.",
+      "deferred": "Contact merge; import from other systems (V11)"
+    },
+    {
+      "id": "V1-PRIV-01",
+      "ref": "DEC-013",
+      "req": "Session/challenge IP and user agent: collection, use, access and purpose traced; policy-controlled retention and deletion proposed; tests",
+      "m": "Privacy track (parallel to V1)",
+      "s": "M",
+      "ev": "",
+      "note": "",
+      "owner": "Engineering (investigation); DPO / legal (review and decisions)",
+      "deps": "V0 audit switch; retention schedule (DEC-003)",
+      "accept": "docs/legal/device-metadata-investigation.md traces every write and read with code references; characterisation tests fail if collection or exposure changes silently; a proposal for policy-controlled retention/deletion is written but NOT enabled; the item is not marked resolved until the privacy review is recorded.",
+      "deferred": "Any deletion job (S4(b) is frozen)"
     }
+  ],
+  "version": 2,
+  "history": [
+    "v1 (2026-10-09): 77 rows, milestones M1-M6 (initial plan, commit 0aeff94 lineage).",
+    "v2 (2026-10-09, DEC-008..014): M1 accepted (fae5270). Milestones re-sequenced: new M2 (ledger controls), M3 (foreign currency), M4 (contact roles + VAT foundation); old M2 -> M5 (sales) + M4 (VAT/customers), old M3 -> M6, old M4 -> M7, old M5 -> M8, old M6 -> M9. Rows added: V1-FX-*, V1-VAT-*, V1-CON-*, V1-CTL-07..11, V1-PRIV-01. Each row now carries owner, dependencies, acceptance criteria and deferred scope."
   ]
 }
