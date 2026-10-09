@@ -28,6 +28,8 @@ export const TABLE_PROTECTION: Record<string, { protection: Protection; why: str
   country: { protection: 'REFERENCE', why: 'ISO 3166-1; global, read-only for the runtime role.' },
   tax_jurisdiction: { protection: 'REFERENCE', why: 'Effective-dated jurisdictions; global, read-only for the runtime role.' },
   document_type: { protection: 'REFERENCE', why: 'Controlled document types; global, read-only for the runtime role.' },
+  retention_category: { protection: 'REFERENCE', why: 'Retention classification categories (provisional periods); global, read-only for the runtime role.' },
+  retention_rule: { protection: 'REFERENCE', why: 'Maps every document type and table to a retention category; global, read-only for the runtime role.' },
   contact: { protection: 'RLS+APP', why: 'Master data; company-linked contacts follow company access, organisation-level ones the organisation role.' },
   address: { protection: 'RLS+APP', why: 'Owned by exactly one company or contact; follows the owner\'s access rules.' },
   company_officer: { protection: 'RLS+APP', why: 'Directors/officers of a company; follows company access.' },

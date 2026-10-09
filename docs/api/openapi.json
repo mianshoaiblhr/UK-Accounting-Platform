@@ -6213,6 +6213,52 @@
         ]
       }
     },
+    "/api/v1/organisations/{organisationId}/reference/retention-categories": {
+      "get": {
+        "operationId": "Reference_retentionCategories",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Categories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetentionCategoryList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Reference data"
+        ],
+        "x-required-permissions": [
+          "org:read"
+        ],
+        "summary": "Retention classification: categories, periods (PROVISIONAL) and the document types in each. Classification only - nothing is purged",
+        "description": "**Requires permission:** `org:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/organisations/{organisationId}/workflows/definitions": {
       "get": {
         "operationId": "Workflows_definitions",
@@ -12869,6 +12915,79 @@
                 "authority",
                 "validFrom",
                 "validTo"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "RetentionCategoryList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "PERIOD",
+                    "WHILE_ACTIVE",
+                    "NOT_APPLICABLE"
+                  ]
+                },
+                "years": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "days": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "trigger": {
+                  "type": "string",
+                  "description": "The event the period runs from"
+                },
+                "basis": {
+                  "type": "string",
+                  "description": "Statutory or policy anchor (not legal advice)"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "PROVISIONAL",
+                    "CONFIRMED"
+                  ],
+                  "description": "PROVISIONAL until the DPO/legal decision is recorded"
+                },
+                "documentTypes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "code",
+                "name",
+                "kind",
+                "years",
+                "days",
+                "trigger",
+                "basis",
+                "status",
+                "documentTypes"
               ],
               "additionalProperties": false
             }

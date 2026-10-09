@@ -30,7 +30,7 @@ export const NAMED_RESPONSES: Record<string, ZodTypeAny> = {
   DownloadLink: R.DownloadLink, CheckResult: R.CheckResult,
   CompanyPage: R.Pages.Company, DocumentPage: R.Pages.DocumentRecord, JobPage: R.Pages.Job, TaskPage: R.Pages.Task, NotificationPage: R.Pages.Notification,
   WorkflowPage: R.Pages.WorkflowInstance, AiProposalPage: R.Pages.AiProposal, AuditEventPage: R.Pages.AuditEvent,
-  PeriodList: R.items(R.Period), RoleList: z.object({ items: z.array(R.Role), permissionCatalogue: z.array(z.string()) }), MemberList: R.items(R.Member), ContactPage: R.Pages.Contact, AddressList: R.items(R.Address), OfficerList: R.items(R.Officer), CurrencyList: R.items(R.Currency), CountryList: R.items(R.Country), TaxJurisdictionList: R.items(R.TaxJurisdiction), FeatureFlagList: R.items(R.FeatureFlag), PracticeList: R.items(R.Practice),
+  PeriodList: R.items(R.Period), RoleList: z.object({ items: z.array(R.Role), permissionCatalogue: z.array(z.string()) }), MemberList: R.items(R.Member), ContactPage: R.Pages.Contact, AddressList: R.items(R.Address), OfficerList: R.items(R.Officer), CurrencyList: R.items(R.Currency), CountryList: R.items(R.Country), TaxJurisdictionList: R.items(R.TaxJurisdiction), RetentionCategoryList: R.items(R.RetentionCategoryView), FeatureFlagList: R.items(R.FeatureFlag), PracticeList: R.items(R.Practice),
   TaskCommentList: R.items(R.TaskComment), TaskAttachmentList: R.items(R.TaskAttachment), TaskReminderList: R.items(R.TaskReminder), DocumentFolderList: R.items(R.DocumentFolder), EvidenceLinkList: R.items(R.EvidenceLink), DocumentExtractionList: R.items(R.DocumentExtraction), DocumentAccessList: R.items(R.DocumentAccessGrant), InvitationList: R.items(R.Invitation), ConnectionList: R.items(R.Connection), ProviderList: R.items(R.Provider), SessionList: R.items(R.Session),
   LoginHistory: R.items(R.LoginEvent), WorkflowDefinitionList: R.items(R.WorkflowDefinitionView),
   UnreadCount: z.object({ count: z.number().int() }),
@@ -133,6 +133,7 @@ export const ROUTES: Record<string, RouteDoc> = {
   // ── Workflows ──
   [`GET ${v}/reference/currencies`]: { tag: 'Reference data', summary: 'ISO 4217 currencies (read-only)', ok: [200, 'CurrencyList', 'Currencies'] },
   [`GET ${v}/reference/countries`]: { tag: 'Reference data', summary: 'ISO 3166-1 countries (read-only)', ok: [200, 'CountryList', 'Countries'] },
+  [`GET ${v}/reference/retention-categories`]: { tag: 'Reference data', summary: 'Retention classification: categories, periods (PROVISIONAL) and the document types in each. Classification only - nothing is purged', ok: [200, 'RetentionCategoryList', 'Categories'] },
   [`GET ${v}/reference/tax-jurisdictions`]: { tag: 'Reference data', summary: 'Tax jurisdiction definitions in force on a date (effective-dated; default today)', query: C.asOfQuerySchema, ok: [200, 'TaxJurisdictionList', 'Jurisdictions'] },
   [`POST ${v}/contacts`]: { tag: 'Contacts', summary: 'Create a contact (organisation-level, or attached to one company)', body: ['CreateContactRequest', C.createContactSchema], ok: [201, 'Contact', 'Created'] },
   [`GET ${v}/contacts`]: { tag: 'Contacts', summary: 'List contacts the caller can see', query: C.contactListQuerySchema, ok: [200, 'ContactPage', 'Page of contacts'] },

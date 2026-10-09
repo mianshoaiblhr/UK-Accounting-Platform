@@ -152,6 +152,9 @@ describe('document management and evidence graph migrations upgrade a populated 
     deploy(stage('with-docs', all), owner);
     expect(psql(url, `SELECT string_agg(name||':'||document_class||':'||visibility||':'||coalesce(folder_id::text,'-'), ',' ORDER BY name) FROM document`)).toBe('a.pdf:GENERAL:STANDARD:-,b.pdf:LEGACY_INVOICE:STANDARD:-,c.pdf:OTHER:STANDARD:-');
     expect(psql(url, `SELECT count(*) FROM document_type WHERE code='LEGACY_INVOICE'`)).toBe('1');
+    // a carried-over legacy type is classified for retention too (ADR-39): general business documents
+    expect(psql(url, `SELECT category_code FROM retention_rule WHERE subject_kind='DOCUMENT_TYPE' AND subject='LEGACY_INVOICE'`)).toBe('GENERAL_BUSINESS');
+    expect(psql(url, `SELECT count(*) FROM document_type t WHERE NOT EXISTS (SELECT 1 FROM retention_rule r WHERE r.subject_kind='DOCUMENT_TYPE' AND r.subject=t.code)`)).toBe('0');
     // task attachment -> ATTACHED_TO; workflow evidence -> SUPPORTS (a document cited twice is one link)
     expect(psql(url, `SELECT string_agg(source_type||'>'||kind||'>'||target_id::text, ',' ORDER BY kind, target_id) FROM evidence_link WHERE company_id='${CO}'`))
       .toBe(`task>ATTACHED_TO>${D1},workflow_instance>SUPPORTS>${D1},workflow_instance>SUPPORTS>${D2}`);

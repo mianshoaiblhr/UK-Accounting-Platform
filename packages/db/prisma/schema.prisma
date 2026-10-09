@@ -1166,3 +1166,30 @@ model NotificationDelivery {
   @@unique([notificationId, channel])
   @@map("notification_delivery")
 }
+
+// ───────────── Retention classification (ADR-39; reference data, classification only) ─────────────
+model RetentionCategory {
+  code         String @id
+  name         String
+  kind         String
+  periodYears  Int?   @map("period_years")
+  periodDays   Int?   @map("period_days")
+  periodTrigger String @map("period_trigger")
+  basis        String
+  status       String @default("PROVISIONAL")
+
+  rules RetentionRule[]
+
+  @@map("retention_category")
+}
+
+model RetentionRule {
+  subjectKind  String @map("subject_kind")
+  subject      String
+  categoryCode String @map("category_code")
+
+  category RetentionCategory @relation(fields: [categoryCode], references: [code])
+
+  @@id([subjectKind, subject])
+  @@map("retention_rule")
+}

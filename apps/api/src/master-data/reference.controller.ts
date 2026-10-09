@@ -33,4 +33,15 @@ export class ReferenceController {
     }));
     return { items: rows.map((r) => ({ id: r.id, code: r.code, countryCode: r.countryCode, name: r.name, authority: r.authority, validFrom: r.validFrom.toISOString().slice(0, 10), validTo: r.validTo ? r.validTo.toISOString().slice(0, 10) : null })) };
   }
+
+  /**
+   * Retention classification: every category with its period and which document types fall in it. Classification only - nothing is purged.
+   * All periods are PROVISIONAL until the DPO/legal decision is recorded (status says so).
+   */
+  @Get('retention-categories') @RequirePermissions('org:read')
+  async retentionCategories(@Org() org: OrgAccess) {
+    const rows = await this.db.tenant({ organisationId: org.organisationId, userId: org.userId }, (tx) => tx.retentionCategory.findMany({
+      orderBy: { code: 'asc' }, include: { rules: { where: { subjectKind: 'DOCUMENT_TYPE' }, orderBy: { subject: 'asc' } } } }));
+    return { items: rows.map((c) => ({ code: c.code, name: c.name, kind: c.kind, years: c.periodYears, days: c.periodDays, trigger: c.periodTrigger, basis: c.basis, status: c.status, documentTypes: c.rules.map((r) => r.subject) })) };
+  }
 }
