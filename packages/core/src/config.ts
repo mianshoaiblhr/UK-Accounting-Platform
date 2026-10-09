@@ -42,6 +42,10 @@ const schema = z.object({
   API_DOCS_ENABLED: z.enum(['true', 'false']).optional(), // default: on outside production
   MAX_UPLOAD_BYTES: z.coerce.number().default(25 * 1024 * 1024),
   WORKER_CONCURRENCY: z.coerce.number().default(5),
+  // Feature flags: "key=true,other=false" (keys validated against the registry at startup). Per-organisation overrides win.
+  FEATURE_FLAG_DEFAULTS: z.string().default(''),
+  // How long an instance may serve a cached flag value (0 = always read). A switch-off reaches every instance within this window.
+  FEATURE_FLAG_CACHE_MS: z.coerce.number().int().min(0).default(5000),
   // Transactional outbox
   OUTBOX_POLL_MS: z.coerce.number().int().min(50).default(500),
   OUTBOX_RETENTION_DAYS: z.coerce.number().int().min(1).default(14), // processed events older than this are deleted

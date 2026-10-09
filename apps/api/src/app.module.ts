@@ -6,7 +6,9 @@ import { AuthModule } from './auth/auth.module';
 import { AuthGuard } from './common/auth.guard';
 import { IdempotencyInterceptor } from './common/idempotency.interceptor';
 import { InfraModule } from './common/infra.module';
+import { FeatureGuard } from './common/feature.guard';
 import { OrgGuard } from './common/org.guard';
+import { FeatureFlagsController } from './features/features.controller';
 import { ProblemFilter } from './common/problem.filter';
 import { CompaniesController } from './companies/companies.controller';
 import { CompaniesService } from './companies/companies.service';
@@ -32,11 +34,12 @@ export class AppModule {
       module: AppModule,
       imports: [InfraModule.forRoot(config), AuditModule, AuthModule],
       controllers: [HealthController, OrganisationsController, CompaniesController, DocumentsController, JobsController,
-        TasksController, PracticesController, WorkflowsController, NotificationsController, IntegrationsController, AiController],
+        TasksController, PracticesController, FeatureFlagsController, WorkflowsController, NotificationsController, IntegrationsController, AiController],
       providers: [
         OrganisationsService, PracticesService, CompaniesService, DocumentsService, TasksService,
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_GUARD, useClass: OrgGuard },
+        { provide: APP_GUARD, useClass: FeatureGuard },
         { provide: APP_INTERCEPTOR, useClass: IdempotencyInterceptor },
         { provide: APP_FILTER, useClass: ProblemFilter },
       ],

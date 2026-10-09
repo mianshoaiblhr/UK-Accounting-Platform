@@ -6,3 +6,4 @@ export * from './integrations';
 export * from './ai';
 export * from './mock-adapters';
 export * from './audit';
+export * from './features';

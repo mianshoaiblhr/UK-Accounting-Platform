@@ -5,7 +5,7 @@ import { AppError, notFound } from '@uk/core';
 import type { Database } from '@uk/db';
 import type { JobProducer } from '@uk/jobs';
 import type { AiGateway, AiProposalService } from '@uk/platform';
-import { Idempotent, Org, RequirePermissions } from '../common/decorators';
+import { Idempotent, Org, RequireFeature, RequirePermissions } from '../common/decorators';
 import { AI_GATEWAY, AI_PROPOSALS, DB, JOBS } from '../common/tokens';
 import type { OrgAccess } from '../common/types';
 import { ZodPipe } from '../common/zod.pipe';
@@ -21,7 +21,7 @@ export class AiController {
   private ctx(org: OrgAccess) { return { organisationId: org.organisationId, userId: org.userId }; }
 
   /** Asynchronous by design: the model call happens in the worker; the result is a PROPOSAL awaiting human review. */
-  @Post('suggestions') @HttpCode(202) @RequirePermissions('ai:use') @Idempotent()
+  @Post('suggestions') @HttpCode(202) @RequirePermissions('ai:use') @RequireFeature('ai.beta') @Idempotent()
   async suggest(@Org() org: OrgAccess, @Body(new ZodPipe(requestAiSuggestionSchema)) b: z.output<typeof requestAiSuggestionSchema>) {
     if (!this.gateway.available) throw new AppError(503, 'ai_unavailable', 'No AI provider is configured');
     await org.access.requireResource('ai:use', b.companyId ?? null, 'Company not found');

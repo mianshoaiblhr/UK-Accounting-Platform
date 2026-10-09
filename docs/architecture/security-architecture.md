@@ -7,7 +7,7 @@ Authoritative source: `packages/db/src/classification.ts`. `tests/db/classificat
 
 | Protection | Meaning | Tables |
 |---|---|---|
-| **RLS + application authorisation** (both) | Tenant business data. PostgreSQL RLS (forced, fail-closed) **and** RBAC permission + company-scope checks in code. | `organisation`, `role`, `organisation_membership`, `practice`, `practice_membership`, `company_membership`, `invitation`, `company`, `accounting_period`, `document`, `document_version`, `audit_event`, `job_record`, `workflow_instance`, `workflow_transition`, `task`, `notification`, `integration_connection`, `ai_run`, `ai_proposal` |
+| **RLS + application authorisation** (both) | Tenant business data. PostgreSQL RLS (forced, fail-closed) **and** RBAC permission + company-scope checks in code. | `organisation`, `role`, `organisation_membership`, `practice`, `practice_membership`, `company_membership`, `feature_flag_override`, `invitation`, `company`, `accounting_period`, `document`, `document_version`, `audit_event`, `job_record`, `workflow_instance`, `workflow_transition`, `task`, `notification`, `integration_connection`, `ai_run`, `ai_proposal` |
 | **RLS only** | Infrastructure plumbing with no user-facing API. Written inside the business transaction or by the system relay; RLS stops any tenant context seeing another tenant's rows. | `outbox_event`, `event_consumption`, `idempotency_record` |
 | **Application-level only** (documented exception) | Global **authentication subsystem**. Not tenant data. | `user`, `user_identity`, `session`, `auth_token`, `mfa_factor`, `mfa_recovery_code`, `auth_challenge`, `login_trusted_ip` |
 

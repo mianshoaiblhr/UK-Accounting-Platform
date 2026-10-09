@@ -2834,6 +2834,179 @@
         ]
       }
     },
+    "/api/v1/organisations/{organisationId}/feature-flags": {
+      "get": {
+        "operationId": "FeatureFlags_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Flags",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureFlagList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Feature flags"
+        ],
+        "x-required-permissions": [
+          "org:read"
+        ],
+        "summary": "Every feature flag with its effective value and where it comes from (organisation override, environment, registry default)",
+        "description": "**Requires permission:** `org:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/feature-flags/{key}": {
+      "put": {
+        "operationId": "FeatureFlags_set",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureFlag"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Feature flags"
+        ],
+        "x-required-permissions": [
+          "org:manage"
+        ],
+        "summary": "Turn a feature on or off for this organisation (org:manage; audited with before/after and reason)",
+        "description": "**Requires permission:** `org:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetFeatureFlagRequest"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "FeatureFlags_clear",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reason",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Cleared"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Feature flags"
+        ],
+        "x-required-permissions": [
+          "org:manage"
+        ],
+        "summary": "Remove the organisation override; the flag returns to the environment/registry default",
+        "description": "**Requires permission:** `org:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/organisations/{organisationId}/workflows/definitions": {
       "get": {
         "operationId": "Workflows_definitions",
@@ -3845,6 +4018,7 @@
         "tags": [
           "AI"
         ],
+        "x-required-feature": "ai.beta",
         "x-required-permissions": [
           "ai:use"
         ],
@@ -5087,6 +5261,9 @@
       "name": "Tasks"
     },
     {
+      "name": "Feature flags"
+    },
+    {
       "name": "Practices"
     },
     {
@@ -6233,6 +6410,44 @@
           "name",
           "status",
           "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "FeatureFlag": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "organisation",
+              "environment",
+              "default"
+            ],
+            "description": "Where the effective value comes from"
+          },
+          "overriddenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "key",
+          "description",
+          "enabled",
+          "source"
         ],
         "additionalProperties": false
       },
@@ -7760,6 +7975,56 @@
         ],
         "additionalProperties": false
       },
+      "FeatureFlagList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "organisation",
+                    "environment",
+                    "default"
+                  ],
+                  "description": "Where the effective value comes from"
+                },
+                "overriddenAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "reason": {
+                  "type": "string",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "key",
+                "description",
+                "enabled",
+                "source"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
       "PracticeList": {
         "type": "object",
         "properties": {
@@ -8574,6 +8839,23 @@
         },
         "required": [
           "roleId"
+        ],
+        "additionalProperties": false
+      },
+      "SetFeatureFlagRequest": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "enabled"
         ],
         "additionalProperties": false
       },

@@ -22,6 +22,7 @@ export const TABLE_PROTECTION: Record<string, { protection: Protection; why: str
   // ── Tenant data: RLS + application authorisation ──
   organisation: { protection: 'RLS+APP', why: 'Tenant root; visible to active members only.' },
   role: { protection: 'RLS+APP', why: 'System roles readable by all; custom roles per tenant.' },
+  feature_flag_override: { protection: 'RLS+APP', why: 'Per-organisation feature toggles; changing them needs org:manage.' },
   organisation_membership: { protection: 'RLS+APP', why: 'A user sees own memberships everywhere; only the org context can change them.' },
   practice: { protection: 'RLS+APP', why: 'Practice inside a PRACTICE organisation; access via practice:* permissions.' },
   practice_membership: { protection: 'RLS+APP', why: 'Practice-level role grants.' },

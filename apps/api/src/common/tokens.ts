@@ -10,5 +10,6 @@ export const WORKFLOWS = Symbol('WORKFLOWS');
 export const NOTIFICATIONS = Symbol('NOTIFICATIONS');
 export const INTEGRATIONS = Symbol('INTEGRATIONS');
 export const AI_GATEWAY = Symbol('AI_GATEWAY');
+export const FEATURES = Symbol('FEATURES');
 export const AI_PROPOSALS = Symbol('AI_PROPOSALS');
 export const AI_PROVIDERS = Symbol('AI_PROVIDERS');

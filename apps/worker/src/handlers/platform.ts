@@ -10,7 +10,7 @@ const permanentOn4xx = async <T>(fn: () => Promise<T>): Promise<T> => {
   }
 };
 import type { Database } from '@uk/db';
-import { type AiGateway, type AiProposalService, type EventBus, type IntegrationService, type NotificationService } from '@uk/platform';
+import { type AiGateway, type AiProposalService, type EventBus, type FeatureFlagService, type IntegrationService, type NotificationService } from '@uk/platform';
 
 /** event.dispatch: the outbox relay's hand-off lands here; the EventBus runs each subscribed consumer once. */
 export function registerEventDispatch(rt: JobRuntime, bus: EventBus): void {
@@ -26,9 +26,11 @@ export function registerConsumers(bus: EventBus, notifications: NotificationServ
   });
 }
 
-export function registerAi(rt: JobRuntime, deps: { db: Database; gateway: AiGateway; proposals: AiProposalService }): void {
+export function registerAi(rt: JobRuntime, deps: { db: Database; gateway: AiGateway; proposals: AiProposalService; features: FeatureFlagService }): void {
   rt.register(JobTypes.aiSuggest, async ({ payload, organisationId, userId }) => {
     if (!organisationId) throw new UnrecoverableError('ai.suggest requires an organisation');
+    // Re-checked at execution time: switching the flag off also stops requests that were queued earlier.
+    if (!(await deps.features.isEnabled('ai.beta', organisationId))) throw new UnrecoverableError('feature ai.beta is disabled for this organisation');
     return permanentOn4xx(() => deps.db.tenant({ organisationId, userId: userId ?? undefined }, async (tx) => {
       const run = await deps.gateway.complete(tx, { organisationId, userId, purpose: payload.purpose }, { prompt: payload.input });
       const proposal = await deps.proposals.create(tx, { organisationId, companyId: payload.companyId, requestedByUserId: userId, kind: payload.purpose, aiRunId: run.runId, provider: run.provider, model: run.model, payload: { summary: run.text } });

@@ -4,3 +4,4 @@ export * from './jobs';
 export * from './events';
 export * from './workflow';
 export * from './authz';
+export * from './features';

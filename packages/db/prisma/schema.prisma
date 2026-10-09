@@ -144,6 +144,21 @@ enum AiProposalStatus {
 }
 
 // ───────────── Global (not tenant-scoped) ─────────────
+/// Per-organisation override of a feature flag (registry in @uk/contracts/features). No row = the environment/registry default applies.
+model FeatureFlagOverride {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  key            String
+  enabled        Boolean
+  reason         String?
+  setByUserId    String   @map("set_by_user_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, key])
+  @@map("feature_flag_override")
+}
+
 model User {
   id                String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email             String     @unique

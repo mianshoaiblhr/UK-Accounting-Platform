@@ -2,7 +2,8 @@ import { createAntivirus, createEmail, createStorage } from '@uk/adapters';
 import { FieldEncryption, createLogger, type AppConfig, type Logger } from '@uk/core';
 import { Database } from '@uk/db';
 import { JobProducer, JobRuntime } from '@uk/jobs';
-import { AiGateway, AiProposalService, EventBus, IntegrationService, NotificationService, OutboxRelay, WorkflowEngine, WorkflowRegistry, createAiProviders, createIntegrationRegistry, dispatchViaJobs, type AiProvider } from '@uk/platform';
+import { parseFeatureDefaults } from '@uk/contracts';
+import { AiGateway, AiProposalService, EventBus, FeatureFlagService, IntegrationService, NotificationService, OutboxRelay, WorkflowEngine, WorkflowRegistry, createAiProviders, createIntegrationRegistry, dispatchViaJobs, type AiProvider } from '@uk/platform';
 import { registerAi, registerConsumers, registerEventDispatch, registerIntegrations } from './handlers/platform';
 import { registerDocument } from './handlers/document';
 import { registerEcho } from './handlers/echo';
@@ -27,7 +28,8 @@ export function startWorker(config: AppConfig, logger: Logger = createLogger(con
   registerConsumers(bus, notifications);
   registerEventDispatch(runtime, bus);
   const aiProviders = createAiProviders(config);
-  registerAi(runtime, { db, gateway: new AiGateway(aiProviders, logger, db), proposals: new AiProposalService(new WorkflowEngine(new WorkflowRegistry(), { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA })) });
+  const features = new FeatureFlagService(db, parseFeatureDefaults(config.FEATURE_FLAG_DEFAULTS), { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA, ttlMs: config.FEATURE_FLAG_CACHE_MS });
+  registerAi(runtime, { features, db, gateway: new AiGateway(aiProviders, logger, db), proposals: new AiProposalService(new WorkflowEngine(new WorkflowRegistry(), { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA })) });
   registerIntegrations(runtime, { db, service: new IntegrationService(createIntegrationRegistry(config), crypto) });
   runtime.start();
 

@@ -39,6 +39,7 @@ export const createPeriodSchema = z.object({ startDate: isoDate, endDate: isoDat
 /** Why a sensitive change is being made; recorded on the audit trail. */
 export const reasonSchema = z.string().trim().min(1).max(500);
 export const reasonQuerySchema = z.object({ reason: reasonSchema.optional() });
+export const setFeatureFlagSchema = z.object({ enabled: z.boolean(), reason: reasonSchema.optional() }).strict();
 export const archiveDocumentSchema = z.object({ reason: reasonSchema.optional() }).strict();
 
 export const inviteMemberSchema = z.object({
