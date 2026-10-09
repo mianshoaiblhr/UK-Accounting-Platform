@@ -138,7 +138,7 @@ Property tests for conversion and rounding (reverse conversion within tolerance;
 ## 7. Decisions still needed before specific milestones
 | # | Decision | Needed before | Owner | Status |
 |---|---|---|---|---|
-| 1 | M2 defaults: default approval mode (ALWAYS is the proposed default), default expiry of a pending request (14 days proposed), default materiality threshold | M2 start (proposed values are used if you do not object) | Product owner | proposed |
+| 1 | M2 defaults: default approval mode (ALWAYS is the proposed default), default expiry of a pending request (14 days proposed), default materiality threshold | M2 start (proposed values are used if you do not object) | Product owner | **in use as proposed; awaiting your confirmation** (no built-in threshold: a company that wants `ABOVE_THRESHOLD` configures one) |
 | 2 | **Exchange-rate source** (manual entry only, an official published series such as HMRC monthly rates or the Bank of England, a commercial provider) and the lookup window | M3 | Product owner | **open - blocks M3** |
 | 3 | Rounding policy (precision, mode, line vs document) and revaluation policy (which items, which rate, auto-reverse) | M3 | Product owner with accountant input | **open - blocks M3** |
 | 4 | Who verifies the VAT rules and sources (a named qualified tax reviewer), and the verification record format | M4 | Product owner | **open - blocks M4 activation** |
@@ -147,4 +147,4 @@ Property tests for conversion and rounding (reverse conversion within tolerance;
 Decided: foreign currency in V1 (DEC-009); standard VAT first (DEC-010); contact roles (DEC-011); opening balances/control accounts (DEC-012).
 
 ## 8. Known limitations (current)
-No UI (M9); single currency only until M3 (explicit: `foreign_currency_not_supported`); no VAT until M4; no source documents until M5; trial balance and general ledger computed on demand and posting serialised per company (untested at real volume, a production gate); the posting switch is application-asserted (same trust boundary as the tenant context); the M1 opening-balance fence stays until M2 replaces it; development uses synthetic data and retention is provisional (DEC-003, DEC-014); nothing is production-approved (DEC-006).
+No UI (M9; M2 is API-only, approvers have no screen or dashboard yet); single currency only until M3 (explicit: `foreign_currency_not_supported`); no VAT until M4; no source documents until M5; trial balance and general ledger computed on demand and posting serialised per company (untested at real volume, a production gate); the posting switch is application-asserted (same trust boundary as the tenant context); the M1 interim opening-balance fence is replaced by the M2 request/approval controls (the first-day rule stays); development uses synthetic data and retention is provisional (DEC-003, DEC-014); nothing is production-approved (DEC-006).
