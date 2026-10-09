@@ -6907,6 +6907,109 @@
         ]
       }
     },
+    "/api/v1/organisations/{organisationId}/notifications/preferences": {
+      "get": {
+        "operationId": "Notifications_preferences",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Preferences",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPreferences"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Notifications"
+        ],
+        "x-required-permissions": [
+          "org:read"
+        ],
+        "summary": "The caller's channel preferences (optional channels are opt-in; in-app is mandatory)",
+        "description": "**Requires permission:** `org:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "Notifications_setPreference",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPreferences"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Notifications"
+        ],
+        "x-required-permissions": [
+          "org:read"
+        ],
+        "summary": "Opt in or out of an optional channel for one notification category (own preferences only; unavailable channels cannot be enabled)",
+        "description": "**Requires permission:** `org:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetNotificationPreferenceRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organisations/{organisationId}/integrations/providers": {
       "get": {
         "operationId": "Integrations_providers",
@@ -13679,6 +13782,71 @@
         ],
         "additionalProperties": false
       },
+      "NotificationPreferences": {
+        "type": "object",
+        "properties": {
+          "channels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "channel": {
+                  "type": "string",
+                  "enum": [
+                    "in_app",
+                    "email",
+                    "sms",
+                    "whatsapp"
+                  ]
+                },
+                "available": {
+                  "type": "boolean",
+                  "description": "false: documented stub or switched off by configuration"
+                },
+                "mandatory": {
+                  "type": "boolean",
+                  "description": "in_app cannot be switched off"
+                },
+                "categories": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "category": {
+                        "type": "string",
+                        "enum": [
+                          "task",
+                          "workflow",
+                          "system"
+                        ]
+                      },
+                      "enabled": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "category",
+                      "enabled"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "channel",
+                "available",
+                "mandatory",
+                "categories"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "channels"
+        ],
+        "additionalProperties": false
+      },
       "UpdatedCount": {
         "type": "object",
         "properties": {
@@ -14958,6 +15126,37 @@
         },
         "required": [
           "dueAt"
+        ],
+        "additionalProperties": false
+      },
+      "SetNotificationPreferenceRequest": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "in_app",
+              "email",
+              "sms",
+              "whatsapp"
+            ]
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "task",
+              "workflow",
+              "system"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "channel",
+          "category",
+          "enabled"
         ],
         "additionalProperties": false
       },

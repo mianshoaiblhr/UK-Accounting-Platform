@@ -54,6 +54,8 @@ export const TABLE_PROTECTION: Record<string, { protection: Protection; why: str
   task_comment: { protection: 'RLS+APP', why: 'Append-only task conversation; follows the task company.' },
   task_reminder: { protection: 'RLS+APP', why: 'Scheduled task reminders; delivered per tenant by the worker sweeper.' },
   notification: { protection: 'RLS+APP', why: 'Private to the recipient (RLS on user_id as well).' },
+  notification_preference: { protection: 'RLS+APP', why: 'Per-user channel opt-ins; the API only ever reads and writes the caller\'s own rows.' },
+  notification_delivery: { protection: 'RLS', why: 'Planned out-of-band deliveries (outbox-like); no HTTP surface, written with the notification and executed by the worker sweeper.' },
   integration_connection: { protection: 'RLS+APP', why: 'Encrypted provider credentials.' },
   ai_run: { protection: 'RLS+APP', why: 'Append-only AI invocation log.' },
   ai_proposal: { protection: 'RLS+APP', why: 'Human-reviewed AI output.' },

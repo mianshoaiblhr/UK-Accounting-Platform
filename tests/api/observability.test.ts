@@ -128,7 +128,7 @@ describe('metrics endpoint', () => {
     const e = (await call(owner, 'post', '/jobs/echo', { message: 'doomed', failTimes: 10 })).body;
     await until(async () => (await call(owner, 'get', `/jobs/${e.id}`)).body.status === 'DEAD');
     const text = await until(async () => { const t = (await scrape(TOKEN)).text; return /jobs\{status="DEAD"\} [1-9]/.test(t) && t; });
-    for (const g of ['outbox_pending', 'outbox_failed', 'outbox_in_flight', 'outbox_oldest_unprocessed_seconds', 'task_reminders_due', 'workflows_overdue']) expect(text).toContain(`\n${g} `);
+    for (const g of ['outbox_pending', 'outbox_failed', 'outbox_in_flight', 'outbox_oldest_unprocessed_seconds', 'task_reminders_due', 'workflows_overdue', 'notification_deliveries_pending']) expect(text).toContain(`\n${g} `);
     for (const st of ['QUEUED', 'RUNNING', 'RETRYING', 'FAILED', 'DEAD']) expect(text).toContain(`jobs{status="${st}"}`);
   });
 });

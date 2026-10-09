@@ -1131,3 +1131,38 @@ model AiProposal {
   @@index([organisationId, status])
   @@map("ai_proposal")
 }
+
+// ───────────── Notification channels (ADR-38) ─────────────
+/// A user's opt-in per optional channel and category. No row = not opted in. in_app is mandatory and never stored.
+model NotificationPreference {
+  organisationId String   @map("organisation_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  channel        String
+  category       String
+  enabled        Boolean
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([organisationId, userId, channel, category])
+  @@map("notification_preference")
+}
+
+/// A planned out-of-band delivery (written with the notification, executed by the worker sweeper).
+model NotificationDelivery {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String    @map("organisation_id") @db.Uuid
+  notificationId String    @map("notification_id") @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  channel        String
+  category       String
+  type           String
+  title          String
+  status         String    @default("PENDING")
+  attempts       Int       @default(0)
+  retryAt        DateTime? @map("retry_at") @db.Timestamptz(3)
+  lastError      String?   @map("last_error")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  sentAt         DateTime? @map("sent_at") @db.Timestamptz(3)
+
+  @@unique([notificationId, channel])
+  @@map("notification_delivery")
+}

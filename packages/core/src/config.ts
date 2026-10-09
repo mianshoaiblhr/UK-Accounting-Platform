@@ -58,6 +58,8 @@ const schema = z.object({
   READINESS_OUTBOX_LAG_SECONDS: z.coerce.number().int().min(1).default(600), // /readyz reports "degraded" beyond this outbox lag
   OCR_PROVIDER: z.enum(['none', 'fake']).default('none'), // 'fake' is a deterministic development/test engine; real engines are added behind the OcrProvider port
   TASK_REMINDER_POLL_MS: z.coerce.number().int().min(200).default(30_000), // how often due task reminders are delivered
+  NOTIFICATION_CHANNELS: z.string().max(100).default('in_app,email'), // enabled notification channels (in_app is always on; sms/whatsapp are not implemented and are rejected at boot)
+  NOTIFICATION_DELIVERY_POLL_MS: z.coerce.number().int().min(200).default(15_000), // how often planned out-of-band notification deliveries (e-mail) are handed to their channel
   WORKFLOW_OVERDUE_POLL_MS: z.coerce.number().int().min(200).default(60_000), // how often overdue workflows are detected and their one-time notification delivered
 });
 

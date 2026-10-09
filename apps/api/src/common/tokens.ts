@@ -8,6 +8,7 @@ export const CRYPTO = Symbol('CRYPTO');
 export const RATE_LIMITER = Symbol('RATE_LIMITER');
 export const WORKFLOWS = Symbol('WORKFLOWS');
 export const NOTIFICATIONS = Symbol('NOTIFICATIONS');
+export const NOTIFICATION_CHANNELS = Symbol('NOTIFICATION_CHANNELS');
 export const INTEGRATIONS = Symbol('INTEGRATIONS');
 export const AI_GATEWAY = Symbol('AI_GATEWAY');
 export const FEATURES = Symbol('FEATURES');

@@ -33,7 +33,10 @@ export const NAMED_RESPONSES: Record<string, ZodTypeAny> = {
   PeriodList: R.items(R.Period), RoleList: z.object({ items: z.array(R.Role), permissionCatalogue: z.array(z.string()) }), MemberList: R.items(R.Member), ContactPage: R.Pages.Contact, AddressList: R.items(R.Address), OfficerList: R.items(R.Officer), CurrencyList: R.items(R.Currency), CountryList: R.items(R.Country), TaxJurisdictionList: R.items(R.TaxJurisdiction), FeatureFlagList: R.items(R.FeatureFlag), PracticeList: R.items(R.Practice),
   TaskCommentList: R.items(R.TaskComment), TaskAttachmentList: R.items(R.TaskAttachment), TaskReminderList: R.items(R.TaskReminder), DocumentFolderList: R.items(R.DocumentFolder), EvidenceLinkList: R.items(R.EvidenceLink), DocumentExtractionList: R.items(R.DocumentExtraction), DocumentAccessList: R.items(R.DocumentAccessGrant), InvitationList: R.items(R.Invitation), ConnectionList: R.items(R.Connection), ProviderList: R.items(R.Provider), SessionList: R.items(R.Session),
   LoginHistory: R.items(R.LoginEvent), WorkflowDefinitionList: R.items(R.WorkflowDefinitionView),
-  UnreadCount: z.object({ count: z.number().int() }), UpdatedCount: z.object({ updated: z.number().int() }),
+  UnreadCount: z.object({ count: z.number().int() }),
+  NotificationPreferences: z.object({ channels: z.array(z.object({
+    channel: z.enum(C.NOTIFICATION_CHANNELS), available: z.boolean().describe('false: documented stub or switched off by configuration'), mandatory: z.boolean().describe('in_app cannot be switched off'),
+    categories: z.array(z.object({ category: z.enum(C.NOTIFICATION_CATEGORIES), enabled: z.boolean() })) })) }), UpdatedCount: z.object({ updated: z.number().int() }),
 };
 
 const v = '/organisations/{organisationId}';
@@ -170,6 +173,8 @@ export const ROUTES: Record<string, RouteDoc> = {
   [`POST ${v}/workflows/{workflowId}/transitions`]: { tag: 'Workflows', summary: 'Perform a transition (permission, segregation of duties and optimistic concurrency enforced)', body: ['TransitionWorkflowRequest', C.transitionWorkflowSchema], ok: [200, 'WorkflowInstance', 'Transitioned'], extraErrors: [409] },
   // ── Notifications ──
   [`GET ${v}/notifications`]: { tag: 'Notifications', summary: 'The caller\'s notifications (private to the recipient)', query: page, ok: [200, 'NotificationPage', 'Page'] },
+  [`GET ${v}/notifications/preferences`]: { tag: 'Notifications', summary: 'The caller\'s channel preferences (optional channels are opt-in; in-app is mandatory)', ok: [200, 'NotificationPreferences', 'Preferences'] },
+  [`PUT ${v}/notifications/preferences`]: { tag: 'Notifications', summary: 'Opt in or out of an optional channel for one notification category (own preferences only; unavailable channels cannot be enabled)', body: ['SetNotificationPreferenceRequest', C.setNotificationPreferenceSchema], ok: [200, 'NotificationPreferences', 'Updated'] },
   [`GET ${v}/notifications/unread-count`]: { tag: 'Notifications', summary: 'Unread count', ok: [200, 'UnreadCount', 'Count'] },
   [`POST ${v}/notifications/read-all`]: { tag: 'Notifications', summary: 'Mark all as read', ok: [200, 'UpdatedCount', 'Updated'] },
   [`POST ${v}/notifications/{notificationId}/read`]: { tag: 'Notifications', summary: 'Mark one as read', ok: [200, null, 'Read'] },

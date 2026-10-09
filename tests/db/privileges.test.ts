@@ -22,6 +22,8 @@ const FORBIDDEN: Record<string, string[]> = {
   evidence_link: ['DELETE', 'TRUNCATE'],         // revoked, never deleted; the only permitted UPDATE is revocation (trigger)
   document: ['DELETE', 'TRUNCATE'],              // archived, never deleted
   document_extraction: ['DELETE', 'TRUNCATE'],
+  notification_preference: ['DELETE', 'TRUNCATE'], // toggled, never removed
+  notification_delivery: ['DELETE', 'TRUNCATE'],   // planned deliveries are final once handled
   outbox_event: ['TRUNCATE'],                    // DELETE is system-context only (RLS) and trigger-guarded
 };
 const has = (table: string, priv: string) => adminSql(`SELECT has_table_privilege('uk_app', '${table}', '${priv}')`) === 't';

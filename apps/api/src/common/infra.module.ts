@@ -6,8 +6,8 @@ import { Database } from '@uk/db';
 import { PlatformSnapshotCache } from './platform-snapshot';
 import { JobProducer } from '@uk/jobs';
 import { parseFeatureDefaults } from '@uk/contracts';
-import { AiGateway, AiProposalService, FeatureFlagService, IntegrationService, NotificationService, WorkflowEngine, WorkflowRegistry, createAiProviders, createIntegrationRegistry } from '@uk/platform';
-import { AI_GATEWAY, AI_PROPOSALS, AI_PROVIDERS, CONFIG, CRYPTO, DB, FEATURES, INTEGRATIONS, JOBS, LOGGER, METRICS, NOTIFICATIONS, RATE_LIMITER, REDIS, SNAPSHOT, STORAGE, WORKFLOWS } from './tokens';
+import { AiGateway, AiProposalService, FeatureFlagService, IntegrationService, NotificationService, WorkflowEngine, WorkflowRegistry, createAiProviders, createIntegrationRegistry, createNotificationChannels, type NotificationChannelRegistry } from '@uk/platform';
+import { AI_GATEWAY, AI_PROPOSALS, AI_PROVIDERS, CONFIG, CRYPTO, DB, FEATURES, INTEGRATIONS, JOBS, LOGGER, METRICS, NOTIFICATIONS, NOTIFICATION_CHANNELS, RATE_LIMITER, REDIS, SNAPSHOT, STORAGE, WORKFLOWS } from './tokens';
 
 /** Limiter that can be disabled for tests/dev (never in production — enforced by config validation). */
 export class Limits {
@@ -43,7 +43,8 @@ export class InfraModule {
       },
       { provide: FEATURES, inject: [DB], useFactory: (db: Database) => new FeatureFlagService(db, parseFeatureDefaults(config.FEATURE_FLAG_DEFAULTS), { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA, ttlMs: config.FEATURE_FLAG_CACHE_MS }) },
       { provide: WORKFLOWS, useFactory: () => new WorkflowEngine(new WorkflowRegistry(), { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
-      { provide: NOTIFICATIONS, inject: [JOBS], useFactory: (jobs: JobProducer) => new NotificationService(jobs) },
+      { provide: NOTIFICATION_CHANNELS, inject: [JOBS], useFactory: (jobs: JobProducer) => createNotificationChannels(config, jobs) },
+      { provide: NOTIFICATIONS, inject: [NOTIFICATION_CHANNELS], useFactory: (channels: NotificationChannelRegistry) => new NotificationService(channels) },
       { provide: INTEGRATIONS, inject: [CRYPTO], useFactory: (crypto: FieldEncryption) => new IntegrationService(createIntegrationRegistry(config), crypto) },
       { provide: AI_PROVIDERS, useFactory: () => createAiProviders(config) },
       { provide: AI_GATEWAY, inject: [AI_PROVIDERS, LOGGER], useFactory: (p: ReturnType<typeof createAiProviders>, l: Logger) => new AiGateway(p, l) },
