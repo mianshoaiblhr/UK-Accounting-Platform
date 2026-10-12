@@ -246,5 +246,30 @@ Recorded before code under the delegation of 2026-10-12. Statements about VAT la
   * realised FX gains and losses hand-calculated with different rates, with a full settlement leaving no residue;
   * period lock, permission and isolation tests.
 
+### 9.4 As built (M5a)
+* **Migration** `20260111000000_v1_sales_documents`, additive. It adds the five sales tables with forced RLS and no `DELETE`/`TRUNCATE`; lines and allocations also have no `UPDATE`.
+* **Draft lines** are append-only revisions. Editing a draft writes a new revision, so nothing is updated or deleted and the history of a draft is kept.
+* **Database guards:**
+  * `sales_document_guard` covers the lifecycle and identity, the next number, the posted journal of the right source and date, and the separate-approver policy. It also enforces the DEC-031 refusal and freezes approved documents except through an allocation.
+  * `sales_allocation_apply` keeps an allocation to one company, customer and currency, and to a credit note's own invoice. It moves both outstanding amounts and refuses anything below zero.
+  * `journal_subledger_reversal_guard` stops sales journals being reversed in the ledger.
+  * `journal_vat_check` is updated for `vat_rate_point`, which only credit notes and reversals may carry.
+* **Settings and permissions:** sales settings freeze the numbering once a document of the kind is numbered, and the receivables account once any document is approved. Permissions are `sales:read`, `sales:manage` and `sales:approve`.
+* **Code:**
+  * `SalesService` (`packages/accounting/src/sales.ts`) is the only writer of the sales tables and never writes a journal (architecture-tested).
+  * `PostingService` gains `controlKinds` per source, the `subLedger` reversal refusal and the trusted `vatRate` pin.
+  * `ContactRolesService` refuses to end a role that has open documents and stores snapshots through the shared `buildContactSnapshot`.
+  * `PeriodService` adds the draft close control.
+  * `EvidenceService` resolves `sales_document`.
+  * The API adds `SalesController`, with 14 routes, all in OpenAPI.
+* **Hand-calculated evidence:**
+  * Invoice: 2 x 40.00 at 12.5 % plus 33.33 zero-rated plus 7.00 exempt = net 120.33, VAT 10.00, gross 130.33.
+  * EUR invoice of 1000 at 0.85, part-credited 400 at 0.90: the invoice releases 340.00 and the credit carries 360.00, so the realised gain is 20.00.
+  * EUR full credit: 333.33 at 0.85 = 283.33 against 300.00, a gain of 16.67 with no residue.
+  * Credit note across a rate change: VAT at the invoice's 12.5 %, not the 15 % in force at the credit note's date; the workpaper's box 1 for the credit note's quarter shows -12.50.
+* **Defects found while testing and fixed before commit:**
+  * plpgsql read a `CASE ... THEN` inside an `IF` condition as the end of the condition. Fixed by wrapping the expression in parentheses.
+  * The approval guard compared the text `journal.source_id` with a uuid. Fixed with an explicit cast.
+
 ### 9.3 Deferred (DEC-026)
 Recurring invoices, quotes, line discounts, invoice rendering and sending (M9 and notifications), online payment, direct debit, refunds, bad-debt relief, deposits before an invoice, write-offs, statutory tax-point derivation (DEC-028), unallocating, VAT on foreign-currency documents until M5c.

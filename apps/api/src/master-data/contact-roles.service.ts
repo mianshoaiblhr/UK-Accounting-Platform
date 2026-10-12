@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { buildContactSnapshot } from '@uk/accounting';
 import type { ContactRoleKind } from '@uk/contracts';
 import { conflict, forbidden, notFound, unprocessable, type FieldEncryption } from '@uk/core';
 import { Prisma, type Database, type Tx } from '@uk/db';
@@ -161,6 +162,11 @@ export class ContactRolesService {
       const l = await this.load(tx, companyId, id);
       if (l.r.status === status) throw conflict(status === 'ENDED' ? 'This role has already ended' : 'This role is active', 'invalid_role_state');
       if (status === 'ACTIVE' && l.contact.status !== 'ACTIVE') throw unprocessable('Restore the contact before reactivating its role', 'contact_archived');
+      if (status === 'ENDED') {
+        // DEC-023 / V1-CON-02: not while the role has drafts or approved documents with something outstanding
+        const open = await tx.salesDocument.count({ where: { customerRoleId: id, OR: [{ status: 'DRAFT' }, { status: 'APPROVED', outstanding: { gt: 0 } }] } });
+        if (open > 0) throw conflict(`This role has ${open} open sales document(s) (drafts, or approved with an amount outstanding); settle, credit or discard them first`, 'contact_role_has_open_documents', { openDocuments: open });
+      }
       await tx.contactRole.update({ where: { id }, data: status === 'ENDED' ? { status, endedAt: new Date(), endedByUserId: org.userId, endedReason: reason! } : { status, endedAt: null, endedByUserId: null, endedReason: null } });
       await this.audit.record({ action: status === 'ENDED' ? 'contact_role.ended' : 'contact_role.reactivated', organisationId: org.organisationId, actorUserId: org.userId, companyId, entityType: 'contact_role', entityId: id,
         before: { status: l.r.status }, after: { status }, reason: reason ?? null }, tx);
@@ -230,13 +236,8 @@ export class ContactRolesService {
     return this.t(org, async (tx) => {
       const l = await this.load(tx, companyId, id);
       if (l.r.status !== 'ACTIVE') throw conflict('An ended role cannot be used on a new document', 'contact_role_ended');
-      const addresses = await tx.address.findMany({ where: { contactId: l.contact.id }, orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }], take: 1 });
-      const a = addresses[0];
-      return {
-        roleId: l.r.id, role: l.r.role, contactId: l.contact.id, accountCode: l.r.accountCode, name: l.contact.name, kind: l.contact.kind, vatNumber: l.contact.vatNumber, email: l.contact.email,
-        address: a ? { line1: a.line1, line2: a.line2, line3: a.line3, city: a.city, region: a.region, postcode: a.postcode, countryCode: a.countryCode } : null,
-        capturedAt: new Date(),
-      };
+      // the same function stores the snapshot on sales documents at approval (M5a)
+      return buildContactSnapshot(tx, l.r.id);
     });
   }
 }

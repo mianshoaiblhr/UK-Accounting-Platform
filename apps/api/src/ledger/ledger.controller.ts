@@ -92,7 +92,7 @@ export class LedgerController {
   trialBalance(@Org() org: OrgAccess, @ID('companyId') c: string, @Query(new ZodPipe(trialBalanceQuerySchema)) q: z.output<typeof trialBalanceQuerySchema>) { return this.svc.trialBalance(org, c, q); }
 
   // ───── Period states (close / reopen need period:manage, lock / unlock need period:lock - checked again in the service) ─────
-  private transition(org: OrgAccess, c: string, id: string, action: PeriodAction, b: z.output<typeof periodTransitionSchema>) { return this.svc.transitionPeriod(org, c, id, action, b.reason, b.acknowledgeUnrevaluedFx); }
+  private transition(org: OrgAccess, c: string, id: string, action: PeriodAction, b: z.output<typeof periodTransitionSchema>) { return this.svc.transitionPeriod(org, c, id, action, b.reason, b.acknowledgeUnrevaluedFx, b.acknowledgeDraftDocuments); }
   @Post('periods/:periodId/close') @HttpCode(200) @RequirePermissions('period:manage')
   close(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('periodId') id: string, @Body(new ZodPipe(periodTransitionSchema)) b: z.output<typeof periodTransitionSchema>) { return this.transition(org, c, id, 'close', b); }
   @Post('periods/:periodId/reopen') @HttpCode(200) @RequirePermissions('period:manage')

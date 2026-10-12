@@ -62,6 +62,10 @@ export interface JournalSourceDef {
   controlAccounts: boolean;
   /** Cannot be posted directly: only from an approved (or policy-exempt) journal request (ADR-49, DEC-012). */
   requiresRequest?: boolean;
+  /** When set, the control accounts this source's typed lines may touch are limited to these kinds (M5: sales journals reach trade receivables only). */
+  controlKinds?: readonly ControlKind[];
+  /** Journals of a sub-ledger document: corrected in the sub-ledger (credit note), never reversed in the ledger (ADR-59). */
+  subLedger?: boolean;
   description: string;
 }
 /** Later milestones append their sources here (SALES_INVOICE, RECEIPT, ...); the PostingService reads only this registry. */
@@ -71,6 +75,9 @@ export const JOURNAL_SOURCES: Record<string, JournalSourceDef> = {
   CONTROL_ADJUSTMENT: { actors: ['USER'], permission: 'ledger:control-adjustment', controlAccounts: true, requiresRequest: true, description: 'Exceptional adjustment of a control account (reason, evidence, approval policy)' },
   FX_REVALUATION: { actors: ['USER'], permission: 'period:manage', controlAccounts: true, description: 'Period-end revaluation of foreign-currency monetary items (unrealised FX; auto-reversed next period)' },
   REVERSAL: { actors: ['USER'], permission: 'journal:post', controlAccounts: true, description: 'Mirror of an earlier journal (corrections are reversals, never edits)' },
+  SALES_INVOICE: { actors: ['USER'], permission: 'sales:approve', controlAccounts: true, controlKinds: ['TRADE_RECEIVABLES'], subLedger: true, description: 'Approved sales invoice (Dr trade receivables / Cr revenue / Cr output VAT)' },
+  SALES_CREDIT_NOTE: { actors: ['USER'], permission: 'sales:approve', controlAccounts: true, controlKinds: ['TRADE_RECEIVABLES'], subLedger: true, description: 'Approved sales credit note, linked to its invoice' },
+  SALES_ALLOCATION_FX: { actors: ['USER'], permission: 'sales:approve', controlAccounts: true, controlKinds: ['TRADE_RECEIVABLES'], subLedger: true, description: 'Realised exchange difference of an allocation between sales documents' },
 };
 export const isJournalSource = (s: string) => Object.prototype.hasOwnProperty.call(JOURNAL_SOURCES, s);
 /** Sources a client may name on POST /journals. Opening balances and control adjustments go through journal requests (DEC-012). */
@@ -142,6 +149,8 @@ export const periodTransitionSchema = z.object({
   reason: z.string().trim().min(1).max(500).optional(),
   /** Closing a period that still has unrevalued foreign-currency monetary balances needs this acknowledgement (M3, DEC-018). */
   acknowledgeUnrevaluedFx: z.boolean().default(false),
+  /** M5a close control: close although draft sales documents are dated in the period (recorded on the audit event). */
+  acknowledgeDraftDocuments: z.boolean().default(false),
 }).strict();
 export const accountListQuerySchema = z.object({ active: z.enum(['true', 'false']).optional().transform((v) => (v === undefined ? undefined : v === 'true')), type: z.enum(ACCOUNT_TYPES).optional() }).strict();
 

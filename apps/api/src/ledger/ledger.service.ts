@@ -103,8 +103,8 @@ export class LedgerApiService {
   trialBalance(org: OrgAccess, companyId: string, q: z.output<typeof trialBalanceQuerySchema>) { return this.t(org, (tx) => this.queries.trialBalance(tx, companyId, q)); }
 
   // Periods
-  transitionPeriod(org: OrgAccess, companyId: string, periodId: string, action: PeriodAction, reason?: string, acknowledgeUnrevaluedFx = false) {
-    return this.t(org, (tx) => this.periods.transition(tx, { organisationId: org.organisationId, companyId, periodId, action, reason, userId: org.userId, acknowledgeUnrevaluedFx, can: (p) => org.access.can(p as Permission, { companyId }) }));
+  transitionPeriod(org: OrgAccess, companyId: string, periodId: string, action: PeriodAction, reason?: string, acknowledgeUnrevaluedFx = false, acknowledgeDraftDocuments = false) {
+    return this.t(org, (tx) => this.periods.transition(tx, { organisationId: org.organisationId, companyId, periodId, action, reason, userId: org.userId, acknowledgeUnrevaluedFx, acknowledgeDraftDocuments, can: (p) => org.access.can(p as Permission, { companyId }) }));
   }
   async getPeriod(org: OrgAccess, companyId: string, periodId: string) {
     const p = await this.t(org, (tx) => tx.accountingPeriod.findFirst({ where: { id: periodId, companyId } }));

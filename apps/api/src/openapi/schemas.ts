@@ -89,7 +89,7 @@ export const JournalDetail = JournalHeader.extend({
   lines: z.array(z.object({ lineNo: z.number().int(), accountId: uuid, accountCode: z.string().nullable(), accountName: z.string().nullable(), debit: money, credit: money, description: z.string().nullable(),
     original: z.object({ currency: z.string().length(3), debit: money, credit: money, rate: z.string(), rateId: uuid.nullable() }).nullable().describe('Original-currency values of a foreign-currency line; debit and credit above are the functional amounts'),
     adjustsCurrency: z.string().length(3).nullable().describe('Set on a functional-only revaluation adjustment that belongs to this foreign-currency balance'),
-    vat: z.object({ taxCodeId: uuid, taxRateId: uuid, role: z.enum(['NET', 'VAT', 'RC_OUTPUT', 'RC_INPUT']), taxPoint: day, netLineNo: z.number().int().nullable(), inclusive: z.boolean() }).nullable().describe('VAT facts: the net line, or a VAT line pointing at its net line') })),
+    vat: z.object({ taxCodeId: uuid, taxRateId: uuid, role: z.enum(['NET', 'VAT', 'RC_OUTPUT', 'RC_INPUT']), taxPoint: day, netLineNo: z.number().int().nullable(), inclusive: z.boolean(), ratePoint: day.nullable().describe('Credit notes: the tax point of the supply being adjusted, whose rate version applies') }).nullable().describe('VAT facts: the net line, or a VAT line pointing at its net line') })),
 });
 export const JournalPage = z.object({ currency: z.string().length(3), items: z.array(JournalHeader), nextCursor: z.string().nullable() });
 export const GeneralLedger = z.object({
@@ -179,3 +179,33 @@ export const VatWorkpaper = z.object({
   rules: z.array(z.object({ rateId: uuid, code: z.string(), rate: z.string(), provision: z.string(), url: z.string(), verifiedBy: uuid.nullable(), verifiedAt: ts.nullable() })),
   notice: z.string(),
 });
+
+// ───────────── Sales documents (M5a) ─────────────
+export const SalesSettings = z.object({ companyId: uuid, receivablesAccountId: uuid.nullable(), invoicePrefix: z.string(), creditNotePrefix: z.string(), invoiceStart: z.number().int(), creditNoteStart: z.number().int(),
+  requireSeparateApprover: z.boolean(), lastInvoiceNumber: z.number().int().nullable(), lastCreditNoteNumber: z.number().int().nullable(), numberingFrozen: z.object({ invoice: z.boolean(), creditNote: z.boolean() }),
+  isDefault: z.boolean(), updatedAt: ts.nullable(), updatedByUserId: uuid.nullable() });
+export const SalesAllocation = z.object({ id: uuid, invoiceId: uuid, creditId: uuid, amount: z.string(), invoiceFunctional: z.string(), creditFunctional: z.string(),
+  realisedFx: z.string().describe('Company currency; positive = gain, negative = loss'), fxJournalId: uuid.nullable(), allocatedOn: day, createdByUserId: uuid, createdAt: ts });
+const SalesDocumentBase = z.object({
+  id: uuid, companyId: uuid, kind: z.enum(['INVOICE', 'CREDIT_NOTE']), status: z.enum(['DRAFT', 'APPROVED', 'DISCARDED']),
+  paymentStatus: z.enum(['UNPAID', 'PART_PAID', 'PAID', 'UNALLOCATED', 'PART_ALLOCATED', 'ALLOCATED']).nullable(), number: z.number().int().nullable(), documentNumber: z.string().nullable(),
+  customerRoleId: uuid, contactId: uuid, issueDate: day, supplyDate: day.nullable(), taxPoint: day, taxPointExplicit: z.boolean(), taxPointReview: z.boolean().describe('A supply date differs from the tax point: review it (statutory derivation is not automated, DEC-028)'),
+  dueDate: day, currency: z.string().length(3), amountsIncludeVat: z.boolean(), customerReference: z.string().nullable(), notes: z.string().nullable(), originalInvoiceId: uuid.nullable(), creditReason: z.string().nullable(), revision: z.number().int(),
+  totals: z.object({ net: z.string(), vat: z.string(), gross: z.string() }), outstanding: z.string(), functional: z.object({ gross: z.string(), outstanding: z.string() }).nullable(),
+  rate: z.string().nullable(), exchangeRateId: uuid.nullable(), journalId: uuid.nullable(), contactSnapshot: ContactSnapshot.nullable(),
+  duplicateOverrideReason: z.string().nullable(), creditLimitOverrideReason: z.string().nullable(), origin: z.enum(['MANUAL', 'AI_PROPOSAL']), aiProposalId: uuid.nullable(),
+  createdByUserId: uuid, approvedByUserId: uuid.nullable(), approvedAt: ts.nullable(), discardedByUserId: uuid.nullable(), discardedAt: ts.nullable(), discardedReason: z.string().nullable(), createdAt: ts, updatedAt: ts,
+});
+export const SalesDocument = SalesDocumentBase.extend({
+  lines: z.array(z.object({ lineNo: z.number().int(), description: z.string(), quantity: z.string(), unitPrice: z.string(), accountId: uuid, taxCodeId: uuid.nullable(), net: z.string(), vat: z.string(), gross: z.string() })),
+  allocations: z.array(SalesAllocation), creditNotes: z.array(z.object({ id: uuid, documentNumber: z.string().nullable(), status: z.string() })),
+  warnings: z.array(z.string()).describe('Draft only: VAT rates not yet usable, or a credit larger than the invoice outstanding'),
+});
+export const SalesDocumentPage = z.object({ items: z.array(SalesDocumentBase), nextCursor: z.string().nullable() });
+export const ReceivablesReconciliation = z.object({
+  companyId: uuid, receivablesAccountId: uuid, functionalCurrency: z.string().length(3), reconciled: z.boolean(),
+  currencies: z.array(z.object({ currency: z.string().length(3), openItems: z.string(), openItemsFunctional: z.string(),
+    control: z.object({ fromSalesDocuments: z.string(), fromSalesDocumentsFunctional: z.string(), total: z.string(), totalFunctional: z.string() }),
+    difference: z.string(), differenceFunctional: z.string(), otherPostings: z.array(z.object({ sourceType: z.string(), original: z.string(), functional: z.string() })) })),
+});
+

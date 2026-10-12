@@ -18,21 +18,25 @@ export const periodView = (p: { id: string; companyId: string; startDate: Date; 
 export class PeriodService {
   constructor(private readonly opts: { captureDeviceMetadata?: boolean; fx?: RevaluationService } = {}) {}
 
-  async transition(tx: Tx, a: { organisationId: string; companyId: string; periodId: string; action: PeriodAction; reason?: string; userId: string; acknowledgeUnrevaluedFx?: boolean; can: (permission: string) => boolean | Promise<boolean> }) {
+  async transition(tx: Tx, a: { organisationId: string; companyId: string; periodId: string; action: PeriodAction; reason?: string; userId: string; acknowledgeUnrevaluedFx?: boolean; acknowledgeDraftDocuments?: boolean; can: (permission: string) => boolean | Promise<boolean> }) {
     const rule = PERIOD_TRANSITIONS[a.action];
     if (!(await a.can(rule.permission))) throw forbidden(`Requires permission ${rule.permission}`, 'permission_denied');
     const p = await tx.accountingPeriod.findFirst({ where: { id: a.periodId, companyId: a.companyId } });
     if (!p) throw notFound('Accounting period not found');
     if (p.status !== rule.from) throw conflict(`Cannot ${a.action} a period that is ${p.status.toLowerCase()} (it must be ${rule.from.toLowerCase()})`, 'invalid_period_state');
     if (rule.reasonRequired && !a.reason?.trim()) throw unprocessable(`A reason is required to ${a.action} a period`, 'reason_required');
+    let drafts = 0;
     if (a.action === 'close') {
       await this.assertBalanced(tx, a.companyId, p.endDate);
       await this.assertFxControls(tx, a, p);
+      drafts = await tx.salesDocument.count({ where: { companyId: a.companyId, status: 'DRAFT', issueDate: { gte: p.startDate, lte: p.endDate } } });
+      // close control (MAN-ACC-08, M5a): unposted sales documents dated in the period are listed and block the close unless acknowledged
+      if (drafts > 0 && !a.acknowledgeDraftDocuments) throw conflict(`${drafts} draft sales document(s) are dated in this period and not approved. Approve or discard them, or close with acknowledgeDraftDocuments = true`, 'unposted_documents', { drafts });
     }
     const upd = await tx.accountingPeriod.updateMany({ where: { id: p.id, status: rule.from }, data: { status: rule.to, statusChangedAt: new Date(), statusChangedByUserId: a.userId, statusReason: a.reason?.trim() ?? null } });
     if (upd.count !== 1) throw conflict('The period changed concurrently', 'invalid_period_state');
     await tx.auditEvent.createMany({ data: [auditRow({ action: AUDIT_ACTION[a.action], organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.userId, entityType: 'accounting_period', entityId: p.id,
-      before: { status: p.status }, after: { status: rule.to }, reason: a.reason, metadata: { startDate: isoDay(p.startDate), endDate: isoDay(p.endDate) } }, this.opts.captureDeviceMetadata)] });
+      before: { status: p.status }, after: { status: rule.to }, reason: a.reason, metadata: { startDate: isoDay(p.startDate), endDate: isoDay(p.endDate), ...(drafts > 0 ? { acknowledgedDraftDocuments: drafts } : {}) } }, this.opts.captureDeviceMetadata)] });
     await publishEvent(tx, Events.accountingPeriodStateChanged, { aggregateId: p.id, organisationId: a.organisationId, actorUserId: a.userId, payload: { periodId: p.id, companyId: a.companyId, from: rule.from, to: rule.to, action: a.action } });
     return periodView(await tx.accountingPeriod.findUniqueOrThrow({ where: { id: p.id } }));
   }

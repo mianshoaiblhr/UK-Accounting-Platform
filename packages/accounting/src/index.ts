@@ -7,3 +7,4 @@ export * from './requests';
 export * from './fx';
 export * from './revaluation';
 export * from './vat';
+export * from './sales';

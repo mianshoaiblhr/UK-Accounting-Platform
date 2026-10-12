@@ -44,14 +44,14 @@ describe('regression: V0 foundation contract', () => {
     for (const t of ['user', 'session', 'organisation', 'organisation_membership', 'practice', 'practice_membership', 'company_membership', 'role', 'company', 'accounting_period', 'document', 'document_version', 'audit_event', 'job_record']) expect(tables).toContain(t);
   });
 
-  it('regression: version boundary — only the tables of versions that were approved exist (V0 + V1 M1-M4b: ledger, controls, foreign currency, contact roles, VAT foundation); nothing of invoicing, VAT returns/filing, tax computation or payroll', async () => {
+  it('regression: version boundary — only the tables of versions that were approved exist (V0 + V1 M1-M5a: ledger, controls, foreign currency, contact roles, VAT foundation, sales documents); nothing of purchases, bank, VAT returns/filing, tax computation or payroll', async () => {
     const tables = adminSql(`SELECT string_agg(table_name, ',') FROM information_schema.tables WHERE table_schema='public'`);
-    // Allowed by decision: `tax_jurisdiction` is V0 master data; the V1-M1 ledger core adds account, journal, journal_line, ledger_sequence (DEC-001, v1-plan.md); V1-M2 adds journal_request and ledger_policy (DEC-012); V1-M3 adds exchange_rate, company_fx_setting and fx_revaluation_run (DEC-016..018); V1-M4a adds contact_role, customer_profile and supplier_profile (DEC-023); V1-M4b adds tax_code, tax_rate and company_vat_setting (DEC-021, the VAT foundation).
+    // Allowed by decision: `tax_jurisdiction` is V0 master data; the V1-M1 ledger core adds account, journal, journal_line, ledger_sequence (DEC-001, v1-plan.md); V1-M2 adds journal_request and ledger_policy (DEC-012); V1-M3 adds exchange_rate, company_fx_setting and fx_revaluation_run (DEC-016..018); V1-M4a adds contact_role, customer_profile and supplier_profile (DEC-023); V1-M4b adds tax_code, tax_rate and company_vat_setting (DEC-021, the VAT foundation); V1-M5a adds sales_setting, sales_sequence, sales_document, sales_document_line and sales_allocation (DEC-026/027).
     // Each later V1 milestone widens this list in its own commit, with its acceptance package; anything else named like a future module still fails here.
     const unapproved = tables.replace(/tax_jurisdiction|tax_code|tax_rate|company_vat_setting|ledger_sequence|ledger_policy|journal_request|journal_line|journal/g, '');
-    expect(unapproved).not.toMatch(/ledger|invoice|vat|tax|payroll|hmrc|companies_house|ixbrl|posting/i);
+    expect(unapproved).not.toMatch(/ledger|invoice|vat|tax|payroll|hmrc|companies_house|ixbrl|posting|purchase|bill|payment|bank_statement|receipt/i);
     expect(tables).toContain('tax_jurisdiction');
-    for (const t of ['account', 'journal', 'journal_line', 'ledger_sequence', 'journal_request', 'ledger_policy', 'exchange_rate', 'company_fx_setting', 'fx_revaluation_run', 'contact_role', 'customer_profile', 'supplier_profile', 'tax_code', 'tax_rate', 'company_vat_setting']) expect(tables.split(',')).toContain(t);
+    for (const t of ['account', 'journal', 'journal_line', 'ledger_sequence', 'journal_request', 'ledger_policy', 'exchange_rate', 'company_fx_setting', 'fx_revaluation_run', 'contact_role', 'customer_profile', 'supplier_profile', 'tax_code', 'tax_rate', 'company_vat_setting', 'sales_setting', 'sales_sequence', 'sales_document', 'sales_document_line', 'sales_allocation']) expect(tables.split(',')).toContain(t);
     const u = await createUser(s);
     for (const p of ['/invoices', '/vat', '/tax', '/filings']) {
       expect((await s.api().get(orgPath(u, p)).set(bearer(u.token))).status).toBe(404);

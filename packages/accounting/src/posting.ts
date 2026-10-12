@@ -28,12 +28,16 @@ export interface PostLineOriginal { currency: string; debit: string; credit: str
  * currency). `original` and `adjustsCurrency` are set only by trusted code (reversals, revaluation): never by the API. `generated` marks the
  * visible FX-rounding line the service adds.
  */
-export interface PostLineVat { taxCodeId: string; taxRateId: string; role: 'NET' | 'VAT' | 'RC_OUTPUT' | 'RC_INPUT'; taxPoint: string; netLineNo?: number; inclusive: boolean }
+export interface PostLineVat { taxCodeId: string; taxRateId: string; role: 'NET' | 'VAT' | 'RC_OUTPUT' | 'RC_INPUT'; taxPoint: string; netLineNo?: number; inclusive: boolean;
+  /** Credit notes (DEC-029): the tax point of the supply being adjusted, whose rate version applies. */
+  ratePoint?: string }
 export interface PostLineInput { accountId: string; debit: string; credit: string; description?: string; original?: PostLineOriginal; adjustsCurrency?: string; generated?: boolean;
   /** API input: the VAT code of the line (M4b). The service turns it into `vat` facts and adds the VAT lines. */
   taxCodeId?: string;
   /** Resolved VAT facts (set by the service, or copied by a reversal). */
-  vat?: PostLineVat }
+  vat?: PostLineVat;
+  /** Trusted code only (credit notes, DEC-029): use this rate version, in force at `ratePoint` (the adjusted supply's tax point), instead of the one at the tax point. */
+  vatRate?: { taxRateId: string; ratePoint: string } }
 
 export interface PostInput {
   organisationId: string;
@@ -245,7 +249,8 @@ export class PostingService {
         organisationId: input.organisationId, companyId: input.companyId, journalId: journal.id, lineNo: i + 1, accountId: l.accountId, debit: l.debit, credit: l.credit, description: l.description ?? null,
         ...(l.original ? { originalCurrency: l.original.currency, originalDebit: money(l.original.debit), originalCredit: money(l.original.credit), rate: money(l.original.rate), exchangeRateId: l.original.rateId } : {}),
         ...(l.adjustsCurrency ? { adjustsCurrency: l.adjustsCurrency } : {}),
-        ...(l.vat ? { taxCodeId: l.vat.taxCodeId, taxRateId: l.vat.taxRateId, vatRole: l.vat.role, taxPoint: toDate(l.vat.taxPoint), vatNetLineNo: l.vat.netLineNo ?? null, vatInclusive: l.vat.inclusive } : {}),
+        ...(l.vat ? { taxCodeId: l.vat.taxCodeId, taxRateId: l.vat.taxRateId, vatRole: l.vat.role, taxPoint: toDate(l.vat.taxPoint), vatNetLineNo: l.vat.netLineNo ?? null, vatInclusive: l.vat.inclusive,
+          vatRatePoint: l.vat.ratePoint ? toDate(l.vat.ratePoint) : null } : {}),
       })) });
       await tx.auditEvent.createMany({ data: [auditRow({
         action: input.sourceType === 'REVERSAL' ? 'journal.reversed' : 'journal.posted', organisationId: input.organisationId, companyId: input.companyId, actorUserId: actor.userId ?? null,
@@ -277,6 +282,8 @@ export class PostingService {
     if (source.requiresRequest || input.reversesJournalId) throw unprocessable('VAT codes are not used on this kind of entry', 'vat_not_applicable');
     if (input.lines.some((l) => l.original)) throw unprocessable('VAT on foreign-currency journals waits for the verified rule on the currency of VAT amounts (M4b limitation)', 'vat_foreign_currency_not_supported');
     if (input.lines.some((l) => l.vat || l.generated)) throw unprocessable('VAT lines are added by the service', 'invalid_amount');
+    if (input.lines.some((l) => l.vatRate && !l.taxCodeId)) throw unprocessable('A pinned VAT rate needs a VAT code', 'invalid_amount');
+    if (input.lines.some((l) => l.vatRate) && input.sourceType !== 'SALES_CREDIT_NOTE') throw unprocessable('Only a credit note adjusts the VAT of an earlier supply', 'vat_not_applicable');
     const company = await tx.company.findUniqueOrThrow({ where: { id: input.companyId }, select: { baseCurrency: true } });
     const minor = (await tx.currency.findUnique({ where: { code: company.baseCurrency } }))?.minorUnits ?? 2;
     const settings = await tx.companyVatSetting.findFirst({ where: { companyId: input.companyId } });
@@ -286,7 +293,7 @@ export class PostingService {
     if (settings.registeredFrom && taxPoint < isoDay(settings.registeredFrom)) throw unprocessable(`The tax point ${taxPoint} is before the VAT registration date`, 'not_vat_registered');
     // idempotency on what the caller sent; a later rate change must not turn a replay into a conflict
     const hash = createHash('sha256').update(JSON.stringify({ c: input.companyId, d: input.journalDate, s: input.sourceType, i: input.sourceId ?? null, r: input.sourceReference ?? null, t: input.description.trim(),
-      v: { inc: !!input.amountsIncludeVat, tp: taxPoint }, l: input.lines.map((l) => [l.accountId, l.debit || '0', l.credit || '0', l.description ?? null, l.taxCodeId ?? null]) })).digest('hex');
+      v: { inc: !!input.amountsIncludeVat, tp: taxPoint }, l: input.lines.map((l) => [l.accountId, l.debit || '0', l.credit || '0', l.description ?? null, l.taxCodeId ?? null, ...(l.vatRate ? [l.vatRate.taxRateId, l.vatRate.ratePoint] : [])]) })).digest('hex');
     const existing = await tx.journal.findUnique({ where: { organisationId_companyId_idempotencyKey: { organisationId: input.organisationId, companyId: input.companyId, idempotencyKey: input.idempotencyKey } } });
     if (existing) {
       if (existing.contentHash !== hash) throw conflict('This idempotency key was already used for a different journal', 'idempotency_conflict');
@@ -298,7 +305,7 @@ export class PostingService {
       if (!l.taxCodeId) { out.push(l); continue; }
       const code = await tx.taxCode.findFirst({ where: { id: l.taxCodeId } });
       if (!code) throw unprocessable(`Line ${i + 1}: unknown VAT code`, 'unknown_tax_code');
-      const rate = await this.vat.rateFor(tx, code.id, taxPoint);
+      const rate = l.vatRate ? await this.pinnedRate(tx, code.id, l.vatRate, taxPoint, i) : await this.vat.rateFor(tx, code.id, taxPoint);
       let debit: Money, credit: Money;
       try { debit = money(l.debit || '0'); credit = money(l.credit || '0'); } catch { throw unprocessable(`Line ${i + 1}: amounts must be decimal numbers`, 'invalid_amount'); }
       if (debit.isNegative() || credit.isNegative() || debit.isZero() === credit.isZero()) throw unprocessable(`Line ${i + 1}: exactly one of debit and credit must be greater than zero`, 'invalid_amount');
@@ -308,7 +315,7 @@ export class PostingService {
       const net = inclusive ? entered.minus(vatAmt) : entered;
       if (!net.greaterThan(0)) throw unprocessable(`Line ${i + 1}: the net amount must be greater than zero`, 'invalid_amount');
       const side = (amt: Money) => (isDebit ? { debit: fmt(amt, minor), credit: '0' } : { debit: '0', credit: fmt(amt, minor) });
-      const facts = { taxCodeId: code.id, taxRateId: rate.id, taxPoint, inclusive };
+      const facts = { taxCodeId: code.id, taxRateId: rate.id, taxPoint, inclusive, ...(l.vatRate ? { ratePoint: l.vatRate.ratePoint } : {}) };
       const netLineNo = out.length + 1;
       out.push({ accountId: l.accountId, description: l.description, ...side(net), vat: { ...facts, role: 'NET' } });
       const salesSide = code.direction === 'SALES' || (code.direction === 'BOTH' && !isDebit);
@@ -324,6 +331,16 @@ export class PostingService {
       }
     }
     return { input: { ...input, amountsIncludeVat: false, taxPoint: undefined, lines: out }, hash };
+  }
+
+  /** DEC-029: a credit note uses the verified version its invoice used, which must cover the invoice's tax point (it may since have been superseded). */
+  private async pinnedRate(tx: Tx, taxCodeId: string, pin: { taxRateId: string; ratePoint: string }, taxPoint: string, i: number) {
+    const r = await tx.taxRate.findFirst({ where: { id: pin.taxRateId } });
+    if (!r || r.taxCodeId !== taxCodeId) throw unprocessable(`Line ${i + 1}: the VAT rate of the adjusted supply belongs to another VAT code`, 'tax_rate_mismatch');
+    if (r.verificationStatus !== 'VERIFIED') throw unprocessable(`Line ${i + 1}: the VAT rate of the adjusted supply is not verified`, 'tax_rate_unverified');
+    if (pin.ratePoint > taxPoint) throw unprocessable(`Line ${i + 1}: an adjustment cannot precede the supply it adjusts`, 'invalid_date');
+    if (pin.ratePoint < isoDay(r.effectiveFrom) || (r.effectiveTo && pin.ratePoint > isoDay(r.effectiveTo))) throw unprocessable(`Line ${i + 1}: the VAT rate was not in force at the adjusted supply's tax point`, 'tax_rate_not_effective');
+    return { id: r.id, rate: r.rate };
   }
 
   private async prepareAmounts(tx: Tx, input: PostInput) {
@@ -372,6 +389,7 @@ export class PostingService {
       if (!a) throw unprocessable('A line refers to an account that does not exist in this company', 'unknown_account');
       if ((a.activeFrom && date < a.activeFrom) || (a.activeTo && date > a.activeTo)) throw unprocessable(`Account ${a.code} is not active on ${input.journalDate}`, 'account_inactive');
       if (a.isControl && !source.controlAccounts && typed.has(id)) throw unprocessable(`Account ${a.code} is a control account; ${input.sourceType} journals cannot post to it (it is maintained by its sub-ledger)`, 'control_account_restricted');
+      if (a.isControl && source.controlKinds && typed.has(id) && !source.controlKinds.includes(a.controlKind as never)) throw unprocessable(`Account ${a.code} is a ${a.controlKind ?? 'control'} account; ${input.sourceType} journals reach only ${source.controlKinds.join(', ')}`, 'control_account_restricted');
     }
 
     // 7b. opening balances are the one source allowed onto control accounts, so they are fenced: dated at the very start of record keeping
@@ -409,6 +427,7 @@ export class PostingService {
     const original = await tx.journal.findFirst({ where: { id: a.journalId, companyId: a.companyId }, include: { lines: { orderBy: { lineNo: 'asc' } } } });
     if (!original) throw notFound('Journal not found');
     if (original.sourceType === 'REVERSAL') throw unprocessable('A reversal cannot be reversed; post a new journal instead', 'cannot_reverse_reversal');
+    if (JOURNAL_SOURCES[original.sourceType]?.subLedger) throw unprocessable(`A ${original.sourceType} journal belongs to its source document and is corrected there (for a sales invoice: a credit note), not reversed in the ledger`, 'subledger_journal');
     const already = await tx.journal.findFirst({ where: { reversesJournalId: original.id }, select: { id: true, journalNumber: true } });
     if (already) throw conflict(`Journal ${original.journalNumber} was already reversed by journal ${already.journalNumber}`, 'already_reversed');
     const date = a.journalDate ?? new Date().toISOString().slice(0, 10);
@@ -419,7 +438,8 @@ export class PostingService {
       lines: original.lines.map((l) => ({ accountId: l.accountId, debit: l.credit.toFixed(4), credit: l.debit.toFixed(4), description: l.description ?? undefined,
         ...(l.originalCurrency ? { original: { currency: l.originalCurrency, debit: l.originalCredit!.toFixed(4), credit: l.originalDebit!.toFixed(4), rate: l.rate!.toFixed(8), rateId: l.exchangeRateId! } } : {}),
         ...(l.adjustsCurrency ? { adjustsCurrency: l.adjustsCurrency } : {}),
-        ...(l.taxRateId ? { vat: { taxCodeId: l.taxCodeId!, taxRateId: l.taxRateId, role: l.vatRole as PostLineVat['role'], taxPoint: isoDay(l.taxPoint!), netLineNo: l.vatNetLineNo ?? undefined, inclusive: !!l.vatInclusive } } : {}) })),
+        ...(l.taxRateId ? { vat: { taxCodeId: l.taxCodeId!, taxRateId: l.taxRateId, role: l.vatRole as PostLineVat['role'], taxPoint: isoDay(l.taxPoint!), netLineNo: l.vatNetLineNo ?? undefined, inclusive: !!l.vatInclusive,
+          ...(l.vatRatePoint ? { ratePoint: isoDay(l.vatRatePoint) } : {}) } } : {}) })),
       idempotencyKey: `reversal:${original.id}`, actor: a.actor, reversesJournalId: original.id, reason: a.reason,
     });
   }

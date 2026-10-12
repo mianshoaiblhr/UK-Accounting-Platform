@@ -1305,6 +1305,8 @@ model JournalLine {
   taxPoint         DateTime? @map("tax_point") @db.Date
   vatNetLineNo     Int?      @map("vat_net_line_no")
   vatInclusive     Boolean?  @map("vat_inclusive")
+  /// Credit notes (M5a, DEC-029): the tax point of the supply being adjusted; its rate version applies.
+  vatRatePoint     DateTime? @map("vat_rate_point") @db.Date
 
   journal Journal @relation(fields: [journalId], references: [id])
 
@@ -1540,4 +1542,129 @@ model CompanyVatSetting {
 
   @@id([organisationId, companyId])
   @@map("company_vat_setting")
+}
+
+/// Sales settings (M5a, DEC-027): receivables control account, numbering (frozen once a document of the kind is numbered), separation of duties.
+model SalesSetting {
+  organisationId          String   @map("organisation_id") @db.Uuid
+  companyId               String   @map("company_id") @db.Uuid
+  receivablesAccountId    String?  @map("receivables_account_id") @db.Uuid
+  invoicePrefix           String   @default("INV-") @map("invoice_prefix")
+  creditNotePrefix        String   @default("CN-") @map("credit_note_prefix")
+  invoiceStart            Int      @default(1) @map("invoice_start")
+  creditNoteStart         Int      @default(1) @map("credit_note_start")
+  requireSeparateApprover Boolean  @default(false) @map("require_separate_approver")
+  updatedByUserId         String?  @map("updated_by_user_id") @db.Uuid
+  updatedAt               DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([organisationId, companyId])
+  @@map("sales_setting")
+}
+
+/// Last number issued per company and kind; moves forward by one in the approval transaction (no gaps).
+model SalesSequence {
+  organisationId String @map("organisation_id") @db.Uuid
+  companyId      String @map("company_id") @db.Uuid
+  kind           String
+  lastNumber     Int    @map("last_number")
+
+  @@id([organisationId, companyId, kind])
+  @@map("sales_sequence")
+}
+
+/// Invoices and credit notes (M5a). DRAFT -> APPROVED (numbered, posted, immutable) | DISCARDED. Outstanding amounts move only through allocations.
+model SalesDocument {
+  id                        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId            String    @map("organisation_id") @db.Uuid
+  companyId                 String    @map("company_id") @db.Uuid
+  kind                      String
+  status                    String    @default("DRAFT")
+  number                    Int?
+  documentNumber            String?   @map("document_number")
+  customerRoleId            String    @map("customer_role_id") @db.Uuid
+  partyRole                 String    @default("CUSTOMER") @map("party_role")
+  contactId                 String    @map("contact_id") @db.Uuid
+  issueDate                 DateTime  @map("issue_date") @db.Date
+  supplyDate                DateTime? @map("supply_date") @db.Date
+  taxPoint                  DateTime? @map("tax_point") @db.Date
+  dueDate                   DateTime  @map("due_date") @db.Date
+  currency                  String    @db.Char(3)
+  amountsIncludeVat         Boolean   @default(false) @map("amounts_include_vat")
+  customerReference         String?   @map("customer_reference")
+  notes                     String?
+  originalInvoiceId         String?   @map("original_invoice_id") @db.Uuid
+  creditReason              String?   @map("credit_reason")
+  revision                  Int       @default(1)
+  netTotal                  Decimal   @default(0) @map("net_total") @db.Decimal(19, 4)
+  vatTotal                  Decimal   @default(0) @map("vat_total") @db.Decimal(19, 4)
+  grossTotal                Decimal   @default(0) @map("gross_total") @db.Decimal(19, 4)
+  outstanding               Decimal   @default(0) @db.Decimal(19, 4)
+  functionalGross           Decimal?  @map("functional_gross") @db.Decimal(19, 4)
+  functionalOutstanding     Decimal   @default(0) @map("functional_outstanding") @db.Decimal(19, 4)
+  exchangeRateId            String?   @map("exchange_rate_id") @db.Uuid
+  rate                      Decimal?  @db.Decimal(19, 8)
+  journalId                 String?   @map("journal_id") @db.Uuid
+  contactSnapshot           Json?     @map("contact_snapshot")
+  duplicateOverrideReason   String?   @map("duplicate_override_reason")
+  creditLimitOverrideReason String?   @map("credit_limit_override_reason")
+  origin                    String    @default("MANUAL")
+  aiProposalId              String?   @map("ai_proposal_id") @db.Uuid
+  createdByUserId           String    @map("created_by_user_id") @db.Uuid
+  approvedByUserId          String?   @map("approved_by_user_id") @db.Uuid
+  approvedAt                DateTime? @map("approved_at") @db.Timestamptz(3)
+  discardedByUserId         String?   @map("discarded_by_user_id") @db.Uuid
+  discardedAt               DateTime? @map("discarded_at") @db.Timestamptz(3)
+  discardedReason           String?   @map("discarded_reason")
+  createdAt                 DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                 DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@index([organisationId, companyId, kind, status, issueDate], map: "sales_document_company_idx")
+  @@index([organisationId, companyId, customerRoleId, status], map: "sales_document_customer_idx")
+  @@map("sales_document")
+}
+
+/// Append-only line revisions of a sales document; the current revision is the document's `revision`.
+model SalesDocumentLine {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  companyId      String   @map("company_id") @db.Uuid
+  documentId     String   @map("document_id") @db.Uuid
+  revision       Int
+  lineNo         Int      @map("line_no")
+  description    String
+  quantity       Decimal  @db.Decimal(18, 4)
+  unitPrice      Decimal  @map("unit_price") @db.Decimal(19, 4)
+  accountId      String   @map("account_id") @db.Uuid
+  taxCodeId      String?  @map("tax_code_id") @db.Uuid
+  net            Decimal  @db.Decimal(19, 4)
+  vat            Decimal  @db.Decimal(19, 4)
+  gross          Decimal  @db.Decimal(19, 4)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([documentId, revision, lineNo], map: "sales_document_line_key")
+  @@index([organisationId, documentId, revision], map: "sales_document_line_org_idx")
+  @@map("sales_document_line")
+}
+
+/// A credit applied to an invoice (DEC-030): immutable; the database moves both outstanding amounts and refuses a negative balance.
+model SalesAllocation {
+  id                String   @id @db.Uuid
+  organisationId    String   @map("organisation_id") @db.Uuid
+  companyId         String   @map("company_id") @db.Uuid
+  invoiceId         String   @map("invoice_id") @db.Uuid
+  creditId          String   @map("credit_id") @db.Uuid
+  amount            Decimal  @db.Decimal(19, 4)
+  invoiceFunctional Decimal  @map("invoice_functional") @db.Decimal(19, 4)
+  creditFunctional  Decimal  @map("credit_functional") @db.Decimal(19, 4)
+  fxDifference      Decimal  @map("fx_difference") @db.Decimal(19, 4)
+  fxJournalId       String?  @map("fx_journal_id") @db.Uuid
+  allocatedOn       DateTime @map("allocated_on") @db.Date
+  createdByUserId   String   @map("created_by_user_id") @db.Uuid
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@index([organisationId, invoiceId], map: "sales_allocation_invoice_idx")
+  @@index([organisationId, creditId], map: "sales_allocation_credit_idx")
+  @@map("sales_allocation")
 }

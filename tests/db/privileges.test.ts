@@ -36,7 +36,12 @@ const FORBIDDEN: Record<string, string[]> = {
   supplier_profile: ['DELETE', 'TRUNCATE'],
   tax_code: ['UPDATE', 'DELETE', 'TRUNCATE'],     // immutable; a change is a new code
   tax_rate: ['DELETE', 'TRUNCATE'],               // versions are superseded, never deleted
-  company_vat_setting: ['DELETE', 'TRUNCATE'],      // POSTED -> REVERSED once, never removed
+  company_vat_setting: ['DELETE', 'TRUNCATE'],
+  sales_setting: ['DELETE', 'TRUNCATE'],
+  sales_sequence: ['DELETE', 'TRUNCATE'],           // moves forward by one, by trigger
+  sales_document: ['DELETE', 'TRUNCATE'],           // discarded or corrected by credit note, never deleted
+  sales_document_line: ['UPDATE', 'DELETE', 'TRUNCATE'], // append-only revisions
+  sales_allocation: ['UPDATE', 'DELETE', 'TRUNCATE'],      // POSTED -> REVERSED once, never removed
   notification_preference: ['DELETE', 'TRUNCATE'], // toggled, never removed
   notification_delivery: ['DELETE', 'TRUNCATE'],   // planned deliveries are final once handled
   outbox_event: ['TRUNCATE'],                    // DELETE is system-context only (RLS) and trigger-guarded

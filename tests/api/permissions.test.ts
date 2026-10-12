@@ -73,6 +73,9 @@ probes.push(
   { name: 'enter exchange rate', perm: 'fx:rate-manage', run: (u) => call('post', `/companies/${company.id}/exchange-rates`, {})(u) },
   { name: 'set ledger policy', perm: 'ledger:policy', run: (u) => call('put', `/companies/${company.id}/ledger-policy`, {})(u) },
   { name: 'lock period', perm: 'period:lock', run: (u) => call('post', `/companies/${company.id}/periods/${GHOST}/lock`, { reason: 'probe' })(u) },
+  { name: 'read sales documents', perm: 'sales:read', run: (u) => call('get', `/companies/${company.id}/sales/documents`)(u) },
+  { name: 'prepare sales invoice', perm: 'sales:manage', run: (u) => call('post', `/companies/${company.id}/sales/invoices`, {})(u) },
+  { name: 'approve sales document', perm: 'sales:approve', run: (u) => call('post', `/companies/${company.id}/sales/documents/${GHOST}/approve`, {})(u) },
 );
 probes.find((p) => p.name === 'create company')!.run = (u) => call('post', '/companies', { name: `Perm ${Math.random()}` })(u);
 probes.push({ name: 'create period', perm: 'period:manage', run: (u) => call('post', `/companies/${company.id}/periods`, { startDate: `${2000 + Math.floor(Math.random() * 90)}-01-01`, endDate: `${2000 + Math.floor(Math.random() * 90)}-12-31` })(u) });

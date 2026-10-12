@@ -12,3 +12,4 @@ export * from './retention';
 export * from './ledger';
 export * from './fx';
 export * from './vat';
+export * from './sales';
