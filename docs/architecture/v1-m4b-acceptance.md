@@ -43,7 +43,7 @@ Implemented: V1-VAT-01, -02, -03, -06, -08, -09, -10, -11, -12, -13, -14 and V1-
 3. Verification evidence was looked up without per-document visibility (caught by the architecture rule on document reads); it now uses the verifier's `canReadDocument`.
 
 ## 8. Known limitations and gates
-1. **Rules are the firm's:** until a firm's reviewer enters and verifies its codes and rates, no VAT can be posted. Whether the platform's rounding (DEC-025) and the box mappings a firm enters are right for that business is verified by the firm, not asserted here; the primary sources could not be read in this sandbox (DEC-022).
+1. **Rules are the firm's:** until a firm's reviewer enters and verifies its codes and rates, no VAT can be posted. Whether the platform's rounding (DEC-025) and the box mappings a firm enters are right for that business is verified by the firm, not asserted here; the primary sources could not be read in this sandbox (DEC-022). The legislation, HMRC guidance and case law the reviewer should check are listed, each marked UNVERIFIED, in `docs/legal/m4b-vat-sources.xlsx`.
 2. No invoices/bills (M5/M6): no document-level rounding option, no tax point derived from document dates, no credit-note linkage.
 3. No VAT on foreign-currency journals; no cash accounting or Flat Rate Scheme; no partial exemption or other special schemes; no presentation rounding of boxes 6-9; **no submission** (MTD is V5).
 4. API only. Production gates unchanged (privacy/retention review DEC-013, security review, AWS apply and verification, real-volume performance).
