@@ -88,7 +88,8 @@ export const JournalDetail = JournalHeader.extend({
   currency: z.string().length(3), reverses: z.object({ journalId: uuid, journalNumber: z.number().int() }).nullable(), replayed: z.boolean().optional().describe('true when an earlier posting with the same idempotency key was returned'),
   lines: z.array(z.object({ lineNo: z.number().int(), accountId: uuid, accountCode: z.string().nullable(), accountName: z.string().nullable(), debit: money, credit: money, description: z.string().nullable(),
     original: z.object({ currency: z.string().length(3), debit: money, credit: money, rate: z.string(), rateId: uuid.nullable() }).nullable().describe('Original-currency values of a foreign-currency line; debit and credit above are the functional amounts'),
-    adjustsCurrency: z.string().length(3).nullable().describe('Set on a functional-only revaluation adjustment that belongs to this foreign-currency balance') })),
+    adjustsCurrency: z.string().length(3).nullable().describe('Set on a functional-only revaluation adjustment that belongs to this foreign-currency balance'),
+    vat: z.object({ taxCodeId: uuid, taxRateId: uuid, role: z.enum(['NET', 'VAT', 'RC_OUTPUT', 'RC_INPUT']), taxPoint: day, netLineNo: z.number().int().nullable(), inclusive: z.boolean() }).nullable().describe('VAT facts: the net line, or a VAT line pointing at its net line') })),
 });
 export const JournalPage = z.object({ currency: z.string().length(3), items: z.array(JournalHeader), nextCursor: z.string().nullable() });
 export const GeneralLedger = z.object({
@@ -157,4 +158,24 @@ export const BankDetailsView = BankDetailsSummary.extend({ accountName: z.string
 export const ContactSnapshot = z.object({
   roleId: uuid, role: z.enum(['CUSTOMER', 'SUPPLIER']), contactId: uuid, accountCode: z.string().nullable(), name: z.string(), kind: z.enum(['PERSON', 'ORGANISATION']), vatNumber: z.string().nullable(), email: z.string().nullable(),
   address: z.object({ line1: z.string(), line2: z.string().nullable(), line3: z.string().nullable(), city: z.string(), region: z.string().nullable(), postcode: z.string().nullable(), countryCode: z.string() }).nullable(), capturedAt: ts,
+});
+
+// ───────────── VAT foundation (M4b) ─────────────
+export const TaxRateVersion = z.object({
+  id: uuid, taxCodeId: uuid, rate: z.string().describe('Percentage with 4 decimals, as entered from the source'), effectiveFrom: day, effectiveTo: day.nullable(), netBoxes: z.array(z.number().int()), vatBoxes: z.array(z.number().int()),
+  source: z.object({ url: z.string(), provision: z.string(), retrievedOn: day }), enteredByUserId: uuid, createdAt: ts,
+  verificationStatus: z.enum(['UNVERIFIED', 'VERIFIED']).describe('UNVERIFIED versions cannot be used on any posting'), verifiedByUserId: uuid.nullable(), verifiedAt: ts.nullable(), verificationNotes: z.string().nullable(), evidenceDocumentId: uuid.nullable(), supersededById: uuid.nullable(),
+});
+export const TaxCode = z.object({ id: uuid, code: z.string(), name: z.string(), treatment: z.enum(['STANDARD', 'REDUCED', 'ZERO', 'EXEMPT', 'OUTSIDE_SCOPE']), direction: z.enum(['SALES', 'PURCHASES', 'BOTH']), reverseCharge: z.boolean(), createdAt: ts, rates: z.array(TaxRateVersion) });
+export const VatSettings = z.object({ companyId: uuid, registered: z.boolean(), vrn: z.string().nullable(), registeredFrom: day.nullable(), scheme: z.string(), periodMonths: z.number().int(), anchorPeriodEnd: day.nullable(),
+  outputAccountId: uuid.nullable(), inputAccountId: uuid.nullable(), isDefault: z.boolean(), updatedAt: ts.nullable(), updatedByUserId: uuid.nullable() });
+export const VatPeriod = z.object({ from: day, to: day, periodMonths: z.number().int() });
+const BoxLine = z.object({ journalId: uuid, journalNumber: z.number().int(), lineNo: z.number().int(), accountCode: z.string(), taxCode: z.string(), taxPoint: day, amount: z.string() });
+export const VatWorkpaper = z.object({
+  companyId: uuid, from: day, to: day, currency: z.string().length(3), vrn: z.string().nullable(), scheme: z.string(),
+  boxes: z.array(z.object({ box: z.number().int(), amount: z.string(), lines: z.array(BoxLine), direction: z.enum(['PAYABLE', 'REPAYABLE']).optional() })),
+  reconciliation: z.object({ vatAccountMovement: z.string(), vatLinesByTaxPoint: z.string(), difference: z.string(),
+    explainedBy: z.array(z.object({ journalId: uuid, journalNumber: z.number().int(), lineNo: z.number().int(), journalDate: day, taxPoint: day.nullable(), amount: z.string(), reason: z.string() })) }),
+  rules: z.array(z.object({ rateId: uuid, code: z.string(), rate: z.string(), provision: z.string(), url: z.string(), verifiedBy: uuid.nullable(), verifiedAt: ts.nullable() })),
+  notice: z.string(),
 });

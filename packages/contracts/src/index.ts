@@ -11,3 +11,4 @@ export * from './notifications';
 export * from './retention';
 export * from './ledger';
 export * from './fx';
+export * from './vat';

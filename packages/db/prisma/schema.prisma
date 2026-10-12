@@ -1298,6 +1298,13 @@ model JournalLine {
   exchangeRateId   String?  @map("exchange_rate_id") @db.Uuid
   /// A functional-only adjustment (revaluation) that belongs to this foreign-currency balance of the account.
   adjustsCurrency  String?  @map("adjusts_currency") @db.Char(3)
+  /// VAT facts (M4b): all or none; a VAT line points at its net line; the database proves the amount at commit.
+  taxCodeId        String?   @map("tax_code_id") @db.Uuid
+  taxRateId        String?   @map("tax_rate_id") @db.Uuid
+  vatRole          String?   @map("vat_role")
+  taxPoint         DateTime? @map("tax_point") @db.Date
+  vatNetLineNo     Int?      @map("vat_net_line_no")
+  vatInclusive     Boolean?  @map("vat_inclusive")
 
   journal Journal @relation(fields: [journalId], references: [id])
 
@@ -1471,4 +1478,66 @@ model SupplierProfile {
   updatedAt                   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@map("supplier_profile")
+}
+
+// ───────────── V1 VAT foundation (M4b, DEC-010 / DEC-021) ─────────────
+model TaxCode {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId  String   @map("organisation_id") @db.Uuid
+  code            String
+  name            String
+  treatment       String
+  direction       String
+  reverseCharge   Boolean  @default(false) @map("reverse_charge")
+  createdByUserId String   @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@unique([organisationId, code])
+  @@map("tax_code")
+}
+
+/// A sourced, effective-dated rate version; unusable until VERIFIED by someone other than its author (DEC-021).
+model TaxRate {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId     String    @map("organisation_id") @db.Uuid
+  taxCodeId          String    @map("tax_code_id") @db.Uuid
+  rate               Decimal   @db.Decimal(7, 4)
+  effectiveFrom      DateTime  @map("effective_from") @db.Date
+  effectiveTo        DateTime? @map("effective_to") @db.Date
+  netBoxes           Int[]     @default([]) @map("net_boxes") @db.SmallInt
+  vatBoxes           Int[]     @default([]) @map("vat_boxes") @db.SmallInt
+  sourceUrl          String    @map("source_url")
+  sourceProvision    String    @map("source_provision")
+  sourceRetrievedOn  DateTime  @map("source_retrieved_on") @db.Date
+  enteredByUserId    String    @map("entered_by_user_id") @db.Uuid
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  verificationStatus String    @default("UNVERIFIED") @map("verification_status")
+  verifiedByUserId   String?   @map("verified_by_user_id") @db.Uuid
+  verifiedAt         DateTime? @map("verified_at") @db.Timestamptz(3)
+  verificationNotes  String?   @map("verification_notes")
+  evidenceDocumentId String?   @map("evidence_document_id") @db.Uuid
+  supersededById     String?   @map("superseded_by_id") @db.Uuid
+
+  @@unique([organisationId, id])
+  @@index([organisationId, taxCodeId, effectiveFrom])
+  @@map("tax_rate")
+}
+
+model CompanyVatSetting {
+  organisationId  String    @map("organisation_id") @db.Uuid
+  companyId       String    @map("company_id") @db.Uuid
+  registered      Boolean   @default(false)
+  vrn             String?
+  registeredFrom  DateTime? @map("registered_from") @db.Date
+  scheme          String    @default("STANDARD")
+  periodMonths    Int       @default(3) @map("period_months") @db.SmallInt
+  anchorPeriodEnd DateTime? @map("anchor_period_end") @db.Date
+  outputAccountId String?   @map("output_account_id") @db.Uuid
+  inputAccountId  String?   @map("input_account_id") @db.Uuid
+  updatedByUserId String?   @map("updated_by_user_id") @db.Uuid
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([organisationId, companyId])
+  @@map("company_vat_setting")
 }

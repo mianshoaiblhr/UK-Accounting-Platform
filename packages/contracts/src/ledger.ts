@@ -108,6 +108,8 @@ export const rateString = z.string().regex(/^(?!0+(\.0+)?$)\d{1,11}(\.\d{1,8})?$
 
 export const journalLineSchema = z.object({
   accountId: z.string().uuid(), debit: moneyString.default('0'), credit: moneyString.default('0'), description: z.string().trim().max(300).optional(),
+  /** M4b: the VAT code of this line. The VAT (or reverse-charge pair) is computed and added as visible lines on the company's VAT accounts. */
+  taxCodeId: z.string().uuid().optional(),
 }).strict();
 export const postJournalSchema = z.object({
   journalDate: isoDate, description: z.string().trim().min(1).max(500), source: z.enum(API_JOURNAL_SOURCES).default('MANUAL'),
@@ -118,6 +120,10 @@ export const postJournalSchema = z.object({
   rateId: z.string().uuid().optional(),
   /** Foreign currency only: a manual rate, stored as an audited MANUAL exchange rate. Not together with rateId. */
   manualRate: z.object({ rate: rateString, source: z.string().trim().min(3).max(500) }).strict().optional(),
+  /** M4b: line amounts on VAT-coded lines include VAT (the VAT fraction is taken out); otherwise they are net. */
+  amountsIncludeVat: z.boolean().default(false),
+  /** M4b: the tax point (time of supply) when it differs from the journal date; it selects the rate and the return period. */
+  taxPoint: isoDate.optional(),
   lines: z.array(journalLineSchema).min(2).max(500),
   idempotencyKey: z.string().trim().min(8).max(100).optional(),
 }).strict().refine((b) => !(b.rateId && b.manualRate), { message: 'Give either rateId or manualRate, not both', path: ['manualRate'] });

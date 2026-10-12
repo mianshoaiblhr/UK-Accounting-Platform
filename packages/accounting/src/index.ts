@@ -6,3 +6,4 @@ export * from './ledger';
 export * from './requests';
 export * from './fx';
 export * from './revaluation';
+export * from './vat';

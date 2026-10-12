@@ -68,6 +68,8 @@ probes.push(
   { name: 'request control adjustment', perm: 'ledger:control-adjustment', run: (u) => call('post', `/companies/${company.id}/control-adjustment-requests`, {})(u) },
   { name: 'approve journal request', perm: 'ledger:approve', run: (u) => call('post', `/companies/${company.id}/journal-requests/${GHOST}/approve`, {})(u) },
   { name: 'read supplier bank details', perm: 'contact:bank-details', run: (u) => call('get', `/companies/${company.id}/contact-roles/${GHOST}/bank-details`)(u) },
+  { name: 'create VAT code', perm: 'vat:manage', run: (u) => call('post', `/companies/${company.id}/tax-codes`, {})(u) },
+  { name: 'verify VAT rule', perm: 'tax:rule-verify', run: (u) => call('post', `/companies/${company.id}/tax-rates/${GHOST}/verify`, {})(u) },
   { name: 'enter exchange rate', perm: 'fx:rate-manage', run: (u) => call('post', `/companies/${company.id}/exchange-rates`, {})(u) },
   { name: 'set ledger policy', perm: 'ledger:policy', run: (u) => call('put', `/companies/${company.id}/ledger-policy`, {})(u) },
   { name: 'lock period', perm: 'period:lock', run: (u) => call('post', `/companies/${company.id}/periods/${GHOST}/lock`, { reason: 'probe' })(u) },

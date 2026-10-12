@@ -40,7 +40,8 @@ export class LedgerQueries {
     const reverses = j.reversesJournalId ? await tx.journal.findFirst({ where: { id: j.reversesJournalId }, select: { id: true, journalNumber: true } }) : null;
     return { currency, ...this.header(j, minor, reversedBy ?? undefined), reverses: reverses ? { journalId: reverses.id, journalNumber: reverses.journalNumber } : null,
       lines: j.lines.map((l) => { const a = accounts.get(l.accountId); return { lineNo: l.lineNo, accountId: l.accountId, accountCode: a?.code ?? null, accountName: a?.name ?? null, debit: fmt(l.debit, minor), credit: fmt(l.credit, minor), description: l.description,
-        original: l.originalCurrency ? { currency: l.originalCurrency, debit: l.originalDebit!.toFixed(4), credit: l.originalCredit!.toFixed(4), rate: l.rate!.toFixed(8), rateId: l.exchangeRateId } : null, adjustsCurrency: l.adjustsCurrency }; }) };
+        original: l.originalCurrency ? { currency: l.originalCurrency, debit: l.originalDebit!.toFixed(4), credit: l.originalCredit!.toFixed(4), rate: l.rate!.toFixed(8), rateId: l.exchangeRateId } : null, adjustsCurrency: l.adjustsCurrency,
+        vat: l.taxRateId ? { taxCodeId: l.taxCodeId, taxRateId: l.taxRateId, role: l.vatRole, taxPoint: isoDay(l.taxPoint!), netLineNo: l.vatNetLineNo, inclusive: l.vatInclusive } : null }; }) };
   }
 
   private header(j: { id: string; journalNumber: number; journalDate: Date; periodId: string; sourceType: string; sourceId: string | null; sourceReference: string | null; description: string; total: Money; lineCount: number; actorType: string; postedByUserId: string | null; postedAt: Date; reversesJournalId: string | null; requestId: string | null; requestedByUserId: string | null; approvedByUserId: string | null },

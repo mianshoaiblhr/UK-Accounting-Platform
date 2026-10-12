@@ -151,6 +151,11 @@ describe('database access paths that carry security meaning', () => {
     expect(read(`${ROOT}/packages/accounting/src/fx.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany)/);
     expect(read(`${ROOT}/packages/accounting/src/revaluation.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany)/);
   });
+  it('VAT rules have one writer (M4b) and never post: codes, rate versions and settings only in vat.ts', () => {
+    const WRITE = /\.(taxCode|taxRate|companyVatSetting)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(tax_code|tax_rate|company_vat_setting)"?\b/i;
+    expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/vat.ts']);
+    expect(read(`${ROOT}/packages/accounting/src/vat.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany)/);
+  });
   it('customer and supplier roles have one writer (M4a), and only it touches supplier bank-detail ciphertext', () => {
     const WRITE = /\.(contactRole|customerProfile|supplierProfile)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(contact_role|customer_profile|supplier_profile)"?\b/i;
     expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['apps/api/src/master-data/contact-roles.service.ts']);
@@ -188,6 +193,7 @@ describe('database access paths that carry security meaning', () => {
       'apps/api/src/evidence/evidence.service.ts', // resolver applies canReadDocument
       'apps/api/src/tasks/tasks.service.ts',       // readableDocument()/listAttachments() apply canReadDocument
       'packages/accounting/src/requests.ts',       // request evidence check uses the requester's canReadDocument
+      'packages/accounting/src/vat.ts',            // VAT-rule verification evidence uses the verifier's canReadDocument
       'packages/platform/src/workflow.ts',         // evidence check uses Actor.canReadDocument
     ]);
   });

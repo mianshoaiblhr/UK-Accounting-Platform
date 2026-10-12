@@ -19,7 +19,7 @@ export const PERMISSIONS = [
   'document:confidential', 'evidence:lock', 'evidence:read', 'evidence:manage',
   'account:read', 'account:manage', 'ledger:read', 'journal:post', 'period:lock',
   'ledger:opening-balance', 'ledger:control-adjustment', 'ledger:approve', 'ledger:policy',
-  'fx:rate-manage', 'contact:bank-details',
+  'fx:rate-manage', 'contact:bank-details', 'vat:manage', 'tax:rule-verify',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -46,7 +46,7 @@ export const PERMISSION_SCOPE: Record<Permission, PermissionScope> = {
   'document:confidential': 'COMPANY', 'evidence:lock': 'COMPANY', 'evidence:read': 'COMPANY', 'evidence:manage': 'COMPANY',
   'account:read': 'COMPANY', 'account:manage': 'COMPANY', 'ledger:read': 'COMPANY', 'journal:post': 'COMPANY', 'period:lock': 'COMPANY',
   'ledger:opening-balance': 'COMPANY', 'ledger:control-adjustment': 'COMPANY', 'ledger:approve': 'COMPANY', 'ledger:policy': 'COMPANY',
-  'fx:rate-manage': 'COMPANY', 'contact:bank-details': 'COMPANY',
+  'fx:rate-manage': 'COMPANY', 'contact:bank-details': 'COMPANY', 'vat:manage': 'COMPANY', 'tax:rule-verify': 'COMPANY',
 };
 export const permissionsOfScope = (...scopes: PermissionScope[]): Permission[] => PERMISSIONS.filter((p) => scopes.includes(PERMISSION_SCOPE[p]));
 
@@ -63,7 +63,7 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
   { key: 'admin', name: 'Administrator', description: 'Manage people, practices, companies and documents',
     permissions: PERMISSIONS.filter((p) => p !== 'org:manage') },
   { key: 'partner', name: 'Partner', description: 'Leads a practice or client company: full company control including review, approval and access management',
-    permissions: [...ORG_READ, 'job:read', 'practice:read', 'practice:manage', 'practice:member:manage', 'company:create', ...COMPANY_ALL] },
+    permissions: [...ORG_READ, 'job:read', 'practice:read', 'practice:manage', 'practice:member:manage', 'company:create', ...COMPANY_ALL.filter((p) => p !== 'tax:rule-verify')] },
   { key: 'manager', name: 'Manager', description: 'Manages day-to-day work on a company: can review but not approve or manage access',
     permissions: [...ORG_READ, 'job:read', 'practice:read', 'company:read', 'company:update', 'period:read', 'period:manage',
       'document:read', 'document:upload', 'document:archive', 'task:read', 'task:manage', 'workflow:read', 'workflow:manage', 'workflow:review', 'ai:use', 'contact:read', 'contact:manage', 'document:confidential', 'evidence:read', 'evidence:manage',
@@ -71,7 +71,7 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
   { key: 'accountant', name: 'Accountant', description: 'Work on assigned client companies',
     permissions: [...READ, 'practice:read', 'company:create', 'company:update', 'period:manage', 'document:upload', 'document:archive', 'job:read', 'audit:read',
       'task:read', 'task:manage', 'workflow:read', 'workflow:manage', 'workflow:review', 'ai:use', 'ai:approve', 'contact:read', 'contact:manage', 'evidence:read', 'evidence:manage',
-      'account:read', 'account:manage', 'ledger:read', 'journal:post', 'ledger:control-adjustment', 'fx:rate-manage', 'contact:bank-details'] },
+      'account:read', 'account:manage', 'ledger:read', 'journal:post', 'ledger:control-adjustment', 'fx:rate-manage', 'contact:bank-details', 'vat:manage'] },
   { key: 'bookkeeper', name: 'Bookkeeper', description: 'Prepare records for assigned companies',
     permissions: [...READ, 'practice:read', 'document:upload', 'job:read', 'task:read', 'task:manage', 'workflow:read', 'ai:use', 'contact:read', 'contact:manage', 'evidence:read', 'evidence:manage', 'account:read', 'ledger:read'] },
   { key: 'reviewer', name: 'Reviewer', description: 'Read-only review and audit access',

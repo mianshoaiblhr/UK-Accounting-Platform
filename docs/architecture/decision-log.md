@@ -146,3 +146,14 @@ The sandbox network policy blocks gov.uk, legislation.gov.uk, frc.org.uk and ban
 ### DEC-024 - Counterparty VAT numbers
 `contact.vat_number` is optional and format-checked (GB/XI + 9 or 12 digits, or another two-letter prefix + 8-12 characters, the length range of EU VAT numbers). It is not checked against HMRC's VAT number service (external integration; would be a separate decision with its own terms of use).
 
+
+### DEC-025 - VAT engine choices for M4b (delegated; 2026-10-12)
+Taken under the delegation recorded above. **The VAT figures themselves are not decided here and none are seeded.**
+* **Rounding:** VAT is computed per line and rounded half-up to the currency's minor units; VAT-inclusive entry takes the VAT fraction `r / (100 + r)` of the gross. Whether this matches what HMRC permits for a given business is **UNVERIFIED** and is part of what the firm's reviewer confirms.
+* **Tax point:** defaults to the journal date and can be given explicitly; it selects the rate version and the return period.
+* **Direction:** a SALES code always uses the output VAT account (a debit on it is a credit note and reduces output VAT); a PURCHASES code the input account; a BOTH code uses output for credits and input for debits.
+* **Reverse charge:** entered net; equal output and input VAT lines are added; inclusive entry is refused.
+* **Box mapping** is part of each rate version (and therefore part of what is verified), not hard-coded.
+* **Not in M4b:** VAT on foreign-currency journals (refused until the rule on the currency of VAT amounts is verified); credit notes linked to their original invoice (documents, M5); cash accounting and the Flat Rate Scheme (DEC-010); MTD submission (V5). The workpaper is not a return.
+* **Reviewer permission:** `tax:rule-verify` is held by owner and admin by default; partners do not get it automatically (it is granted to the named reviewer by the firm).
+

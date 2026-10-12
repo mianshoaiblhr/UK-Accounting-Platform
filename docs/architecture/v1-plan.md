@@ -11,8 +11,8 @@ Tenant isolation by forced row-level security; one central authoriser for compan
 | M1 | Ledger core | **ACCEPTED** (code baseline `fae5270`, DEC-008) | Engineering | - |
 | M2 | Ledger controls: opening-balance permission, control-account adjustments, second-person approval (DEC-012) | **ACCEPTED** (code baseline `d98e3ed`, DEC-015) | Engineering | M1 |
 | M3 | Foreign-currency foundation (DEC-009) | **ACCEPTED under delegation** (code baseline `c8fd8c0`, DEC-019); live rate adapters gated | Engineering | M1, M2 accepted |
-| M4a | Contact roles: customers and suppliers (DEC-011, DEC-023) | implemented (section 6.1, 6.3); acceptance package `v1-m4a-acceptance.md` | Engineering | M1-M3 |
-| M4b | VAT foundation, standard accounting (DEC-010, DEC-021) | specified (section 6.2); build allowed, **activation of each rule gated by verification by a holder of `tax:rule-verify`** | Engineering; the firm's qualified tax reviewer | M3, M4a |
+| M4a | Contact roles: customers and suppliers (DEC-011, DEC-023) | **verified** (code baseline `206b14d`; package `v1-m4a-acceptance.md`) | Engineering | M1-M3 |
+| M4b | VAT foundation, standard accounting (DEC-010, DEC-021, DEC-025) | implemented (section 6.4); **every rule usable only after verification by a holder of `tax:rule-verify`**; no figures seeded | Engineering; the firm's qualified tax reviewer | M3, M4a |
 | M5 | Sales: invoices, credit notes, receipts, duplicate check | planned | Engineering | M2, M3, M4 |
 | M6 | Purchases: bills, debit notes, payments, cash | planned | Engineering | M3, M4, M5 patterns |
 | M7 | Bank accounts, statement import, transfers, charges, interest, reconciliation | planned | Engineering | M5, M6 |
@@ -163,6 +163,12 @@ Property tests for conversion and rounding (reverse conversion within tolerance;
 * **Code:** `ContactRolesService` (the only writer of the three tables and the only code that touches the ciphertext - architecture-tested) and `ContactRolesController` under `/companies/{companyId}/contact-roles` (flag `bookkeeping.core`).
 * **Defects found by the new tests and fixed before release:** (1) the "ending needs a reason" check accepted a NULL reason (a CHECK treats NULL as satisfied) - now explicit; (2) the EU branch of the VAT-number pattern also matched short GB numbers - it now excludes GB/XI and requires 8-12 characters (DEC-024 text corrected before it was committed); (3) a duplicate account code was reported as a duplicate role - the service now checks explicitly, the unique index stays the backstop.
 * **Not yet possible (needs documents, M5/M6):** refusing to end a role with open documents; storing the snapshot on documents and proving it survives a later edit (the function is delivered and tested). Payments refusing UNVERIFIED bank details is an M6 rule; the status exists now.
+
+### 6.4 As built (M4b)
+* **Migration** `20260110000000_v1_vat_foundation`: `tax_code`, `tax_rate`, `company_vat_setting`; journal-line VAT facts (`tax_code_id`, `tax_rate_id`, `vat_role` NET/VAT/RC_OUTPUT/RC_INPUT, `tax_point`, `vat_net_line_no`, `vat_inclusive`; all-or-none; never on a foreign-currency line); `journal_vat_check` at commit; permissions `vat:manage` (owner, admin, partner, accountant) and `tax:rule-verify` (owner, admin); retention rows (classification only). **No VAT rate, code or box mapping is seeded.**
+* **Code:** `VatService` (codes, versions, verification, settings, return periods, workpaper; the only writer of the VAT tables), `PostingService.withVat` (VAT lines), `VatController`.
+* **Defects found while writing the tests and fixed before any run:** foreign-currency conversion rebuilt journal lines and would have dropped their VAT codes silently - VAT on foreign journals is now refused before any conversion or rate is stored; the supersede request intersected a strict schema and rejected its own `reason` - it is now its own schema.
+* **Not yet:** credit/debit notes linked to the original supply (M5/M6 documents); foreign-currency VAT (V1-VAT-15); tax point by supply/invoice/payment date (documents carry those dates; journals take an explicit tax point now); cash accounting and Flat Rate Scheme (deferred, refused); presentation rounding of boxes 6-9 (not applied - unverified); submission (V5).
 
 ## 7. Decisions still needed before specific milestones
 | # | Decision | Needed before | Owner | Status |

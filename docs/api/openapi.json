@@ -11469,6 +11469,736 @@
         }
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/tax-codes": {
+      "get": {
+        "operationId": "Vat_list",
+        "parameters": [
+          {
+            "name": "includeRates",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxCodeList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "VAT codes of the organisation with every rate version (the platform ships none; firms enter their own with sources)",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "Vat_create",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxCode"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "vat:manage"
+        ],
+        "summary": "Create a VAT code: treatment and direction (immutable), reverse charge for purchases only",
+        "description": "**Requires permission:** `vat:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaxCodeRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/tax-codes/{taxCodeId}": {
+      "get": {
+        "operationId": "Vat_get",
+        "parameters": [
+          {
+            "name": "taxCodeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxCode"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "One VAT code with its rate versions",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/tax-codes/{taxCodeId}/rates": {
+      "post": {
+        "operationId": "Vat_addRate",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "taxCodeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Added (unverified)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxRateVersion"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "vat:manage"
+        ],
+        "summary": "Add a sourced, effective-dated rate version with its box mapping. It starts UNVERIFIED and cannot be used until verified",
+        "description": "**Requires permission:** `vat:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaxRateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/tax-rates/{rateId}/supersede": {
+      "post": {
+        "operationId": "Vat_supersede",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "rateId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "New version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxRateVersion"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "vat:manage"
+        ],
+        "summary": "Change a rule by a new version (UNVERIFIED again); the old version stays for the lines that used it",
+        "description": "**Requires permission:** `vat:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupersedeTaxRateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/tax-rates/{rateId}/verify": {
+      "post": {
+        "operationId": "Vat_verify",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "rateId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxRateVersion"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "tax:rule-verify"
+        ],
+        "summary": "Verify a rate version against its official source (tax:rule-verify; never the person who entered it)",
+        "description": "**Requires permission:** `tax:rule-verify`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyTaxRateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/vat-settings": {
+      "get": {
+        "operationId": "Vat_settings",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "VAT registration, scheme, return periods and VAT accounts",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "Vat_setSettings",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Settings set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "vat:manage"
+        ],
+        "summary": "Set VAT registration and accounts (vat:manage, reason required). Only the STANDARD scheme is available; CASH and FLAT_RATE are refused",
+        "description": "**Requires permission:** `vat:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetVatSettingsRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/vat/period": {
+      "get": {
+        "operationId": "Vat_period",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Period",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatPeriod"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The VAT return period containing a date",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/vat/workpaper": {
+      "get": {
+        "operationId": "Vat_workpaper",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workpaper",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatWorkpaper"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "Nine-box VAT workpaper by tax point with drill-down and VAT control-account reconciliation. A workpaper, not a return or a submission",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -15427,6 +16157,50 @@
                   "maxLength": 3,
                   "nullable": true,
                   "description": "Set on a functional-only revaluation adjustment that belongs to this foreign-currency balance"
+                },
+                "vat": {
+                  "type": "object",
+                  "properties": {
+                    "taxCodeId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "taxRateId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "NET",
+                        "VAT",
+                        "RC_OUTPUT",
+                        "RC_INPUT"
+                      ]
+                    },
+                    "taxPoint": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "netLineNo": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "inclusive": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "taxCodeId",
+                    "taxRateId",
+                    "role",
+                    "taxPoint",
+                    "netLineNo",
+                    "inclusive"
+                  ],
+                  "additionalProperties": false,
+                  "nullable": true,
+                  "description": "VAT facts: the net line, or a VAT line pointing at its net line"
                 }
               },
               "required": [
@@ -15438,7 +16212,8 @@
                 "credit",
                 "description",
                 "original",
-                "adjustsCurrency"
+                "adjustsCurrency",
+                "vat"
               ],
               "additionalProperties": false
             }
@@ -16844,6 +17619,793 @@
           "run",
           "journalId",
           "reversalJournalId"
+        ],
+        "additionalProperties": false
+      },
+      "TaxCode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "treatment": {
+            "type": "string",
+            "enum": [
+              "STANDARD",
+              "REDUCED",
+              "ZERO",
+              "EXEMPT",
+              "OUTSIDE_SCOPE"
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "SALES",
+              "PURCHASES",
+              "BOTH"
+            ]
+          },
+          "reverseCharge": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "rates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "taxCodeId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "rate": {
+                  "type": "string",
+                  "description": "Percentage with 4 decimals, as entered from the source"
+                },
+                "effectiveFrom": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "effectiveTo": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "netBoxes": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                "vatBoxes": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "provision": {
+                      "type": "string"
+                    },
+                    "retrievedOn": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    }
+                  },
+                  "required": [
+                    "url",
+                    "provision",
+                    "retrievedOn"
+                  ],
+                  "additionalProperties": false
+                },
+                "enteredByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "verificationStatus": {
+                  "type": "string",
+                  "enum": [
+                    "UNVERIFIED",
+                    "VERIFIED"
+                  ],
+                  "description": "UNVERIFIED versions cannot be used on any posting"
+                },
+                "verifiedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "verifiedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "verificationNotes": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "evidenceDocumentId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "supersededById": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "taxCodeId",
+                "rate",
+                "effectiveFrom",
+                "effectiveTo",
+                "netBoxes",
+                "vatBoxes",
+                "source",
+                "enteredByUserId",
+                "createdAt",
+                "verificationStatus",
+                "verifiedByUserId",
+                "verifiedAt",
+                "verificationNotes",
+                "evidenceDocumentId",
+                "supersededById"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "treatment",
+          "direction",
+          "reverseCharge",
+          "createdAt",
+          "rates"
+        ],
+        "additionalProperties": false
+      },
+      "TaxCodeList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "treatment": {
+                  "type": "string",
+                  "enum": [
+                    "STANDARD",
+                    "REDUCED",
+                    "ZERO",
+                    "EXEMPT",
+                    "OUTSIDE_SCOPE"
+                  ]
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "SALES",
+                    "PURCHASES",
+                    "BOTH"
+                  ]
+                },
+                "reverseCharge": {
+                  "type": "boolean"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "rates": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "taxCodeId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "rate": {
+                        "type": "string",
+                        "description": "Percentage with 4 decimals, as entered from the source"
+                      },
+                      "effectiveFrom": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "effectiveTo": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                        "nullable": true
+                      },
+                      "netBoxes": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer"
+                        }
+                      },
+                      "vatBoxes": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer"
+                        }
+                      },
+                      "source": {
+                        "type": "object",
+                        "properties": {
+                          "url": {
+                            "type": "string"
+                          },
+                          "provision": {
+                            "type": "string"
+                          },
+                          "retrievedOn": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                          }
+                        },
+                        "required": [
+                          "url",
+                          "provision",
+                          "retrievedOn"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "enteredByUserId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "verificationStatus": {
+                        "type": "string",
+                        "enum": [
+                          "UNVERIFIED",
+                          "VERIFIED"
+                        ],
+                        "description": "UNVERIFIED versions cannot be used on any posting"
+                      },
+                      "verifiedByUserId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                      },
+                      "verifiedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                      },
+                      "verificationNotes": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "evidenceDocumentId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                      },
+                      "supersededById": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "taxCodeId",
+                      "rate",
+                      "effectiveFrom",
+                      "effectiveTo",
+                      "netBoxes",
+                      "vatBoxes",
+                      "source",
+                      "enteredByUserId",
+                      "createdAt",
+                      "verificationStatus",
+                      "verifiedByUserId",
+                      "verifiedAt",
+                      "verificationNotes",
+                      "evidenceDocumentId",
+                      "supersededById"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "code",
+                "name",
+                "treatment",
+                "direction",
+                "reverseCharge",
+                "createdAt",
+                "rates"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "TaxRateVersion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "taxCodeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rate": {
+            "type": "string",
+            "description": "Percentage with 4 decimals, as entered from the source"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "netBoxes": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "vatBoxes": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string"
+              },
+              "provision": {
+                "type": "string"
+              },
+              "retrievedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url",
+              "provision",
+              "retrievedOn"
+            ],
+            "additionalProperties": false
+          },
+          "enteredByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "UNVERIFIED",
+              "VERIFIED"
+            ],
+            "description": "UNVERIFIED versions cannot be used on any posting"
+          },
+          "verifiedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "verifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "verificationNotes": {
+            "type": "string",
+            "nullable": true
+          },
+          "evidenceDocumentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "supersededById": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "taxCodeId",
+          "rate",
+          "effectiveFrom",
+          "effectiveTo",
+          "netBoxes",
+          "vatBoxes",
+          "source",
+          "enteredByUserId",
+          "createdAt",
+          "verificationStatus",
+          "verifiedByUserId",
+          "verifiedAt",
+          "verificationNotes",
+          "evidenceDocumentId",
+          "supersededById"
+        ],
+        "additionalProperties": false
+      },
+      "VatSettings": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "registered": {
+            "type": "boolean"
+          },
+          "vrn": {
+            "type": "string",
+            "nullable": true
+          },
+          "registeredFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "scheme": {
+            "type": "string"
+          },
+          "periodMonths": {
+            "type": "integer"
+          },
+          "anchorPeriodEnd": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "outputAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "inputAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updatedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "required": [
+          "companyId",
+          "registered",
+          "vrn",
+          "registeredFrom",
+          "scheme",
+          "periodMonths",
+          "anchorPeriodEnd",
+          "outputAccountId",
+          "inputAccountId",
+          "isDefault",
+          "updatedAt",
+          "updatedByUserId"
+        ],
+        "additionalProperties": false
+      },
+      "VatPeriod": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "to": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "periodMonths": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "periodMonths"
+        ],
+        "additionalProperties": false
+      },
+      "VatWorkpaper": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "from": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "to": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "vrn": {
+            "type": "string",
+            "nullable": true
+          },
+          "scheme": {
+            "type": "string"
+          },
+          "boxes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "box": {
+                  "type": "integer"
+                },
+                "amount": {
+                  "type": "string"
+                },
+                "lines": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "journalId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "journalNumber": {
+                        "type": "integer"
+                      },
+                      "lineNo": {
+                        "type": "integer"
+                      },
+                      "accountCode": {
+                        "type": "string"
+                      },
+                      "taxCode": {
+                        "type": "string"
+                      },
+                      "taxPoint": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "amount": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "journalId",
+                      "journalNumber",
+                      "lineNo",
+                      "accountCode",
+                      "taxCode",
+                      "taxPoint",
+                      "amount"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "PAYABLE",
+                    "REPAYABLE"
+                  ]
+                }
+              },
+              "required": [
+                "box",
+                "amount",
+                "lines"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "reconciliation": {
+            "type": "object",
+            "properties": {
+              "vatAccountMovement": {
+                "type": "string"
+              },
+              "vatLinesByTaxPoint": {
+                "type": "string"
+              },
+              "difference": {
+                "type": "string"
+              },
+              "explainedBy": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "journalId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "journalNumber": {
+                      "type": "integer"
+                    },
+                    "lineNo": {
+                      "type": "integer"
+                    },
+                    "journalDate": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "taxPoint": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                      "nullable": true
+                    },
+                    "amount": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "journalId",
+                    "journalNumber",
+                    "lineNo",
+                    "journalDate",
+                    "taxPoint",
+                    "amount",
+                    "reason"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "vatAccountMovement",
+              "vatLinesByTaxPoint",
+              "difference",
+              "explainedBy"
+            ],
+            "additionalProperties": false
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rateId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "rate": {
+                  "type": "string"
+                },
+                "provision": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "verifiedBy": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "verifiedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "rateId",
+                "code",
+                "rate",
+                "provision",
+                "url",
+                "verifiedBy",
+                "verifiedAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "notice": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "companyId",
+          "from",
+          "to",
+          "currency",
+          "vrn",
+          "scheme",
+          "boxes",
+          "reconciliation",
+          "rules",
+          "notice"
         ],
         "additionalProperties": false
       },
@@ -20586,7 +22148,9 @@
                 "ledger:approve",
                 "ledger:policy",
                 "fx:rate-manage",
-                "contact:bank-details"
+                "contact:bank-details",
+                "vat:manage",
+                "tax:rule-verify"
               ]
             },
             "minItems": 1
@@ -22115,6 +23679,14 @@
             ],
             "additionalProperties": false
           },
+          "amountsIncludeVat": {
+            "type": "boolean",
+            "default": false
+          },
+          "taxPoint": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
           "lines": {
             "type": "array",
             "items": {
@@ -22137,6 +23709,10 @@
                 "description": {
                   "type": "string",
                   "maxLength": 300
+                },
+                "taxCodeId": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               },
               "required": [
@@ -22221,6 +23797,10 @@
                 "description": {
                   "type": "string",
                   "maxLength": 300
+                },
+                "taxCodeId": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               },
               "required": [
@@ -22682,6 +24262,370 @@
             "maxLength": 500
           }
         },
+        "additionalProperties": false
+      },
+      "CreateTaxCodeRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Z0-9][A-Z0-9_-]{0,15}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "treatment": {
+            "type": "string",
+            "enum": [
+              "STANDARD",
+              "REDUCED",
+              "ZERO",
+              "EXEMPT",
+              "OUTSIDE_SCOPE"
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "SALES",
+              "PURCHASES",
+              "BOTH"
+            ]
+          },
+          "reverseCharge": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "treatment",
+          "direction"
+        ],
+        "additionalProperties": false
+      },
+      "CreateTaxRateRequest": {
+        "type": "object",
+        "properties": {
+          "rate": {
+            "type": "string",
+            "pattern": "^(100(\\.0{1,4})?|\\d{1,2}(\\.\\d{1,4})?)$"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "netBoxes": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "enum": [
+                    6
+                  ]
+                },
+                {
+                  "type": "number",
+                  "enum": [
+                    7
+                  ]
+                },
+                {
+                  "type": "number",
+                  "enum": [
+                    8
+                  ]
+                },
+                {
+                  "type": "number",
+                  "enum": [
+                    9
+                  ]
+                }
+              ]
+            },
+            "maxItems": 2,
+            "default": []
+          },
+          "vatBoxes": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "enum": [
+                    1
+                  ]
+                },
+                {
+                  "type": "number",
+                  "enum": [
+                    2
+                  ]
+                },
+                {
+                  "type": "number",
+                  "enum": [
+                    4
+                  ]
+                }
+              ]
+            },
+            "maxItems": 2,
+            "default": []
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 500
+              },
+              "provision": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 300
+              },
+              "retrievedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url",
+              "provision",
+              "retrievedOn"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "rate",
+          "effectiveFrom",
+          "source"
+        ],
+        "additionalProperties": false
+      },
+      "SupersedeTaxRateRequest": {
+        "type": "object",
+        "properties": {
+          "rate": {
+            "type": "string",
+            "pattern": "^(100(\\.0{1,4})?|\\d{1,2}(\\.\\d{1,4})?)$"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "netBoxes": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "enum": [
+                    6
+                  ]
+                },
+                {
+                  "type": "number",
+                  "enum": [
+                    7
+                  ]
+                },
+                {
+                  "type": "number",
+                  "enum": [
+                    8
+                  ]
+                },
+                {
+                  "type": "number",
+                  "enum": [
+                    9
+                  ]
+                }
+              ]
+            },
+            "maxItems": 2,
+            "default": []
+          },
+          "vatBoxes": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "enum": [
+                    1
+                  ]
+                },
+                {
+                  "type": "number",
+                  "enum": [
+                    2
+                  ]
+                },
+                {
+                  "type": "number",
+                  "enum": [
+                    4
+                  ]
+                }
+              ]
+            },
+            "maxItems": 2,
+            "default": []
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 500
+              },
+              "provision": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 300
+              },
+              "retrievedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url",
+              "provision",
+              "retrievedOn"
+            ],
+            "additionalProperties": false
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "rate",
+          "effectiveFrom",
+          "source",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "VerifyTaxRateRequest": {
+        "type": "object",
+        "properties": {
+          "notes": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          },
+          "evidenceDocumentId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "notes"
+        ],
+        "additionalProperties": false
+      },
+      "SetVatSettingsRequest": {
+        "type": "object",
+        "properties": {
+          "registered": {
+            "type": "boolean"
+          },
+          "vrn": {
+            "allOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string",
+                "pattern": "^(GB)?([0-9]{9}|[0-9]{12})$"
+              }
+            ],
+            "nullable": true,
+            "default": null
+          },
+          "registeredFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true,
+            "default": null
+          },
+          "scheme": {
+            "type": "string",
+            "enum": [
+              "STANDARD",
+              "CASH",
+              "FLAT_RATE"
+            ],
+            "default": "STANDARD"
+          },
+          "periodMonths": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  1
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  3
+                ]
+              }
+            ],
+            "default": 3
+          },
+          "anchorPeriodEnd": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true,
+            "default": null
+          },
+          "outputAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "default": null
+          },
+          "inputAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "default": null
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "registered",
+          "reason"
+        ],
         "additionalProperties": false
       },
       "RegisterRequest": {

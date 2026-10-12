@@ -4,6 +4,7 @@ import { conflict, forbidden, getContext, notFound, unprocessable } from '@uk/co
 import type { Tx } from '@uk/db';
 import { auditRow, publishEvent } from '@uk/platform';
 import { RateService, convert, roundingTolerance } from './fx';
+import { VatService, vatInGross, vatOnNet } from './vat';
 import { ZERO, fmt, money, type Money } from './money';
 
 /**
@@ -27,7 +28,12 @@ export interface PostLineOriginal { currency: string; debit: string; credit: str
  * currency). `original` and `adjustsCurrency` are set only by trusted code (reversals, revaluation): never by the API. `generated` marks the
  * visible FX-rounding line the service adds.
  */
-export interface PostLineInput { accountId: string; debit: string; credit: string; description?: string; original?: PostLineOriginal; adjustsCurrency?: string; generated?: boolean }
+export interface PostLineVat { taxCodeId: string; taxRateId: string; role: 'NET' | 'VAT' | 'RC_OUTPUT' | 'RC_INPUT'; taxPoint: string; netLineNo?: number; inclusive: boolean }
+export interface PostLineInput { accountId: string; debit: string; credit: string; description?: string; original?: PostLineOriginal; adjustsCurrency?: string; generated?: boolean;
+  /** API input: the VAT code of the line (M4b). The service turns it into `vat` facts and adds the VAT lines. */
+  taxCodeId?: string;
+  /** Resolved VAT facts (set by the service, or copied by a reversal). */
+  vat?: PostLineVat }
 
 export interface PostInput {
   organisationId: string;
@@ -43,6 +49,10 @@ export interface PostInput {
   rateId?: string;
   /** Foreign currency only: a manual rate, stored as an audited MANUAL exchange rate. */
   manualRate?: { rate: string; source: string };
+  /** M4b: amounts on VAT-coded lines include VAT. */
+  amountsIncludeVat?: boolean;
+  /** M4b: tax point when it differs from the journal date. */
+  taxPoint?: string;
   lines: PostLineInput[];
   /** A repeat with the same key and the same content returns the existing journal; the same key with different content is a conflict. */
   idempotencyKey: string;
@@ -73,7 +83,11 @@ const isoDay = (d: Date) => d.toISOString().slice(0, 10);
 
 export class PostingService {
   private readonly rates: RateService;
-  constructor(private readonly opts: { captureDeviceMetadata?: boolean; validators?: PostingValidator[] } = {}) { this.rates = new RateService({ captureDeviceMetadata: opts.captureDeviceMetadata }); }
+  private readonly vat: VatService;
+  constructor(private readonly opts: { captureDeviceMetadata?: boolean; validators?: PostingValidator[] } = {}) {
+    this.rates = new RateService({ captureDeviceMetadata: opts.captureDeviceMetadata });
+    this.vat = new VatService({ captureDeviceMetadata: opts.captureDeviceMetadata });
+  }
 
   async post(tx: Tx, input: PostInput): Promise<PostedJournal> {
     const { actor } = input;
@@ -117,6 +131,8 @@ export class PostingService {
       return { input };
     }
     const ccy = input.currency!;
+    // checked before anything is converted or a rate stored: conversion rebuilds the lines and must never drop a VAT code silently
+    if (input.lines.some((l) => l.taxCodeId)) throw unprocessable('VAT on foreign-currency journals waits for the verified rule on the currency of VAT amounts (M4b limitation)', 'vat_foreign_currency_not_supported');
     if (source.requiresRequest) throw unprocessable("Opening balances and control adjustments are posted in the company's currency", 'foreign_currency_not_supported', { companyCurrency: company.baseCurrency, requested: ccy });
     if (input.lines.some((l) => l.original || l.adjustsCurrency || l.generated)) throw unprocessable('Lines of a foreign-currency journal carry only amounts in the transaction currency', 'invalid_amount');
     const [ocur, cur] = await Promise.all([tx.currency.findUnique({ where: { code: ccy } }), tx.currency.findUnique({ where: { code: company.baseCurrency } })]);
@@ -189,10 +205,12 @@ export class PostingService {
     const { actor } = rawInput;
     const conv = await this.toFunctional(tx, rawInput, source);
     if (conv.replay) return conv.replay;
-    const input = conv.input;
+    const vatConv = await this.withVat(tx, conv.input, source);
+    if (vatConv.replay) return vatConv.replay;
+    const input = vatConv.input;
     const { company, cur, date, lines } = await this.prepareAmounts(tx, input);
     // 5. idempotency (before anything is written)
-    const contentHash = conv.hash ?? createHash('sha256').update(JSON.stringify({
+    const contentHash = conv.hash ?? vatConv.hash ?? createHash('sha256').update(JSON.stringify({
       c: input.companyId, d: input.journalDate, s: input.sourceType, i: input.sourceId ?? null, r: input.sourceReference ?? null, t: input.description.trim(), v: input.reversesJournalId ?? null,
       l: lines.map((l) => (l.original ? [l.accountId, l.debit.toFixed(4), l.credit.toFixed(4), l.description ?? null, l.original.currency, l.original.debit, l.original.credit] : [l.accountId, l.debit.toFixed(4), l.credit.toFixed(4), l.description ?? null])),
     })).digest('hex');
@@ -227,6 +245,7 @@ export class PostingService {
         organisationId: input.organisationId, companyId: input.companyId, journalId: journal.id, lineNo: i + 1, accountId: l.accountId, debit: l.debit, credit: l.credit, description: l.description ?? null,
         ...(l.original ? { originalCurrency: l.original.currency, originalDebit: money(l.original.debit), originalCredit: money(l.original.credit), rate: money(l.original.rate), exchangeRateId: l.original.rateId } : {}),
         ...(l.adjustsCurrency ? { adjustsCurrency: l.adjustsCurrency } : {}),
+        ...(l.vat ? { taxCodeId: l.vat.taxCodeId, taxRateId: l.vat.taxRateId, vatRole: l.vat.role, taxPoint: toDate(l.vat.taxPoint), vatNetLineNo: l.vat.netLineNo ?? null, vatInclusive: l.vat.inclusive } : {}),
       })) });
       await tx.auditEvent.createMany({ data: [auditRow({
         action: input.sourceType === 'REVERSAL' ? 'journal.reversed' : 'journal.posted', organisationId: input.organisationId, companyId: input.companyId, actorUserId: actor.userId ?? null,
@@ -242,6 +261,69 @@ export class PostingService {
       // aborted and this statement would fail too - and hide the real error - so it is best-effort.
       await tx.$queryRaw`SELECT set_config('app.posting', 'off', true)`.catch(() => undefined);
     }
+  }
+
+  /**
+   * VAT (M4b; DEC-021, DEC-025): each line with a VAT code gets the VERIFIED rate version that covers the tax point; the VAT is computed per line,
+   * half-up (exclusive: on the net; inclusive: the VAT fraction of the gross) and added as a visible line on the company's output or input VAT account,
+   * on the same side as the net line. Reverse charge adds equal output and input VAT lines. The database re-proves every VAT line at commit.
+   */
+  private async withVat(tx: Tx, input: PostInput, source: (typeof JOURNAL_SOURCES)[string]): Promise<{ input: PostInput; hash?: string; replay?: PostedJournal }> {
+    const coded = input.lines.some((l) => l.taxCodeId);
+    if (!coded) {
+      if (input.amountsIncludeVat || input.taxPoint) throw unprocessable('VAT-inclusive amounts and a tax point apply only to lines with a VAT code', 'vat_not_applicable');
+      return { input };
+    }
+    if (source.requiresRequest || input.reversesJournalId) throw unprocessable('VAT codes are not used on this kind of entry', 'vat_not_applicable');
+    if (input.lines.some((l) => l.original)) throw unprocessable('VAT on foreign-currency journals waits for the verified rule on the currency of VAT amounts (M4b limitation)', 'vat_foreign_currency_not_supported');
+    if (input.lines.some((l) => l.vat || l.generated)) throw unprocessable('VAT lines are added by the service', 'invalid_amount');
+    const company = await tx.company.findUniqueOrThrow({ where: { id: input.companyId }, select: { baseCurrency: true } });
+    const minor = (await tx.currency.findUnique({ where: { code: company.baseCurrency } }))?.minorUnits ?? 2;
+    const settings = await tx.companyVatSetting.findFirst({ where: { companyId: input.companyId } });
+    const taxPoint = input.taxPoint ?? input.journalDate;
+    if (Number.isNaN(toDate(taxPoint).getTime()) || isoDay(toDate(taxPoint)) !== taxPoint) throw unprocessable('Invalid tax point', 'invalid_date');
+    if (!settings?.registered || !settings.outputAccountId || !settings.inputAccountId) throw unprocessable('The company is not VAT registered: VAT codes cannot be used', 'not_vat_registered');
+    if (settings.registeredFrom && taxPoint < isoDay(settings.registeredFrom)) throw unprocessable(`The tax point ${taxPoint} is before the VAT registration date`, 'not_vat_registered');
+    // idempotency on what the caller sent; a later rate change must not turn a replay into a conflict
+    const hash = createHash('sha256').update(JSON.stringify({ c: input.companyId, d: input.journalDate, s: input.sourceType, i: input.sourceId ?? null, r: input.sourceReference ?? null, t: input.description.trim(),
+      v: { inc: !!input.amountsIncludeVat, tp: taxPoint }, l: input.lines.map((l) => [l.accountId, l.debit || '0', l.credit || '0', l.description ?? null, l.taxCodeId ?? null]) })).digest('hex');
+    const existing = await tx.journal.findUnique({ where: { organisationId_companyId_idempotencyKey: { organisationId: input.organisationId, companyId: input.companyId, idempotencyKey: input.idempotencyKey } } });
+    if (existing) {
+      if (existing.contentHash !== hash) throw conflict('This idempotency key was already used for a different journal', 'idempotency_conflict');
+      return { input, hash, replay: { ...this.view(existing, minor), replayed: true } };
+    }
+    const out: PostLineInput[] = [];
+    const inclusive = !!input.amountsIncludeVat;
+    for (const [i, l] of input.lines.entries()) {
+      if (!l.taxCodeId) { out.push(l); continue; }
+      const code = await tx.taxCode.findFirst({ where: { id: l.taxCodeId } });
+      if (!code) throw unprocessable(`Line ${i + 1}: unknown VAT code`, 'unknown_tax_code');
+      const rate = await this.vat.rateFor(tx, code.id, taxPoint);
+      let debit: Money, credit: Money;
+      try { debit = money(l.debit || '0'); credit = money(l.credit || '0'); } catch { throw unprocessable(`Line ${i + 1}: amounts must be decimal numbers`, 'invalid_amount'); }
+      if (debit.isNegative() || credit.isNegative() || debit.isZero() === credit.isZero()) throw unprocessable(`Line ${i + 1}: exactly one of debit and credit must be greater than zero`, 'invalid_amount');
+      const isDebit = debit.greaterThan(0), entered = isDebit ? debit : credit;
+      if (code.reverseCharge && inclusive) throw unprocessable(`Line ${i + 1}: a reverse-charge line is entered net`, 'reverse_charge_inclusive_not_supported');
+      const vatAmt = code.reverseCharge || rate.rate.isZero() ? ZERO : inclusive ? vatInGross(entered, rate.rate, minor) : vatOnNet(entered, rate.rate, minor);
+      const net = inclusive ? entered.minus(vatAmt) : entered;
+      if (!net.greaterThan(0)) throw unprocessable(`Line ${i + 1}: the net amount must be greater than zero`, 'invalid_amount');
+      const side = (amt: Money) => (isDebit ? { debit: fmt(amt, minor), credit: '0' } : { debit: '0', credit: fmt(amt, minor) });
+      const facts = { taxCodeId: code.id, taxRateId: rate.id, taxPoint, inclusive };
+      const netLineNo = out.length + 1;
+      out.push({ accountId: l.accountId, description: l.description, ...side(net), vat: { ...facts, role: 'NET' } });
+      const salesSide = code.direction === 'SALES' || (code.direction === 'BOTH' && !isDebit);
+      if (vatAmt.greaterThan(0)) {
+        out.push({ accountId: salesSide ? settings.outputAccountId : settings.inputAccountId, description: `VAT ${code.code} on line ${i + 1}`, ...side(vatAmt), generated: true, vat: { ...facts, role: 'VAT', netLineNo } });
+      }
+      if (code.reverseCharge && rate.rate.greaterThan(0)) {
+        const rc = vatOnNet(net, rate.rate, minor);
+        if (rc.greaterThan(0)) {
+          out.push({ accountId: settings.outputAccountId, description: `Reverse charge output VAT ${code.code} on line ${i + 1}`, debit: '0', credit: fmt(rc, minor), generated: true, vat: { ...facts, inclusive: false, role: 'RC_OUTPUT', netLineNo } });
+          out.push({ accountId: settings.inputAccountId, description: `Reverse charge input VAT ${code.code} on line ${i + 1}`, debit: fmt(rc, minor), credit: '0', generated: true, vat: { ...facts, inclusive: false, role: 'RC_INPUT', netLineNo } });
+        }
+      }
+    }
+    return { input: { ...input, amountsIncludeVat: false, taxPoint: undefined, lines: out }, hash };
   }
 
   private async prepareAmounts(tx: Tx, input: PostInput) {
@@ -262,7 +344,7 @@ export class PostingService {
       if (debit.isNegative() || credit.isNegative()) throw unprocessable(`Line ${i + 1}: amounts cannot be negative`, 'invalid_amount');
       if (debit.isZero() === credit.isZero()) throw unprocessable(`Line ${i + 1}: exactly one of debit and credit must be greater than zero`, 'invalid_amount');
       if (debit.decimalPlaces() > cur.minorUnits || credit.decimalPlaces() > cur.minorUnits) throw unprocessable(`Line ${i + 1}: ${company.baseCurrency} amounts have at most ${cur.minorUnits} decimal places`, 'invalid_amount');
-      return { accountId: l.accountId, debit, credit, description: l.description, original: l.original, adjustsCurrency: l.adjustsCurrency, generated: l.generated };
+      return { accountId: l.accountId, debit, credit, description: l.description, original: l.original, adjustsCurrency: l.adjustsCurrency, generated: l.generated, vat: l.vat };
     });
 
     return { company, cur, date, lines };
@@ -283,11 +365,13 @@ export class PostingService {
     const ids = [...new Set(lines.map((l) => l.accountId))];
     const found = await tx.account.findMany({ where: { companyId: input.companyId, id: { in: ids } } });
     const accounts = new Map(found.map((a) => [a.id, a]));
+    // the service's own lines (FX rounding, VAT) may sit on control accounts; everything a person typed may not
+    const typed = new Set(lines.filter((l) => !l.generated).map((l) => l.accountId));
     for (const id of ids) {
       const a = accounts.get(id);
       if (!a) throw unprocessable('A line refers to an account that does not exist in this company', 'unknown_account');
       if ((a.activeFrom && date < a.activeFrom) || (a.activeTo && date > a.activeTo)) throw unprocessable(`Account ${a.code} is not active on ${input.journalDate}`, 'account_inactive');
-      if (a.isControl && !source.controlAccounts) throw unprocessable(`Account ${a.code} is a control account; ${input.sourceType} journals cannot post to it (it is maintained by its sub-ledger)`, 'control_account_restricted');
+      if (a.isControl && !source.controlAccounts && typed.has(id)) throw unprocessable(`Account ${a.code} is a control account; ${input.sourceType} journals cannot post to it (it is maintained by its sub-ledger)`, 'control_account_restricted');
     }
 
     // 7b. opening balances are the one source allowed onto control accounts, so they are fenced: dated at the very start of record keeping
@@ -334,7 +418,8 @@ export class PostingService {
       description: `Reversal of journal ${original.journalNumber}: ${original.description}`.slice(0, 500),
       lines: original.lines.map((l) => ({ accountId: l.accountId, debit: l.credit.toFixed(4), credit: l.debit.toFixed(4), description: l.description ?? undefined,
         ...(l.originalCurrency ? { original: { currency: l.originalCurrency, debit: l.originalCredit!.toFixed(4), credit: l.originalDebit!.toFixed(4), rate: l.rate!.toFixed(8), rateId: l.exchangeRateId! } } : {}),
-        ...(l.adjustsCurrency ? { adjustsCurrency: l.adjustsCurrency } : {}) })),
+        ...(l.adjustsCurrency ? { adjustsCurrency: l.adjustsCurrency } : {}),
+        ...(l.taxRateId ? { vat: { taxCodeId: l.taxCodeId!, taxRateId: l.taxRateId, role: l.vatRole as PostLineVat['role'], taxPoint: isoDay(l.taxPoint!), netLineNo: l.vatNetLineNo ?? undefined, inclusive: !!l.vatInclusive } } : {}) })),
       idempotencyKey: `reversal:${original.id}`, actor: a.actor, reversesJournalId: original.id, reason: a.reason,
     });
   }

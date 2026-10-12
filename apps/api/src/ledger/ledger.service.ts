@@ -36,8 +36,8 @@ export class LedgerApiService {
   // Journals
   async postJournal(org: OrgAccess, companyId: string, b: z.output<typeof postJournalSchema>) {
     const j = await this.t(org, (tx) => this.posting.post(tx, {
-      organisationId: org.organisationId, companyId, journalDate: b.journalDate, sourceType: b.source, sourceReference: b.reference ?? null, description: b.description, currency: b.currency, rateId: b.rateId, manualRate: b.manualRate,
-      lines: b.lines.map((l) => ({ accountId: l.accountId, debit: l.debit, credit: l.credit, description: l.description })),
+      organisationId: org.organisationId, companyId, journalDate: b.journalDate, sourceType: b.source, sourceReference: b.reference ?? null, description: b.description, currency: b.currency, rateId: b.rateId, manualRate: b.manualRate, amountsIncludeVat: b.amountsIncludeVat, taxPoint: b.taxPoint,
+      lines: b.lines.map((l) => ({ accountId: l.accountId, debit: l.debit, credit: l.credit, description: l.description, taxCodeId: l.taxCodeId })),
       idempotencyKey: b.idempotencyKey ?? `api:${uuidv7()}`, actor: this.actor(org),
     }));
     return this.t(org, (tx) => this.queries.getJournal(tx, companyId, j.id)).then((view) => ({ ...view, replayed: j.replayed }));
