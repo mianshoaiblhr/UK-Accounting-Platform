@@ -192,6 +192,9 @@ export const auditQuerySchema = paginationSchema.extend({
 });
 
 // ───────────── Master data ─────────────
+/** Counterparty VAT number, format only (DEC-024): GB/XI + 9 or 12 digits, or another two-letter prefix + 8-12 characters (EU VAT number lengths). Spaces are removed, letters upper-cased. */
+export const vatNumberSchema = z.string().trim().transform((v) => v.replace(/[\s.-]/g, '').toUpperCase())
+  .pipe(z.string().regex(/^((GB|XI)([0-9]{9}|[0-9]{12})|(?!GB|XI)[A-Z]{2}[0-9A-Z+*]{8,12})$/, 'Not a valid VAT number format'));
 export const createContactSchema = z.object({
   /** Omit for an organisation-level contact; set to attach the contact to one company (it then follows that company's access rules). */
   companyId: z.string().uuid().optional(),
@@ -202,6 +205,7 @@ export const createContactSchema = z.object({
   reference: z.string().trim().max(100).optional(),
   labels: z.array(z.string().trim().min(1).max(40)).max(10).default([]),
   notes: z.string().max(2000).optional(),
+  vatNumber: vatNumberSchema.optional(),
 }).strict();
 export const updateContactSchema = z.object({
   name: z.string().trim().min(1).max(200).optional(),
@@ -210,6 +214,7 @@ export const updateContactSchema = z.object({
   reference: z.string().trim().max(100).nullable().optional(),
   labels: z.array(z.string().trim().min(1).max(40)).max(10).optional(),
   notes: z.string().max(2000).nullable().optional(),
+  vatNumber: vatNumberSchema.nullable().optional(),
 }).strict().refine((b) => Object.keys(b).length > 0, { message: 'Provide at least one field to change' });
 export const contactListQuerySchema = paginationSchema.extend({
   companyId: z.string().uuid().optional(), kind: z.enum(['PERSON', 'ORGANISATION']).optional(),
@@ -239,3 +244,55 @@ export const createOfficerSchema = z.object({
 }).strict().refine((o) => !o.resignedOn || o.resignedOn >= o.appointedOn, { message: 'resignedOn cannot precede appointedOn', path: ['resignedOn'] });
 export const updateOfficerSchema = z.object({ resignedOn: isoDate.nullable() }).strict();
 export const asOfQuerySchema = z.object({ asOf: isoDate.optional(), countryCode: countryCode.optional() });
+
+// ───────────── Customers and suppliers: roles of the shared contact (M4a, DEC-011 / DEC-023) ─────────────
+export const CONTACT_ROLES = ['CUSTOMER', 'SUPPLIER'] as const;
+export type ContactRoleKind = (typeof CONTACT_ROLES)[number];
+const ccy = z.string().regex(/^[A-Z]{3}$/, 'ISO 4217 code, upper case');
+const nonNegMoney = z.string().regex(/^\d{1,15}(\.\d{1,4})?$/, 'A non-negative decimal amount as a string');
+const accountCode = z.string().trim().regex(/^[A-Za-z0-9][A-Za-z0-9._/-]{0,29}$/, 'Letters, digits and . _ / - (max 30)');
+const terms = z.number().int().min(0).max(365);
+export const createContactRoleSchema = z.object({
+  contactId: z.string().uuid(), role: z.enum(CONTACT_ROLES), accountCode: accountCode.optional(),
+  paymentTermsDays: terms.default(30), defaultCurrency: ccy.optional(),
+  /** Customers only. */
+  creditLimit: nonNegMoney.optional(),
+  /** Suppliers only: an active, non-control account of the company. */
+  defaultExpenseAccountId: z.string().uuid().optional(),
+}).strict()
+  .refine((b) => b.role === 'CUSTOMER' || b.creditLimit === undefined, { message: 'A credit limit applies to customers', path: ['creditLimit'] })
+  .refine((b) => b.role === 'SUPPLIER' || b.defaultExpenseAccountId === undefined, { message: 'A default expense account applies to suppliers', path: ['defaultExpenseAccountId'] });
+export const updateContactRoleSchema = z.object({
+  accountCode: accountCode.nullable().optional(), paymentTermsDays: terms.optional(), defaultCurrency: ccy.nullable().optional(),
+  creditLimit: nonNegMoney.nullable().optional(), defaultExpenseAccountId: z.string().uuid().nullable().optional(),
+  reason: z.string().trim().min(3).max(500).optional(),
+}).strict().refine((b) => Object.keys(b).filter((k) => k !== 'reason').length > 0, { message: 'Provide at least one field to change' });
+export const endContactRoleSchema = z.object({ reason: z.string().trim().min(3).max(500) }).strict();
+export const contactRoleListQuerySchema = paginationSchema.extend({
+  role: z.enum(CONTACT_ROLES).optional(), status: z.enum(['ACTIVE', 'ENDED', 'ALL']).default('ACTIVE'), q: z.string().trim().min(1).max(100).optional(),
+});
+
+/** ISO 13616 IBAN check: structure and the mod-97 checksum. */
+export function isValidIban(raw: string): boolean {
+  const iban = raw.replace(/\s/g, '').toUpperCase();
+  if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/.test(iban)) return false;
+  const moved = iban.slice(4) + iban.slice(0, 4);
+  let rem = 0;
+  for (const ch of moved) {
+    const v = ch >= 'A' && ch <= 'Z' ? String(ch.charCodeAt(0) - 55) : ch;
+    for (const d of v) rem = (rem * 10 + Number(d)) % 97;
+  }
+  return rem === 1;
+}
+export const bankDetailsSchema = z.object({
+  accountName: z.string().trim().min(1).max(140),
+  sortCode: z.string().trim().transform((v) => v.replace(/[\s-]/g, '')).pipe(z.string().regex(/^\d{6}$/, 'A sort code has six digits')).optional(),
+  accountNumber: z.string().trim().transform((v) => v.replace(/\s/g, '')).pipe(z.string().regex(/^\d{8}$/, 'A UK account number has eight digits')).optional(),
+  iban: z.string().trim().transform((v) => v.replace(/\s/g, '').toUpperCase()).refine(isValidIban, 'Not a valid IBAN (structure or checksum)').optional(),
+  bic: z.string().trim().toUpperCase().regex(/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/, 'Not a valid BIC').optional(),
+  /** Why the details change. Bank-detail changes are the classic payment-diversion fraud: always explained, always verified by a second person. */
+  reason: z.string().trim().min(10).max(500),
+}).strict()
+  .refine((b) => (b.sortCode && b.accountNumber) || b.iban, { message: 'Give a UK sort code and account number, or an IBAN', path: ['sortCode'] })
+  .refine((b) => !!b.sortCode === !!b.accountNumber, { message: 'A sort code and an account number go together', path: ['accountNumber'] });
+export const verifyBankDetailsSchema = z.object({ note: z.string().trim().max(500).optional() }).strict();

@@ -8,7 +8,7 @@ import type { OrgAccess } from '../common/types';
 
 const isoDay = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
 const addressDto = (a: Address) => { const { isPrimary, ...rest } = a; return { ...rest, primary: isPrimary }; };
-const CONTACT_KEYS = ['name', 'email', 'phone', 'reference', 'labels', 'notes', 'status'] as const;
+const CONTACT_KEYS = ['name', 'email', 'phone', 'reference', 'labels', 'notes', 'vatNumber', 'status'] as const;
 const ADDRESS_KEYS = ['kind', 'line1', 'line2', 'line3', 'city', 'region', 'postcode', 'countryCode', 'isPrimary'] as const;
 
 type Owner = { type: 'contact'; id: string; companyId: string | null } | { type: 'company'; id: string; companyId: string };
@@ -31,11 +31,11 @@ export class MasterDataService {
   }
 
   // ───────────── Contacts ─────────────
-  async createContact(org: OrgAccess, input: { companyId?: string; kind: 'PERSON' | 'ORGANISATION'; name: string; email?: string; phone?: string; reference?: string; labels: string[]; notes?: string }) {
+  async createContact(org: OrgAccess, input: { companyId?: string; kind: 'PERSON' | 'ORGANISATION'; name: string; email?: string; phone?: string; reference?: string; labels: string[]; notes?: string; vatNumber?: string }) {
     await org.access.requireResource('contact:manage', input.companyId ?? null, 'Company not found');
     return this.t(org, async (tx) => {
-      const c = await tx.contact.create({ data: { organisationId: org.organisationId, createdByUserId: org.userId, companyId: input.companyId, kind: input.kind, name: input.name, email: input.email, phone: input.phone, reference: input.reference, labels: input.labels, notes: input.notes } });
-      await this.audit.record({ action: 'contact.created', organisationId: org.organisationId, actorUserId: org.userId, companyId: c.companyId, entityType: 'contact', entityId: c.id, after: { kind: c.kind, name: c.name, email: c.email, labels: c.labels } }, tx);
+      const c = await tx.contact.create({ data: { organisationId: org.organisationId, createdByUserId: org.userId, companyId: input.companyId, kind: input.kind, name: input.name, email: input.email, phone: input.phone, reference: input.reference, labels: input.labels, notes: input.notes, vatNumber: input.vatNumber } });
+      await this.audit.record({ action: 'contact.created', organisationId: org.organisationId, actorUserId: org.userId, companyId: c.companyId, entityType: 'contact', entityId: c.id, after: { kind: c.kind, name: c.name, email: c.email, labels: c.labels, vatNumber: c.vatNumber } }, tx);
       return c;
     });
   }
@@ -57,7 +57,7 @@ export class MasterDataService {
   }
   getContact(org: OrgAccess, id: string) { return this.loadContact(org, id, 'contact:read'); }
 
-  async updateContact(org: OrgAccess, id: string, input: Partial<Pick<Contact, 'name' | 'email' | 'phone' | 'reference' | 'labels' | 'notes'>>) {
+  async updateContact(org: OrgAccess, id: string, input: Partial<Pick<Contact, 'name' | 'email' | 'phone' | 'reference' | 'labels' | 'notes' | 'vatNumber'>>) {
     const before = await this.loadContact(org, id, 'contact:manage');
     return this.t(org, async (tx) => {
       const c = await tx.contact.update({ where: { id }, data: input });

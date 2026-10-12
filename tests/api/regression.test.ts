@@ -46,12 +46,12 @@ describe('regression: V0 foundation contract', () => {
 
   it('regression: version boundary — only the tables of versions that were approved exist (V0 + V1-M1 ledger core + V1-M2 ledger controls + V1-M3 foreign currency); nothing of invoicing, VAT, tax, payroll or filing', async () => {
     const tables = adminSql(`SELECT string_agg(table_name, ',') FROM information_schema.tables WHERE table_schema='public'`);
-    // Allowed by decision: `tax_jurisdiction` is V0 master data; the V1-M1 ledger core adds account, journal, journal_line, ledger_sequence (DEC-001, v1-plan.md); V1-M2 adds journal_request and ledger_policy (DEC-012); V1-M3 adds exchange_rate, company_fx_setting and fx_revaluation_run (DEC-016..018).
+    // Allowed by decision: `tax_jurisdiction` is V0 master data; the V1-M1 ledger core adds account, journal, journal_line, ledger_sequence (DEC-001, v1-plan.md); V1-M2 adds journal_request and ledger_policy (DEC-012); V1-M3 adds exchange_rate, company_fx_setting and fx_revaluation_run (DEC-016..018); V1-M4a adds contact_role, customer_profile and supplier_profile (DEC-023).
     // Each later V1 milestone widens this list in its own commit, with its acceptance package; anything else named like a future module still fails here.
     const unapproved = tables.replace(/tax_jurisdiction|ledger_sequence|ledger_policy|journal_request|journal_line|journal/g, '');
     expect(unapproved).not.toMatch(/ledger|invoice|vat|tax|payroll|hmrc|companies_house|ixbrl|posting/i);
     expect(tables).toContain('tax_jurisdiction');
-    for (const t of ['account', 'journal', 'journal_line', 'ledger_sequence', 'journal_request', 'ledger_policy', 'exchange_rate', 'company_fx_setting', 'fx_revaluation_run']) expect(tables.split(',')).toContain(t);
+    for (const t of ['account', 'journal', 'journal_line', 'ledger_sequence', 'journal_request', 'ledger_policy', 'exchange_rate', 'company_fx_setting', 'fx_revaluation_run', 'contact_role', 'customer_profile', 'supplier_profile']) expect(tables.split(',')).toContain(t);
     const u = await createUser(s);
     for (const p of ['/invoices', '/vat', '/tax', '/filings']) {
       expect((await s.api().get(orgPath(u, p)).set(bearer(u.token))).status).toBe(404);

@@ -47,7 +47,7 @@ export const Currency = z.object({ code: z.string().length(3), numericCode: z.st
 export const Country = z.object({ alpha2: z.string().length(2), alpha3: z.string().length(3), numericCode: z.string(), name: z.string() });
 export const RetentionCategoryView = z.object({ code: z.string(), name: z.string(), kind: z.enum(['PERIOD', 'WHILE_ACTIVE', 'NOT_APPLICABLE']), years: z.number().int().nullable(), days: z.number().int().nullable(), trigger: z.string().describe('The event the period runs from'), basis: z.string().describe('Statutory or policy anchor (not legal advice)'), status: z.enum(['PROVISIONAL', 'CONFIRMED']).describe('PROVISIONAL until the DPO/legal decision is recorded'), documentTypes: z.array(z.string()) });
 export const TaxJurisdiction = z.object({ id: uuid, code: z.string(), countryCode: z.string().length(2), name: z.string(), authority: z.string(), validFrom: day, validTo: day.nullable() });
-export const Contact = z.object({ id: uuid, companyId: uuid.nullable().describe('null = organisation-level contact'), kind: z.enum(['PERSON', 'ORGANISATION']), name: z.string(), email: z.string().nullable(), phone: z.string().nullable(), reference: z.string().nullable(), labels: z.array(z.string()), notes: z.string().nullable(), status: z.enum(['ACTIVE', 'ARCHIVED']), createdAt: ts, updatedAt: ts });
+export const Contact = z.object({ id: uuid, companyId: uuid.nullable().describe('null = organisation-level contact'), kind: z.enum(['PERSON', 'ORGANISATION']), name: z.string(), email: z.string().nullable(), phone: z.string().nullable(), reference: z.string().nullable(), labels: z.array(z.string()), notes: z.string().nullable(), vatNumber: z.string().nullable().describe('Format-checked only; not validated with HMRC'), status: z.enum(['ACTIVE', 'ARCHIVED']), createdAt: ts, updatedAt: ts });
 export const Address = z.object({ id: uuid, companyId: uuid.nullable(), contactId: uuid.nullable(), kind: z.enum(['REGISTERED_OFFICE', 'TRADING', 'CORRESPONDENCE', 'RESIDENTIAL', 'OTHER']), line1: z.string(), line2: z.string().nullable(), line3: z.string().nullable(), city: z.string(), region: z.string().nullable(), postcode: z.string().nullable(), countryCode: z.string().length(2), primary: z.boolean() });
 export const Officer = z.object({ id: uuid, companyId: uuid, role: z.enum(['DIRECTOR', 'SECRETARY', 'PERSON_WITH_SIGNIFICANT_CONTROL', 'MEMBER', 'PARTNER', 'TRUSTEE', 'OTHER']), appointedOn: day, resignedOn: day.nullable(), contact: z.object({ id: uuid, name: z.string(), kind: z.enum(['PERSON', 'ORGANISATION']) }) });
 export const ProposedPeriod = z.object({ startDate: day, endDate: day });
@@ -142,3 +142,19 @@ export const RevaluationRun = z.object({
 });
 export const RevaluationRunPage = page(RevaluationRun);
 export const RevaluationResult = z.object({ status: z.enum(['POSTED', 'NOTHING_TO_DO']), preview: RevaluationPreview, run: RevaluationRun.nullable(), journalId: uuid.nullable(), reversalJournalId: uuid.nullable().describe('null while the reversal is still due (no open period covers its date)') });
+
+// ───────────── Customers and suppliers (M4a) ─────────────
+const BankDetailsSummary = z.object({ status: z.enum(['NONE', 'UNVERIFIED', 'VERIFIED']).describe('UNVERIFIED until a second person verifies a change; payments refuse UNVERIFIED details'), masked: z.string().nullable(),
+  changedAt: ts.nullable(), changedByUserId: uuid.nullable(), verifiedAt: ts.nullable(), verifiedByUserId: uuid.nullable() });
+export const ContactRole = z.object({
+  id: uuid, companyId: uuid, contactId: uuid, role: z.enum(['CUSTOMER', 'SUPPLIER']), accountCode: z.string().nullable(), status: z.enum(['ACTIVE', 'ENDED']), endedAt: ts.nullable(), endedReason: z.string().nullable(), createdAt: ts,
+  contact: z.object({ id: uuid, name: z.string(), kind: z.enum(['PERSON', 'ORGANISATION']), email: z.string().nullable(), vatNumber: z.string().nullable(), companyId: uuid.nullable(), status: z.enum(['ACTIVE', 'ARCHIVED']) }),
+  customer: z.object({ paymentTermsDays: z.number().int(), creditLimit: z.string().nullable(), defaultCurrency: z.string().nullable() }).nullable(),
+  supplier: z.object({ paymentTermsDays: z.number().int(), defaultCurrency: z.string().nullable(), defaultExpenseAccountId: uuid.nullable(), bankDetails: BankDetailsSummary }).nullable(),
+});
+export const ContactRolePage = page(ContactRole);
+export const BankDetailsView = BankDetailsSummary.extend({ accountName: z.string(), sortCode: z.string().optional(), accountNumber: z.string().optional(), iban: z.string().optional(), bic: z.string().optional() });
+export const ContactSnapshot = z.object({
+  roleId: uuid, role: z.enum(['CUSTOMER', 'SUPPLIER']), contactId: uuid, accountCode: z.string().nullable(), name: z.string(), kind: z.enum(['PERSON', 'ORGANISATION']), vatNumber: z.string().nullable(), email: z.string().nullable(),
+  address: z.object({ line1: z.string(), line2: z.string().nullable(), line3: z.string().nullable(), city: z.string(), region: z.string().nullable(), postcode: z.string().nullable(), countryCode: z.string() }).nullable(), capturedAt: ts,
+});

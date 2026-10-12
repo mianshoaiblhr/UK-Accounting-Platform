@@ -93,7 +93,7 @@ export const RETENTION_RULES: readonly RetentionRule[] = [
     'account', 'journal', 'journal_line', 'ledger_sequence', 'journal_request', 'ledger_policy', 'exchange_rate', 'company_fx_setting', 'fx_revaluation_run']),
   ...tableRules('WHILE_ACTIVE', [
     'user', 'user_identity', 'mfa_factor', 'mfa_recovery_code', 'organisation', 'role', 'organisation_membership', 'practice', 'practice_membership', 'company_membership', 'invitation',
-    'company', 'company_officer', 'contact', 'address', 'feature_flag_override', 'task', 'task_attachment', 'task_comment', 'workflow_instance', 'workflow_transition',
+    'company', 'company_officer', 'contact', 'contact_role', 'customer_profile', 'supplier_profile', 'address', 'feature_flag_override', 'task', 'task_attachment', 'task_comment', 'workflow_instance', 'workflow_transition',
     'integration_connection', 'ai_run', 'ai_proposal',
   ]),
   ...tableRules('REFERENCE_DATA', ['currency', 'country', 'tax_jurisdiction', 'document_type', 'retention_category', 'retention_rule']),

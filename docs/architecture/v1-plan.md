@@ -10,8 +10,9 @@ Tenant isolation by forced row-level security; one central authoriser for compan
 |---|---|---|---|---|
 | M1 | Ledger core | **ACCEPTED** (code baseline `fae5270`, DEC-008) | Engineering | - |
 | M2 | Ledger controls: opening-balance permission, control-account adjustments, second-person approval (DEC-012) | **ACCEPTED** (code baseline `d98e3ed`, DEC-015) | Engineering | M1 |
-| M3 | Foreign-currency foundation (DEC-009) | specified (section 5); decisions recorded (DEC-016..018); live rate adapters gated | Engineering | M1, M2 accepted |
-| M4 | Contact roles (customers/suppliers) and VAT foundation, standard accounting (DEC-010, DEC-011) | specified (section 6); **external gate: tax rules verified from official sources** | Engineering; qualified tax reviewer | M1, M3 |
+| M3 | Foreign-currency foundation (DEC-009) | **ACCEPTED under delegation** (code baseline `c8fd8c0`, DEC-019); live rate adapters gated | Engineering | M1, M2 accepted |
+| M4a | Contact roles: customers and suppliers (DEC-011, DEC-023) | implemented (section 6.1, 6.3); acceptance package `v1-m4a-acceptance.md` | Engineering | M1-M3 |
+| M4b | VAT foundation, standard accounting (DEC-010, DEC-021) | specified (section 6.2); build allowed, **activation of each rule gated by verification by a holder of `tax:rule-verify`** | Engineering; the firm's qualified tax reviewer | M3, M4a |
 | M5 | Sales: invoices, credit notes, receipts, duplicate check | planned | Engineering | M2, M3, M4 |
 | M6 | Purchases: bills, debit notes, payments, cash | planned | Engineering | M3, M4, M5 patterns |
 | M7 | Bank accounts, statement import, transfers, charges, interest, reconciliation | planned | Engineering | M5, M6 |
@@ -156,6 +157,12 @@ Property tests for conversion and rounding (reverse conversion within tolerance;
 * **Candidate official sources to verify (not yet verified):** Value Added Tax Act 1994 (time of supply s.6, rates and schedules, reverse charge s.55A), VAT Regulations 1995 (SI 1995/2518), HMRC VAT Notice 700 "The VAT guide", VAT Notice 735 (domestic reverse charge, building and construction), HMRC VAT rates page. Links go into the rule records when a reviewer verifies them.
 * **Acceptance:** boundary tests on effective dates (day before, day of, day after a rate change); tax-point cases; inclusive/exclusive round trips; credit-note linkage; reconciliation of control account to lines; workpaper figures against hand-calculated fixtures; an UNVERIFIED rule cannot be activated; scheme registry refuses CASH and FLAT_RATE.
 **Deferred:** cash accounting, Flat Rate Scheme, partial exemption, capital goods scheme, margin schemes, OSS/import schemes, MTD submission (V5).
+
+### 6.3 As built (M4a)
+* **Migration** `20260109000000_v1_contact_roles` (additive): `contact.vat_number` (format check, `NOT VALID` so existing rows are not rescanned); `contact_role` (company-scoped; unique per company+contact+role; account code unique per company+role ignoring case; ended with a reason, never deleted; identity frozen by trigger; a company-linked contact cannot take a role in another company); `customer_profile` and `supplier_profile` tied to a role of the right kind by a composite foreign key and to the role's company by trigger; supplier bank-detail rules in the database (a change is UNVERIFIED; VERIFIED needs a different verifier; no change-and-verify in one step; no plain digits); forced RLS; `DELETE`/`TRUNCATE` revoked; permission `contact:bank-details` (owner, admin, partner, accountant); retention rows (classification only).
+* **Code:** `ContactRolesService` (the only writer of the three tables and the only code that touches the ciphertext - architecture-tested) and `ContactRolesController` under `/companies/{companyId}/contact-roles` (flag `bookkeeping.core`).
+* **Defects found by the new tests and fixed before release:** (1) the "ending needs a reason" check accepted a NULL reason (a CHECK treats NULL as satisfied) - now explicit; (2) the EU branch of the VAT-number pattern also matched short GB numbers - it now excludes GB/XI and requires 8-12 characters (DEC-024 text corrected before it was committed); (3) a duplicate account code was reported as a duplicate role - the service now checks explicitly, the unique index stays the backstop.
+* **Not yet possible (needs documents, M5/M6):** refusing to end a role with open documents; storing the snapshot on documents and proving it survives a later edit (the function is delivered and tested). Payments refusing UNVERIFIED bank details is an M6 rule; the status exists now.
 
 ## 7. Decisions still needed before specific milestones
 | # | Decision | Needed before | Owner | Status |

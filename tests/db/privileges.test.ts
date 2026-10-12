@@ -30,7 +30,10 @@ const FORBIDDEN: Record<string, string[]> = {
   ledger_policy: ['DELETE', 'TRUNCATE'],
   exchange_rate: ['DELETE', 'TRUNCATE'],           // superseded, never deleted (only verification / supersession update a row, by trigger)
   company_fx_setting: ['DELETE', 'TRUNCATE'],
-  fx_revaluation_run: ['DELETE', 'TRUNCATE'],      // POSTED -> REVERSED once, never removed
+  fx_revaluation_run: ['DELETE', 'TRUNCATE'],
+  contact_role: ['DELETE', 'TRUNCATE'],             // ended, never deleted
+  customer_profile: ['DELETE', 'TRUNCATE'],
+  supplier_profile: ['DELETE', 'TRUNCATE'],      // POSTED -> REVERSED once, never removed
   notification_preference: ['DELETE', 'TRUNCATE'], // toggled, never removed
   notification_delivery: ['DELETE', 'TRUNCATE'],   // planned deliveries are final once handled
   outbox_event: ['TRUNCATE'],                    // DELETE is system-context only (RLS) and trigger-guarded

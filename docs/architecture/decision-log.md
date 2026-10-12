@@ -109,3 +109,40 @@ The rate is stored as published, up to 8 decimal places, and is never rounded. O
 
 ### DEC-018 - Revaluation and realised FX
 Only foreign-currency monetary items are revalued (bank, receivables, payables, loans, accruals); non-monetary items at historical cost keep the transaction-date rate. The rate is the period-end rate from the company's chosen series, stored with its id and date. The unrealised difference is posted to profit or loss by an **explicit "revalue" action** at period close (preview first, `period:manage`, audited, idempotent per period, refused in locked periods) and is **automatically reversed on the first day of the next period**. Realised differences are posted at settlement through the PostingService. Hedge accounting, forwards, net investments and translation of foreign operations are out of scope. A period cannot be closed with an unrevalued foreign-currency monetary balance unless the user acknowledges it.
+
+
+## Decisions of 2026-10-12 (fourth batch, taken under delegated authority)
+
+On 2026-10-12 the product owner delegated the open product and engineering decisions: *"Go ahead and take decisions things that make our platform best of best most capable."* The decisions below were taken by the engineering agent under that delegation and are recorded as such. **Delegation does not extend to what no engineering decision can establish:** naming a qualified tax reviewer, confirming that HMRC/legislation text says what the platform assumes, the privacy lawful basis and retention periods (DEC-003, DEC-013), and production approval (DEC-006). Those remain explicit gates.
+
+| Id | Subject | Decision |
+|---|---|---|
+| DEC-019 | M3 acceptance | ACCEPTED under delegation, including its as-built choices (second-person rate verification; on-request auto-reversal with the close block; FX accounts designated per company) |
+| DEC-020 | M4 split | M4a contact roles (no external gate) is built now; M4b VAT foundation follows as a separate milestone |
+| DEC-021 | VAT rule verification (M4b) | The platform enforces the control: a new COMPANY-level permission `tax:rule-verify`, a verifier who is not the person who entered the rule, and a fixed verification record; who holds the permission is the firm's choice |
+| DEC-022 | Primary sources | Not read in this sandbox (network policy); rules stay UNVERIFIED and not activatable until verified by a holder of `tax:rule-verify`; building does not wait for it |
+| DEC-023 | Customer / supplier data | Role-specific profiles as below; supplier bank details encrypted, masked everywhere, viewed only with a dedicated permission (each view audited), and **not usable for payments until a second person verifies a change** |
+| DEC-024 | Counterparty VAT numbers | Stored on the contact with a format check only; no validation against HMRC (an external service, not in scope) |
+
+### DEC-019 - M3 accepted under delegation
+Commit `c8fd8c0` is the **M3 code baseline**; the documentation commit `81102ad` is recorded separately. Evidence retained: CI <https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/38265470095> (9 of 9), CodeQL <https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/38265470019>, clean clone (72 files, 1415 tests, 4 end-to-end, no OpenAPI drift), migration `20260108000000_v1_fx_foundation`, package `v1-m3-acceptance.md`. **Acceptance by delegation is weaker evidence than acceptance by a person who did not build the milestone**; the product owner may revisit it at any time and the package stays the reference. Milestone acceptance only, not production approval.
+
+### DEC-020 - M4 split
+**M4a (contact roles, DEC-011)**: customers and suppliers as roles of the shared `contact`, with role-specific profiles, both roles on one contact, company scope, and a snapshot for documents. **M4b (VAT foundation, DEC-010)** follows with its own specification check and acceptance package. Rationale: M4a has no external gate and is needed by every document milestone; M4b's build can proceed but its activation is gated (DEC-021, DEC-022).
+
+### DEC-021 - VAT rule verification record and control (for M4b)
+A VAT code or rate is created UNVERIFIED and cannot be used on a posting or activated until verified. Verification needs permission `tax:rule-verify` (COMPANY scope; no system role holds it by default except owner/admin - the firm grants it to its named reviewer) and must be by a different person from the one who entered or last changed the rule. The verification record holds: official source URL; instrument and provision (for example, "VAT Act 1994, s.6"; "VAT Notice 700, para 4.4"); retrieval date; effective-from and effective-to; verifier and verification time; notes; optionally an evidence document. Changing a verified rule creates a new version that is UNVERIFIED again. **Naming the reviewer is the firm's act of granting the permission, not a decision taken here.**
+
+### DEC-022 - Primary sources not read in this environment
+The sandbox network policy blocks gov.uk, legislation.gov.uk, frc.org.uk and bankofengland.co.uk. Statements about HMRC rules in the code and documents remain UNVERIFIED. No real VAT rate or rule figure is seeded; tests use synthetic codes and rates. If the product owner opens network access, the agent may read the sources and propose verification records, but verifying them remains a human act under DEC-021.
+
+### DEC-023 - Customer and supplier profiles
+* `contact_role` (company-scoped; CUSTOMER or SUPPLIER; a contact may hold both; optional account code unique per company and role; ended, never deleted, with a reason). An organisation-level contact can take roles in any company of the organisation; a company-linked contact only in its own company.
+* Customer profile: payment terms (0-365 days), credit limit in the company currency, default currency.
+* Supplier profile: payment terms, default currency, default expense account (an active, non-control account of the company), **bank details** (account name, sort code, account number, optional IBAN/BIC) **encrypted at field level**; lists, logs and audit records show only a masked form; viewing full details needs `contact:bank-details` and every view is audited; **a change of bank details is UNVERIFIED until a different person with `contact:bank-details` verifies it** (payment-diversion fraud control; payments in M6 will refuse unverified details).
+* Documents (M5+) store a **snapshot** of the counterparty (name, VAT number, primary address, account code) so later edits never rewrite history; M4a delivers and tests the snapshot function.
+* Ending a role will be refused while open documents exist once documents exist (M5/M6); until then ending is always allowed and audited.
+
+### DEC-024 - Counterparty VAT numbers
+`contact.vat_number` is optional and format-checked (GB/XI + 9 or 12 digits, or another two-letter prefix + 8-12 characters, the length range of EU VAT numbers). It is not checked against HMRC's VAT number service (external integration; would be a separate decision with its own terms of use).
+

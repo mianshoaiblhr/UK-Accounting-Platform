@@ -151,6 +151,11 @@ describe('database access paths that carry security meaning', () => {
     expect(read(`${ROOT}/packages/accounting/src/fx.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany)/);
     expect(read(`${ROOT}/packages/accounting/src/revaluation.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany)/);
   });
+  it('customer and supplier roles have one writer (M4a), and only it touches supplier bank-detail ciphertext', () => {
+    const WRITE = /\.(contactRole|customerProfile|supplierProfile)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(contact_role|customer_profile|supplier_profile)"?\b/i;
+    expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['apps/api/src/master-data/contact-roles.service.ts']);
+    expect(SRC.filter((f) => /bankDetailsEnc|bank_details_enc/.test(read(f))).map(rel)).toEqual(['apps/api/src/master-data/contact-roles.service.ts']);
+  });
   it('request-based journal sources are posted from a request only: the API source list never offers them', () => {
     const api = read(`${ROOT}/packages/contracts/src/ledger.ts`);
     expect(api).toMatch(/API_JOURNAL_SOURCES = \['MANUAL'\]/);

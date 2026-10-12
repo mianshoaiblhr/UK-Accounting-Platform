@@ -67,6 +67,7 @@ probes.push(
   { name: 'request opening balance', perm: 'ledger:opening-balance', run: (u) => call('post', `/companies/${company.id}/opening-balance-requests`, {})(u) },
   { name: 'request control adjustment', perm: 'ledger:control-adjustment', run: (u) => call('post', `/companies/${company.id}/control-adjustment-requests`, {})(u) },
   { name: 'approve journal request', perm: 'ledger:approve', run: (u) => call('post', `/companies/${company.id}/journal-requests/${GHOST}/approve`, {})(u) },
+  { name: 'read supplier bank details', perm: 'contact:bank-details', run: (u) => call('get', `/companies/${company.id}/contact-roles/${GHOST}/bank-details`)(u) },
   { name: 'enter exchange rate', perm: 'fx:rate-manage', run: (u) => call('post', `/companies/${company.id}/exchange-rates`, {})(u) },
   { name: 'set ledger policy', perm: 'ledger:policy', run: (u) => call('put', `/companies/${company.id}/ledger-policy`, {})(u) },
   { name: 'lock period', perm: 'period:lock', run: (u) => call('post', `/companies/${company.id}/periods/${GHOST}/lock`, { reason: 'probe' })(u) },

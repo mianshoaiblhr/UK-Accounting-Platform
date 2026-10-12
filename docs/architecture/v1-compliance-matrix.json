@@ -30,7 +30,7 @@
     },
     "M3": {
       "title": "Foreign-currency foundation: functional/transaction currency, rates, original-currency values, rounding, realised FX, revaluation (DEC-009)",
-      "status": "IMPLEMENTED - submitted for acceptance (see v1-m3-acceptance.md for the commit, CI run and results)",
+      "status": "ACCEPTED under delegation (code baseline c8fd8c0; DEC-019)",
       "owner": "Engineering (build); product owner (rate source, policies)",
       "depends": [
         "M1 accepted",
@@ -41,15 +41,14 @@
       "deferred": "Live HTTP rate adapters (network, publisher terms of use and format verification), hedge accounting, forward contracts, net investments and translation of foreign operations, intercompany eliminations, multi-currency bank statements beyond the account currency (M7), VAT-specific rate rules (M4)"
     },
     "M4": {
-      "title": "Contact roles (customer/supplier) and VAT foundation - standard VAT accounting (DEC-010, DEC-011)",
-      "status": "SPECIFIED - external gate: HMRC rules must be verified from official sources before activation",
+      "title": "M4a contact roles (customer/supplier, DEC-011, DEC-023) and M4b VAT foundation - standard VAT accounting (DEC-010, DEC-021)",
+      "status": "M4a IMPLEMENTED - see v1-m4a-acceptance.md; M4b SPECIFIED (build allowed; activation of VAT rules gated by verification under DEC-021/022)",
       "owner": "Engineering (build); product owner + qualified tax reviewer (rule verification)",
       "depends": [
-        "M1 accepted",
-        "M3 delivered (VAT flows are finalised after FX)",
-        "Verified HMRC sources recorded per rule"
+        "M1-M3 accepted (DEC-008, DEC-015, DEC-019)",
+        "M4b: verification of each VAT rule by a holder of tax:rule-verify (DEC-021); primary sources not readable in this sandbox (DEC-022)"
       ],
-      "acceptance": "Section 5 of v1-plan.md",
+      "acceptance": "v1-plan.md section 6 (6.1 contact roles, 6.2 VAT); M4a package v1-m4a-acceptance.md",
       "deferred": "Cash accounting scheme, Flat Rate Scheme, partial exemption, capital goods scheme, margin schemes, OSS/import schemes, MTD submission (V5)"
     },
     "M5": {
@@ -1519,8 +1518,8 @@
       "ref": "DEC-011",
       "req": "Customer and supplier roles on the shared `contact`, with role-specific profile tables for differing fields",
       "m": "M4",
-      "s": "M",
-      "ev": "",
+      "s": "I",
+      "ev": "`contact_role` (CUSTOMER/SUPPLIER per company) with `customer_profile` (terms, credit limit, default currency) and `supplier_profile` (terms, default currency, default expense account, bank details); the database ties each profile to a role of the right kind and company. Tests: tests/api/contact-roles.test.ts, tests/db/contact-roles.test.ts",
       "note": "",
       "owner": "Engineering",
       "deps": "V0 contacts (master data), V0 field encryption",
@@ -1532,8 +1531,8 @@
       "ref": "DEC-011",
       "req": "One contact may hold both roles; roles are added and removed with audit; removing a role is refused while open documents exist",
       "m": "M4",
-      "s": "M",
-      "ev": "",
+      "s": "P",
+      "ev": "One contact holds both roles (tested); roles are created, changed, ended (with reason, never deleted) and reactivated with audit before/after. The rule 'ending is refused while open documents exist' cannot apply until documents exist (M5/M6) and is not yet implemented. Tests: tests/api/contact-roles.test.ts, tests/db/contact-roles.test.ts",
       "note": "",
       "owner": "Engineering",
       "deps": "V0 contacts (master data), V0 field encryption",
@@ -1545,8 +1544,8 @@
       "ref": "DEC-011",
       "req": "Tenant and company scope enforced on roles and profiles (a company-level contact is invisible to other companies)",
       "m": "M4",
-      "s": "M",
-      "ev": "",
+      "s": "I",
+      "ev": "Roles and profiles are company-scoped (path permission per company, forced RLS per organisation); a company-linked contact cannot take a role in another company (service and database trigger); another company's path returns 404; another organisation sees zero rows. Tests: tests/api/contact-roles.test.ts, tests/db/contact-roles.test.ts",
       "note": "",
       "owner": "Engineering",
       "deps": "V0 contacts (master data), V0 field encryption",
@@ -1558,8 +1557,8 @@
       "ref": "DEC-011",
       "req": "Documents keep a snapshot of the contact details used (name, address, VAT number) so history survives later edits",
       "m": "M4",
-      "s": "M",
-      "ev": "",
+      "s": "P",
+      "ev": "The snapshot function (name, kind, VAT number, account code, primary address, capture time) is delivered and tested; storing it on documents and proving history survives an edit after issue needs documents (M5/M6). Tests: tests/api/contact-roles.test.ts",
       "note": "",
       "owner": "Engineering",
       "deps": "V0 contacts (master data), V0 field encryption",
@@ -1571,8 +1570,8 @@
       "ref": "DEC-011",
       "req": "Sensitive profile data (bank details) encrypted at field level and never returned in lists, logs or audit snapshots",
       "m": "M4",
-      "s": "M",
-      "ev": "",
+      "s": "I",
+      "ev": "Supplier bank details are AES-256-GCM field-encrypted (AAD = role id); the database refuses plain digits; lists, the role view and audit records carry only a mask; full details only via GET bank-details with `contact:bank-details`, each read audited; a change resets to UNVERIFIED and must be verified by a different person (service and database check). Tests: tests/api/contact-roles.test.ts, tests/db/contact-roles.test.ts, tests/unit/architecture.test.ts (single writer, ciphertext touched only by the role service)",
       "note": "",
       "owner": "Engineering",
       "deps": "V0 contacts (master data), V0 field encryption",
@@ -1599,6 +1598,7 @@
     "v2 (2026-10-09, DEC-008..014): M1 accepted (fae5270). Milestones re-sequenced: new M2 (ledger controls), M3 (foreign currency), M4 (contact roles + VAT foundation); old M2 -> M5 (sales) + M4 (VAT/customers), old M3 -> M6, old M4 -> M7, old M5 -> M8, old M6 -> M9. Rows added: V1-FX-*, V1-VAT-*, V1-CON-*, V1-CTL-07..11, V1-PRIV-01. Each row now carries owner, dependencies, acceptance criteria and deferred scope.",
     "v2.1 (2026-10-09): M2 ledger controls implemented. V1-CTL-07..11 -> Implemented with evidence; V1-CTL-06 evidence extended. No rows added or removed; M3+ unchanged and still gated. Not accepted until the product owner says so.",
     "v2.2 (2026-10-12, DEC-015..018): M2 ACCEPTED (code baseline d98e3ed). M3 decisions recorded (rate source and window, rounding, revaluation/realised FX); M3 specification completed in v1-plan.md section 5 and ready to start. No rows added or removed. M4 remains gated by verification of tax rules from official sources.",
-    "v2.3 (2026-10-12): M3 foreign-currency foundation implemented. V1-FX-01..06, 08, 10 -> Implemented; V1-FX-07 and V1-FX-09 stay Partially implemented (settlement path needs M5/M6; FX report is M8). No rows added or removed. Not accepted until the product owner says so."
+    "v2.3 (2026-10-12): M3 foreign-currency foundation implemented. V1-FX-01..06, 08, 10 -> Implemented; V1-FX-07 and V1-FX-09 stay Partially implemented (settlement path needs M5/M6; FX report is M8). No rows added or removed. Not accepted until the product owner says so.",
+    "v2.4 (2026-10-12, DEC-019..024 under delegated authority): M3 accepted; M4 split into M4a (contact roles, implemented) and M4b (VAT). V1-CON-01, -03, -05 -> Implemented; V1-CON-02 and -04 Partially implemented (need documents, M5/M6). No rows added or removed."
   ]
 }

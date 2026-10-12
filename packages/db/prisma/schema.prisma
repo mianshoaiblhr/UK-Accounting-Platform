@@ -526,6 +526,8 @@ model Contact {
   reference       String?
   labels          String[]      @default([])
   notes           String?
+  /// Counterparty VAT number, format-checked only (DEC-024).
+  vatNumber       String?       @map("vat_number")
   status          ContactStatus @default(ACTIVE)
   createdByUserId String        @map("created_by_user_id") @db.Uuid
   createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -1413,4 +1415,60 @@ model FxRevaluationRun {
 
   @@index([organisationId, companyId, periodId, createdAt])
   @@map("fx_revaluation_run")
+}
+
+// ───────────── V1 contact roles (M4a, DEC-011 / DEC-023) ─────────────
+model ContactRole {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId  String    @map("organisation_id") @db.Uuid
+  companyId       String    @map("company_id") @db.Uuid
+  contactId       String    @map("contact_id") @db.Uuid
+  role            String
+  accountCode     String?   @map("account_code")
+  status          String    @default("ACTIVE")
+  endedAt         DateTime? @map("ended_at") @db.Timestamptz(3)
+  endedByUserId   String?   @map("ended_by_user_id") @db.Uuid
+  endedReason     String?   @map("ended_reason")
+  createdByUserId String    @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@unique([organisationId, companyId, contactId, role])
+  @@index([organisationId, companyId, role, status])
+  @@map("contact_role")
+}
+
+model CustomerProfile {
+  roleId           String   @id @map("role_id") @db.Uuid
+  role             String   @default("CUSTOMER")
+  organisationId   String   @map("organisation_id") @db.Uuid
+  companyId        String   @map("company_id") @db.Uuid
+  paymentTermsDays Int      @default(30) @map("payment_terms_days")
+  creditLimit      Decimal? @map("credit_limit") @db.Decimal(19, 4)
+  defaultCurrency  String?  @map("default_currency") @db.Char(3)
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("customer_profile")
+}
+
+/// Bank details are field-level encrypted (`bankDetailsEnc`); only `bankDetailsMasked` ever leaves the service in lists and audit records.
+model SupplierProfile {
+  roleId                      String    @id @map("role_id") @db.Uuid
+  role                        String    @default("SUPPLIER")
+  organisationId              String    @map("organisation_id") @db.Uuid
+  companyId                   String    @map("company_id") @db.Uuid
+  paymentTermsDays            Int       @default(30) @map("payment_terms_days")
+  defaultCurrency             String?   @map("default_currency") @db.Char(3)
+  defaultExpenseAccountId     String?   @map("default_expense_account_id") @db.Uuid
+  bankDetailsEnc              String?   @map("bank_details_enc")
+  bankDetailsMasked           String?   @map("bank_details_masked")
+  bankDetailsStatus           String    @default("NONE") @map("bank_details_status")
+  bankDetailsChangedByUserId  String?   @map("bank_details_changed_by_user_id") @db.Uuid
+  bankDetailsChangedAt        DateTime? @map("bank_details_changed_at") @db.Timestamptz(3)
+  bankDetailsVerifiedByUserId String?   @map("bank_details_verified_by_user_id") @db.Uuid
+  bankDetailsVerifiedAt       DateTime? @map("bank_details_verified_at") @db.Timestamptz(3)
+  updatedAt                   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("supplier_profile")
 }
