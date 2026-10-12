@@ -13,7 +13,9 @@ Tenant isolation by forced row-level security; one central authoriser for compan
 | M3 | Foreign-currency foundation (DEC-009) | **ACCEPTED under delegation** (code baseline `c8fd8c0`, DEC-019); live rate adapters gated | Engineering | M1, M2 accepted |
 | M4a | Contact roles: customers and suppliers (DEC-011, DEC-023) | **verified** (code baseline `206b14d`; package `v1-m4a-acceptance.md`) | Engineering | M1-M3 |
 | M4b | VAT foundation, standard accounting (DEC-010, DEC-021, DEC-025) | implemented (section 6.4); **every rule usable only after verification by a holder of `tax:rule-verify`**; no figures seeded | Engineering; the firm's qualified tax reviewer | M3, M4a |
-| M5 | Sales: invoices, credit notes, receipts, duplicate check | planned | Engineering | M2, M3, M4 |
+| M5a | Sales documents: invoices, credit notes, numbering, checks, credit-note allocation (DEC-026..031) | **specified (section 9)**; in progress | Engineering | M2, M3, M4 |
+| M5b | Receipts and allocations, realised FX end to end, statements, aged receivables | specified (section 9) | Engineering | M5a |
+| M5c | VAT on foreign-currency documents (V1-VAT-15) | to be specified after M5b; unverified rule (DEC-031) | Engineering; the firm's tax reviewer | M5b |
 | M6 | Purchases: bills, debit notes, payments, cash | planned | Engineering | M3, M4, M5 patterns |
 | M7 | Bank accounts, statement import, transfers, charges, interest, reconciliation | planned | Engineering | M5, M6 |
 | M8 | P&L, balance sheet, drill-down, controls and alerts, FX reporting | planned | Engineering | M3, M5-M7 |
@@ -183,3 +185,66 @@ Decided: foreign currency in V1 (DEC-009); standard VAT first (DEC-010); contact
 
 ## 8. Known limitations (current)
 No UI (M9; M2 is API-only, approvers have no screen or dashboard yet); single currency only until M3 (explicit: `foreign_currency_not_supported`); no VAT until M4; no source documents until M5; trial balance and general ledger computed on demand and posting serialised per company (untested at real volume, a production gate); the posting switch is application-asserted (same trust boundary as the tenant context); the M1 interim opening-balance fence is replaced by the M2 request/approval controls (the first-day rule stays); development uses synthetic data and retention is provisional (DEC-003, DEC-014); nothing is production-approved (DEC-006).
+
+## 9. M5 - Sales (specification; DEC-026..031, ADR-59)
+Recorded before code under the delegation of 2026-10-12. Statements about VAT law are UNVERIFIED (DEC-022).
+
+### 9.1 M5a - sales documents
+* **Data (additive migration):**
+  * `sales_setting` per company: receivables control account (a control account of kind TRADE_RECEIVABLES), invoice and credit-note prefixes and start numbers (changeable until the first document of the kind is approved), `require_separate_approver`.
+  * `sales_sequence` (company, kind, last number).
+  * `sales_document` (kind INVOICE or CREDIT_NOTE; status DRAFT, APPROVED, DISCARDED; number and display number once approved; customer role and contact; issue date, optional supply date and tax point, due date; currency; amounts-include-VAT; customer reference; notes; net, VAT and gross totals; outstanding and functional outstanding; rate used; journal; contact snapshot; duplicate and credit-limit override reasons; origin MANUAL or AI_PROPOSAL with the proposal; preparer, approver, timestamps; version).
+  * `sales_document_line` (line number, description, quantity, unit price, account, VAT code, net, VAT, gross).
+  * `sales_allocation` (invoice, credit document, amount, carried functional released on each side, FX difference and its journal, date, actor).
+  * `journal_line.vat_rate_point` (credit-note VAT lines; DEC-029).
+  * Forced RLS; no `DELETE`/`TRUNCATE`; permissions `sales:read`, `sales:manage`, `sales:approve`; retention rows (classification only); evidence-link entity type `sales_document`.
+* **Database rules:**
+  * approved documents and their lines are immutable except outstanding amounts;
+  * numbers are the next of the sequence;
+  * the outstanding amount moves only through allocations and never below zero;
+  * an allocation joins documents of the same company, customer and currency, an approved invoice and an approved credit;
+  * a credit note's original is an approved invoice of the same customer and currency;
+  * the VAT check accepts a superseded or earlier rate version only on a credit-note line that names the rate point it adjusts.
+* **PostingService:**
+  * new sources `SALES_INVOICE`, `SALES_CREDIT_NOTE` and `SALES_ALLOCATION_FX` (person actors, `sales:approve`);
+  * `controlKinds` on a source limits which control accounts its typed lines may touch (TRADE_RECEIVABLES for these);
+  * a trusted `vatRate` pin on a line (rate version and rate point) for credit notes.
+* **Journals:**
+  * An invoice posts Dr trade receivables (gross) and Cr each line's account (net, VAT code), and the service adds the output VAT lines (V1-EX-01).
+  * A credit note posts the mirror, then allocates itself to its invoice. When the two rates differ, a realised-FX journal follows (DEC-030).
+* **Flows and checks:**
+  * duplicate and credit-limit checks with a stored, audited override reason (DEC-027);
+  * separate approver when the company policy says so;
+  * foreign currency refused at approval for VAT-registered companies until M5c (DEC-031);
+  * a customer role cannot be ended while it has drafts or approved documents with an outstanding amount;
+  * closing a period is refused while drafts dated in it exist, unless acknowledged (`acknowledgeDraftDocuments`, MAN-ACC-08).
+* **Events:** `invoice.created` (InvoiceCreated, XP-07) on approval of an invoice and `credit_note.created` on approval of a credit note, each through the outbox, plus `transaction.posted`.
+* **Read models:**
+  * document list (filters: kind, status, payment status, customer, dates) and document detail with its lines, journal, allocations and attachments;
+  * receivables reconciliation by currency: open items vs the control account, with the control balance broken down by journal source so opening balances, adjustments and revaluation are visible.
+* **API** (flag `bookkeeping.core`; under `/organisations/{org}/companies/{company}`):
+  * `sales-settings` (GET, PUT);
+  * `sales/invoices` and `sales/credit-notes` (POST draft, GET list);
+  * `sales/documents/{id}`: GET, PATCH draft, `approve`, `discard`, `attachments` (GET, POST);
+  * `sales/reconciliation`.
+* **Acceptance (tests are the evidence):**
+  * Postings: positive, negative, VAT (standard, zero, exempt; exclusive and inclusive), period-lock, effective-date and reversal-free correction cases, with hand-calculated figures.
+  * Numbering: gapless numbering under concurrency.
+  * Database checks proven against direct SQL: immutability, the outstanding amount floor, the credit note limit, and the credit-note rate pin.
+  * Approval controls: the duplicate and credit-limit overrides, the separate approver, the AI-origin draft (approval only by a person) and the snapshot surviving a later contact edit.
+  * Lifecycle controls: the role-end refusal, the close control, and the reconciliation figures.
+  * Access: permissions per role and tenant isolation.
+
+### 9.2 M5b - receipts and allocations
+* **Receipts** (`sales_receipt`) to a bank or cash account of the company (subtype CURRENT_ASSET_BANK or CURRENT_ASSET_CASH, not a control account), in any currency with a rate. A receipt posts Dr bank / Cr trade receivables (`SALES_RECEIPT`, V1-EX-03).
+* **Allocation:** allocated at creation to one or more invoices, or later from its unallocated balance. Part payments are allowed; an overpayment stays unallocated credit on the customer.
+* **Realised FX:** each allocation follows DEC-030, so realised FX is exercised end to end (V1-FX-07).
+* **Reports:** customer statement (open items and movements for a date range) and aged receivables (buckets by days past due as at a date) from documents and allocations, reconciled to the control account by the 9.1 reconciliation.
+* **Acceptance:**
+  * receipts in functional and foreign currency;
+  * allocation across several invoices, part payment, overpayment then later allocation;
+  * realised FX gains and losses hand-calculated with different rates, with a full settlement leaving no residue;
+  * period lock, permission and isolation tests.
+
+### 9.3 Deferred (DEC-026)
+Recurring invoices, quotes, line discounts, invoice rendering and sending (M9 and notifications), online payment, direct debit, refunds, bad-debt relief, deposits before an invoice, write-offs, statutory tax-point derivation (DEC-028), unallocating, VAT on foreign-currency documents until M5c.

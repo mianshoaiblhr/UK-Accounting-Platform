@@ -157,3 +157,47 @@ Taken under the delegation recorded above. **The VAT figures themselves are not 
 * **Not in M4b:** VAT on foreign-currency journals (refused until the rule on the currency of VAT amounts is verified); credit notes linked to their original invoice (documents, M5); cash accounting and the Flat Rate Scheme (DEC-010); MTD submission (V5). The workpaper is not a return.
 * **Reviewer permission:** `tax:rule-verify` is held by owner and admin by default; partners do not get it automatically (it is granted to the named reviewer by the firm).
 
+
+
+## Decisions of 2026-10-12 (fifth batch: M5 Sales, under the same delegation)
+
+Taken by the engineering agent under the product owner's delegation of 2026-10-12 (see the fourth batch). Recorded **before** any M5 code, as the start rule requires. Statements about VAT law below are **UNVERIFIED** (DEC-022) and are part of what the firm's reviewer checks; they are listed with their candidate sources in `docs/legal/m4b-vat-sources.xlsx`.
+
+| Id | Subject | Decision |
+|---|---|---|
+| DEC-026 | M5 scope and split | M5a sales documents (invoices, credit notes); M5b receipts and allocations; M5c VAT on foreign-currency documents (V1-VAT-15). Deferred scope listed below - nothing beyond it is built |
+| DEC-027 | Sales document lifecycle and numbering | DRAFT -> APPROVED (numbered without gaps, posted, immutable) or DRAFT -> DISCARDED; no voiding of an approved document - corrections are credit notes |
+| DEC-028 | Tax point on sales documents | Explicit or the issue date; supply date stored; statutory derivation not automated until verified |
+| DEC-029 | Credit notes and their VAT | Linked to one invoice, never more than its outstanding amount, VAT at the rate version the invoice used, reported at the credit note's tax point |
+| DEC-030 | Allocations and realised FX | Every document at its own date's rate; each allocation releases prorated carried amounts and posts the difference as realised FX in its own journal |
+| DEC-031 | Foreign-currency sales and VAT before M5c | A VAT-registered company cannot approve a foreign-currency sales document (tax point on or after registration) until M5c - otherwise the sale would be missing from the VAT workpaper silently |
+
+### DEC-026 - M5 scope and split
+* **M5a - sales documents:** invoices and credit notes (drafts, approval, posting through the PostingService, gapless numbering, contact snapshot, duplicate and credit-limit checks with reasoned override, attachments through the evidence graph, drafts created from an ACCEPTED AI proposal, credit-note allocation with realised FX, receivables sub-ledger reconciliation, a period-close control for drafts, refusal to end a customer role with open documents).
+* **M5b - receipts:** receipt Dr bank (or cash) / Cr receivables; allocation to one or more invoices; part payments; overpayments held as unallocated credit and allocated later; realised FX end to end; customer statement; aged receivables.
+* **M5c - VAT on foreign-currency documents (V1-VAT-15):** after M5b, with its own specification; the order of conversion and the rate series for VAT amounts are the unverified points the firm's reviewer must confirm (VATA 1994 Sch 6 para 11; HMRC VATREC5060).
+* **Deferred (not built in M5):** recurring invoices, quotes, line discounts, invoice rendering (PDF) and sending (UI and notifications, M9), online payment, direct debit, refunds, bad-debt relief, deposits and payments on account before an invoice, write-offs, statutory tax-point derivation (DEC-028).
+
+### DEC-027 - Sales document lifecycle and numbering
+* **States:** a DRAFT has no number and no ledger effect and can be edited (optimistic version) or DISCARDED with a reason (never deleted). APPROVED is reached in one transaction that numbers the document, stores the contact snapshot, recomputes every amount with the verified VAT rates, posts the journal and records audit and outbox events; the document and its lines are then immutable (database trigger), except the outstanding amounts that only allocations change.
+* **No voiding:** an approved invoice is corrected by a credit note (full or partial), so the VAT trail and the numbering stay intact; a credit note issued in error is corrected by a new invoice.
+* **Numbering:** per company and kind, prefix plus number (defaults `INV-` and `CN-`, starting at 1). The prefix and start number can be changed until the first document of that kind is approved (continuing numbering from a previous system). The number is taken from a locked sequence row inside the approval transaction, and the database refuses a number that is not the next one, so numbers have no gaps.
+* **Payment status** is derived from the outstanding amount: UNPAID, PART_PAID, PAID (credit notes: UNALLOCATED, PART_ALLOCATED, ALLOCATED).
+* **Separation of duties:** a company policy may require the approver to be a different person from the preparer (default off; DEC-015 kept approval defaults for journals, this is the same kind of switch).
+* **Due date:** given, else the issue date plus the customer's payment terms.
+* **Checks at approval:** (a) duplicate - another approved invoice for the same customer with the same issue date, currency and total, or the same customer reference; (b) credit limit - the customer's open balance in the company currency plus this invoice exceeds the profile's credit limit. Either refuses approval unless a reason is given; the reason is stored and audited.
+* **Amounts:** line amount = quantity x unit price, rounded half-up to the currency's minor units; VAT per line as DEC-025.
+* **AI:** a draft may be created from an ACCEPTED AI proposal by a person, who is recorded with the proposal; AI never approves (the PostingService and the document service refuse non-person actors).
+* **Permissions:** `sales:read`, `sales:manage` (drafts), `sales:approve` (approve, allocate). Owner, admin and partner hold all three; accountant all three; manager and bookkeeper read and manage (prepare, not approve); reviewer reads. Sales settings need `ledger:policy`.
+
+### DEC-028 - Tax point on sales documents
+A document carries its issue date, an optional supply date and an optional explicit tax point; the tax point is the explicit one or the issue date (as DEC-025 for journals). The statutory derivation (basic and actual tax points, the period allowed for issuing an invoice after supply, payments received in advance) is **not automated** until a reviewer has verified it; the document view flags `taxPointReview` when a supply date is given and differs from the tax point. V1-VAT-07 stays Partially implemented.
+
+### DEC-029 - Credit notes and their VAT
+A credit note references one APPROVED invoice of the same customer and currency, uses only VAT codes that the invoice used, and cannot exceed the invoice's outstanding amount at approval (the database refuses an outstanding amount below zero). Each VAT-coded line uses **the rate version the invoice used for that code**, while its tax point is the credit note's own (so the adjustment is reported in the period in which the credit note is issued). This follows our reading of VAT Regulations 1995 reg 38 and HMRC guidance on rate changes and is **UNVERIFIED**. The database proves it: a credit-note VAT line may use a rate version effective at the invoice's tax point (stored on the line) rather than its own, even if that version has since been superseded. On approval, the credit note is allocated to its invoice in the same transaction.
+
+### DEC-030 - Allocations and realised foreign exchange
+Every document is converted at its own date's rate (M3 lookup rules). An allocation of a credit (credit note in M5a; receipt in M5b) to an invoice releases a share of each side's carried functional amount - prorated and rounded half-up, or the whole remainder when the allocation clears it (the `settle` function of M3) - and the difference between the two is posted as realised FX in its own journal (`SALES_ALLOCATION_FX`): the receivables line carries `adjusts_currency` (functional only) and the other line uses the company's realised-FX account. Revaluation auto-reverses (DEC-018), so allocations always work from historical carried amounts. Allocations are immutable (an unallocate action is not in M5).
+
+### DEC-031 - Foreign-currency sales documents and VAT before M5c
+VAT on foreign-currency journals is refused (M4b). A foreign-currency sale by a VAT-registered company still belongs in the VAT return (for example in box 6), so allowing it without VAT codes would leave it out of the workpaper silently. Until M5c, approving a foreign-currency sales document is therefore **refused for a VAT-registered company** when the tax point is on or after its registration date (`vat_foreign_currency_not_supported`); drafts can be prepared. Companies that are not VAT registered may invoice in any currency with a rate.
