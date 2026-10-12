@@ -18,7 +18,7 @@
     },
     "M2": {
       "title": "Ledger controls: opening-balance permission, control-account adjustments, configurable second-person approval (DEC-012)",
-      "status": "IMPLEMENTED - submitted for acceptance (see v1-m2-acceptance.md for the commit, CI run and results)",
+      "status": "ACCEPTED (code baseline d98e3ed; DEC-015)",
       "owner": "Engineering (build); product owner (approval thresholds, who may approve)",
       "depends": [
         "M1 accepted",
@@ -30,15 +30,15 @@
     },
     "M3": {
       "title": "Foreign-currency foundation: functional/transaction currency, rates, original-currency values, rounding, realised FX, revaluation (DEC-009)",
-      "status": "SPECIFIED - open decisions block the start (exchange-rate source, rounding policy)",
+      "status": "SPECIFIED - decisions recorded (DEC-016..018); ready to start; live rate adapters gated",
       "owner": "Engineering (build); product owner (rate source, policies)",
       "depends": [
         "M1 accepted",
-        "M2 not required",
-        "Decision: exchange-rate source and revaluation policy (v1-plan.md section 4)"
+        "M2 accepted (DEC-015)",
+        "Decisions recorded: rate source and window (DEC-016), rounding (DEC-017), revaluation and realised FX (DEC-018)"
       ],
-      "acceptance": "Section 4 of v1-plan.md",
-      "deferred": "Hedge accounting, forward contracts, multi-currency bank feeds (M7 handles statements in account currency only), intercompany eliminations"
+      "acceptance": "Section 5 of v1-plan.md (5.3)",
+      "deferred": "Live HTTP rate adapters (network, publisher terms of use and format verification), hedge accounting, forward contracts, net investments and translation of foreign operations, intercompany eliminations, multi-currency bank statements beyond the account currency (M7), VAT-specific rate rules (M4)"
     },
     "M4": {
       "title": "Contact roles (customer/supplier) and VAT foundation - standard VAT accounting (DEC-010, DEC-011)",
@@ -1200,7 +1200,7 @@
       "owner": "Engineering",
       "deps": "M1",
       "accept": "A company has exactly one functional currency; changing it after the first posting is refused by the database; documented.",
-      "deferred": "Hedge accounting; forward contracts; intercompany eliminations"
+      "deferred": "Live rate adapters (gated); hedge accounting; forward contracts; net investments; intercompany eliminations"
     },
     {
       "id": "V1-FX-02",
@@ -1213,7 +1213,7 @@
       "owner": "Engineering",
       "deps": "V1-FX-01",
       "accept": "A line carries its transaction currency; only known, active currencies accepted; functional-currency lines need no rate.",
-      "deferred": "Hedge accounting; forward contracts; intercompany eliminations"
+      "deferred": "Live rate adapters (gated); hedge accounting; forward contracts; net investments; intercompany eliminations"
     },
     {
       "id": "V1-FX-03",
@@ -1222,11 +1222,11 @@
       "m": "M3",
       "s": "M",
       "ev": "",
-      "note": "",
+      "note": "Decision DEC-016 applied.",
       "owner": "Engineering (build); product owner (source decision)",
-      "deps": "Open decision: rate source",
-      "accept": "Rate table with (from, to, date, rate, source, retrieved_at, verified); manual entry audited; a documented lookup rule (transaction date, else last earlier rate within N days, else refuse); an unverified rate is flagged and can be blocked by policy; a rate-source adapter port exists with a fake for tests; no live source is enabled without a recorded decision.",
-      "deferred": "Hedge accounting; forward contracts; intercompany eliminations"
+      "deps": "DEC-016",
+      "accept": "`exchange_rate` table (kind DAILY|PERIOD, rate to 8 dp, publisher, series, URL, retrieved_at, source_kind MANUAL|IMPORT, verification status, supersedes); manual entry needs source text and date and is audited; rows are immutable (corrections supersede); lookup = transaction date, else latest earlier DAILY rate within 7 days, else `exchange_rate_not_found`, never a future rate; CSV importer + `ExchangeRateSource` port with a fake; UNVERIFIED rates flagged and blockable by `ledger_policy.fx_block_unverified_rates`; live HTTP adapters NOT included (gate).",
+      "deferred": "Live rate adapters (gated); hedge accounting; forward contracts; net investments; intercompany eliminations"
     },
     {
       "id": "V1-FX-04",
@@ -1239,7 +1239,7 @@
       "owner": "Engineering",
       "deps": "V1-FX-02, V1-FX-03",
       "accept": "Journal lines store original amount, currency and the rate used; a reversal reproduces them; the ledger refuses lines with an original amount but no rate and vice versa.",
-      "deferred": "Hedge accounting; forward contracts; intercompany eliminations"
+      "deferred": "Live rate adapters (gated); hedge accounting; forward contracts; net investments; intercompany eliminations"
     },
     {
       "id": "V1-FX-05",
@@ -1251,8 +1251,8 @@
       "note": "",
       "owner": "Engineering",
       "deps": "V1-FX-04",
-      "accept": "For every journal sum(debit)=sum(credit) in functional currency; a conversion that does not round cleanly produces an explicit rounding line to a system rounding account, capped by a tolerance; tests with awkward rates.",
-      "deferred": "Hedge accounting; forward contracts; intercompany eliminations"
+      "accept": "For every journal sum(debit)=sum(credit) in functional currency; unbalanced converted lines get one visible FX-rounding line on the system account `FX_ROUNDING`, permitted difference one minor unit per line, else `rounding_tolerance_exceeded`; tests for within/beyond tolerance.",
+      "deferred": "Live rate adapters (gated); hedge accounting; forward contracts; net investments; intercompany eliminations"
     },
     {
       "id": "V1-FX-06",
@@ -1261,11 +1261,11 @@
       "m": "M3",
       "s": "M",
       "ev": "",
-      "note": "",
+      "note": "Decision DEC-017 applied.",
       "owner": "Engineering (build); product owner (policy)",
-      "deps": "Open decision: rounding policy",
-      "accept": "The policy is written (precision, mode, level), implemented in one function and covered by property tests (conversion then reverse conversion within tolerance; totals independent of line order).",
-      "deferred": "Hedge accounting; forward contracts; intercompany eliminations"
+      "deps": "DEC-017",
+      "accept": "Rate stored to 8 dp unrounded; functional amount rounded per line, half-up, to the functional currency's minor units by one function with property tests (reverse conversion within tolerance; totals independent of line order; half-up boundary); VAT rounding left to M4.",
+      "deferred": "Live rate adapters (gated); hedge accounting; forward contracts; net investments; intercompany eliminations"
     },
     {
       "id": "V1-FX-07",
@@ -1274,11 +1274,11 @@
       "m": "M3",
       "s": "M",
       "ev": "",
-      "note": "Engine in M3; used by receipts and payments in M5/M6",
+      "note": "Engine in M3; used by receipts and payments in M5/M6 Decision DEC-018 applied.",
       "owner": "Engineering",
       "deps": "V1-FX-05, M5, M6",
-      "accept": "Settling a foreign invoice at a different rate posts the difference to realised gain/loss accounts exactly once; partial settlements prorate; tested with several rates.",
-      "deferred": "Hedge accounting; forward contracts; intercompany eliminations"
+      "accept": "`FxService.settle` posts the difference between the functional value carried and the value at the settlement rate to `FX_REALISED` exactly once; partial settlements prorate; tested with several rates (receipts/payments in M5/M6 call it).",
+      "deferred": "Live rate adapters (gated); hedge accounting; forward contracts; net investments; intercompany eliminations"
     },
     {
       "id": "V1-FX-08",
@@ -1287,11 +1287,11 @@
       "m": "M3",
       "s": "M",
       "ev": "",
-      "note": "",
+      "note": "Decision DEC-018 applied.",
       "owner": "Engineering (build); product owner (policy)",
-      "deps": "V1-FX-05, open decision: revaluation policy",
-      "accept": "Revaluation at period end posts unrealised gain/loss journals for foreign-currency receivables, payables and bank, and reverses on the first day of the next period; idempotent per period; blocked in locked periods; reconciles to the sub-ledger.",
-      "deferred": "Hedge accounting; forward contracts; intercompany eliminations"
+      "deps": "V1-FX-05, DEC-018",
+      "accept": "Explicit, previewed `revalue` action (`period:manage`) per period revalues foreign-currency monetary accounts at the period-end rate to `FX_UNREALISED`; auto-reversal dated the first day of the next period (immediately or by sweeper); idempotent per period via `fx_revaluation_run`; refused in locked periods; close needs acknowledgement if a balance is unrevalued; non-monetary items untouched.",
+      "deferred": "Live rate adapters (gated); hedge accounting; forward contracts; net investments; intercompany eliminations"
     },
     {
       "id": "V1-FX-09",
@@ -1304,7 +1304,7 @@
       "owner": "Engineering",
       "deps": "V1-FX-05..08",
       "accept": "Trial balance in functional currency balances; the sub-ledger in original currency revalued at the closing rate equals the control account; FX gain/loss report drills to journals.",
-      "deferred": "Hedge accounting; forward contracts; intercompany eliminations"
+      "deferred": "Live rate adapters (gated); hedge accounting; forward contracts; net investments; intercompany eliminations"
     },
     {
       "id": "V1-FX-10",
@@ -1597,6 +1597,7 @@
   "history": [
     "v1 (2026-10-09): 77 rows, milestones M1-M6 (initial plan, commit 0aeff94 lineage).",
     "v2 (2026-10-09, DEC-008..014): M1 accepted (fae5270). Milestones re-sequenced: new M2 (ledger controls), M3 (foreign currency), M4 (contact roles + VAT foundation); old M2 -> M5 (sales) + M4 (VAT/customers), old M3 -> M6, old M4 -> M7, old M5 -> M8, old M6 -> M9. Rows added: V1-FX-*, V1-VAT-*, V1-CON-*, V1-CTL-07..11, V1-PRIV-01. Each row now carries owner, dependencies, acceptance criteria and deferred scope.",
-    "v2.1 (2026-10-09): M2 ledger controls implemented. V1-CTL-07..11 -> Implemented with evidence; V1-CTL-06 evidence extended. No rows added or removed; M3+ unchanged and still gated. Not accepted until the product owner says so."
+    "v2.1 (2026-10-09): M2 ledger controls implemented. V1-CTL-07..11 -> Implemented with evidence; V1-CTL-06 evidence extended. No rows added or removed; M3+ unchanged and still gated. Not accepted until the product owner says so.",
+    "v2.2 (2026-10-12, DEC-015..018): M2 ACCEPTED (code baseline d98e3ed). M3 decisions recorded (rate source and window, rounding, revaluation/realised FX); M3 specification completed in v1-plan.md section 5 and ready to start. No rows added or removed. M4 remains gated by verification of tax rules from official sources."
   ]
 }

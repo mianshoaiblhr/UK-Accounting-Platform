@@ -1,6 +1,6 @@
 # V1 milestone M2 - acceptance package (ledger controls)
 
-Submitted for the product owner's acceptance (DEC-007). **Not accepted until the product owner says so.** M3 has not been started. Nothing here is production approval (DEC-006); development data is synthetic (DEC-003).
+**ACCEPTED by the product owner on 2026-10-12 (DEC-015)** with the defaults in section 9 item 2 confirmed. Original submission text follows unchanged. Milestone acceptance only. Nothing here is production approval (DEC-006); development data is synthetic (DEC-003).
 
 ## 1. Commit and CI
 | Item | Result |
