@@ -42,7 +42,7 @@
     },
     "M4": {
       "title": "M4a contact roles (customer/supplier, DEC-011, DEC-023) and M4b VAT foundation - standard VAT accounting (DEC-010, DEC-021)",
-      "status": "M4a VERIFIED (code baseline 206b14d; v1-m4a-acceptance.md); M4b IMPLEMENTED - see v1-m4b-acceptance.md. Every VAT rule is usable only after verification by the firm's holder of tax:rule-verify",
+      "status": "M4a VERIFIED (206b14d; v1-m4a-acceptance.md); M4b VERIFIED (6fb1938; v1-m4b-acceptance.md). VAT rules usable only after verification by the firm's holder of tax:rule-verify",
       "owner": "Engineering (build); product owner + qualified tax reviewer (rule verification)",
       "depends": [
         "M1-M3 accepted (DEC-008, DEC-015, DEC-019)",
