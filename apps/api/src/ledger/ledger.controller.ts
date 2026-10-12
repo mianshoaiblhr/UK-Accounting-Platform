@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import type { z } from 'zod';
-import { accountListQuerySchema, createAccountSchema, createJournalRequestSchema, decideRequestSchema, rejectRequestSchema, requestListQuerySchema, setLedgerPolicySchema, journalListQuerySchema, ledgerQuerySchema, periodTransitionSchema, postJournalSchema, reverseJournalSchema, trialBalanceQuerySchema, updateAccountSchema, type PeriodAction } from '@uk/contracts';
+import { createExchangeRateSchema, fxSettingsSchema, importExchangeRatesSchema, rateListQuerySchema, revaluationRunListQuerySchema, revaluationSchema, supersedeExchangeRateSchema, verifyExchangeRateSchema, accountListQuerySchema, createAccountSchema, createJournalRequestSchema, decideRequestSchema, rejectRequestSchema, requestListQuerySchema, setLedgerPolicySchema, journalListQuerySchema, ledgerQuerySchema, periodTransitionSchema, postJournalSchema, reverseJournalSchema, trialBalanceQuerySchema, updateAccountSchema, type PeriodAction } from '@uk/contracts';
 import { Idempotent, Org, RequireFeature, RequirePermissions } from '../common/decorators';
 import type { OrgAccess } from '../common/types';
 import { ZodPipe } from '../common/zod.pipe';
@@ -59,6 +59,32 @@ export class LedgerController {
   @Put('ledger-policy') @RequirePermissions('ledger:policy')
   setPolicy(@Org() org: OrgAccess, @ID('companyId') c: string, @Body(new ZodPipe(setLedgerPolicySchema)) b: z.output<typeof setLedgerPolicySchema>) { return this.svc.setPolicy(org, c, b); }
 
+  // ───── Foreign currency (M3): rates, settings, revaluation ─────
+  @Get('exchange-rates') @RequirePermissions('ledger:read')
+  listRates(@Org() org: OrgAccess, @Query(new ZodPipe(rateListQuerySchema)) q: z.output<typeof rateListQuerySchema>) { return this.svc.listRates(org, q); }
+  @Post('exchange-rates') @RequirePermissions('fx:rate-manage') @Idempotent()
+  createRate(@Org() org: OrgAccess, @ID('companyId') c: string, @Body(new ZodPipe(createExchangeRateSchema)) b: z.output<typeof createExchangeRateSchema>) { return this.svc.createRate(org, c, b); }
+  @Post('exchange-rates/import') @RequirePermissions('fx:rate-manage') @Idempotent()
+  importRates(@Org() org: OrgAccess, @ID('companyId') c: string, @Body(new ZodPipe(importExchangeRatesSchema)) b: z.output<typeof importExchangeRatesSchema>) { return this.svc.importRates(org, c, b); }
+  @Get('exchange-rates/:rateId') @RequirePermissions('ledger:read')
+  getRate(@Org() org: OrgAccess, @ID('rateId') id: string) { return this.svc.getRate(org, id); }
+  @Post('exchange-rates/:rateId/supersede') @RequirePermissions('fx:rate-manage') @Idempotent()
+  supersedeRate(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('rateId') id: string, @Body(new ZodPipe(supersedeExchangeRateSchema)) b: z.output<typeof supersedeExchangeRateSchema>) { return this.svc.supersedeRate(org, c, id, b); }
+  @Post('exchange-rates/:rateId/verify') @HttpCode(200) @RequirePermissions('fx:rate-manage') @Idempotent()
+  verifyRate(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('rateId') id: string, @Body(new ZodPipe(verifyExchangeRateSchema)) b: z.output<typeof verifyExchangeRateSchema>) { return this.svc.verifyRate(org, c, id, b); }
+  @Get('fx-settings') @RequirePermissions('ledger:read')
+  getFxSettings(@Org() org: OrgAccess, @ID('companyId') c: string) { return this.svc.getFxSettings(org, c); }
+  @Put('fx-settings') @RequirePermissions('ledger:policy')
+  setFxSettings(@Org() org: OrgAccess, @ID('companyId') c: string, @Body(new ZodPipe(fxSettingsSchema)) b: z.output<typeof fxSettingsSchema>) { return this.svc.setFxSettings(org, c, b); }
+  @Post('periods/:periodId/revaluation/preview') @HttpCode(200) @RequirePermissions('period:manage')
+  previewRevaluation(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('periodId') id: string, @Body(new ZodPipe(revaluationSchema)) b: z.output<typeof revaluationSchema>) { return this.svc.previewRevaluation(org, c, id, b); }
+  @Post('periods/:periodId/revaluation') @RequirePermissions('period:manage') @Idempotent()
+  postRevaluation(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('periodId') id: string, @Body(new ZodPipe(revaluationSchema)) b: z.output<typeof revaluationSchema>) { return this.svc.postRevaluation(org, c, id, b); }
+  @Get('revaluation-runs') @RequirePermissions('ledger:read')
+  listRevaluationRuns(@Org() org: OrgAccess, @ID('companyId') c: string, @Query(new ZodPipe(revaluationRunListQuerySchema)) q: z.output<typeof revaluationRunListQuerySchema>) { return this.svc.listRevaluationRuns(org, c, q); }
+  @Post('revaluation-runs/:runId/reverse') @HttpCode(200) @RequirePermissions('period:manage') @Idempotent()
+  reverseRevaluation(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('runId') id: string) { return this.svc.reverseRevaluation(org, c, id); }
+
   // ───── General ledger and reports (read the ledger only) ─────
   @Get('ledger') @RequirePermissions('ledger:read')
   generalLedger(@Org() org: OrgAccess, @ID('companyId') c: string, @Query(new ZodPipe(ledgerQuerySchema)) q: z.output<typeof ledgerQuerySchema>) { return this.svc.generalLedger(org, c, q); }
@@ -66,7 +92,7 @@ export class LedgerController {
   trialBalance(@Org() org: OrgAccess, @ID('companyId') c: string, @Query(new ZodPipe(trialBalanceQuerySchema)) q: z.output<typeof trialBalanceQuerySchema>) { return this.svc.trialBalance(org, c, q); }
 
   // ───── Period states (close / reopen need period:manage, lock / unlock need period:lock - checked again in the service) ─────
-  private transition(org: OrgAccess, c: string, id: string, action: PeriodAction, b: z.output<typeof periodTransitionSchema>) { return this.svc.transitionPeriod(org, c, id, action, b.reason); }
+  private transition(org: OrgAccess, c: string, id: string, action: PeriodAction, b: z.output<typeof periodTransitionSchema>) { return this.svc.transitionPeriod(org, c, id, action, b.reason, b.acknowledgeUnrevaluedFx); }
   @Post('periods/:periodId/close') @HttpCode(200) @RequirePermissions('period:manage')
   close(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('periodId') id: string, @Body(new ZodPipe(periodTransitionSchema)) b: z.output<typeof periodTransitionSchema>) { return this.transition(org, c, id, 'close', b); }
   @Post('periods/:periodId/reopen') @HttpCode(200) @RequirePermissions('period:manage')

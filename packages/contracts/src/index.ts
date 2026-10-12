@@ -10,3 +10,4 @@ export * from './documents';
 export * from './notifications';
 export * from './retention';
 export * from './ledger';
+export * from './fx';

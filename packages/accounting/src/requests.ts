@@ -21,7 +21,7 @@ export interface RequestActor extends PostingActor {
 
 export interface EffectivePolicy {
   openingBalanceApproval: ApprovalMode; controlAdjustmentApproval: ApprovalMode; materialityThreshold: string | null; requestExpiryDays: number;
-  isDefault: boolean; updatedAt: Date | null; updatedByUserId: string | null;
+  fxBlockUnverifiedRates: boolean; isDefault: boolean; updatedAt: Date | null; updatedByUserId: string | null;
 }
 
 export interface CreateRequestInput {
@@ -52,13 +52,13 @@ export class LedgerPolicyService {
 
   async get(tx: Tx, companyId: string): Promise<EffectivePolicy> {
     const p = await tx.ledgerPolicy.findFirst({ where: { companyId } });
-    if (!p) return { openingBalanceApproval: DEFAULT_APPROVAL_MODE, controlAdjustmentApproval: DEFAULT_APPROVAL_MODE, materialityThreshold: null, requestExpiryDays: DEFAULT_REQUEST_EXPIRY_DAYS, isDefault: true, updatedAt: null, updatedByUserId: null };
+    if (!p) return { openingBalanceApproval: DEFAULT_APPROVAL_MODE, controlAdjustmentApproval: DEFAULT_APPROVAL_MODE, materialityThreshold: null, requestExpiryDays: DEFAULT_REQUEST_EXPIRY_DAYS, fxBlockUnverifiedRates: false, isDefault: true, updatedAt: null, updatedByUserId: null };
     return { openingBalanceApproval: p.openingBalanceApproval as ApprovalMode, controlAdjustmentApproval: p.controlAdjustmentApproval as ApprovalMode, materialityThreshold: p.materialityThreshold ? fmt(p.materialityThreshold, 2) : null,
-      requestExpiryDays: p.requestExpiryDays, isDefault: false, updatedAt: p.updatedAt, updatedByUserId: p.updatedByUserId };
+      requestExpiryDays: p.requestExpiryDays, fxBlockUnverifiedRates: p.fxBlockUnverifiedRates, isDefault: false, updatedAt: p.updatedAt, updatedByUserId: p.updatedByUserId };
   }
 
   /** Changing the policy can weaken a control, so it needs its own permission and a reason, and is audited with before/after. */
-  async set(tx: Tx, a: { organisationId: string; companyId: string; actor: RequestActor; openingBalanceApproval: ApprovalMode; controlAdjustmentApproval: ApprovalMode; materialityThreshold: string | null; requestExpiryDays: number; reason: string }): Promise<EffectivePolicy> {
+  async set(tx: Tx, a: { organisationId: string; companyId: string; actor: RequestActor; openingBalanceApproval: ApprovalMode; controlAdjustmentApproval: ApprovalMode; materialityThreshold: string | null; requestExpiryDays: number; fxBlockUnverifiedRates?: boolean; reason: string }): Promise<EffectivePolicy> {
     if (a.actor.kind !== 'USER') throw forbidden('Only a person can change the ledger policy', 'ai_cannot_post');
     if (!(await a.actor.can('ledger:policy', a.companyId))) throw forbidden('Requires permission ledger:policy', 'permission_denied');
     if (a.reason.trim().length < MIN_REQUEST_REASON_LENGTH) throw unprocessable(`A reason of at least ${MIN_REQUEST_REASON_LENGTH} characters is required`, 'reason_required');
@@ -66,10 +66,10 @@ export class LedgerPolicyService {
     const threshold = a.materialityThreshold === null ? null : money(a.materialityThreshold);
     if ((a.openingBalanceApproval === 'ABOVE_THRESHOLD' || a.controlAdjustmentApproval === 'ABOVE_THRESHOLD') && (!threshold || threshold.lte(0))) throw unprocessable('ABOVE_THRESHOLD needs a materiality threshold greater than zero', 'threshold_required');
     const before = await this.get(tx, a.companyId);
-    const data = { openingBalanceApproval: a.openingBalanceApproval, controlAdjustmentApproval: a.controlAdjustmentApproval, materialityThreshold: threshold, requestExpiryDays: a.requestExpiryDays, updatedByUserId: a.actor.userId };
+    const data = { openingBalanceApproval: a.openingBalanceApproval, controlAdjustmentApproval: a.controlAdjustmentApproval, materialityThreshold: threshold, requestExpiryDays: a.requestExpiryDays, fxBlockUnverifiedRates: a.fxBlockUnverifiedRates ?? false, updatedByUserId: a.actor.userId };
     await tx.ledgerPolicy.upsert({ where: { organisationId_companyId: { organisationId: a.organisationId, companyId: a.companyId } }, create: { organisationId: a.organisationId, companyId: a.companyId, ...data }, update: data });
     const after = await this.get(tx, a.companyId);
-    const view = (p: EffectivePolicy) => ({ openingBalanceApproval: p.openingBalanceApproval, controlAdjustmentApproval: p.controlAdjustmentApproval, materialityThreshold: p.materialityThreshold, requestExpiryDays: p.requestExpiryDays });
+    const view = (p: EffectivePolicy) => ({ openingBalanceApproval: p.openingBalanceApproval, controlAdjustmentApproval: p.controlAdjustmentApproval, materialityThreshold: p.materialityThreshold, requestExpiryDays: p.requestExpiryDays, fxBlockUnverifiedRates: p.fxBlockUnverifiedRates });
     await tx.auditEvent.createMany({ data: [auditRow({ action: 'ledger.policy_changed', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actor.userId, entityType: 'ledger_policy', entityId: a.companyId,
       before: view(before), after: view(after), reason: a.reason.trim(), metadata: { wasDefault: before.isDefault } }, this.opts.captureDeviceMetadata)] });
     return after;

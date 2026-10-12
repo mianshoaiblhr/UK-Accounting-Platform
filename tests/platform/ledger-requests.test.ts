@@ -59,7 +59,7 @@ describe('the PostingService refuses request-based sources without a valid reque
 
 describe('approval policy arithmetic', () => {
   const pol = (o: Partial<{ openingBalanceApproval: 'ALWAYS' | 'ABOVE_THRESHOLD'; controlAdjustmentApproval: 'ALWAYS' | 'ABOVE_THRESHOLD'; materialityThreshold: string | null }>): EffectivePolicy =>
-    ({ openingBalanceApproval: 'ALWAYS', controlAdjustmentApproval: 'ALWAYS', materialityThreshold: null, requestExpiryDays: 14, isDefault: false, updatedAt: null, updatedByUserId: null, ...o });
+    ({ openingBalanceApproval: 'ALWAYS', controlAdjustmentApproval: 'ALWAYS', materialityThreshold: null, requestExpiryDays: 14, fxBlockUnverifiedRates: false, isDefault: false, updatedAt: null, updatedByUserId: null, ...o });
   it('ALWAYS requires approval at any amount; ABOVE_THRESHOLD is strictly greater-than, per kind', () => {
     expect(JournalRequestService.approvalRequired(pol({}), 'OPENING_BALANCE', '0.01')).toBe(true);
     const p = pol({ openingBalanceApproval: 'ABOVE_THRESHOLD', materialityThreshold: '1000.00' });

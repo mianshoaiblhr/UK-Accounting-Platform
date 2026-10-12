@@ -8185,7 +8185,7 @@
           "journal:post"
         ],
         "summary": "Post a manual journal through the PostingService (balanced, open period, active non-control accounts; immutable once posted). Opening balances and control adjustments use journal requests",
-        "description": "Single-currency limitation: journals are posted in the company's own currency only. A different `currency` is refused with 422 `foreign_currency_not_supported` until the foreign-currency foundation (plan milestone M3, decision DEC-009) is delivered.\n\n**Requires permission:** `journal:post`",
+        "description": "Foreign currency (M3): give `currency` other than the company's with line amounts in that currency; the server converts at a stored rate (`rateId`), a manual rate (`manualRate`, stored and audited) or the looked-up rate (transaction date, else the latest earlier daily rate within 7 days, else 422 `exchange_rate_not_found`). Each line is rounded per line, half-up, to the company currency; a visible FX-rounding line absorbs up to one minor unit per line. Opening balances and control adjustments are posted in the company currency only.\n\n**Requires permission:** `journal:post`",
         "security": [
           {
             "bearer": []
@@ -9203,6 +9203,964 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/exchange-rates": {
+      "get": {
+        "operationId": "Ledger_listRates",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            }
+          },
+          {
+            "name": "asOf",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "includeSuperseded",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeRatePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "Exchange rates of the organisation (current ones unless includeSuperseded)",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "Ledger_createRate",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeRate"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "fx:rate-manage"
+        ],
+        "summary": "Enter a rate manually (fx:rate-manage): source text mandatory, audited, immutable; a current rate for the same key must be superseded instead",
+        "description": "**Requires permission:** `fx:rate-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExchangeRateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/exchange-rates/import": {
+      "post": {
+        "operationId": "Ledger_importRates",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Imported",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateImportResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "fx:rate-manage"
+        ],
+        "summary": "Import a published series from a CSV file (header from,to,valid_from,valid_to,rate). All-or-nothing; rows are stored UNVERIFIED with publisher, series, URL and batch. No live fetching exists",
+        "description": "**Requires permission:** `fx:rate-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportExchangeRatesRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/exchange-rates/{rateId}": {
+      "get": {
+        "operationId": "Ledger_getRate",
+        "parameters": [
+          {
+            "name": "rateId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeRate"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "One exchange rate with its provenance",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/exchange-rates/{rateId}/supersede": {
+      "post": {
+        "operationId": "Ledger_supersedeRate",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "rateId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "New rate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeRate"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "fx:rate-manage"
+        ],
+        "summary": "Correct a rate: the old row is marked superseded and a new one carries the new number (reason required); posted journals keep the rate they used",
+        "description": "**Requires permission:** `fx:rate-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupersedeExchangeRateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/exchange-rates/{rateId}/verify": {
+      "post": {
+        "operationId": "Ledger_verifyRate",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "rateId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeRate"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "fx:rate-manage"
+        ],
+        "summary": "Record that the rate was checked against its publisher; not by the person who entered it",
+        "description": "**Requires permission:** `fx:rate-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyExchangeRateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/fx-settings": {
+      "get": {
+        "operationId": "Ledger_getFxSettings",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FxSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "FX rounding / realised / unrealised accounts and the default rate series per currency",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "Ledger_setFxSettings",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Settings set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FxSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:policy"
+        ],
+        "summary": "Set the FX accounts and default series (ledger:policy, reason required, audited before/after)",
+        "description": "**Requires permission:** `ledger:policy`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetFxSettingsRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/periods/{periodId}/revaluation/preview": {
+      "post": {
+        "operationId": "Ledger_previewRevaluation",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Preview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevaluationPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "period:manage"
+        ],
+        "summary": "Preview the period-end revaluation of foreign-currency monetary items at the closing rate (period:manage); writes nothing",
+        "description": "**Requires permission:** `period:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevaluationRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/periods/{periodId}/revaluation": {
+      "post": {
+        "operationId": "Ledger_postRevaluation",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Posted or nothing to do",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevaluationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "period:manage"
+        ],
+        "summary": "Post the revaluation (period:manage). Idempotent per period (nothing to do when already at the closing rate); the auto-reversal is posted the day after the period end when an open period covers it",
+        "description": "**Requires permission:** `period:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevaluationRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/revaluation-runs": {
+      "get": {
+        "operationId": "Ledger_listRevaluationRuns",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "periodId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Runs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevaluationRunPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "Revaluation runs, newest first",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/revaluation-runs/{runId}/reverse": {
+      "post": {
+        "operationId": "Ledger_reverseRevaluation",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "runId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reversed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevaluationRun"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Ledger"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "period:manage"
+        ],
+        "summary": "Post a due auto-reversal once an open period covers its date",
+        "description": "**Requires permission:** `period:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
       }
     },
     "/api/v1/organisations/{organisationId}/companies/{companyId}/ledger": {
@@ -13625,6 +14583,51 @@
                 "description": {
                   "type": "string",
                   "nullable": true
+                },
+                "original": {
+                  "type": "object",
+                  "properties": {
+                    "currency": {
+                      "type": "string",
+                      "minLength": 3,
+                      "maxLength": 3
+                    },
+                    "debit": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d+)?$",
+                      "description": "Decimal string, never a JSON number"
+                    },
+                    "credit": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d+)?$",
+                      "description": "Decimal string, never a JSON number"
+                    },
+                    "rate": {
+                      "type": "string"
+                    },
+                    "rateId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "currency",
+                    "debit",
+                    "credit",
+                    "rate",
+                    "rateId"
+                  ],
+                  "additionalProperties": false,
+                  "nullable": true,
+                  "description": "Original-currency values of a foreign-currency line; debit and credit above are the functional amounts"
+                },
+                "adjustsCurrency": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 3,
+                  "nullable": true,
+                  "description": "Set on a functional-only revaluation adjustment that belongs to this foreign-currency balance"
                 }
               },
               "required": [
@@ -13634,7 +14637,9 @@
                 "accountName",
                 "debit",
                 "credit",
-                "description"
+                "description",
+                "original",
+                "adjustsCurrency"
               ],
               "additionalProperties": false
             }
@@ -14171,6 +15176,878 @@
         ],
         "additionalProperties": false
       },
+      "ExchangeRate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fromCurrency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "toCurrency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "DAILY",
+              "PERIOD"
+            ]
+          },
+          "validFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "validTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "rate": {
+            "type": "string",
+            "description": "Decimal string with 8 decimal places, as published; never rounded"
+          },
+          "sourceKind": {
+            "type": "string",
+            "enum": [
+              "MANUAL",
+              "IMPORT"
+            ]
+          },
+          "publisher": {
+            "type": "string"
+          },
+          "series": {
+            "type": "string",
+            "nullable": true
+          },
+          "sourceUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "sourceRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "retrievedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "enteredByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "importBatchId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "UNVERIFIED",
+              "VERIFIED"
+            ]
+          },
+          "verifiedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "verifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "supersededById": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "fromCurrency",
+          "toCurrency",
+          "kind",
+          "validFrom",
+          "validTo",
+          "rate",
+          "sourceKind",
+          "publisher",
+          "series",
+          "sourceUrl",
+          "sourceRef",
+          "retrievedAt",
+          "enteredByUserId",
+          "importBatchId",
+          "verificationStatus",
+          "verifiedByUserId",
+          "verifiedAt",
+          "supersededById",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "ExchangeRatePage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "fromCurrency": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 3
+                },
+                "toCurrency": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 3
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "DAILY",
+                    "PERIOD"
+                  ]
+                },
+                "validFrom": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "validTo": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "rate": {
+                  "type": "string",
+                  "description": "Decimal string with 8 decimal places, as published; never rounded"
+                },
+                "sourceKind": {
+                  "type": "string",
+                  "enum": [
+                    "MANUAL",
+                    "IMPORT"
+                  ]
+                },
+                "publisher": {
+                  "type": "string"
+                },
+                "series": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "sourceUrl": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "sourceRef": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "retrievedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "enteredByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "importBatchId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "verificationStatus": {
+                  "type": "string",
+                  "enum": [
+                    "UNVERIFIED",
+                    "VERIFIED"
+                  ]
+                },
+                "verifiedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "verifiedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "supersededById": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "fromCurrency",
+                "toCurrency",
+                "kind",
+                "validFrom",
+                "validTo",
+                "rate",
+                "sourceKind",
+                "publisher",
+                "series",
+                "sourceUrl",
+                "sourceRef",
+                "retrievedAt",
+                "enteredByUserId",
+                "importBatchId",
+                "verificationStatus",
+                "verifiedByUserId",
+                "verifiedAt",
+                "supersededById",
+                "createdAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false
+      },
+      "RateImportResult": {
+        "type": "object",
+        "properties": {
+          "batchId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "imported": {
+            "type": "integer"
+          },
+          "skippedIdentical": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "UNVERIFIED"
+            ]
+          }
+        },
+        "required": [
+          "batchId",
+          "imported",
+          "skippedIdentical",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "FxSettings": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roundingAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "realisedAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "unrealisedAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "defaultSeries": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "publisher": {
+                  "type": "string"
+                },
+                "series": {
+                  "type": "string",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "publisher",
+                "series"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updatedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "required": [
+          "companyId",
+          "roundingAccountId",
+          "realisedAccountId",
+          "unrealisedAccountId",
+          "defaultSeries",
+          "isDefault",
+          "updatedAt",
+          "updatedByUserId"
+        ],
+        "additionalProperties": false
+      },
+      "RevaluationPreview": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "periodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "asAt": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "functionalCurrency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "minorUnits": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "accountCode": {
+                  "type": "string"
+                },
+                "accountName": {
+                  "type": "string"
+                },
+                "currency": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 3
+                },
+                "originalBalance": {
+                  "type": "string"
+                },
+                "carryingBalance": {
+                  "type": "string",
+                  "pattern": "^\\d+(\\.\\d+)?$",
+                  "description": "Decimal string, never a JSON number"
+                },
+                "rate": {
+                  "type": "string"
+                },
+                "rateId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "targetBalance": {
+                  "type": "string",
+                  "pattern": "^\\d+(\\.\\d+)?$",
+                  "description": "Decimal string, never a JSON number"
+                },
+                "adjustment": {
+                  "type": "string",
+                  "description": "Signed: positive increases the debit balance"
+                }
+              },
+              "required": [
+                "accountId",
+                "accountCode",
+                "accountName",
+                "currency",
+                "originalBalance",
+                "carryingBalance",
+                "rate",
+                "rateId",
+                "targetBalance",
+                "adjustment"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "netAdjustment": {
+            "type": "string"
+          },
+          "unrealisedAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "missingRates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "currency": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "currency",
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "companyId",
+          "periodId",
+          "asAt",
+          "functionalCurrency",
+          "minorUnits",
+          "items",
+          "netAdjustment",
+          "unrealisedAccountId",
+          "missingRates"
+        ],
+        "additionalProperties": false
+      },
+      "RevaluationRun": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "periodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "asAt": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "POSTED",
+              "REVERSED"
+            ]
+          },
+          "revaluationJournalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reversalJournalId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "reversalDueDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "netAdjustment": {
+            "type": "string"
+          },
+          "runByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reversedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "periodId",
+          "asAt",
+          "status",
+          "revaluationJournalId",
+          "reversalJournalId",
+          "reversalDueDate",
+          "netAdjustment",
+          "runByUserId",
+          "createdAt",
+          "reversedAt"
+        ],
+        "additionalProperties": false
+      },
+      "RevaluationRunPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "periodId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "asAt": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "POSTED",
+                    "REVERSED"
+                  ]
+                },
+                "revaluationJournalId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "reversalJournalId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "reversalDueDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "netAdjustment": {
+                  "type": "string"
+                },
+                "runByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "reversedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "periodId",
+                "asAt",
+                "status",
+                "revaluationJournalId",
+                "reversalJournalId",
+                "reversalDueDate",
+                "netAdjustment",
+                "runByUserId",
+                "createdAt",
+                "reversedAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false
+      },
+      "RevaluationResult": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "POSTED",
+              "NOTHING_TO_DO"
+            ]
+          },
+          "preview": {
+            "type": "object",
+            "properties": {
+              "companyId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "periodId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "asAt": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "functionalCurrency": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 3
+              },
+              "minorUnits": {
+                "type": "integer"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "accountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "accountCode": {
+                      "type": "string"
+                    },
+                    "accountName": {
+                      "type": "string"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "minLength": 3,
+                      "maxLength": 3
+                    },
+                    "originalBalance": {
+                      "type": "string"
+                    },
+                    "carryingBalance": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d+)?$",
+                      "description": "Decimal string, never a JSON number"
+                    },
+                    "rate": {
+                      "type": "string"
+                    },
+                    "rateId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "targetBalance": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d+)?$",
+                      "description": "Decimal string, never a JSON number"
+                    },
+                    "adjustment": {
+                      "type": "string",
+                      "description": "Signed: positive increases the debit balance"
+                    }
+                  },
+                  "required": [
+                    "accountId",
+                    "accountCode",
+                    "accountName",
+                    "currency",
+                    "originalBalance",
+                    "carryingBalance",
+                    "rate",
+                    "rateId",
+                    "targetBalance",
+                    "adjustment"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "netAdjustment": {
+                "type": "string"
+              },
+              "unrealisedAccountId": {
+                "type": "string",
+                "format": "uuid",
+                "nullable": true
+              },
+              "missingRates": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "currency": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "currency",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "companyId",
+              "periodId",
+              "asAt",
+              "functionalCurrency",
+              "minorUnits",
+              "items",
+              "netAdjustment",
+              "unrealisedAccountId",
+              "missingRates"
+            ],
+            "additionalProperties": false
+          },
+          "run": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "companyId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "periodId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "asAt": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "POSTED",
+                  "REVERSED"
+                ]
+              },
+              "revaluationJournalId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "reversalJournalId": {
+                "type": "string",
+                "format": "uuid",
+                "nullable": true
+              },
+              "reversalDueDate": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "netAdjustment": {
+                "type": "string"
+              },
+              "runByUserId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "reversedAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              }
+            },
+            "required": [
+              "id",
+              "companyId",
+              "periodId",
+              "asAt",
+              "status",
+              "revaluationJournalId",
+              "reversalJournalId",
+              "reversalDueDate",
+              "netAdjustment",
+              "runByUserId",
+              "createdAt",
+              "reversedAt"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "journalId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "reversalJournalId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "null while the reversal is still due (no open period covers its date)"
+          }
+        },
+        "required": [
+          "status",
+          "preview",
+          "run",
+          "journalId",
+          "reversalJournalId"
+        ],
+        "additionalProperties": false
+      },
       "JournalRequest": {
         "type": "object",
         "properties": {
@@ -14548,6 +16425,10 @@
           "requestExpiryDays": {
             "type": "integer"
           },
+          "fxBlockUnverifiedRates": {
+            "type": "boolean",
+            "description": "true when postings that would use an UNVERIFIED exchange rate are refused"
+          },
           "isDefault": {
             "type": "boolean",
             "description": "true when nothing has been configured for the company (approval always required, 14 days)"
@@ -14568,6 +16449,7 @@
           "controlAdjustmentApproval",
           "materialityThreshold",
           "requestExpiryDays",
+          "fxBlockUnverifiedRates",
           "isDefault",
           "updatedAt",
           "updatedByUserId"
@@ -17303,7 +19185,8 @@
                 "ledger:opening-balance",
                 "ledger:control-adjustment",
                 "ledger:approve",
-                "ledger:policy"
+                "ledger:policy",
+                "fx:rate-manage"
               ]
             },
             "minItems": 1
@@ -18786,6 +20669,29 @@
             "type": "string",
             "pattern": "^[A-Z]{3}$"
           },
+          "rateId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "manualRate": {
+            "type": "object",
+            "properties": {
+              "rate": {
+                "type": "string",
+                "pattern": "^(?!0+(\\.0+)?$)\\d{1,11}(\\.\\d{1,8})?$"
+              },
+              "source": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 500
+              }
+            },
+            "required": [
+              "rate",
+              "source"
+            ],
+            "additionalProperties": false
+          },
           "lines": {
             "type": "array",
             "items": {
@@ -18973,6 +20879,10 @@
             "maximum": 90,
             "default": 14
           },
+          "fxBlockUnverifiedRates": {
+            "type": "boolean",
+            "default": false
+          },
           "reason": {
             "type": "string",
             "minLength": 20,
@@ -18986,6 +20896,204 @@
         ],
         "additionalProperties": false
       },
+      "CreateExchangeRateRequest": {
+        "type": "object",
+        "properties": {
+          "fromCurrency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "toCurrency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "DAILY",
+              "PERIOD"
+            ],
+            "default": "DAILY"
+          },
+          "validFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "validTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "rate": {
+            "type": "string",
+            "pattern": "^(?!0+(\\.0+)?$)\\d{1,11}(\\.\\d{1,8})?$"
+          },
+          "source": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "fromCurrency",
+          "validFrom",
+          "rate",
+          "source"
+        ],
+        "additionalProperties": false
+      },
+      "ImportExchangeRatesRequest": {
+        "type": "object",
+        "properties": {
+          "publisher": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "series": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "sourceUrl": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 500
+          },
+          "retrievedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "toCurrency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "DAILY",
+              "PERIOD"
+            ],
+            "default": "DAILY"
+          },
+          "csv": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000000
+          }
+        },
+        "required": [
+          "publisher",
+          "retrievedAt",
+          "csv"
+        ],
+        "additionalProperties": false
+      },
+      "SupersedeExchangeRateRequest": {
+        "type": "object",
+        "properties": {
+          "rate": {
+            "type": "string",
+            "pattern": "^(?!0+(\\.0+)?$)\\d{1,11}(\\.\\d{1,8})?$"
+          },
+          "source": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "rate",
+          "source",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "VerifyExchangeRateRequest": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false
+      },
+      "SetFxSettingsRequest": {
+        "type": "object",
+        "properties": {
+          "roundingAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "realisedAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "unrealisedAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "defaultSeries": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "publisher": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "series": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "nullable": true,
+                  "default": null
+                }
+              },
+              "required": [
+                "publisher"
+              ],
+              "additionalProperties": false
+            },
+            "default": {}
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "roundingAccountId",
+          "realisedAccountId",
+          "unrealisedAccountId",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "RevaluationRequest": {
+        "type": "object",
+        "properties": {
+          "rates": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "default": {}
+          }
+        },
+        "additionalProperties": false
+      },
       "PeriodTransitionRequest": {
         "type": "object",
         "properties": {
@@ -18993,6 +21101,10 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 500
+          },
+          "acknowledgeUnrevaluedFx": {
+            "type": "boolean",
+            "default": false
           }
         },
         "additionalProperties": false

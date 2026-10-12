@@ -102,3 +102,21 @@ describe('journal requests and the approval policy (M2)', () => {
     expect([DEFAULT_APPROVAL_MODE, DEFAULT_REQUEST_EXPIRY_DAYS]).toEqual(['ALWAYS', 14]);
   });
 });
+
+describe('foreign-currency journal contracts (M3)', () => {
+  const lines = [{ accountId: '11111111-1111-4111-8111-111111111111', debit: '10', credit: '0' }, { accountId: '22222222-2222-4222-8222-222222222222', debit: '0', credit: '10' }];
+  const base = { journalDate: '2026-03-02', description: 'USD', currency: 'USD', lines };
+  it('a foreign journal may carry a rate id or a manual rate, never both; rates are decimal strings with at most 8 places', () => {
+    expect(postJournalSchema.safeParse({ ...base, rateId: '33333333-3333-4333-8333-333333333333' }).success).toBe(true);
+    expect(postJournalSchema.safeParse({ ...base, manualRate: { rate: '1.25', source: 'ab' } }).success).toBe(false);               // source too short
+    expect(postJournalSchema.safeParse({ ...base, manualRate: { rate: '1.25', source: 'supplier invoice' } }).success).toBe(true);
+    expect(postJournalSchema.safeParse({ ...base, rateId: '33333333-3333-4333-8333-333333333333', manualRate: { rate: '1.25', source: 'supplier invoice' } }).success).toBe(false);
+    expect(postJournalSchema.safeParse({ ...base, manualRate: { rate: 1.25, source: 'supplier invoice' } }).success).toBe(false);
+    expect(postJournalSchema.safeParse({ ...base, manualRate: { rate: '1.123456789', source: 'supplier invoice' } }).success).toBe(false);
+  });
+  it('FX revaluation is a user-only source needing period:manage and may touch control accounts; it is not an API source', () => {
+    expect(JOURNAL_SOURCES.FX_REVALUATION).toMatchObject({ permission: 'period:manage', controlAccounts: true });
+    expect((JOURNAL_SOURCES.FX_REVALUATION!.actors as readonly string[])).toEqual(['USER']);
+    expect([...API_JOURNAL_SOURCES]).toEqual(['MANUAL']);
+  });
+});

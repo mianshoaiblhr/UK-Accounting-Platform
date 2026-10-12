@@ -86,7 +86,9 @@ export const JournalHeader = z.object({
 });
 export const JournalDetail = JournalHeader.extend({
   currency: z.string().length(3), reverses: z.object({ journalId: uuid, journalNumber: z.number().int() }).nullable(), replayed: z.boolean().optional().describe('true when an earlier posting with the same idempotency key was returned'),
-  lines: z.array(z.object({ lineNo: z.number().int(), accountId: uuid, accountCode: z.string().nullable(), accountName: z.string().nullable(), debit: money, credit: money, description: z.string().nullable() })),
+  lines: z.array(z.object({ lineNo: z.number().int(), accountId: uuid, accountCode: z.string().nullable(), accountName: z.string().nullable(), debit: money, credit: money, description: z.string().nullable(),
+    original: z.object({ currency: z.string().length(3), debit: money, credit: money, rate: z.string(), rateId: uuid.nullable() }).nullable().describe('Original-currency values of a foreign-currency line; debit and credit above are the functional amounts'),
+    adjustsCurrency: z.string().length(3).nullable().describe('Set on a functional-only revaluation adjustment that belongs to this foreign-currency balance') })),
 });
 export const JournalPage = z.object({ currency: z.string().length(3), items: z.array(JournalHeader), nextCursor: z.string().nullable() });
 export const GeneralLedger = z.object({
@@ -114,5 +116,29 @@ export const JournalRequest = z.object({
 export const JournalRequestPage = page(JournalRequest);
 export const LedgerPolicy = z.object({
   openingBalanceApproval: z.enum(['ALWAYS', 'ABOVE_THRESHOLD']), controlAdjustmentApproval: z.enum(['ALWAYS', 'ABOVE_THRESHOLD']), materialityThreshold: money.nullable(), requestExpiryDays: z.number().int(),
-  isDefault: z.boolean().describe('true when nothing has been configured for the company (approval always required, 14 days)'), updatedAt: ts.nullable(), updatedByUserId: uuid.nullable(),
+  fxBlockUnverifiedRates: z.boolean().describe('true when postings that would use an UNVERIFIED exchange rate are refused'), isDefault: z.boolean().describe('true when nothing has been configured for the company (approval always required, 14 days)'), updatedAt: ts.nullable(), updatedByUserId: uuid.nullable(),
 });
+
+// ───────────── Foreign currency (M3) ─────────────
+export const ExchangeRate = z.object({
+  id: uuid, fromCurrency: z.string().length(3), toCurrency: z.string().length(3), kind: z.enum(['DAILY', 'PERIOD']), validFrom: day, validTo: day, rate: z.string().describe('Decimal string with 8 decimal places, as published; never rounded'),
+  sourceKind: z.enum(['MANUAL', 'IMPORT']), publisher: z.string(), series: z.string().nullable(), sourceUrl: z.string().nullable(), sourceRef: z.string().nullable(), retrievedAt: ts.nullable(), enteredByUserId: uuid,
+  importBatchId: uuid.nullable(), verificationStatus: z.enum(['UNVERIFIED', 'VERIFIED']), verifiedByUserId: uuid.nullable(), verifiedAt: ts.nullable(), supersededById: uuid.nullable(), createdAt: ts,
+});
+export const ExchangeRatePage = page(ExchangeRate);
+export const RateImportResult = z.object({ batchId: uuid, imported: z.number().int(), skippedIdentical: z.number().int(), status: z.literal('UNVERIFIED') });
+export const FxSettings = z.object({
+  companyId: uuid, roundingAccountId: uuid.nullable(), realisedAccountId: uuid.nullable(), unrealisedAccountId: uuid.nullable(),
+  defaultSeries: z.record(z.string(), z.object({ publisher: z.string(), series: z.string().nullable() })), isDefault: z.boolean(), updatedAt: ts.nullable(), updatedByUserId: uuid.nullable(),
+});
+export const RevaluationItem = z.object({ accountId: uuid, accountCode: z.string(), accountName: z.string(), currency: z.string().length(3), originalBalance: z.string(), carryingBalance: money, rate: z.string(), rateId: uuid, targetBalance: money, adjustment: z.string().describe('Signed: positive increases the debit balance') });
+export const RevaluationPreview = z.object({
+  companyId: uuid, periodId: uuid, asAt: day, functionalCurrency: z.string().length(3), minorUnits: z.number().int(), items: z.array(RevaluationItem), netAdjustment: z.string(), unrealisedAccountId: uuid.nullable(),
+  missingRates: z.array(z.object({ currency: z.string(), message: z.string() })),
+});
+export const RevaluationRun = z.object({
+  id: uuid, companyId: uuid, periodId: uuid, asAt: day, status: z.enum(['POSTED', 'REVERSED']), revaluationJournalId: uuid, reversalJournalId: uuid.nullable(), reversalDueDate: day, netAdjustment: z.string(),
+  runByUserId: uuid, createdAt: ts, reversedAt: ts.nullable(),
+});
+export const RevaluationRunPage = page(RevaluationRun);
+export const RevaluationResult = z.object({ status: z.enum(['POSTED', 'NOTHING_TO_DO']), preview: RevaluationPreview, run: RevaluationRun.nullable(), journalId: uuid.nullable(), reversalJournalId: uuid.nullable().describe('null while the reversal is still due (no open period covers its date)') });

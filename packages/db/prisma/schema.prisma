@@ -1288,6 +1288,14 @@ model JournalLine {
   debit          Decimal  @default(0) @db.Decimal(19, 4)
   credit         Decimal  @default(0) @db.Decimal(19, 4)
   description    String?
+  /// Original-currency values (ADR-55): all or none. The functional amount is exactly round(original x rate) - proven by the line guard.
+  originalCurrency String?  @map("original_currency") @db.Char(3)
+  originalDebit    Decimal? @map("original_debit") @db.Decimal(19, 4)
+  originalCredit   Decimal? @map("original_credit") @db.Decimal(19, 4)
+  rate             Decimal? @db.Decimal(19, 8)
+  exchangeRateId   String?  @map("exchange_rate_id") @db.Uuid
+  /// A functional-only adjustment (revaluation) that belongs to this foreign-currency balance of the account.
+  adjustsCurrency  String?  @map("adjusts_currency") @db.Char(3)
 
   journal Journal @relation(fields: [journalId], references: [id])
 
@@ -1336,8 +1344,73 @@ model LedgerPolicy {
   materialityThreshold     Decimal? @map("materiality_threshold") @db.Decimal(19, 4)
   requestExpiryDays        Int      @default(14) @map("request_expiry_days")
   updatedByUserId          String?  @map("updated_by_user_id") @db.Uuid
+  fxBlockUnverifiedRates   Boolean  @default(false) @map("fx_block_unverified_rates")
   updatedAt                DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@id([organisationId, companyId])
   @@map("ledger_policy")
+}
+
+// ───────────── V1 foreign-currency foundation (M3, ADR-55) ─────────────
+/// Immutable, sourced exchange rate (tenant reference data). Only verification and supersession ever update a row.
+model ExchangeRate {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId     String    @map("organisation_id") @db.Uuid
+  fromCurrency       String    @map("from_currency") @db.Char(3)
+  toCurrency         String    @map("to_currency") @db.Char(3)
+  kind               String
+  validFrom          DateTime  @map("valid_from") @db.Date
+  validTo            DateTime  @map("valid_to") @db.Date
+  rate               Decimal   @db.Decimal(19, 8)
+  sourceKind         String    @map("source_kind")
+  publisher          String
+  series             String?
+  sourceUrl          String?   @map("source_url")
+  sourceRef          String?   @map("source_ref")
+  retrievedAt        DateTime? @map("retrieved_at") @db.Timestamptz(3)
+  enteredByUserId    String    @map("entered_by_user_id") @db.Uuid
+  importBatchId      String?   @map("import_batch_id") @db.Uuid
+  verificationStatus String    @default("UNVERIFIED") @map("verification_status")
+  verifiedByUserId   String?   @map("verified_by_user_id") @db.Uuid
+  verifiedAt         DateTime? @map("verified_at") @db.Timestamptz(3)
+  supersededById     String?   @map("superseded_by_id") @db.Uuid
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@index([organisationId, fromCurrency, toCurrency, validFrom, validTo])
+  @@map("exchange_rate")
+}
+
+model CompanyFxSetting {
+  organisationId      String   @map("organisation_id") @db.Uuid
+  companyId           String   @map("company_id") @db.Uuid
+  roundingAccountId   String?  @map("rounding_account_id") @db.Uuid
+  realisedAccountId   String?  @map("realised_account_id") @db.Uuid
+  unrealisedAccountId String?  @map("unrealised_account_id") @db.Uuid
+  defaultSeries       Json     @default("{}") @map("default_series")
+  updatedByUserId     String?  @map("updated_by_user_id") @db.Uuid
+  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([organisationId, companyId])
+  @@map("company_fx_setting")
+}
+
+model FxRevaluationRun {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId       String    @map("organisation_id") @db.Uuid
+  companyId            String    @map("company_id") @db.Uuid
+  periodId             String    @map("period_id") @db.Uuid
+  asAtDate             DateTime  @map("as_at_date") @db.Date
+  status               String    @default("POSTED")
+  revaluationJournalId String    @unique @map("revaluation_journal_id") @db.Uuid
+  reversalJournalId    String?   @map("reversal_journal_id") @db.Uuid
+  reversalDueDate      DateTime  @map("reversal_due_date") @db.Date
+  netAdjustment        Decimal   @map("net_adjustment") @db.Decimal(19, 4)
+  rates                Json
+  runByUserId          String    @map("run_by_user_id") @db.Uuid
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  reversedAt           DateTime? @map("reversed_at") @db.Timestamptz(3)
+
+  @@index([organisationId, companyId, periodId, createdAt])
+  @@map("fx_revaluation_run")
 }

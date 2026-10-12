@@ -3,6 +3,7 @@ import { Events, JOURNAL_SOURCES, type ActorKind } from '@uk/contracts';
 import { conflict, forbidden, getContext, notFound, unprocessable } from '@uk/core';
 import type { Tx } from '@uk/db';
 import { auditRow, publishEvent } from '@uk/platform';
+import { RateService, convert, roundingTolerance } from './fx';
 import { ZERO, fmt, money, type Money } from './money';
 
 /**
@@ -20,7 +21,13 @@ export interface PostingActor {
   can(permission: string, companyId: string): boolean | Promise<boolean>;
 }
 
-export interface PostLineInput { accountId: string; debit: string; credit: string; description?: string }
+export interface PostLineOriginal { currency: string; debit: string; credit: string; rate: string; rateId: string }
+/**
+ * `debit`/`credit` are in the currency of the journal (the transaction currency when `PostInput.currency` is foreign, otherwise the functional
+ * currency). `original` and `adjustsCurrency` are set only by trusted code (reversals, revaluation): never by the API. `generated` marks the
+ * visible FX-rounding line the service adds.
+ */
+export interface PostLineInput { accountId: string; debit: string; credit: string; description?: string; original?: PostLineOriginal; adjustsCurrency?: string; generated?: boolean }
 
 export interface PostInput {
   organisationId: string;
@@ -30,8 +37,12 @@ export interface PostInput {
   sourceId?: string | null;
   sourceReference?: string | null;
   description: string;
-  /** Optional. Only the company's own (functional) currency is supported until milestone M3 (DEC-009); anything else is refused. */
+  /** Optional. Omitted or the company's own (functional) currency = a functional journal. A foreign currency (M3, DEC-016/017): line amounts are in it and are converted at the rate below. */
   currency?: string;
+  /** Foreign currency only: a stored rate to use; otherwise the lookup rule applies. */
+  rateId?: string;
+  /** Foreign currency only: a manual rate, stored as an audited MANUAL exchange rate. */
+  manualRate?: { rate: string; source: string };
   lines: PostLineInput[];
   /** A repeat with the same key and the same content returns the existing journal; the same key with different content is a conflict. */
   idempotencyKey: string;
@@ -61,7 +72,8 @@ const toDate = (s: string) => new Date(`${s}T00:00:00.000Z`);
 const isoDay = (d: Date) => d.toISOString().slice(0, 10);
 
 export class PostingService {
-  constructor(private readonly opts: { captureDeviceMetadata?: boolean; validators?: PostingValidator[] } = {}) {}
+  private readonly rates: RateService;
+  constructor(private readonly opts: { captureDeviceMetadata?: boolean; validators?: PostingValidator[] } = {}) { this.rates = new RateService({ captureDeviceMetadata: opts.captureDeviceMetadata }); }
 
   async post(tx: Tx, input: PostInput): Promise<PostedJournal> {
     const { actor } = input;
@@ -92,6 +104,67 @@ export class PostingService {
   }
 
   /**
+   * Foreign-currency journals (M3): amounts arrive in the transaction currency. The rate is resolved (explicit id, manual, or lookup), each line is
+   * converted and rounded per line half-up by the one `convert` function, and a visible FX-rounding line absorbs a difference of up to one minor unit
+   * per line (DEC-017). A replay of the same idempotency key returns the existing journal without touching rates.
+   */
+  private async toFunctional(tx: Tx, input: PostInput, source: (typeof JOURNAL_SOURCES)[string]): Promise<{ input: PostInput; hash?: string; replay?: PostedJournal }> {
+    const company = await tx.company.findUnique({ where: { id: input.companyId }, select: { baseCurrency: true } });
+    if (!company) throw notFound('Company not found');
+    const foreign = !!input.currency && input.currency !== company.baseCurrency;
+    if (!foreign) {
+      if (input.rateId || input.manualRate) throw unprocessable('A rate applies only to foreign-currency journals', 'rate_not_applicable');
+      return { input };
+    }
+    const ccy = input.currency!;
+    if (source.requiresRequest) throw unprocessable("Opening balances and control adjustments are posted in the company's currency", 'foreign_currency_not_supported', { companyCurrency: company.baseCurrency, requested: ccy });
+    if (input.lines.some((l) => l.original || l.adjustsCurrency || l.generated)) throw unprocessable('Lines of a foreign-currency journal carry only amounts in the transaction currency', 'invalid_amount');
+    const [ocur, cur] = await Promise.all([tx.currency.findUnique({ where: { code: ccy } }), tx.currency.findUnique({ where: { code: company.baseCurrency } })]);
+    if (!ocur) throw unprocessable(`${ccy} is not a known currency`, 'unknown_currency');
+    if (!cur) throw unprocessable('Company base currency is not a known currency', 'currency_invalid');
+    if (input.lines.length < 2) throw unprocessable('A journal needs at least two lines', 'too_few_lines');
+    if (input.lines.length > MAX_LINES) throw unprocessable(`A journal is limited to ${MAX_LINES} lines`, 'too_many_lines');
+    const date = toDate(input.journalDate);
+    if (Number.isNaN(date.getTime()) || isoDay(date) !== input.journalDate) throw unprocessable('Invalid journal date', 'invalid_date');
+    const amounts = input.lines.map((l, i) => {
+      let debit: Money, credit: Money;
+      try { debit = money(l.debit || '0'); credit = money(l.credit || '0'); } catch { throw unprocessable(`Line ${i + 1}: amounts must be decimal numbers`, 'invalid_amount'); }
+      if (debit.isNegative() || credit.isNegative()) throw unprocessable(`Line ${i + 1}: amounts cannot be negative`, 'invalid_amount');
+      if (debit.isZero() === credit.isZero()) throw unprocessable(`Line ${i + 1}: exactly one of debit and credit must be greater than zero`, 'invalid_amount');
+      if (debit.decimalPlaces() > ocur.minorUnits || credit.decimalPlaces() > ocur.minorUnits) throw unprocessable(`Line ${i + 1}: ${ccy} amounts have at most ${ocur.minorUnits} decimal places`, 'invalid_amount');
+      return { debit, credit };
+    });
+    const od = amounts.reduce((t, a) => t.plus(a.debit), ZERO), oc = amounts.reduce((t, a) => t.plus(a.credit), ZERO);
+    if (!od.equals(oc)) throw unprocessable(`Debits (${fmt(od, ocur.minorUnits)} ${ccy}) must equal credits (${fmt(oc, ocur.minorUnits)} ${ccy})`, 'unbalanced_journal');
+    // idempotency on what the caller sent (currency and original amounts), not on a rate that may have been updated since
+    const hash = createHash('sha256').update(JSON.stringify({ c: input.companyId, d: input.journalDate, s: input.sourceType, i: input.sourceId ?? null, r: input.sourceReference ?? null, t: input.description.trim(), v: input.reversesJournalId ?? null,
+      f: ccy, l: input.lines.map((l, i) => [l.accountId, amounts[i]!.debit.toFixed(4), amounts[i]!.credit.toFixed(4), l.description ?? null]) })).digest('hex');
+    const existing = await tx.journal.findUnique({ where: { organisationId_companyId_idempotencyKey: { organisationId: input.organisationId, companyId: input.companyId, idempotencyKey: input.idempotencyKey } } });
+    if (existing) {
+      if (existing.contentHash !== hash) throw conflict('This idempotency key was already used for a different journal', 'idempotency_conflict');
+      return { input, hash, replay: { ...this.view(existing, cur.minorUnits), replayed: true } };
+    }
+    if (!input.actor.userId && input.manualRate) throw forbidden('A manual rate needs a signed-in person', 'actor_invalid');
+    const rate = await this.rates.resolveForPosting(tx, { organisationId: input.organisationId, companyId: input.companyId, actor: { userId: input.actor.userId ?? '', can: input.actor.can }, from: ccy, to: company.baseCurrency, date: input.journalDate, rateId: input.rateId, manualRate: input.manualRate });
+    const lines: PostLineInput[] = input.lines.map((l, i) => {
+      const a = amounts[i]!;
+      const fd = convert(a.debit, rate.rate, cur.minorUnits), fc = convert(a.credit, rate.rate, cur.minorUnits);
+      if (fd.isZero() && fc.isZero()) throw unprocessable(`Line ${i + 1}: the amount converts to zero in ${company.baseCurrency}`, 'invalid_amount');
+      return { accountId: l.accountId, debit: fmt(fd, cur.minorUnits), credit: fmt(fc, cur.minorUnits), description: l.description,
+        original: { currency: ccy, debit: fmt(a.debit, ocur.minorUnits), credit: fmt(a.credit, ocur.minorUnits), rate: rate.rate.toFixed(8), rateId: rate.id } };
+    });
+    const fd = lines.reduce((t, l) => t.plus(money(l.debit)), ZERO), fc = lines.reduce((t, l) => t.plus(money(l.credit)), ZERO);
+    const diff = fd.minus(fc);
+    if (!diff.isZero()) {
+      if (diff.abs().greaterThan(roundingTolerance(lines.length, cur.minorUnits))) throw unprocessable(`The converted lines differ by ${fmt(diff.abs(), cur.minorUnits)}, more than the rounding tolerance (one minor unit per line)`, 'rounding_tolerance_exceeded');
+      const fx = await tx.companyFxSetting.findFirst({ where: { companyId: input.companyId }, select: { roundingAccountId: true } });
+      if (!fx?.roundingAccountId) throw unprocessable('Converting this journal leaves a rounding difference but the company has no FX rounding account; designate one in the FX settings', 'fx_rounding_account_missing');
+      lines.push({ accountId: fx.roundingAccountId, debit: diff.isNegative() ? fmt(diff.abs(), cur.minorUnits) : '0', credit: diff.isNegative() ? '0' : fmt(diff, cur.minorUnits), description: 'FX rounding', generated: true });
+    }
+    return { input: { ...input, currency: undefined, rateId: undefined, manualRate: undefined, lines }, hash };
+  }
+
+  /**
    * Dry run for a journal request (steps 4-8 plus the control-account and opening-balance rules): everything that does not depend on the approval is
    * checked when the request is made, so an approver is never asked to approve something that could not post. Writes nothing.
    */
@@ -112,13 +185,16 @@ export class PostingService {
     if (!input.description?.trim()) throw unprocessable('A description is required', 'description_required');
   }
 
-  private async postPrepared(tx: Tx, input: PostInput, source: (typeof JOURNAL_SOURCES)[string]): Promise<PostedJournal> {
-    const { actor } = input;
+  private async postPrepared(tx: Tx, rawInput: PostInput, source: (typeof JOURNAL_SOURCES)[string]): Promise<PostedJournal> {
+    const { actor } = rawInput;
+    const conv = await this.toFunctional(tx, rawInput, source);
+    if (conv.replay) return conv.replay;
+    const input = conv.input;
     const { company, cur, date, lines } = await this.prepareAmounts(tx, input);
     // 5. idempotency (before anything is written)
-    const contentHash = createHash('sha256').update(JSON.stringify({
+    const contentHash = conv.hash ?? createHash('sha256').update(JSON.stringify({
       c: input.companyId, d: input.journalDate, s: input.sourceType, i: input.sourceId ?? null, r: input.sourceReference ?? null, t: input.description.trim(), v: input.reversesJournalId ?? null,
-      l: lines.map((l) => [l.accountId, l.debit.toFixed(4), l.credit.toFixed(4), l.description ?? null]),
+      l: lines.map((l) => (l.original ? [l.accountId, l.debit.toFixed(4), l.credit.toFixed(4), l.description ?? null, l.original.currency, l.original.debit, l.original.credit] : [l.accountId, l.debit.toFixed(4), l.credit.toFixed(4), l.description ?? null])),
     })).digest('hex');
     const existing = await tx.journal.findUnique({ where: { organisationId_companyId_idempotencyKey: { organisationId: input.organisationId, companyId: input.companyId, idempotencyKey: input.idempotencyKey } } });
     if (existing) {
@@ -149,6 +225,8 @@ export class PostingService {
       } });
       await tx.journalLine.createMany({ data: lines.map((l, i) => ({
         organisationId: input.organisationId, companyId: input.companyId, journalId: journal.id, lineNo: i + 1, accountId: l.accountId, debit: l.debit, credit: l.credit, description: l.description ?? null,
+        ...(l.original ? { originalCurrency: l.original.currency, originalDebit: money(l.original.debit), originalCredit: money(l.original.credit), rate: money(l.original.rate), exchangeRateId: l.original.rateId } : {}),
+        ...(l.adjustsCurrency ? { adjustsCurrency: l.adjustsCurrency } : {}),
       })) });
       await tx.auditEvent.createMany({ data: [auditRow({
         action: input.sourceType === 'REVERSAL' ? 'journal.reversed' : 'journal.posted', organisationId: input.organisationId, companyId: input.companyId, actorUserId: actor.userId ?? null,
@@ -170,7 +248,7 @@ export class PostingService {
     const company = await tx.company.findUnique({ where: { id: input.companyId }, select: { id: true, baseCurrency: true } });
     if (!company) throw notFound('Company not found');
     if (input.currency && input.currency !== company.baseCurrency) {
-      throw unprocessable(`Foreign-currency postings are not supported yet (planned: milestone M3, decision DEC-009). Post in the company's currency, ${company.baseCurrency}.`, 'foreign_currency_not_supported', { companyCurrency: company.baseCurrency, requested: input.currency });
+      throw unprocessable(`This kind of entry is posted in the company's currency, ${company.baseCurrency}`, 'foreign_currency_not_supported', { companyCurrency: company.baseCurrency, requested: input.currency });
     }
     const cur = await tx.currency.findUnique({ where: { code: company.baseCurrency } });
     if (!cur) throw unprocessable('Company base currency is not a known currency', 'currency_invalid');
@@ -184,13 +262,13 @@ export class PostingService {
       if (debit.isNegative() || credit.isNegative()) throw unprocessable(`Line ${i + 1}: amounts cannot be negative`, 'invalid_amount');
       if (debit.isZero() === credit.isZero()) throw unprocessable(`Line ${i + 1}: exactly one of debit and credit must be greater than zero`, 'invalid_amount');
       if (debit.decimalPlaces() > cur.minorUnits || credit.decimalPlaces() > cur.minorUnits) throw unprocessable(`Line ${i + 1}: ${company.baseCurrency} amounts have at most ${cur.minorUnits} decimal places`, 'invalid_amount');
-      return { accountId: l.accountId, debit, credit, description: l.description };
+      return { accountId: l.accountId, debit, credit, description: l.description, original: l.original, adjustsCurrency: l.adjustsCurrency, generated: l.generated };
     });
 
     return { company, cur, date, lines };
   }
 
-  private async prepareLedger(tx: Tx, input: PostInput, source: (typeof JOURNAL_SOURCES)[string], base: { company: { baseCurrency: string }; cur: { minorUnits: number }; date: Date; lines: { accountId: string; debit: Money; credit: Money }[] }) {
+  private async prepareLedger(tx: Tx, input: PostInput, source: (typeof JOURNAL_SOURCES)[string], base: { company: { baseCurrency: string }; cur: { minorUnits: number }; date: Date; lines: { accountId: string; debit: Money; credit: Money; original?: PostLineOriginal; generated?: boolean }[] }) {
     const { cur, date, lines } = base;
     // 6. period
     const periodRef = await tx.accountingPeriod.findFirst({ where: { companyId: input.companyId, startDate: { lte: date }, endDate: { gte: date } }, select: { id: true } });
@@ -216,6 +294,15 @@ export class PostingService {
     if (input.sourceType === 'OPENING_BALANCE') {
       const first = await tx.accountingPeriod.findFirst({ where: { companyId: input.companyId }, orderBy: { startDate: 'asc' }, select: { startDate: true } });
       if (!first || isoDay(first.startDate) !== input.journalDate) throw unprocessable(`Opening balances must be dated ${first ? isoDay(first.startDate) : 'the first day of the first accounting period'}`, 'opening_balance_date_invalid');
+    }
+
+    // 7a. the accounts designated for FX rounding and realised/unrealised FX belong to the system sources (revaluation, settlement), not to manual entries
+    if (input.sourceType === 'MANUAL') {
+      const fx = await tx.companyFxSetting.findFirst({ where: { companyId: input.companyId }, select: { roundingAccountId: true, realisedAccountId: true, unrealisedAccountId: true } });
+      const reserved = new Set([fx?.roundingAccountId, fx?.realisedAccountId, fx?.unrealisedAccountId].filter(Boolean));
+      // the visible FX-rounding line the service itself adds is the one legitimate use; everything a person typed is checked
+      const hit = [...new Set(lines.filter((l) => !l.generated).map((l) => l.accountId))].find((id) => reserved.has(id));
+      if (hit) throw unprocessable(`Account ${accounts.get(hit)!.code} is reserved for foreign-exchange postings; manual journals cannot use it`, 'system_account_restricted');
     }
 
     // 7c. a control adjustment exists to move a control account; anything else is a plain manual journal
@@ -245,7 +332,9 @@ export class PostingService {
     return this.post(tx, {
       organisationId: a.organisationId, companyId: a.companyId, journalDate: date, sourceType: 'REVERSAL', sourceId: original.id, sourceReference: `J-${original.journalNumber}`,
       description: `Reversal of journal ${original.journalNumber}: ${original.description}`.slice(0, 500),
-      lines: original.lines.map((l) => ({ accountId: l.accountId, debit: l.credit.toFixed(4), credit: l.debit.toFixed(4), description: l.description ?? undefined })),
+      lines: original.lines.map((l) => ({ accountId: l.accountId, debit: l.credit.toFixed(4), credit: l.debit.toFixed(4), description: l.description ?? undefined,
+        ...(l.originalCurrency ? { original: { currency: l.originalCurrency, debit: l.originalCredit!.toFixed(4), credit: l.originalDebit!.toFixed(4), rate: l.rate!.toFixed(8), rateId: l.exchangeRateId! } } : {}),
+        ...(l.adjustsCurrency ? { adjustsCurrency: l.adjustsCurrency } : {}) })),
       idempotencyKey: `reversal:${original.id}`, actor: a.actor, reversesJournalId: original.id, reason: a.reason,
     });
   }

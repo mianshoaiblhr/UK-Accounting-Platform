@@ -131,11 +131,11 @@ describe('negative: every validation refuses with a typed error and writes nothi
   });
 });
 
-describe('single-currency limitation is explicit (DEC-009: foreign currency arrives in milestone M3)', () => {
-  it('a journal naming a foreign currency is refused with a clear code and nothing is written', async () => {
+describe('foreign currency without a rate is refused cleanly (the full M3 behaviour is in fx.test.ts)', () => {
+  it('a journal naming a foreign currency with no stored rate is refused with a clear code and nothing is written', async () => {
     const n = Number(sql(`SELECT count(*) FROM journal WHERE company_id='${co}'`));
-    await expect(post({ currency: 'USD' })).rejects.toMatchObject({ code: 'foreign_currency_not_supported', status: 422, message: expect.stringMatching(/milestone M3.*GBP/) });
-    await expect(post({ currency: 'EUR' })).rejects.toMatchObject({ code: 'foreign_currency_not_supported' });
+    await expect(post({ currency: 'USD' })).rejects.toMatchObject({ code: 'exchange_rate_not_found', status: 422 });
+    await expect(post({ currency: 'XXX' })).rejects.toMatchObject({ code: 'unknown_currency' });
     expect(Number(sql(`SELECT count(*) FROM journal WHERE company_id='${co}'`))).toBe(n);
   });
   it('naming the company\'s own currency is accepted and the journal is stored in it', async () => {

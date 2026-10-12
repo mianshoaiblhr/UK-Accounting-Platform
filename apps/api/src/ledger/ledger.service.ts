@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { z } from 'zod';
-import type { Permission, PeriodAction, RequestKind, accountListQuerySchema, createJournalRequestSchema, requestListQuerySchema, setLedgerPolicySchema, createAccountSchema, journalListQuerySchema, ledgerQuerySchema, postJournalSchema, trialBalanceQuerySchema, updateAccountSchema } from '@uk/contracts';
-import { notFound, uuidv7 } from '@uk/core';
+import type { Permission, PeriodAction, RequestKind, createExchangeRateSchema, fxSettingsSchema, importExchangeRatesSchema, rateListQuerySchema, revaluationRunListQuerySchema, revaluationSchema, supersedeExchangeRateSchema, verifyExchangeRateSchema, accountListQuerySchema, createJournalRequestSchema, requestListQuerySchema, setLedgerPolicySchema, createAccountSchema, journalListQuerySchema, ledgerQuerySchema, postJournalSchema, trialBalanceQuerySchema, updateAccountSchema } from '@uk/contracts';
+import { forbidden, notFound, uuidv7 } from '@uk/core';
 import type { Database, Tx } from '@uk/db';
-import { AccountService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, periodView, type PostingActor, type RequestActor } from '@uk/accounting';
+import { AccountService, FxSettingsService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, RateService, RevaluationService, periodView, type PostingActor, type RequestActor } from '@uk/accounting';
 import { DB } from '../common/tokens';
 import type { OrgAccess } from '../common/types';
 
@@ -14,7 +14,8 @@ import type { OrgAccess } from '../common/types';
 @Injectable()
 export class LedgerApiService {
   constructor(@Inject(DB) private readonly db: Database, private readonly accounts: AccountService, private readonly posting: PostingService,
-    private readonly periods: PeriodService, private readonly queries: LedgerQueries, private readonly requests: JournalRequestService, private readonly policies: LedgerPolicyService) {}
+    private readonly periods: PeriodService, private readonly queries: LedgerQueries, private readonly requests: JournalRequestService, private readonly policies: LedgerPolicyService,
+    private readonly rates: RateService, private readonly fxSettings: FxSettingsService, private readonly reval: RevaluationService) {}
 
   private t<T>(org: OrgAccess, fn: (tx: Tx) => Promise<T>) { return this.db.tenant({ organisationId: org.organisationId, userId: org.userId }, fn); }
   private actor(org: OrgAccess): PostingActor {
@@ -35,7 +36,7 @@ export class LedgerApiService {
   // Journals
   async postJournal(org: OrgAccess, companyId: string, b: z.output<typeof postJournalSchema>) {
     const j = await this.t(org, (tx) => this.posting.post(tx, {
-      organisationId: org.organisationId, companyId, journalDate: b.journalDate, sourceType: b.source, sourceReference: b.reference ?? null, description: b.description, currency: b.currency,
+      organisationId: org.organisationId, companyId, journalDate: b.journalDate, sourceType: b.source, sourceReference: b.reference ?? null, description: b.description, currency: b.currency, rateId: b.rateId, manualRate: b.manualRate,
       lines: b.lines.map((l) => ({ accountId: l.accountId, debit: l.debit, credit: l.credit, description: l.description })),
       idempotencyKey: b.idempotencyKey ?? `api:${uuidv7()}`, actor: this.actor(org),
     }));
@@ -65,13 +66,45 @@ export class LedgerApiService {
     return this.t(org, (tx) => this.policies.set(tx, { organisationId: org.organisationId, companyId, actor: this.reqActor(org), ...b }));
   }
 
+  // Foreign currency (M3): exchange rates, FX settings, revaluation
+  private rateActor(org: OrgAccess) { return { userId: org.userId, can: (permission: string, companyId: string) => org.access.can(permission as Permission, { companyId }) }; }
+  listRates(org: OrgAccess, q: z.output<typeof rateListQuerySchema>) { return this.t(org, (tx) => this.rates.list(tx, q)); }
+  getRate(org: OrgAccess, id: string) { return this.t(org, (tx) => this.rates.get(tx, id)); }
+  createRate(org: OrgAccess, companyId: string, b: z.output<typeof createExchangeRateSchema>) {
+    return this.t(org, (tx) => this.rates.create(tx, { organisationId: org.organisationId, companyId, actor: this.rateActor(org), ...b }));
+  }
+  supersedeRate(org: OrgAccess, companyId: string, id: string, b: z.output<typeof supersedeExchangeRateSchema>) {
+    return this.t(org, (tx) => this.rates.supersede(tx, { organisationId: org.organisationId, companyId, actor: this.rateActor(org), id, ...b }));
+  }
+  verifyRate(org: OrgAccess, companyId: string, id: string, b: z.output<typeof verifyExchangeRateSchema>) {
+    return this.t(org, (tx) => this.rates.verify(tx, { organisationId: org.organisationId, companyId, actor: this.rateActor(org), id, note: b.note }));
+  }
+  importRates(org: OrgAccess, companyId: string, b: z.output<typeof importExchangeRatesSchema>) {
+    return this.t(org, (tx) => this.rates.importCsv(tx, { organisationId: org.organisationId, companyId, actor: this.rateActor(org), ...b, retrievedAt: new Date(b.retrievedAt) }));
+  }
+  getFxSettings(org: OrgAccess, companyId: string) { return this.t(org, (tx) => this.fxSettings.get(tx, companyId)); }
+  setFxSettings(org: OrgAccess, companyId: string, b: z.output<typeof fxSettingsSchema>) {
+    return this.t(org, (tx) => this.fxSettings.set(tx, { organisationId: org.organisationId, companyId, actor: { ...this.rateActor(org), kind: 'USER' }, ...b }));
+  }
+  previewRevaluation(org: OrgAccess, companyId: string, periodId: string, b: z.output<typeof revaluationSchema>) {
+    return this.t(org, async (tx) => {
+      if (!(await org.access.can('period:manage', { companyId }))) throw forbidden('Requires permission period:manage', 'permission_denied');
+      return this.reval.preview(tx, { organisationId: org.organisationId, companyId, periodId, actor: this.rateActor(org), rates: b.rates });
+    });
+  }
+  postRevaluation(org: OrgAccess, companyId: string, periodId: string, b: z.output<typeof revaluationSchema>) {
+    return this.t(org, (tx) => this.reval.post(tx, { organisationId: org.organisationId, companyId, periodId, actor: { ...this.actor(org), ...this.rateActor(org) }, rates: b.rates }));
+  }
+  listRevaluationRuns(org: OrgAccess, companyId: string, q: z.output<typeof revaluationRunListQuerySchema>) { return this.t(org, (tx) => this.reval.listRuns(tx, companyId, q)); }
+  reverseRevaluation(org: OrgAccess, companyId: string, runId: string) { return this.t(org, (tx) => this.reval.reverseDue(tx, { organisationId: org.organisationId, companyId, runId, actor: this.actor(org) })); }
+
   // Reads
   generalLedger(org: OrgAccess, companyId: string, q: z.output<typeof ledgerQuerySchema>) { return this.t(org, (tx) => this.queries.generalLedger(tx, companyId, q)); }
   trialBalance(org: OrgAccess, companyId: string, q: z.output<typeof trialBalanceQuerySchema>) { return this.t(org, (tx) => this.queries.trialBalance(tx, companyId, q)); }
 
   // Periods
-  transitionPeriod(org: OrgAccess, companyId: string, periodId: string, action: PeriodAction, reason?: string) {
-    return this.t(org, (tx) => this.periods.transition(tx, { organisationId: org.organisationId, companyId, periodId, action, reason, userId: org.userId, can: (p) => org.access.can(p as Permission, { companyId }) }));
+  transitionPeriod(org: OrgAccess, companyId: string, periodId: string, action: PeriodAction, reason?: string, acknowledgeUnrevaluedFx = false) {
+    return this.t(org, (tx) => this.periods.transition(tx, { organisationId: org.organisationId, companyId, periodId, action, reason, userId: org.userId, acknowledgeUnrevaluedFx, can: (p) => org.access.can(p as Permission, { companyId }) }));
   }
   async getPeriod(org: OrgAccess, companyId: string, periodId: string) {
     const p = await this.t(org, (tx) => tx.accountingPeriod.findFirst({ where: { id: periodId, companyId } }));

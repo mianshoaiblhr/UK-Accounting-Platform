@@ -69,6 +69,7 @@ export const JOURNAL_SOURCES: Record<string, JournalSourceDef> = {
   MANUAL: { actors: ['USER'], permission: 'journal:post', controlAccounts: false, description: 'Manual journal entered by a person' },
   OPENING_BALANCE: { actors: ['USER'], permission: 'ledger:opening-balance', controlAccounts: true, requiresRequest: true, description: 'Opening balances at the start of record keeping (request + approval policy)' },
   CONTROL_ADJUSTMENT: { actors: ['USER'], permission: 'ledger:control-adjustment', controlAccounts: true, requiresRequest: true, description: 'Exceptional adjustment of a control account (reason, evidence, approval policy)' },
+  FX_REVALUATION: { actors: ['USER'], permission: 'period:manage', controlAccounts: true, description: 'Period-end revaluation of foreign-currency monetary items (unrealised FX; auto-reversed next period)' },
   REVERSAL: { actors: ['USER'], permission: 'journal:post', controlAccounts: true, description: 'Mirror of an earlier journal (corrections are reversals, never edits)' },
 };
 export const isJournalSource = (s: string) => Object.prototype.hasOwnProperty.call(JOURNAL_SOURCES, s);
@@ -102,17 +103,24 @@ export const updateAccountSchema = z.object({
   reason: z.string().trim().min(1).max(500).optional(),
 }).strict();
 
+/** Positive decimal string with at most 8 fractional digits (an exchange rate, never a JSON number). */
+export const rateString = z.string().regex(/^(?!0+(\.0+)?$)\d{1,11}(\.\d{1,8})?$/, 'A positive decimal with at most 8 decimal places, as a string');
+
 export const journalLineSchema = z.object({
   accountId: z.string().uuid(), debit: moneyString.default('0'), credit: moneyString.default('0'), description: z.string().trim().max(300).optional(),
 }).strict();
 export const postJournalSchema = z.object({
   journalDate: isoDate, description: z.string().trim().min(1).max(500), source: z.enum(API_JOURNAL_SOURCES).default('MANUAL'),
   reference: z.string().trim().min(1).max(100).optional(),
-  /** Optional and only ever the company's own currency: foreign-currency postings are refused (`foreign_currency_not_supported`) until milestone M3 (DEC-009). */
+  /** The transaction currency. Omitted or equal to the company's currency = a functional-currency journal; otherwise line amounts are in this currency and the server converts them (M3, DEC-016/017). */
   currency: z.string().regex(/^[A-Z]{3}$/, 'ISO 4217 code, upper case').optional(),
+  /** Foreign currency only: a stored rate to use. Omitted, the rate is looked up (transaction date, else the latest earlier rate within 7 days). */
+  rateId: z.string().uuid().optional(),
+  /** Foreign currency only: a manual rate, stored as an audited MANUAL exchange rate. Not together with rateId. */
+  manualRate: z.object({ rate: rateString, source: z.string().trim().min(3).max(500) }).strict().optional(),
   lines: z.array(journalLineSchema).min(2).max(500),
   idempotencyKey: z.string().trim().min(8).max(100).optional(),
-}).strict();
+}).strict().refine((b) => !(b.rateId && b.manualRate), { message: 'Give either rateId or manualRate, not both', path: ['manualRate'] });
 export const reverseJournalSchema = z.object({ journalDate: isoDate.optional(), reason: z.string().trim().min(1).max(500) }).strict();
 export const journalListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(25), cursor: z.string().max(100).optional(),
@@ -124,7 +132,11 @@ export const ledgerQuerySchema = z.object({
 }).strict();
 export const trialBalanceQuerySchema = z.object({ periodId: z.string().uuid().optional(), asOf: isoDate.optional() }).strict()
   .refine((q) => !(q.periodId && q.asOf), { message: 'Give periodId or asOf, not both' });
-export const periodTransitionSchema = z.object({ reason: z.string().trim().min(1).max(500).optional() }).strict();
+export const periodTransitionSchema = z.object({
+  reason: z.string().trim().min(1).max(500).optional(),
+  /** Closing a period that still has unrevalued foreign-currency monetary balances needs this acknowledgement (M3, DEC-018). */
+  acknowledgeUnrevaluedFx: z.boolean().default(false),
+}).strict();
 export const accountListQuerySchema = z.object({ active: z.enum(['true', 'false']).optional().transform((v) => (v === undefined ? undefined : v === 'true')), type: z.enum(ACCOUNT_TYPES).optional() }).strict();
 
 // ───────────── Period states ─────────────
@@ -235,6 +247,8 @@ export const setLedgerPolicySchema = z.object({
   /** Functional-currency amount: a request whose total is strictly greater than this is material. Required when a mode is ABOVE_THRESHOLD. */
   materialityThreshold: moneyString.nullable().default(null),
   requestExpiryDays: z.number().int().min(1).max(90).default(DEFAULT_REQUEST_EXPIRY_DAYS),
+  /** Refuse postings that would use an UNVERIFIED exchange rate (M3). */
+  fxBlockUnverifiedRates: z.boolean().default(false),
   reason: z.string().trim().min(MIN_REQUEST_REASON_LENGTH).max(1000),
 }).strict().refine((p) => (p.openingBalanceApproval !== 'ABOVE_THRESHOLD' && p.controlAdjustmentApproval !== 'ABOVE_THRESHOLD') || (p.materialityThreshold !== null && Number(p.materialityThreshold) > 0),
   { message: 'ABOVE_THRESHOLD needs a materiality threshold greater than zero', path: ['materialityThreshold'] });

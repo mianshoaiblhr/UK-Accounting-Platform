@@ -99,10 +99,9 @@ describe('journals', () => {
       expect((await as(owner, 'post', `${base()}/journals`, { description: 'Opening debtors', source, journalDate: '2025-01-01', lines })).status).toBe(422);
     }
   });
-  it('foreign currency is explicitly not supported yet: a different currency is refused with a pointer to the plan; the company currency is accepted', async () => {
+  it('a foreign-currency journal needs a rate: without one it is refused (the converting behaviour is tested in fx.test.ts); the company currency is accepted', async () => {
     const usd = await as(accountant, 'post', `${base()}/journals`, rent('10.00', { currency: 'USD' }));
-    expect([usd.status, usd.body.code]).toEqual([422, 'foreign_currency_not_supported']);
-    expect(usd.body.detail ?? usd.body.title).toMatch(/M3|not supported/i);
+    expect([usd.status, usd.body.code]).toEqual([422, 'exchange_rate_not_found']);
     expect((await as(accountant, 'post', `${base()}/journals`, rent('10.00', { currency: 'GBP' }))).status).toBe(201);
     expect((await as(accountant, 'post', `${base()}/journals`, rent('10.00', { currency: 'usd' }))).status).toBe(422);   // not an ISO code in upper case
   });

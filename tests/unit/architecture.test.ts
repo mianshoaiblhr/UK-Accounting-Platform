@@ -143,6 +143,14 @@ describe('database access paths that carry security meaning', () => {
     const WRITE = /\.(journalRequest|ledgerPolicy)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(journal_request|ledger_policy)"?\b/i;
     expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/requests.ts']);
   });
+  it('FX data has one writer each (M3): rates and settings only in fx.ts, revaluation runs only in revaluation.ts; nothing posts a journal from there', () => {
+    const writes = (model: string) => new RegExp(`\\.${model}\\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\\b|\\b(INSERT INTO|UPDATE|DELETE FROM)\\s+"?${model.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`)}"?\\b`, 'i');
+    expect(SRC.filter((f) => writes('exchangeRate').test(read(f))).map(rel)).toEqual(['packages/accounting/src/fx.ts']);
+    expect(SRC.filter((f) => writes('companyFxSetting').test(read(f))).map(rel)).toEqual(['packages/accounting/src/fx.ts']);
+    expect(SRC.filter((f) => writes('fxRevaluationRun').test(read(f))).map(rel)).toEqual(['packages/accounting/src/revaluation.ts']);
+    expect(read(`${ROOT}/packages/accounting/src/fx.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany)/);
+    expect(read(`${ROOT}/packages/accounting/src/revaluation.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany)/);
+  });
   it('request-based journal sources are posted from a request only: the API source list never offers them', () => {
     const api = read(`${ROOT}/packages/contracts/src/ledger.ts`);
     expect(api).toMatch(/API_JOURNAL_SOURCES = \['MANUAL'\]/);
