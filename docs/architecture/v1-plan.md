@@ -13,7 +13,7 @@ Tenant isolation by forced row-level security; one central authoriser for compan
 | M3 | Foreign-currency foundation (DEC-009) | **ACCEPTED under delegation** (code baseline `c8fd8c0`, DEC-019); live rate adapters gated | Engineering | M1, M2 accepted |
 | M4a | Contact roles: customers and suppliers (DEC-011, DEC-023) | **verified** (code baseline `206b14d`; package `v1-m4a-acceptance.md`) | Engineering | M1-M3 |
 | M4b | VAT foundation, standard accounting (DEC-010, DEC-021, DEC-025) | implemented (section 6.4); **every rule usable only after verification by a holder of `tax:rule-verify`**; no figures seeded | Engineering; the firm's qualified tax reviewer | M3, M4a |
-| M5a | Sales documents: invoices, credit notes, numbering, checks, credit-note allocation (DEC-026..031) | **specified (section 9)**; in progress | Engineering | M2, M3, M4 |
+| M5a | Sales documents: invoices, credit notes, numbering, checks, credit-note allocation (DEC-026..031) | **verified** (code baseline `e698562`; package `v1-m5a-acceptance.md`) | Engineering | M2, M3, M4 |
 | M5b | Receipts and allocations, realised FX end to end, statements, aged receivables | specified (section 9) | Engineering | M5a |
 | M5c | VAT on foreign-currency documents (V1-VAT-15) | to be specified after M5b; unverified rule (DEC-031) | Engineering; the firm's tax reviewer | M5b |
 | M6 | Purchases: bills, debit notes, payments, cash | planned | Engineering | M3, M4, M5 patterns |
