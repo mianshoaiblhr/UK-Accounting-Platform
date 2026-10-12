@@ -140,7 +140,7 @@ describe('exchange rates are immutable reference data', () => {
     const r = uuidv7(); await rawTx([rate(r, { vf: '2026-10-01' })]);
     await expect(rawTx([`DELETE FROM exchange_rate WHERE id='${r}'`])).rejects.toThrow(/permission denied/);
     expect(() => sql(`DELETE FROM exchange_rate WHERE id='${r}'`)).toThrow(/append-only/);
-    expect(() => sql(`TRUNCATE exchange_rate, fx_revaluation_run, journal, journal_line, journal_request`)).toThrow(/append-only/);
+    expect(() => sql(`TRUNCATE exchange_rate, fx_revaluation_run, journal, journal_line, journal_request, sales_allocation, sales_document_line, sales_document`)).toThrow(/append-only/);
   });
   it('tenant isolation: another organisation neither sees nor creates rates for this one', async () => {
     const r = uuidv7(); await rawTx([rate(r, { vf: '2026-11-01' })]);

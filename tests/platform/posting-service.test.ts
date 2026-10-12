@@ -121,7 +121,7 @@ describe('negative: every validation refuses with a typed error and writes nothi
     expect(ob.sourceType).toBe('OPENING_BALANCE');
   });
   it('unknown source, missing description, bad date', async () => {
-    await rejects(post({ sourceType: 'SALES_INVOICE', sourceId: 'x' }), 'unknown_source');
+    await rejects(post({ sourceType: 'NOT_A_SOURCE', sourceId: 'x' }), 'unknown_source');
     await rejects(post({ description: '   ' }), 'description_required');
     await rejects(post({ journalDate: '2026-02-30' }), 'invalid_date');
   });
