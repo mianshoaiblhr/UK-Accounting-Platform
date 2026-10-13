@@ -317,6 +317,18 @@ Recorded before code under the delegation. Statements about VAT law are UNVERIFI
   * database guards against direct SQL;
   * permissions, isolation and period lock.
 
+### 10.1a As built (M6a)
+* **Migration** `20260113000000_v1_purchase_documents` mirrors the sales guards for bills and debit notes. Additions:
+  * the supplier reference is required on bills (CHECK), with an index on its normalised form;
+  * the sub-ledger reversal guard covers purchase journals;
+  * `journal_vat_check` accepts `vat_rate_point` on PURCHASE_DEBIT_NOTE journals;
+  * `purchase_document` is added as an evidence-link entity type;
+  * permissions `purchases:read`, `purchases:manage` and `purchases:approve`.
+* **Code:** `PurchasesService` (`packages/accounting/src/purchases.ts`) is the only writer of the purchase tables. It reuses `lineAmount`, `releaseShare` and `buildContactSnapshot` from the sales module, which is left unchanged. The API adds `PurchasesController` (14 routes). The supplier role-end check and the period close control include purchase documents.
+* **Fixes to the PostingService and the workpaper, found while mirroring** (credits only; synthetic data; regression-tested on both sides):
+  1. A BOTH-direction code chose the output or input account, and the workpaper chose the sales or purchase box, from the debit/credit side alone, so a sales credit note on such a code hit input VAT. Document journals (`SALES_*`, `PURCHASE_*`) now fix the side by source.
+  2. The reverse-charge pair was always output-credit / input-debit. It now follows the side of the net line, so a debit note mirrors it.
+
 ### 10.2 M6b - supplier payments
 * **Posting:** `purchase_payment` posts `PURCHASE_PAYMENT` (Dr trade payables / Cr bank or cash) when recorded.
 * **Allocation:** at entry or later, in part or in full. An overpayment is a prepayment held as unallocated debit. Realised FX follows DEC-030.
