@@ -2,7 +2,7 @@
 
 Source requirements: docs/specifications/V1_Core_Bookkeeping.md, 00_MASTER_IMPLEMENTATION_MANIFEST.md (non-negotiable accounting controls), 13_CROSS_PLATFORM_PRODUCT_REQUIREMENTS.md.
 
-Generated from `v1-compliance-matrix.json` at commit `16c7f12`; CI: <pending>. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
+Generated from `v1-compliance-matrix.json` at commit `16c7f12`; CI: <https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/38344953160>. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
 
 ## Plan history (append-only)
 
@@ -36,7 +36,7 @@ Generated from `v1-compliance-matrix.json` at commit `16c7f12`; CI: <pending>. *
 | M3 | Foreign-currency foundation: functional/transaction currency, rates, original-currency values, rounding, realised FX, revaluation (DEC-009) | ACCEPTED under delegation (code baseline c8fd8c0; DEC-019) | Engineering (build); product owner (rate source, policies) | M1 accepted; M2 accepted (DEC-015); Decisions recorded: rate source and window (DEC-016), rounding (DEC-017), revaluation and realised FX (DEC-018) | 11 | 8 |
 | M4 | M4a contact roles (customer/supplier, DEC-011, DEC-023) and M4b VAT foundation - standard VAT accounting (DEC-010, DEC-021) | M4a VERIFIED (206b14d; v1-m4a-acceptance.md); M4b VERIFIED (6fb1938; v1-m4b-acceptance.md). VAT rules usable only after verification by the firm's holder of tax:rule-verify | Engineering (build); product owner + qualified tax reviewer (rule verification) | M1-M3 accepted (DEC-008, DEC-015, DEC-019); M4b: verification of each VAT rule by a holder of tax:rule-verify (DEC-021); primary sources not readable in this sandbox (DEC-022) | 25 | 16 |
 | M5 | Sales: invoices, credit notes, receipts; duplicate-document check | M5a VERIFIED (e698562; v1-m5a-acceptance.md); M5b VERIFIED (376aec6; v1-m5b-acceptance.md); M5c (VAT on foreign-currency documents) to be specified (DEC-031) | Engineering | M2; M3; M4 | 8 | 7 |
-| M6 | Purchases: bills, debit notes, payments, cash | M6a implemented (bills and debit notes; acceptance package once verified); M6b supplier payments and M6c cash transactions specified (DEC-033..036) | Engineering | M5 patterns; M3; M4 | 6 | 2 |
+| M6 | Purchases: bills, debit notes, payments, cash | M6a VERIFIED (16c7f12; v1-m6a-acceptance.md): bills and debit notes; M6b supplier payments and M6c cash transactions specified (DEC-033..036) | Engineering | M5 patterns; M3; M4 | 6 | 2 |
 | M7 | Bank accounts, statement import (async), transfers, charges, interest, reconciliation | PLANNED | Engineering | M5; M6 | 15 | 0 |
 | M8 | Profit and loss, balance sheet, drill-down to documents, controls and alerts, FX reporting | PLANNED | Engineering | M3; M5; M6; M7 | 8 | 0 |
 | M9 | V1 UI slices behind feature flags (DEC-002) | PLANNED - runs in parallel from M2 | Engineering (front end) | API of the milestone each screen uses | 1 | 0 |
@@ -183,7 +183,7 @@ A milestone is accepted by the product owner on an acceptance package: commit SH
 
 ## M6 - Purchases: bills, debit notes, payments, cash
 
-**Status:** M6a implemented (bills and debit notes; acceptance package once verified); M6b supplier payments and M6c cash transactions specified (DEC-033..036)  
+**Status:** M6a VERIFIED (16c7f12; v1-m6a-acceptance.md): bills and debit notes; M6b supplier payments and M6c cash transactions specified (DEC-033..036)  
 **Owner:** Engineering  
 **Depends on:** M5 patterns; M3; M4  
 **Acceptance:** To be written when the milestone is specified  
