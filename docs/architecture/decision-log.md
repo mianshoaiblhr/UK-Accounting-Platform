@@ -171,6 +171,7 @@ Taken by the engineering agent under the product owner's delegation of 2026-10-1
 | DEC-029 | Credit notes and their VAT | Linked to one invoice, never more than its outstanding amount, VAT at the rate version the invoice used, reported at the credit note's tax point |
 | DEC-030 | Allocations and realised FX | Every document at its own date's rate; each allocation releases prorated carried amounts and posts the difference as realised FX in its own journal |
 | DEC-031 | Foreign-currency sales and VAT before M5c | A VAT-registered company cannot approve a foreign-currency sales document (tax point on or after registration) until M5c - otherwise the sale would be missing from the VAT workpaper silently |
+| DEC-032 | Receipts (M5b) | Posted when recorded (Dr bank or cash / Cr receivables); allocated at entry or later; unallocated credit kept; duplicate check; reversal only while unallocated; statement and aged receivables |
 
 ### DEC-026 - M5 scope and split
 * **M5a - sales documents:** invoices and credit notes (drafts, approval, posting through the PostingService, gapless numbering, contact snapshot, duplicate and credit-limit checks with reasoned override, attachments through the evidence graph, drafts created from an ACCEPTED AI proposal, credit-note allocation with realised FX, receivables sub-ledger reconciliation, a period-close control for drafts, refusal to end a customer role with open documents).
@@ -201,3 +202,34 @@ Every document is converted at its own date's rate (M3 lookup rules). An allocat
 
 ### DEC-031 - Foreign-currency sales documents and VAT before M5c
 VAT on foreign-currency journals is refused (M4b). A foreign-currency sale by a VAT-registered company still belongs in the VAT return (for example in box 6), so allowing it without VAT codes would leave it out of the workpaper silently. Until M5c, approving a foreign-currency sales document is therefore **refused for a VAT-registered company** when the tax point is on or after its registration date (`vat_foreign_currency_not_supported`); drafts can be prepared. Companies that are not VAT registered may invoice in any currency with a rate.
+
+### DEC-032 - Receipts (M5b; delegated, 2026-10-13; refines DEC-026/030)
+Recorded before the M5b code.
+
+**Posting**
+* A receipt is a cash event, so it is **posted when recorded**; there are no draft receipts.
+* It posts `SALES_RECEIPT`: Dr bank or cash (an active account of subtype CURRENT_ASSET_BANK or CURRENT_ASSET_CASH) / Cr trade receivables. The journal source may touch the TRADE_RECEIVABLES, BANK and CASH control kinds and nothing else.
+* Recording a receipt needs `sales:approve`, because it posts. No new permission.
+
+**Currency**
+* A receipt is in one currency and is allocated only to invoices of the same customer and currency.
+* A foreign receipt converts at its date's rate (M3 lookup, or an explicit rate).
+
+**Allocation**
+* A receipt may be allocated at entry or later, to one or more invoices, in part or in full.
+* What is not allocated stays as the customer's unallocated credit. It reduces the open balance, credit-limit use and the ageing.
+* Every allocation follows DEC-030: carried amounts are released and the difference is realised FX.
+
+**Duplicate check**
+* Another receipt from the same customer with the same date, currency and amount, or the same bank reference, needs a reason. The reason is stored and audited.
+
+**Correction**
+* A receipt that is **not allocated** can be reversed with a reason. A `SALES_RECEIPT_REVERSAL` journal mirrors it at the same rate, and the receipt becomes REVERSED.
+* An allocated receipt cannot be reversed while unallocation is deferred (DEC-026). The ledger never reverses receipt journals directly.
+
+**Reports**
+* The **customer statement** covers a date range, per currency: the opening balance, each invoice, credit note, receipt and reversal in date order with a running balance, and the closing balance.
+* **Aged receivables** are given as at a date, from documents and allocations dated on or before it. The buckets are by days past due: not due, 1-30, 31-60, 61-90 and over 90. Unallocated receipts are shown as a credit. Amounts are in the document currency and totalled per currency.
+
+**Event**
+* `sales_receipt.recorded` is published through the outbox.
