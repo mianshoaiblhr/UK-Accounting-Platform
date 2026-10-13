@@ -5,6 +5,8 @@ import { Field, Form } from '@/components/Form';
 import { Nav } from '@/components/Nav';
 import { ApiError, api, type Company, type Me } from '@/lib/api';
 
+const LEGAL_FORMS: [string, string][] = [['LTD', 'Private limited company'], ['LLP', 'Limited liability partnership'], ['SOLE_TRADER', 'Sole trader'], ['PARTNERSHIP', 'Partnership'], ['CHARITY', 'Charity'], ['OTHER', 'Other']];
+
 export default function Dashboard() {
   const router = useRouter();
   const [me, setMe] = useState<Me>();
@@ -12,6 +14,7 @@ export default function Dashboard() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
+  const [legalForm, setLegalForm] = useState('LTD');
 
   useEffect(() => {
     api<Me>('/auth/me').then((m) => { setMe(m); setOrgId(m.organisations[0]?.id ?? ''); })
@@ -50,12 +53,16 @@ export default function Dashboard() {
         <div className="card">
           <h2>Add a company</h2>
           <Form submit="Add company" success="Company added." onSubmit={async () => {
-            await api(`/organisations/${orgId}/companies`, { body: { name, ...(number ? { companyNumber: number } : {}) }, idempotencyKey: crypto.randomUUID() });
-            setName(''); setNumber(''); await load();
+            await api(`/organisations/${orgId}/companies`, { body: { name, legalForm, ...(number ? { companyNumber: number } : {}) }, idempotencyKey: crypto.randomUUID() });
+            setName(''); setNumber(''); setLegalForm('LTD'); await load();
           }}>
             <Field label="Company name" name="companyName" value={name} onChange={setName} />
             <label htmlFor="companyNumber">Company number (optional, 8 characters)</label>
             <input id="companyNumber" name="companyNumber" value={number} onChange={(e) => setNumber(e.target.value)} />
+            <label htmlFor="legalForm">Type of entity</label>
+            <select id="legalForm" name="legalForm" value={legalForm} onChange={(e) => setLegalForm(e.target.value)}>
+              {LEGAL_FORMS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
           </Form>
         </div>
       </main>

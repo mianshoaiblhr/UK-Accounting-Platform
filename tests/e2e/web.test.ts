@@ -96,6 +96,12 @@ describe('browser journey: practice onboarding with MFA', () => {
     await page.getByLabel('Company number').fill('E2E00001');
     await page.getByRole('button', { name: 'Add company' }).click();
     await pw(page.getByTestId('companies')).toContainText('Client One Ltd');
+    // the type of entity is chosen, not assumed (an LLP used to be stored as LTD)
+    await fill(page, 'Company name', 'Client Two LLP');
+    await page.getByLabel('Company number').fill('OC000002');
+    await page.getByLabel('Type of entity').selectOption('LLP');
+    await page.getByRole('button', { name: 'Add company' }).click();
+    await pw(page.getByTestId('companies').getByRole('row', { name: /Client Two LLP/ })).toContainText('LLP');
     await pw(page.getByTestId('companies')).toContainText('E2E00001');
 
     // 6. Enable MFA
