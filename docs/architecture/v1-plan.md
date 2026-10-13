@@ -17,7 +17,7 @@ Tenant isolation by forced row-level security; one central authoriser for compan
 | M5b | Receipts and allocations, realised FX end to end, statements, aged receivables | **verified** (code baseline `376aec6`; package `v1-m5b-acceptance.md`) | Engineering | M5a |
 | M5c | VAT on foreign-currency documents (V1-VAT-15) | to be specified after M5b; unverified rule (DEC-031) | Engineering; the firm's tax reviewer | M5b |
 | M6a | Purchase documents: bills and debit notes (DEC-033/034) | **verified** (code baseline `16c7f12`; package `v1-m6a-acceptance.md`) | Engineering | M5a |
-| M6b | Supplier payments, allocation, realised FX, aged payables (DEC-035) | implemented (section 10.2a) | Engineering | M6a, M5b |
+| M6b | Supplier payments, allocation, realised FX, aged payables (DEC-035) | **verified** (code baseline `a753db0`; package `v1-m6b-acceptance.md`) | Engineering | M6a, M5b |
 | M6c | Cash transactions without documents and the negative-cash control (DEC-036) | specified (section 10) | Engineering | M6b |
 | M7 | Bank accounts, statement import, transfers, charges, interest, reconciliation | planned | Engineering | M5, M6 |
 | M8 | P&L, balance sheet, drill-down, controls and alerts, FX reporting | planned | Engineering | M3, M5-M7 |

@@ -65,7 +65,7 @@
     },
     "M6": {
       "title": "Purchases: bills, debit notes, payments, cash",
-      "status": "M6a VERIFIED (16c7f12); M6b implemented (supplier payments, allocation, realised FX, statement, ageing; acceptance package once verified); M6c cash transactions specified (DEC-036)",
+      "status": "M6a VERIFIED (16c7f12; v1-m6a-acceptance.md); M6b VERIFIED (a753db0; v1-m6b-acceptance.md); M6c cash transactions specified (DEC-036)",
       "owner": "Engineering",
       "depends": [
         "M5 patterns",
