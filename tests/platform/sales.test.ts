@@ -74,6 +74,7 @@ beforeAll(async () => {
   await defineCode(co, 'E', 'EXEMPT', 'SALES', [{ rate: '0', from: '2026-01-01' }]);
   await defineCode(co, 'P', 'STANDARD', 'PURCHASES', [{ rate: '12.5', from: '2026-01-01' }], [7], [4]);
   await defineCode(co, 'R', 'STANDARD', 'SALES', [{ rate: '12.5', from: '2026-01-01', to: '2026-06-30' }, { rate: '15', from: '2026-07-01' }]);
+  await defineCode(co, 'B', 'STANDARD', 'BOTH', [{ rate: '12.5', from: '2026-01-01' }], [6, 7], [1, 4]);
   for (const c of [co, coV]) await t((tx) => vat.setSettings(tx, { organisationId: org, companyId: c, actor: person(prep), registered: true, vrn: 'GB123456789', registeredFrom: '2026-01-01', scheme: 'STANDARD',
     periodMonths: 3, anchorPeriodEnd: '2026-03-31', outputAccountId: acc[c]!['2200']!, inputAccountId: acc[c]!['1150']!, reason: 'Registered for VAT from 1 January (synthetic)' }));
   // exchange rates are organisation reference data (shared by the companies of the organisation)
@@ -216,6 +217,13 @@ describe('credit notes', () => {
     const dr = await draft(co, [L(co, '4000', '1.00')]);
     await rejects(credit(co, dr.id), 'invoice_not_approved');
   });
+  it('a credit note on a BOTH-direction code reduces OUTPUT VAT (the document is a sale even though its lines are debits)', async () => {
+    const i = await approve(co, (await draft(co, [L(co, '4000', '100.00', { tax: 'B' })], { issueDate: '2026-02-21' })).id);
+    expect(linesOf(i.journalId!)).toBe('1100:112.5000/0.0000:- ; 4000:0.0000/100.0000:NET ; 2200:0.0000/12.5000:VAT');
+    const cn = await approve(co, (await credit(co, i.id, { issueDate: '2026-02-22' })).id);
+    // before the fix the VAT line went to the input VAT account (1150) because the net line is a debit
+    expect(linesOf(cn.journalId!)).toBe('1100:0.0000/112.5000:- ; 4000:100.0000/0.0000:NET ; 2200:12.5000/0.0000:VAT');
+  });
   it('the credit note takes the VAT rate version its invoice used, at its own tax point (DEC-029)', async () => {
     await t((tx) => sales.setSettings(tx, { organisationId: org, companyId: coV, actor: person(prep), receivablesAccountId: acc[coV]!['1100']!, invoicePrefix: 'INV-', creditNotePrefix: 'CN-', invoiceStart: 1, creditNoteStart: 1, requireSeparateApprover: false, reason: 'Sales settings for the rate-change company' }));
     const i = await t((tx) => sales.createInvoice(tx, { organisationId: org, companyId: coV, actor: person(prep), customerRoleId: cust[coV]!, issueDate: '2026-06-15', amountsIncludeVat: false, lines: [L(coV, '4000', '100.00', { tax: 'R' })] }));
@@ -263,7 +271,7 @@ describe('fences around the sub-ledger', () => {
     const inv = await approve(coF, (await draft(coF, [L(coF, '4000', '1.00')], { issueDate: '2026-03-10' })).id);
     await rejects(t((tx) => posting.reverse(tx, { organisationId: org, companyId: coF, journalId: inv.journalId!, reason: 'Trying to reverse an invoice', actor: { kind: 'USER', userId: appr, can: async () => true } })), 'subledger_journal', 422);
     await expect(t((tx) => posting.post(tx, { organisationId: org, companyId: coF, journalDate: '2026-03-11', sourceType: 'REVERSAL', sourceId: inv.journalId!, reversesJournalId: inv.journalId!, description: 'Direct reversal',
-      lines: [{ accountId: acc[coF]!['4000']!, debit: '1.00', credit: '0' }, { accountId: acc[coF]!['1100']!, debit: '0', credit: '1.00' }], idempotencyKey: `k-${uuidv7()}`, actor: { kind: 'USER', userId: appr, can: async () => true } }))).rejects.toThrow(/corrected in the sales ledger/);
+      lines: [{ accountId: acc[coF]!['4000']!, debit: '1.00', credit: '0' }, { accountId: acc[coF]!['1100']!, debit: '0', credit: '1.00' }], idempotencyKey: `k-${uuidv7()}`, actor: { kind: 'USER', userId: appr, can: async () => true } }))).rejects.toThrow(/corrected in its sub-ledger/);
   });
   it('sales journals reach trade receivables and no other control account', async () => {
     await rejects(t((tx) => posting.post(tx, { organisationId: org, companyId: coF, journalDate: '2026-03-11', sourceType: 'SALES_INVOICE', sourceId: uuidv7(), description: 'Probe',

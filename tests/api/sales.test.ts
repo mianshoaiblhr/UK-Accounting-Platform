@@ -148,3 +148,24 @@ describe('receipts through the API (M5b)', () => {
     expect((await as(reviewer, 'get', `${c(`/sales/customers/${role}/statement`)}?from=2026-05-31&to=2026-05-01`)).status).toBe(422);
   });
 });
+
+describe('purchases through the API (M6a)', () => {
+  let supplierRole: string;
+  it('roles: bookkeeper prepares a bill, cannot approve; accountant approves; a supplier with an open bill cannot end; payables reconcile', async () => {
+    await as(owner, 'put', c('/purchase-settings'), { payablesAccountId: acc['2100'], reason: 'Payables control for the API tests' });
+    const contact = (await as(owner, 'post', '/contacts', { kind: 'ORGANISATION', name: 'API Supplier Ltd' })).body;
+    supplierRole = (await as(owner, 'post', c('/contact-roles'), { contactId: contact.id, role: 'SUPPLIER', accountCode: 'APISUP', paymentTermsDays: 30, defaultExpenseAccountId: acc['6310'] })).body.id;
+    expect((await as(reviewer, 'post', c('/purchases/bills'), {})).status).toBe(403);
+    const d = await as(bookkeeper, 'post', c('/purchases/bills'), { supplierRoleId: supplierRole, supplierReference: 'SUP-INV-9', issueDate: '2026-06-01', lines: [{ description: 'Stationery', unitPrice: '45.00' }] });
+    expect(d.status).toBe(201);
+    expect(d.body.lines[0].accountId).toBe(acc['6310']);
+    expect((await as(bookkeeper, 'post', c(`/purchases/documents/${d.body.id}/approve`), {})).status).toBe(403);
+    expect((await as(bookkeeper, 'post', c('/purchases/bills'), { supplierRoleId: supplierRole, issueDate: '2026-06-01', lines: [{ description: 'x', unitPrice: '1.00' }] })).status).toBe(422); // supplier reference required
+    const a = await as(accountant, 'post', c(`/purchases/documents/${d.body.id}/approve`), {});
+    expect(a.body).toMatchObject({ status: 'APPROVED', documentNumber: 'BILL-1', supplierReference: 'SUP-INV-9', paymentStatus: 'UNPAID' });
+    expect((await as(reviewer, 'get', c(`/journals/${a.body.journalId}`))).body).toMatchObject({ sourceType: 'PURCHASE_BILL', sourceId: d.body.id });
+    expect((await as(owner, 'post', c(`/contact-roles/${supplierRole}/end`), { reason: 'Stopped buying from them' })).body.code).toBe('contact_role_has_open_documents');
+    expect((await as(reviewer, 'get', c('/purchases/reconciliation'))).body).toMatchObject({ reconciled: true, currencies: [{ currency: 'GBP', openItems: '45.00', difference: '0.00' }] });
+    expect((await as(viewer, 'get', c('/purchases/documents'))).status).toBe(403);
+  });
+});

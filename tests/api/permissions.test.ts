@@ -76,6 +76,9 @@ probes.push(
   { name: 'read sales documents', perm: 'sales:read', run: (u) => call('get', `/companies/${company.id}/sales/documents`)(u) },
   { name: 'prepare sales invoice', perm: 'sales:manage', run: (u) => call('post', `/companies/${company.id}/sales/invoices`, {})(u) },
   { name: 'approve sales document', perm: 'sales:approve', run: (u) => call('post', `/companies/${company.id}/sales/documents/${GHOST}/approve`, {})(u) },
+  { name: 'read purchase documents', perm: 'purchases:read', run: (u) => call('get', `/companies/${company.id}/purchases/documents`)(u) },
+  { name: 'prepare supplier bill', perm: 'purchases:manage', run: (u) => call('post', `/companies/${company.id}/purchases/bills`, {})(u) },
+  { name: 'approve purchase document', perm: 'purchases:approve', run: (u) => call('post', `/companies/${company.id}/purchases/documents/${GHOST}/approve`, {})(u) },
 );
 probes.find((p) => p.name === 'create company')!.run = (u) => call('post', '/companies', { name: `Perm ${Math.random()}` })(u);
 probes.push({ name: 'create period', perm: 'period:manage', run: (u) => call('post', `/companies/${company.id}/periods`, { startDate: `${2000 + Math.floor(Math.random() * 90)}-01-01`, endDate: `${2000 + Math.floor(Math.random() * 90)}-12-31` })(u) });

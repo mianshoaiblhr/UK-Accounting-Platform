@@ -106,7 +106,7 @@ describe('allocations and credit notes', () => {
       await tx.$queryRawUnsafe(`SELECT set_config('app.posting','on',true)`);
       await tx.$executeRawUnsafe(`INSERT INTO journal(id, organisation_id, company_id, period_id, journal_number, journal_date, source_type, source_id, description, currency, total, line_count, actor_type, posted_by_user_id, idempotency_key, content_hash, reverses_journal_id)
         VALUES ('${uuidv7()}','${org}','${co}','${period}',990001,'2026-02-19','REVERSAL','${a.journalId}','x','GBP',70,2,'USER','${user}','k-${uuidv7()}','h','${a.journalId}')`);
-    })).rejects.toThrow(/corrected in the sales ledger/);
+    })).rejects.toThrow(/corrected in its sub-ledger/);
   });
   it('tenant isolation: another organisation sees no sales rows', async () => {
     const other = uuidv7();

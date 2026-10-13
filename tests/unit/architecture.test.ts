@@ -161,6 +161,11 @@ describe('database access paths that carry security meaning', () => {
     expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/sales.ts']);
     expect(read(`${ROOT}/packages/accounting/src/sales.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany)|INSERT INTO\s+"?journal/);
   });
+  it('purchase documents have one writer (M6a), which posts only through the PostingService', () => {
+    const WRITE = /\.(purchaseSetting|purchaseSequence|purchaseDocument|purchaseDocumentLine|purchaseAllocation)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(purchase_setting|purchase_sequence|purchase_document|purchase_document_line|purchase_allocation)"?\b/i;
+    expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/purchases.ts']);
+    expect(read(`${ROOT}/packages/accounting/src/purchases.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany)|INSERT INTO\s+"?journal/);
+  });
   it('customer and supplier roles have one writer (M4a), and only it touches supplier bank-detail ciphertext', () => {
     const WRITE = /\.(contactRole|customerProfile|supplierProfile)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(contact_role|customer_profile|supplier_profile)"?\b/i;
     expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['apps/api/src/master-data/contact-roles.service.ts']);

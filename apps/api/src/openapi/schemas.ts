@@ -224,3 +224,30 @@ export const CustomerStatement = z.object({ companyId: uuid, customerRoleId: uui
 const AgedRow = z.object({ notDue: z.string(), days1to30: z.string(), days31to60: z.string(), days61to90: z.string(), over90: z.string(), unallocatedCredits: z.string(), total: z.string(), currency: z.string().length(3) });
 export const AgedReceivables = z.object({ companyId: uuid, asOf: day, customers: z.array(AgedRow.extend({ customerRoleId: uuid, accountCode: z.string().nullable(), name: z.string().nullable() })), totals: z.array(AgedRow) });
 
+// ───────────── Purchase documents (M6a) ─────────────
+export const PurchaseSettings = z.object({ companyId: uuid, payablesAccountId: uuid.nullable(), billPrefix: z.string(), debitNotePrefix: z.string(), billStart: z.number().int(), debitNoteStart: z.number().int(),
+  requireSeparateApprover: z.boolean(), lastBillNumber: z.number().int().nullable(), lastDebitNoteNumber: z.number().int().nullable(), numberingFrozen: z.object({ bill: z.boolean(), debitNote: z.boolean() }),
+  isDefault: z.boolean(), updatedAt: ts.nullable(), updatedByUserId: uuid.nullable() });
+export const PurchaseAllocation = z.object({ id: uuid, billId: uuid, debitId: uuid, amount: z.string(), billFunctional: z.string(), debitFunctional: z.string(),
+  realisedFx: z.string().describe('Company currency; positive = gain, negative = loss'), fxJournalId: uuid.nullable(), allocatedOn: day, createdByUserId: uuid, createdAt: ts });
+const PurchaseDocumentBase = z.object({
+  id: uuid, companyId: uuid, kind: z.enum(['BILL', 'DEBIT_NOTE']), status: z.enum(['DRAFT', 'APPROVED', 'DISCARDED']),
+  paymentStatus: z.enum(['UNPAID', 'PART_PAID', 'PAID', 'UNALLOCATED', 'PART_ALLOCATED', 'ALLOCATED']).nullable(), number: z.number().int().nullable(), documentNumber: z.string().nullable().describe('Internal audit number'),
+  supplierRoleId: uuid, contactId: uuid, supplierReference: z.string().nullable().describe("The supplier's own invoice (or credit note) number"), issueDate: day, supplyDate: day.nullable(), taxPoint: day, taxPointExplicit: z.boolean(), taxPointReview: z.boolean(),
+  dueDate: day, currency: z.string().length(3), amountsIncludeVat: z.boolean(), notes: z.string().nullable(), originalBillId: uuid.nullable(), debitReason: z.string().nullable(), revision: z.number().int(),
+  totals: z.object({ net: z.string(), vat: z.string(), gross: z.string() }), outstanding: z.string(), functional: z.object({ gross: z.string(), outstanding: z.string() }).nullable(),
+  rate: z.string().nullable(), exchangeRateId: uuid.nullable(), journalId: uuid.nullable(), contactSnapshot: ContactSnapshot.nullable(), duplicateOverrideReason: z.string().nullable(),
+  createdByUserId: uuid, approvedByUserId: uuid.nullable(), approvedAt: ts.nullable(), discardedByUserId: uuid.nullable(), discardedAt: ts.nullable(), discardedReason: z.string().nullable(), createdAt: ts, updatedAt: ts,
+});
+export const PurchaseDocument = PurchaseDocumentBase.extend({
+  lines: z.array(z.object({ lineNo: z.number().int(), description: z.string(), quantity: z.string(), unitPrice: z.string(), accountId: uuid, taxCodeId: uuid.nullable(), net: z.string(), vat: z.string(), gross: z.string() })),
+  allocations: z.array(PurchaseAllocation), debitNotes: z.array(z.object({ id: uuid, documentNumber: z.string().nullable(), status: z.string() })), warnings: z.array(z.string()),
+});
+export const PurchaseDocumentPage = z.object({ items: z.array(PurchaseDocumentBase), nextCursor: z.string().nullable() });
+export const PayablesReconciliation = z.object({
+  companyId: uuid, payablesAccountId: uuid, functionalCurrency: z.string().length(3), reconciled: z.boolean(),
+  currencies: z.array(z.object({ currency: z.string().length(3), openItems: z.string(), openItemsFunctional: z.string(),
+    control: z.object({ fromPurchaseDocuments: z.string(), fromPurchaseDocumentsFunctional: z.string(), total: z.string(), totalFunctional: z.string() }),
+    difference: z.string(), differenceFunctional: z.string(), otherPostings: z.array(z.object({ sourceType: z.string(), original: z.string(), functional: z.string() })) })),
+});
+

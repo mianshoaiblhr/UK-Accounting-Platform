@@ -21,6 +21,7 @@ export const PERMISSIONS = [
   'ledger:opening-balance', 'ledger:control-adjustment', 'ledger:approve', 'ledger:policy',
   'fx:rate-manage', 'contact:bank-details', 'vat:manage', 'tax:rule-verify',
   'sales:read', 'sales:manage', 'sales:approve',
+  'purchases:read', 'purchases:manage', 'purchases:approve',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -49,6 +50,7 @@ export const PERMISSION_SCOPE: Record<Permission, PermissionScope> = {
   'ledger:opening-balance': 'COMPANY', 'ledger:control-adjustment': 'COMPANY', 'ledger:approve': 'COMPANY', 'ledger:policy': 'COMPANY',
   'fx:rate-manage': 'COMPANY', 'contact:bank-details': 'COMPANY', 'vat:manage': 'COMPANY', 'tax:rule-verify': 'COMPANY',
   'sales:read': 'COMPANY', 'sales:manage': 'COMPANY', 'sales:approve': 'COMPANY',
+  'purchases:read': 'COMPANY', 'purchases:manage': 'COMPANY', 'purchases:approve': 'COMPANY',
 };
 export const permissionsOfScope = (...scopes: PermissionScope[]): Permission[] => PERMISSIONS.filter((p) => scopes.includes(PERMISSION_SCOPE[p]));
 
@@ -69,15 +71,15 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
   { key: 'manager', name: 'Manager', description: 'Manages day-to-day work on a company: can review but not approve or manage access',
     permissions: [...ORG_READ, 'job:read', 'practice:read', 'company:read', 'company:update', 'period:read', 'period:manage',
       'document:read', 'document:upload', 'document:archive', 'task:read', 'task:manage', 'workflow:read', 'workflow:manage', 'workflow:review', 'ai:use', 'contact:read', 'contact:manage', 'document:confidential', 'evidence:read', 'evidence:manage',
-      'account:read', 'account:manage', 'ledger:read', 'journal:post', 'sales:read', 'sales:manage'] },
+      'account:read', 'account:manage', 'ledger:read', 'journal:post', 'sales:read', 'sales:manage', 'purchases:read', 'purchases:manage'] },
   { key: 'accountant', name: 'Accountant', description: 'Work on assigned client companies',
     permissions: [...READ, 'practice:read', 'company:create', 'company:update', 'period:manage', 'document:upload', 'document:archive', 'job:read', 'audit:read',
       'task:read', 'task:manage', 'workflow:read', 'workflow:manage', 'workflow:review', 'ai:use', 'ai:approve', 'contact:read', 'contact:manage', 'evidence:read', 'evidence:manage',
-      'account:read', 'account:manage', 'ledger:read', 'journal:post', 'ledger:control-adjustment', 'fx:rate-manage', 'contact:bank-details', 'vat:manage', 'sales:read', 'sales:manage', 'sales:approve'] },
+      'account:read', 'account:manage', 'ledger:read', 'journal:post', 'ledger:control-adjustment', 'fx:rate-manage', 'contact:bank-details', 'vat:manage', 'sales:read', 'sales:manage', 'sales:approve', 'purchases:read', 'purchases:manage', 'purchases:approve'] },
   { key: 'bookkeeper', name: 'Bookkeeper', description: 'Prepare records for assigned companies',
-    permissions: [...READ, 'practice:read', 'document:upload', 'job:read', 'task:read', 'task:manage', 'workflow:read', 'ai:use', 'contact:read', 'contact:manage', 'evidence:read', 'evidence:manage', 'account:read', 'ledger:read', 'sales:read', 'sales:manage'] },
+    permissions: [...READ, 'practice:read', 'document:upload', 'job:read', 'task:read', 'task:manage', 'workflow:read', 'ai:use', 'contact:read', 'contact:manage', 'evidence:read', 'evidence:manage', 'account:read', 'ledger:read', 'sales:read', 'sales:manage', 'purchases:read', 'purchases:manage'] },
   { key: 'reviewer', name: 'Reviewer', description: 'Read-only review and audit access',
-    permissions: [...READ, 'practice:read', 'audit:read', 'job:read', 'task:read', 'workflow:read', 'workflow:review', 'contact:read', 'evidence:read', 'account:read', 'ledger:read', 'sales:read'] },
+    permissions: [...READ, 'practice:read', 'audit:read', 'job:read', 'task:read', 'workflow:read', 'workflow:review', 'contact:read', 'evidence:read', 'account:read', 'ledger:read', 'sales:read', 'purchases:read'] },
   { key: 'client_viewer', name: 'Client Viewer', description: 'Client read-only access to own company',
     permissions: ['org:read', 'company:read', 'period:read', 'document:read'] },
 ];

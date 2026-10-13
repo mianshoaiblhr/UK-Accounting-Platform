@@ -2657,7 +2657,8 @@
                 "company",
                 "accounting_period",
                 "journal",
-                "sales_document"
+                "sales_document",
+                "purchase_document"
               ]
             }
           },
@@ -14084,6 +14085,1269 @@
         ]
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/purchase-settings": {
+      "get": {
+        "operationId": "Purchases_settings",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Purchases"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "purchases:read"
+        ],
+        "summary": "Payables control account, internal numbering and separation of duties",
+        "description": "**Requires permission:** `purchases:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "Purchases_setSettings",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Settings set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Purchases"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:policy"
+        ],
+        "summary": "Set the purchase settings (ledger:policy, reason required)",
+        "description": "**Requires permission:** `ledger:policy`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPurchaseSettingsRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/purchases/bills": {
+      "post": {
+        "operationId": "Purchases_createBill",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Draft created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Purchases"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "purchases:manage"
+        ],
+        "summary": "Create a draft supplier bill (the supplier's own invoice number is required; lines default to the supplier's expense account)",
+        "description": "**Requires permission:** `purchases:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBillRequest"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "Purchases_bills",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "BILL",
+                "DEBIT_NOTE"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "DRAFT",
+                "APPROVED",
+                "DISCARDED"
+              ]
+            }
+          },
+          {
+            "name": "paymentStatus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "UNPAID",
+                "PART_PAID",
+                "PAID",
+                "UNALLOCATED",
+                "PART_ALLOCATED",
+                "ALLOCATED"
+              ]
+            }
+          },
+          {
+            "name": "supplierRoleId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseDocumentPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Purchases"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "purchases:read"
+        ],
+        "summary": "Bills",
+        "description": "**Requires permission:** `purchases:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/purchases/debit-notes": {
+      "post": {
+        "operationId": "Purchases_createDebitNote",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Draft created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Purchases"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "purchases:manage"
+        ],
+        "summary": "Create a draft debit note (supplier credit) for an approved bill: its VAT codes only, at the bill's rate versions",
+        "description": "**Requires permission:** `purchases:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDebitNoteRequest"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "Purchases_debitNotes",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "BILL",
+                "DEBIT_NOTE"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "DRAFT",
+                "APPROVED",
+                "DISCARDED"
+              ]
+            }
+          },
+          {
+            "name": "paymentStatus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "UNPAID",
+                "PART_PAID",
+                "PAID",
+                "UNALLOCATED",
+                "PART_ALLOCATED",
+                "ALLOCATED"
+              ]
+            }
+          },
+          {
+            "name": "supplierRoleId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseDocumentPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Purchases"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "purchases:read"
+        ],
+        "summary": "Debit notes",
+        "description": "**Requires permission:** `purchases:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/purchases/documents": {
+      "get": {
+        "operationId": "Purchases_documents",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "BILL",
+                "DEBIT_NOTE"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "DRAFT",
+                "APPROVED",
+                "DISCARDED"
+              ]
+            }
+          },
+          {
+            "name": "paymentStatus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "UNPAID",
+                "PART_PAID",
+                "PAID",
+                "UNALLOCATED",
+                "PART_ALLOCATED",
+                "ALLOCATED"
+              ]
+            }
+          },
+          {
+            "name": "supplierRoleId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseDocumentPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Purchases"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "purchases:read"
+        ],
+        "summary": "Bills and debit notes",
+        "description": "**Requires permission:** `purchases:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/purchases/documents/{documentId}": {
+      "get": {
+        "operationId": "Purchases_get",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Purchases"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "purchases:read"
+        ],
+        "summary": "One document with its lines, allocations and debit notes",
+        "description": "**Requires permission:** `purchases:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "Purchases_update",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Draft updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Purchases"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "purchases:manage"
+        ],
+        "summary": "Edit a draft (optimistic revision); writes a new revision of its lines",
+        "description": "**Requires permission:** `purchases:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePurchaseDraftRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/purchases/documents/{documentId}/approve": {
+      "post": {
+        "operationId": "Purchases_approve",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Approved and posted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Purchases"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "purchases:approve"
+        ],
+        "summary": "Approve: internal number, supplier snapshot, verified VAT (input or reverse charge), posting; a debit note is then allocated to its bill. A possible duplicate (same supplier reference, or same date and total) needs a reason",
+        "description": "**Requires permission:** `purchases:approve`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApprovePurchaseDocumentRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/purchases/documents/{documentId}/discard": {
+      "post": {
+        "operationId": "Purchases_discard",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Discarded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Purchases"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "purchases:manage"
+        ],
+        "summary": "Discard a draft (reason required; never deleted)",
+        "description": "**Requires permission:** `purchases:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscardPurchaseDocumentRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/purchases/documents/{documentId}/attachments": {
+      "get": {
+        "operationId": "Purchases_attachments",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Attachments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceLinkList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Purchases"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "purchases:read"
+        ],
+        "summary": "Documents attached to a purchase document",
+        "description": "**Requires permission:** `purchases:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "Purchases_attach",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Attached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceLink"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Purchases"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "purchases:manage"
+        ],
+        "summary": "Attach a stored document (for example the supplier's bill as received)",
+        "description": "**Requires permission:** `purchases:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttachPurchaseDocumentRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/purchases/reconciliation": {
+      "get": {
+        "operationId": "Purchases_reconciliation",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reconciliation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayablesReconciliation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Purchases"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "purchases:read"
+        ],
+        "summary": "Payables control account against open items, per currency",
+        "description": "**Requires permission:** `purchases:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -15054,6 +16318,9 @@
     },
     {
       "name": "Sales"
+    },
+    {
+      "name": "Purchases"
     },
     {
       "name": "Notifications"
@@ -21010,6 +22277,1055 @@
         ],
         "additionalProperties": false
       },
+      "PurchaseSettings": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "payablesAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "billPrefix": {
+            "type": "string"
+          },
+          "debitNotePrefix": {
+            "type": "string"
+          },
+          "billStart": {
+            "type": "integer"
+          },
+          "debitNoteStart": {
+            "type": "integer"
+          },
+          "requireSeparateApprover": {
+            "type": "boolean"
+          },
+          "lastBillNumber": {
+            "type": "integer",
+            "nullable": true
+          },
+          "lastDebitNoteNumber": {
+            "type": "integer",
+            "nullable": true
+          },
+          "numberingFrozen": {
+            "type": "object",
+            "properties": {
+              "bill": {
+                "type": "boolean"
+              },
+              "debitNote": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "bill",
+              "debitNote"
+            ],
+            "additionalProperties": false
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updatedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "required": [
+          "companyId",
+          "payablesAccountId",
+          "billPrefix",
+          "debitNotePrefix",
+          "billStart",
+          "debitNoteStart",
+          "requireSeparateApprover",
+          "lastBillNumber",
+          "lastDebitNoteNumber",
+          "numberingFrozen",
+          "isDefault",
+          "updatedAt",
+          "updatedByUserId"
+        ],
+        "additionalProperties": false
+      },
+      "PurchaseDocument": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "BILL",
+              "DEBIT_NOTE"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "APPROVED",
+              "DISCARDED"
+            ]
+          },
+          "paymentStatus": {
+            "type": "string",
+            "enum": [
+              "UNPAID",
+              "PART_PAID",
+              "PAID",
+              "UNALLOCATED",
+              "PART_ALLOCATED",
+              "ALLOCATED"
+            ],
+            "nullable": true
+          },
+          "number": {
+            "type": "integer",
+            "nullable": true
+          },
+          "documentNumber": {
+            "type": "string",
+            "nullable": true,
+            "description": "Internal audit number"
+          },
+          "supplierRoleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "contactId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierReference": {
+            "type": "string",
+            "nullable": true,
+            "description": "The supplier's own invoice (or credit note) number"
+          },
+          "issueDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "supplyDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "taxPoint": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "taxPointExplicit": {
+            "type": "boolean"
+          },
+          "taxPointReview": {
+            "type": "boolean"
+          },
+          "dueDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "amountsIncludeVat": {
+            "type": "boolean"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "originalBillId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "debitReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "totals": {
+            "type": "object",
+            "properties": {
+              "net": {
+                "type": "string"
+              },
+              "vat": {
+                "type": "string"
+              },
+              "gross": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "net",
+              "vat",
+              "gross"
+            ],
+            "additionalProperties": false
+          },
+          "outstanding": {
+            "type": "string"
+          },
+          "functional": {
+            "type": "object",
+            "properties": {
+              "gross": {
+                "type": "string"
+              },
+              "outstanding": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "gross",
+              "outstanding"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "rate": {
+            "type": "string",
+            "nullable": true
+          },
+          "exchangeRateId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "journalId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "contactSnapshot": {
+            "type": "object",
+            "properties": {
+              "roleId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "CUSTOMER",
+                  "SUPPLIER"
+                ]
+              },
+              "contactId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "accountCode": {
+                "type": "string",
+                "nullable": true
+              },
+              "name": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "PERSON",
+                  "ORGANISATION"
+                ]
+              },
+              "vatNumber": {
+                "type": "string",
+                "nullable": true
+              },
+              "email": {
+                "type": "string",
+                "nullable": true
+              },
+              "address": {
+                "type": "object",
+                "properties": {
+                  "line1": {
+                    "type": "string"
+                  },
+                  "line2": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "line3": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "city": {
+                    "type": "string"
+                  },
+                  "region": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "postcode": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "countryCode": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "line1",
+                  "line2",
+                  "line3",
+                  "city",
+                  "region",
+                  "postcode",
+                  "countryCode"
+                ],
+                "additionalProperties": false,
+                "nullable": true
+              },
+              "capturedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "roleId",
+              "role",
+              "contactId",
+              "accountCode",
+              "name",
+              "kind",
+              "vatNumber",
+              "email",
+              "address",
+              "capturedAt"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "duplicateOverrideReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "approvedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "approvedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "discardedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "discardedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "discardedReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "lineNo": {
+                  "type": "integer"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "string"
+                },
+                "unitPrice": {
+                  "type": "string"
+                },
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "taxCodeId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "net": {
+                  "type": "string"
+                },
+                "vat": {
+                  "type": "string"
+                },
+                "gross": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "lineNo",
+                "description",
+                "quantity",
+                "unitPrice",
+                "accountId",
+                "taxCodeId",
+                "net",
+                "vat",
+                "gross"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "allocations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "billId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "debitId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "amount": {
+                  "type": "string"
+                },
+                "billFunctional": {
+                  "type": "string"
+                },
+                "debitFunctional": {
+                  "type": "string"
+                },
+                "realisedFx": {
+                  "type": "string",
+                  "description": "Company currency; positive = gain, negative = loss"
+                },
+                "fxJournalId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "allocatedOn": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "billId",
+                "debitId",
+                "amount",
+                "billFunctional",
+                "debitFunctional",
+                "realisedFx",
+                "fxJournalId",
+                "allocatedOn",
+                "createdByUserId",
+                "createdAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "debitNotes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "documentNumber": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "status": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "documentNumber",
+                "status"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "kind",
+          "status",
+          "paymentStatus",
+          "number",
+          "documentNumber",
+          "supplierRoleId",
+          "contactId",
+          "supplierReference",
+          "issueDate",
+          "supplyDate",
+          "taxPoint",
+          "taxPointExplicit",
+          "taxPointReview",
+          "dueDate",
+          "currency",
+          "amountsIncludeVat",
+          "notes",
+          "originalBillId",
+          "debitReason",
+          "revision",
+          "totals",
+          "outstanding",
+          "functional",
+          "rate",
+          "exchangeRateId",
+          "journalId",
+          "contactSnapshot",
+          "duplicateOverrideReason",
+          "createdByUserId",
+          "approvedByUserId",
+          "approvedAt",
+          "discardedByUserId",
+          "discardedAt",
+          "discardedReason",
+          "createdAt",
+          "updatedAt",
+          "lines",
+          "allocations",
+          "debitNotes",
+          "warnings"
+        ],
+        "additionalProperties": false
+      },
+      "PurchaseDocumentPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "BILL",
+                    "DEBIT_NOTE"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "DRAFT",
+                    "APPROVED",
+                    "DISCARDED"
+                  ]
+                },
+                "paymentStatus": {
+                  "type": "string",
+                  "enum": [
+                    "UNPAID",
+                    "PART_PAID",
+                    "PAID",
+                    "UNALLOCATED",
+                    "PART_ALLOCATED",
+                    "ALLOCATED"
+                  ],
+                  "nullable": true
+                },
+                "number": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "documentNumber": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Internal audit number"
+                },
+                "supplierRoleId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "contactId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "supplierReference": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "The supplier's own invoice (or credit note) number"
+                },
+                "issueDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "supplyDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "taxPoint": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "taxPointExplicit": {
+                  "type": "boolean"
+                },
+                "taxPointReview": {
+                  "type": "boolean"
+                },
+                "dueDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "currency": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 3
+                },
+                "amountsIncludeVat": {
+                  "type": "boolean"
+                },
+                "notes": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "originalBillId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "debitReason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "revision": {
+                  "type": "integer"
+                },
+                "totals": {
+                  "type": "object",
+                  "properties": {
+                    "net": {
+                      "type": "string"
+                    },
+                    "vat": {
+                      "type": "string"
+                    },
+                    "gross": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "net",
+                    "vat",
+                    "gross"
+                  ],
+                  "additionalProperties": false
+                },
+                "outstanding": {
+                  "type": "string"
+                },
+                "functional": {
+                  "type": "object",
+                  "properties": {
+                    "gross": {
+                      "type": "string"
+                    },
+                    "outstanding": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "gross",
+                    "outstanding"
+                  ],
+                  "additionalProperties": false,
+                  "nullable": true
+                },
+                "rate": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "exchangeRateId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "journalId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "contactSnapshot": {
+                  "type": "object",
+                  "properties": {
+                    "roleId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "CUSTOMER",
+                        "SUPPLIER"
+                      ]
+                    },
+                    "contactId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "accountCode": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "PERSON",
+                        "ORGANISATION"
+                      ]
+                    },
+                    "vatNumber": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "email": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "address": {
+                      "type": "object",
+                      "properties": {
+                        "line1": {
+                          "type": "string"
+                        },
+                        "line2": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "line3": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "city": {
+                          "type": "string"
+                        },
+                        "region": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "postcode": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "countryCode": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "line1",
+                        "line2",
+                        "line3",
+                        "city",
+                        "region",
+                        "postcode",
+                        "countryCode"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "capturedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "roleId",
+                    "role",
+                    "contactId",
+                    "accountCode",
+                    "name",
+                    "kind",
+                    "vatNumber",
+                    "email",
+                    "address",
+                    "capturedAt"
+                  ],
+                  "additionalProperties": false,
+                  "nullable": true
+                },
+                "duplicateOverrideReason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "approvedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "approvedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "discardedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "discardedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "discardedReason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "kind",
+                "status",
+                "paymentStatus",
+                "number",
+                "documentNumber",
+                "supplierRoleId",
+                "contactId",
+                "supplierReference",
+                "issueDate",
+                "supplyDate",
+                "taxPoint",
+                "taxPointExplicit",
+                "taxPointReview",
+                "dueDate",
+                "currency",
+                "amountsIncludeVat",
+                "notes",
+                "originalBillId",
+                "debitReason",
+                "revision",
+                "totals",
+                "outstanding",
+                "functional",
+                "rate",
+                "exchangeRateId",
+                "journalId",
+                "contactSnapshot",
+                "duplicateOverrideReason",
+                "createdByUserId",
+                "approvedByUserId",
+                "approvedAt",
+                "discardedByUserId",
+                "discardedAt",
+                "discardedReason",
+                "createdAt",
+                "updatedAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false
+      },
+      "PayablesReconciliation": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "payablesAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "functionalCurrency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "reconciled": {
+            "type": "boolean"
+          },
+          "currencies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "currency": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 3
+                },
+                "openItems": {
+                  "type": "string"
+                },
+                "openItemsFunctional": {
+                  "type": "string"
+                },
+                "control": {
+                  "type": "object",
+                  "properties": {
+                    "fromPurchaseDocuments": {
+                      "type": "string"
+                    },
+                    "fromPurchaseDocumentsFunctional": {
+                      "type": "string"
+                    },
+                    "total": {
+                      "type": "string"
+                    },
+                    "totalFunctional": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "fromPurchaseDocuments",
+                    "fromPurchaseDocumentsFunctional",
+                    "total",
+                    "totalFunctional"
+                  ],
+                  "additionalProperties": false
+                },
+                "difference": {
+                  "type": "string"
+                },
+                "differenceFunctional": {
+                  "type": "string"
+                },
+                "otherPostings": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "sourceType": {
+                        "type": "string"
+                      },
+                      "original": {
+                        "type": "string"
+                      },
+                      "functional": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "sourceType",
+                      "original",
+                      "functional"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "currency",
+                "openItems",
+                "openItemsFunctional",
+                "control",
+                "difference",
+                "differenceFunctional",
+                "otherPostings"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "companyId",
+          "payablesAccountId",
+          "functionalCurrency",
+          "reconciled",
+          "currencies"
+        ],
+        "additionalProperties": false
+      },
       "SalesSettings": {
         "type": "object",
         "properties": {
@@ -25847,7 +28163,10 @@
                 "tax:rule-verify",
                 "sales:read",
                 "sales:manage",
-                "sales:approve"
+                "sales:approve",
+                "purchases:read",
+                "purchases:manage",
+                "purchases:approve"
               ]
             },
             "minItems": 1
@@ -26385,7 +28704,8 @@
               "company",
               "accounting_period",
               "journal",
-              "sales_document"
+              "sales_document",
+              "purchase_document"
             ]
           },
           "sourceId": {
@@ -26404,7 +28724,8 @@
               "company",
               "accounting_period",
               "journal",
-              "sales_document"
+              "sales_document",
+              "purchase_document"
             ]
           },
           "targetId": {
@@ -28805,6 +31126,344 @@
         },
         "required": [
           "reason"
+        ],
+        "additionalProperties": false
+      },
+      "SetPurchaseSettingsRequest": {
+        "type": "object",
+        "properties": {
+          "payablesAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "billPrefix": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9/_-]{0,10}$",
+            "default": "BILL-"
+          },
+          "debitNotePrefix": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9/_-]{0,10}$",
+            "default": "DN-"
+          },
+          "billStart": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999999999,
+            "default": 1
+          },
+          "debitNoteStart": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999999999,
+            "default": 1
+          },
+          "requireSeparateApprover": {
+            "type": "boolean",
+            "default": false
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "payablesAccountId",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "CreateBillRequest": {
+        "type": "object",
+        "properties": {
+          "supplierRoleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierReference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "issueDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "supplyDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "taxPoint": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "dueDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "amountsIncludeVat": {
+            "type": "boolean",
+            "default": false
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "description": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                },
+                "quantity": {
+                  "type": "string",
+                  "pattern": "^\\d{1,12}(\\.\\d{1,4})?$",
+                  "default": "1"
+                },
+                "unitPrice": {
+                  "type": "string",
+                  "pattern": "^\\d{1,15}(\\.\\d{1,4})?$"
+                },
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "taxCodeId": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "description",
+                "unitPrice"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 200
+          }
+        },
+        "required": [
+          "supplierRoleId",
+          "supplierReference",
+          "issueDate",
+          "lines"
+        ],
+        "additionalProperties": false
+      },
+      "CreateDebitNoteRequest": {
+        "type": "object",
+        "properties": {
+          "originalBillId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierReference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "issueDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "supplyDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "taxPoint": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 1000
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "description": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                },
+                "quantity": {
+                  "type": "string",
+                  "pattern": "^\\d{1,12}(\\.\\d{1,4})?$",
+                  "default": "1"
+                },
+                "unitPrice": {
+                  "type": "string",
+                  "pattern": "^\\d{1,15}(\\.\\d{1,4})?$"
+                },
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "taxCodeId": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "description",
+                "unitPrice"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 200
+          }
+        },
+        "required": [
+          "originalBillId",
+          "issueDate",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "UpdatePurchaseDraftRequest": {
+        "type": "object",
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "supplierReference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "issueDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "supplyDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "taxPoint": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "dueDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000,
+            "nullable": true
+          },
+          "amountsIncludeVat": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 1000
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "description": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                },
+                "quantity": {
+                  "type": "string",
+                  "pattern": "^\\d{1,12}(\\.\\d{1,4})?$",
+                  "default": "1"
+                },
+                "unitPrice": {
+                  "type": "string",
+                  "pattern": "^\\d{1,15}(\\.\\d{1,4})?$"
+                },
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "taxCodeId": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "description",
+                "unitPrice"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 200
+          }
+        },
+        "required": [
+          "revision"
+        ],
+        "additionalProperties": false
+      },
+      "ApprovePurchaseDocumentRequest": {
+        "type": "object",
+        "properties": {
+          "duplicateOverrideReason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "additionalProperties": false
+      },
+      "DiscardPurchaseDocumentRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "AttachPurchaseDocumentRequest": {
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "documentId"
         ],
         "additionalProperties": false
       },

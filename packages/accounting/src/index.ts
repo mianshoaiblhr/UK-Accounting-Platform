@@ -8,3 +8,4 @@ export * from './fx';
 export * from './revaluation';
 export * from './vat';
 export * from './sales';
+export * from './purchases';

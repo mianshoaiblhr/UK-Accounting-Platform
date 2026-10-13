@@ -1706,3 +1706,127 @@ model SalesReceipt {
   @@index([organisationId, companyId, receiptDate], map: "sales_receipt_date_idx")
   @@map("sales_receipt")
 }
+
+/// Purchase settings (M6a, DEC-033/034): payables control account, numbering (frozen once a document of the kind is numbered), separation of duties.
+model PurchaseSetting {
+  organisationId          String   @map("organisation_id") @db.Uuid
+  companyId               String   @map("company_id") @db.Uuid
+  payablesAccountId    String?  @map("payables_account_id") @db.Uuid
+  billPrefix              String   @default("BILL-") @map("bill_prefix")
+  debitNotePrefix         String   @default("DN-") @map("debit_note_prefix")
+  billStart               Int      @default(1) @map("bill_start")
+  debitNoteStart          Int      @default(1) @map("debit_note_start")
+  requireSeparateApprover Boolean  @default(false) @map("require_separate_approver")
+  updatedByUserId         String?  @map("updated_by_user_id") @db.Uuid
+  updatedAt               DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([organisationId, companyId])
+  @@map("purchase_setting")
+}
+
+/// Last number issued per company and kind; moves forward by one in the approval transaction (no gaps).
+model PurchaseSequence {
+  organisationId String @map("organisation_id") @db.Uuid
+  companyId      String @map("company_id") @db.Uuid
+  kind           String
+  lastNumber     Int    @map("last_number")
+
+  @@id([organisationId, companyId, kind])
+  @@map("purchase_sequence")
+}
+
+/// Bills and debit notes (M6a). DRAFT -> APPROVED (numbered, posted, immutable) | DISCARDED. Outstanding amounts move only through allocations.
+model PurchaseDocument {
+  id                        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId            String    @map("organisation_id") @db.Uuid
+  companyId                 String    @map("company_id") @db.Uuid
+  kind                      String
+  status                    String    @default("DRAFT")
+  number                    Int?
+  documentNumber            String?   @map("document_number")
+  supplierRoleId            String    @map("supplier_role_id") @db.Uuid
+  partyRole                 String    @default("SUPPLIER") @map("party_role")
+  contactId                 String    @map("contact_id") @db.Uuid
+  issueDate                 DateTime  @map("issue_date") @db.Date
+  supplyDate                DateTime? @map("supply_date") @db.Date
+  taxPoint                  DateTime? @map("tax_point") @db.Date
+  dueDate                   DateTime  @map("due_date") @db.Date
+  currency                  String    @db.Char(3)
+  amountsIncludeVat         Boolean   @default(false) @map("amounts_include_vat")
+  supplierReference         String?   @map("supplier_reference")
+  notes                     String?
+  originalBillId         String?   @map("original_bill_id") @db.Uuid
+  debitReason              String?   @map("debit_reason")
+  revision                  Int       @default(1)
+  netTotal                  Decimal   @default(0) @map("net_total") @db.Decimal(19, 4)
+  vatTotal                  Decimal   @default(0) @map("vat_total") @db.Decimal(19, 4)
+  grossTotal                Decimal   @default(0) @map("gross_total") @db.Decimal(19, 4)
+  outstanding               Decimal   @default(0) @db.Decimal(19, 4)
+  functionalGross           Decimal?  @map("functional_gross") @db.Decimal(19, 4)
+  functionalOutstanding     Decimal   @default(0) @map("functional_outstanding") @db.Decimal(19, 4)
+  exchangeRateId            String?   @map("exchange_rate_id") @db.Uuid
+  rate                      Decimal?  @db.Decimal(19, 8)
+  journalId                 String?   @map("journal_id") @db.Uuid
+  contactSnapshot           Json?     @map("contact_snapshot")
+  duplicateOverrideReason   String?   @map("duplicate_override_reason")
+  origin                    String    @default("MANUAL")
+  aiProposalId              String?   @map("ai_proposal_id") @db.Uuid
+  createdByUserId           String    @map("created_by_user_id") @db.Uuid
+  approvedByUserId          String?   @map("approved_by_user_id") @db.Uuid
+  approvedAt                DateTime? @map("approved_at") @db.Timestamptz(3)
+  discardedByUserId         String?   @map("discarded_by_user_id") @db.Uuid
+  discardedAt               DateTime? @map("discarded_at") @db.Timestamptz(3)
+  discardedReason           String?   @map("discarded_reason")
+  createdAt                 DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                 DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@index([organisationId, companyId, kind, status, issueDate], map: "purchase_document_company_idx")
+  @@index([organisationId, companyId, supplierRoleId, status], map: "purchase_document_supplier_idx")
+  @@map("purchase_document")
+}
+
+/// Append-only line revisions of a purchase document; the current revision is the document's `revision`.
+model PurchaseDocumentLine {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  companyId      String   @map("company_id") @db.Uuid
+  documentId     String   @map("document_id") @db.Uuid
+  revision       Int
+  lineNo         Int      @map("line_no")
+  description    String
+  quantity       Decimal  @db.Decimal(18, 4)
+  unitPrice      Decimal  @map("unit_price") @db.Decimal(19, 4)
+  accountId      String   @map("account_id") @db.Uuid
+  taxCodeId      String?  @map("tax_code_id") @db.Uuid
+  net            Decimal  @db.Decimal(19, 4)
+  vat            Decimal  @db.Decimal(19, 4)
+  gross          Decimal  @db.Decimal(19, 4)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([documentId, revision, lineNo], map: "purchase_document_line_key")
+  @@index([organisationId, documentId, revision], map: "purchase_document_line_org_idx")
+  @@map("purchase_document_line")
+}
+
+/// A debit note applied to its bill (DEC-030): immutable; the database moves both outstanding amounts and refuses a negative balance.
+model PurchaseAllocation {
+  id                String   @id @db.Uuid
+  organisationId    String   @map("organisation_id") @db.Uuid
+  companyId         String   @map("company_id") @db.Uuid
+  billId         String   @map("bill_id") @db.Uuid
+  debitId           String   @map("debit_id") @db.Uuid
+  amount            Decimal  @db.Decimal(19, 4)
+  billFunctional Decimal  @map("bill_functional") @db.Decimal(19, 4)
+  debitFunctional  Decimal  @map("debit_functional") @db.Decimal(19, 4)
+  fxDifference      Decimal  @map("fx_difference") @db.Decimal(19, 4)
+  fxJournalId       String?  @map("fx_journal_id") @db.Uuid
+  allocatedOn       DateTime @map("allocated_on") @db.Date
+  createdByUserId   String   @map("created_by_user_id") @db.Uuid
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@index([organisationId, billId], map: "purchase_allocation_bill_idx")
+  @@index([organisationId, debitId], map: "purchase_allocation_debit_idx")
+  @@map("purchase_allocation")
+}

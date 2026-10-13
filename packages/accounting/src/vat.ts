@@ -188,8 +188,8 @@ export class VatService {
     if (!settings.registered) throw unprocessable('The company is not VAT registered', 'not_vat_registered');
     const company = await tx.company.findUniqueOrThrow({ where: { id: companyId }, select: { baseCurrency: true } });
     const minor = (await tx.currency.findUnique({ where: { code: company.baseCurrency } }))?.minorUnits ?? 2;
-    const rows = await tx.$queryRaw<{ journal_id: string; journal_number: number; journal_date: Date; line_no: number; account_id: string; account_code: string; debit: string; credit: string; vat_role: string; tax_point: Date; code: string; direction: string; rate_id: string; rate: string; net_boxes: number[]; vat_boxes: number[]; verified_by: string | null; verified_at: Date | null; provision: string; url: string }[]>`
-      SELECT l.journal_id, j.journal_number, j.journal_date, l.line_no, l.account_id, a.code AS account_code, l.debit::text AS debit, l.credit::text AS credit, l.vat_role, l.tax_point,
+    const rows = await tx.$queryRaw<{ journal_id: string; journal_number: number; journal_date: Date; line_no: number; account_id: string; account_code: string; debit: string; credit: string; vat_role: string; tax_point: Date; code: string; direction: string; source_type: string; rate_id: string; rate: string; net_boxes: number[]; vat_boxes: number[]; verified_by: string | null; verified_at: Date | null; provision: string; url: string }[]>`
+      SELECT l.journal_id, j.journal_number, j.journal_date, j.source_type, l.line_no, l.account_id, a.code AS account_code, l.debit::text AS debit, l.credit::text AS credit, l.vat_role, l.tax_point,
              c.code, c.direction, r.id AS rate_id, r.rate::text AS rate, r.net_boxes::int[] AS net_boxes, r.vat_boxes::int[] AS vat_boxes, r.verified_by_user_id AS verified_by, r.verified_at, r.source_provision AS provision, r.source_url AS url
         FROM journal_line l JOIN journal j ON j.id = l.journal_id AND j.organisation_id = l.organisation_id
         JOIN account a ON a.id = l.account_id AND a.organisation_id = l.organisation_id
@@ -209,7 +209,8 @@ export class VatService {
       rules.set(r.rate_id, { rateId: r.rate_id, code: r.code, rate: money(r.rate).toFixed(4), provision: r.provision, url: r.url, verifiedBy: r.verified_by, verifiedAt: r.verified_at });
       const d = money(r.debit), c = money(r.credit);
       if (r.vat_role === 'NET') {
-        const salesSide = r.direction === 'SALES' || (r.direction === 'BOTH' && c.greaterThan(0));
+        // a document journal knows its side (a sales credit note reduces sales; a purchase debit note reduces purchases); otherwise a BOTH code follows the side
+        const salesSide = r.source_type.startsWith('SALES_') ? true : r.source_type.startsWith('PURCHASE_') ? false : r.direction === 'SALES' || (r.direction === 'BOTH' && c.greaterThan(0));
         for (const b of r.net_boxes) if (salesSide ? b === 6 || b === 8 : b === 7 || b === 9) add(b, salesSide ? c.minus(d) : d.minus(c), r);
       } else {
         const output = r.account_id === settings.outputAccountId && r.vat_role !== 'RC_INPUT';

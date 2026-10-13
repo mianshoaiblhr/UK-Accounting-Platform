@@ -79,6 +79,9 @@ export const JOURNAL_SOURCES: Record<string, JournalSourceDef> = {
   SALES_CREDIT_NOTE: { actors: ['USER'], permission: 'sales:approve', controlAccounts: true, controlKinds: ['TRADE_RECEIVABLES'], subLedger: true, description: 'Approved sales credit note, linked to its invoice' },
   SALES_RECEIPT: { actors: ['USER'], permission: 'sales:approve', controlAccounts: true, controlKinds: ['TRADE_RECEIVABLES', 'BANK', 'CASH'], subLedger: true, description: 'Customer receipt (Dr bank or cash / Cr trade receivables)' },
   SALES_RECEIPT_REVERSAL: { actors: ['USER'], permission: 'sales:approve', controlAccounts: true, controlKinds: ['TRADE_RECEIVABLES', 'BANK', 'CASH'], subLedger: true, description: 'Reversal of an unallocated customer receipt (same rate)' },
+  PURCHASE_BILL: { actors: ['USER'], permission: 'purchases:approve', controlAccounts: true, controlKinds: ['TRADE_PAYABLES'], subLedger: true, description: 'Approved supplier bill (Dr expense or asset / Dr input VAT / Cr trade payables)' },
+  PURCHASE_DEBIT_NOTE: { actors: ['USER'], permission: 'purchases:approve', controlAccounts: true, controlKinds: ['TRADE_PAYABLES'], subLedger: true, description: 'Approved supplier credit (debit note), linked to its bill' },
+  PURCHASE_ALLOCATION_FX: { actors: ['USER'], permission: 'purchases:approve', controlAccounts: true, controlKinds: ['TRADE_PAYABLES'], subLedger: true, description: 'Realised exchange difference of an allocation between purchase documents' },
   SALES_ALLOCATION_FX: { actors: ['USER'], permission: 'sales:approve', controlAccounts: true, controlKinds: ['TRADE_RECEIVABLES'], subLedger: true, description: 'Realised exchange difference of an allocation between sales documents' },
 };
 export const isJournalSource = (s: string) => Object.prototype.hasOwnProperty.call(JOURNAL_SOURCES, s);

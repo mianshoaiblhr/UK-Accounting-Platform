@@ -283,7 +283,7 @@ export class PostingService {
     if (input.lines.some((l) => l.original)) throw unprocessable('VAT on foreign-currency journals waits for the verified rule on the currency of VAT amounts (M4b limitation)', 'vat_foreign_currency_not_supported');
     if (input.lines.some((l) => l.vat || l.generated)) throw unprocessable('VAT lines are added by the service', 'invalid_amount');
     if (input.lines.some((l) => l.vatRate && !l.taxCodeId)) throw unprocessable('A pinned VAT rate needs a VAT code', 'invalid_amount');
-    if (input.lines.some((l) => l.vatRate) && input.sourceType !== 'SALES_CREDIT_NOTE') throw unprocessable('Only a credit note adjusts the VAT of an earlier supply', 'vat_not_applicable');
+    if (input.lines.some((l) => l.vatRate) && !['SALES_CREDIT_NOTE', 'PURCHASE_DEBIT_NOTE'].includes(input.sourceType)) throw unprocessable('Only a credit or debit note adjusts the VAT of an earlier supply', 'vat_not_applicable');
     const company = await tx.company.findUniqueOrThrow({ where: { id: input.companyId }, select: { baseCurrency: true } });
     const minor = (await tx.currency.findUnique({ where: { code: company.baseCurrency } }))?.minorUnits ?? 2;
     const settings = await tx.companyVatSetting.findFirst({ where: { companyId: input.companyId } });
@@ -318,15 +318,18 @@ export class PostingService {
       const facts = { taxCodeId: code.id, taxRateId: rate.id, taxPoint, inclusive, ...(l.vatRate ? { ratePoint: l.vatRate.ratePoint } : {}) };
       const netLineNo = out.length + 1;
       out.push({ accountId: l.accountId, description: l.description, ...side(net), vat: { ...facts, role: 'NET' } });
-      const salesSide = code.direction === 'SALES' || (code.direction === 'BOTH' && !isDebit);
+      // a document journal knows its direction (a sales credit note is still sales; a purchase debit note still purchases); otherwise a BOTH code follows the side
+      const salesSide = input.sourceType.startsWith('SALES_') ? true : input.sourceType.startsWith('PURCHASE_') ? false : code.direction === 'SALES' || (code.direction === 'BOTH' && !isDebit);
       if (vatAmt.greaterThan(0)) {
         out.push({ accountId: salesSide ? settings.outputAccountId : settings.inputAccountId, description: `VAT ${code.code} on line ${i + 1}`, ...side(vatAmt), generated: true, vat: { ...facts, role: 'VAT', netLineNo } });
       }
       if (code.reverseCharge && rate.rate.greaterThan(0)) {
         const rc = vatOnNet(net, rate.rate, minor);
         if (rc.greaterThan(0)) {
-          out.push({ accountId: settings.outputAccountId, description: `Reverse charge output VAT ${code.code} on line ${i + 1}`, debit: '0', credit: fmt(rc, minor), generated: true, vat: { ...facts, inclusive: false, role: 'RC_OUTPUT', netLineNo } });
-          out.push({ accountId: settings.inputAccountId, description: `Reverse charge input VAT ${code.code} on line ${i + 1}`, debit: fmt(rc, minor), credit: '0', generated: true, vat: { ...facts, inclusive: false, role: 'RC_INPUT', netLineNo } });
+          // the pair follows the net line: a purchase (debit) accounts output VAT as a credit and input VAT as a debit; a credit (a debit note) mirrors both
+          const rcAmt = fmt(rc, minor);
+          out.push({ accountId: settings.outputAccountId, description: `Reverse charge output VAT ${code.code} on line ${i + 1}`, debit: isDebit ? '0' : rcAmt, credit: isDebit ? rcAmt : '0', generated: true, vat: { ...facts, inclusive: false, role: 'RC_OUTPUT', netLineNo } });
+          out.push({ accountId: settings.inputAccountId, description: `Reverse charge input VAT ${code.code} on line ${i + 1}`, debit: isDebit ? rcAmt : '0', credit: isDebit ? '0' : rcAmt, generated: true, vat: { ...facts, inclusive: false, role: 'RC_INPUT', netLineNo } });
         }
       }
     }

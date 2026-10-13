@@ -29,9 +29,10 @@ export class PeriodService {
     if (a.action === 'close') {
       await this.assertBalanced(tx, a.companyId, p.endDate);
       await this.assertFxControls(tx, a, p);
-      drafts = await tx.salesDocument.count({ where: { companyId: a.companyId, status: 'DRAFT', issueDate: { gte: p.startDate, lte: p.endDate } } });
-      // close control (MAN-ACC-08, M5a): unposted sales documents dated in the period are listed and block the close unless acknowledged
-      if (drafts > 0 && !a.acknowledgeDraftDocuments) throw conflict(`${drafts} draft sales document(s) are dated in this period and not approved. Approve or discard them, or close with acknowledgeDraftDocuments = true`, 'unposted_documents', { drafts });
+      const inPeriod = { companyId: a.companyId, status: 'DRAFT', issueDate: { gte: p.startDate, lte: p.endDate } };
+      drafts = await tx.salesDocument.count({ where: inPeriod }) + await tx.purchaseDocument.count({ where: inPeriod });
+      // close control (MAN-ACC-08, M5a/M6a): unposted sales and purchase documents dated in the period block the close unless acknowledged
+      if (drafts > 0 && !a.acknowledgeDraftDocuments) throw conflict(`${drafts} draft sales or purchase document(s) are dated in this period and not approved. Approve or discard them, or close with acknowledgeDraftDocuments = true`, 'unposted_documents', { drafts });
     }
     const upd = await tx.accountingPeriod.updateMany({ where: { id: p.id, status: rule.from }, data: { status: rule.to, statusChangedAt: new Date(), statusChangedByUserId: a.userId, statusReason: a.reason?.trim() ?? null } });
     if (upd.count !== 1) throw conflict('The period changed concurrently', 'invalid_period_state');
