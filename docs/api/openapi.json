@@ -15288,6 +15288,639 @@
         }
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/purchases/payments": {
+      "post": {
+        "operationId": "Purchases_recordPayment",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Recorded and posted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchasePayment"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Purchases"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "purchases:approve"
+        ],
+        "summary": "Record a supplier payment (posted: Dr payables / Cr bank or cash), optionally allocated to bills; the rest stays a prepayment. Flagged when the supplier's stored bank details are unverified",
+        "description": "**Requires permission:** `purchases:approve`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentRequest"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "Purchases_payments",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "supplierRoleId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "POSTED",
+                "REVERSED"
+              ]
+            }
+          },
+          {
+            "name": "unallocated",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "bankDetailsUnverified",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchasePaymentPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Purchases"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "purchases:read"
+        ],
+        "summary": "Supplier payments (filter by unallocated or by unverified bank details for review)",
+        "description": "**Requires permission:** `purchases:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/purchases/payments/{paymentId}": {
+      "get": {
+        "operationId": "Purchases_payment",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "paymentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchasePayment"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Purchases"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "purchases:read"
+        ],
+        "summary": "One payment with its allocations",
+        "description": "**Requires permission:** `purchases:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/purchases/payments/{paymentId}/allocations": {
+      "post": {
+        "operationId": "Purchases_allocatePayment",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "paymentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Allocated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchasePayment"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Purchases"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "purchases:approve"
+        ],
+        "summary": "Allocate an unallocated payment to bills of the same supplier and currency (realised FX when rates differ)",
+        "description": "**Requires permission:** `purchases:approve`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllocatePaymentRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/purchases/payments/{paymentId}/reverse": {
+      "post": {
+        "operationId": "Purchases_reversePayment",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "paymentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reversed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchasePayment"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Purchases"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "purchases:approve"
+        ],
+        "summary": "Reverse an unallocated payment (reason required; mirrored at the same rate)",
+        "description": "**Requires permission:** `purchases:approve`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReversePaymentRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/purchases/suppliers/{roleId}/statement": {
+      "get": {
+        "operationId": "Purchases_statement",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "roleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierStatement"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Purchases"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "purchases:read"
+        ],
+        "summary": "Supplier ledger statement for a date range, per currency (what is owed; credit-normal)",
+        "description": "**Requires permission:** `purchases:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/purchases/aged-payables": {
+      "get": {
+        "operationId": "Purchases_aged",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "asOf",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "supplierRoleId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ageing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgedPayables"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Purchases"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "purchases:read"
+        ],
+        "summary": "Aged payables as at a date by days past due, with unallocated payments and debit notes",
+        "description": "**Requires permission:** `purchases:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/organisations/{organisationId}/companies/{companyId}/purchases/reconciliation": {
       "get": {
         "operationId": "Purchases_reconciliation",
@@ -22277,6 +22910,728 @@
         ],
         "additionalProperties": false
       },
+      "PurchasePayment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierRoleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "contactId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "paymentDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "amount": {
+            "type": "string"
+          },
+          "unallocated": {
+            "type": "string"
+          },
+          "functional": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "string"
+              },
+              "unallocated": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "amount",
+              "unallocated"
+            ],
+            "additionalProperties": false
+          },
+          "rate": {
+            "type": "string",
+            "nullable": true
+          },
+          "exchangeRateId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "bankAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference": {
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "journalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "duplicateOverrideReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankDetailsUnverified": {
+            "type": "boolean",
+            "description": "The supplier's stored bank details were UNVERIFIED when the payment was recorded (DEC-035): review it"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "POSTED",
+              "REVERSED"
+            ]
+          },
+          "reversalJournalId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "reversedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "reversedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "reversedReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "allocations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "billId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "debitId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "paymentId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "amount": {
+                  "type": "string"
+                },
+                "billFunctional": {
+                  "type": "string"
+                },
+                "debitFunctional": {
+                  "type": "string"
+                },
+                "realisedFx": {
+                  "type": "string",
+                  "description": "Company currency; positive = gain, negative = loss"
+                },
+                "fxJournalId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "allocatedOn": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "billId",
+                "debitId",
+                "paymentId",
+                "amount",
+                "billFunctional",
+                "debitFunctional",
+                "realisedFx",
+                "fxJournalId",
+                "allocatedOn",
+                "createdByUserId",
+                "createdAt"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "supplierRoleId",
+          "contactId",
+          "paymentDate",
+          "currency",
+          "amount",
+          "unallocated",
+          "functional",
+          "rate",
+          "exchangeRateId",
+          "bankAccountId",
+          "reference",
+          "notes",
+          "journalId",
+          "duplicateOverrideReason",
+          "bankDetailsUnverified",
+          "status",
+          "reversalJournalId",
+          "reversedByUserId",
+          "reversedAt",
+          "reversedReason",
+          "createdByUserId",
+          "createdAt",
+          "allocations"
+        ],
+        "additionalProperties": false
+      },
+      "PurchasePaymentPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "supplierRoleId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "contactId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "paymentDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "currency": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 3
+                },
+                "amount": {
+                  "type": "string"
+                },
+                "unallocated": {
+                  "type": "string"
+                },
+                "functional": {
+                  "type": "object",
+                  "properties": {
+                    "amount": {
+                      "type": "string"
+                    },
+                    "unallocated": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "amount",
+                    "unallocated"
+                  ],
+                  "additionalProperties": false
+                },
+                "rate": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "exchangeRateId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "bankAccountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "reference": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "notes": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "journalId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "duplicateOverrideReason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "bankDetailsUnverified": {
+                  "type": "boolean",
+                  "description": "The supplier's stored bank details were UNVERIFIED when the payment was recorded (DEC-035): review it"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "POSTED",
+                    "REVERSED"
+                  ]
+                },
+                "reversalJournalId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "reversedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "reversedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "reversedReason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "supplierRoleId",
+                "contactId",
+                "paymentDate",
+                "currency",
+                "amount",
+                "unallocated",
+                "functional",
+                "rate",
+                "exchangeRateId",
+                "bankAccountId",
+                "reference",
+                "notes",
+                "journalId",
+                "duplicateOverrideReason",
+                "bankDetailsUnverified",
+                "status",
+                "reversalJournalId",
+                "reversedByUserId",
+                "reversedAt",
+                "reversedReason",
+                "createdByUserId",
+                "createdAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false
+      },
+      "SupplierStatement": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierRoleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplier": {
+            "type": "object",
+            "properties": {
+              "roleId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "CUSTOMER",
+                  "SUPPLIER"
+                ]
+              },
+              "contactId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "accountCode": {
+                "type": "string",
+                "nullable": true
+              },
+              "name": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "PERSON",
+                  "ORGANISATION"
+                ]
+              },
+              "vatNumber": {
+                "type": "string",
+                "nullable": true
+              },
+              "email": {
+                "type": "string",
+                "nullable": true
+              },
+              "address": {
+                "type": "object",
+                "properties": {
+                  "line1": {
+                    "type": "string"
+                  },
+                  "line2": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "line3": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "city": {
+                    "type": "string"
+                  },
+                  "region": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "postcode": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "countryCode": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "line1",
+                  "line2",
+                  "line3",
+                  "city",
+                  "region",
+                  "postcode",
+                  "countryCode"
+                ],
+                "additionalProperties": false,
+                "nullable": true
+              },
+              "capturedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "roleId",
+              "role",
+              "contactId",
+              "accountCode",
+              "name",
+              "kind",
+              "vatNumber",
+              "email",
+              "address",
+              "capturedAt"
+            ],
+            "additionalProperties": false
+          },
+          "from": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "to": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "currencies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "currency": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 3
+                },
+                "opening": {
+                  "type": "string"
+                },
+                "closing": {
+                  "type": "string",
+                  "description": "Owed to the supplier (credit-normal)"
+                },
+                "lines": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "BILL",
+                          "DEBIT_NOTE",
+                          "PAYMENT",
+                          "PAYMENT_REVERSAL"
+                        ]
+                      },
+                      "reference": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "documentNumber": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "documentId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "dueDate": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                        "nullable": true
+                      },
+                      "debit": {
+                        "type": "string"
+                      },
+                      "credit": {
+                        "type": "string"
+                      },
+                      "balance": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "date",
+                      "type",
+                      "reference",
+                      "documentNumber",
+                      "documentId",
+                      "dueDate",
+                      "debit",
+                      "credit",
+                      "balance"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "currency",
+                "opening",
+                "closing",
+                "lines"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "companyId",
+          "supplierRoleId",
+          "supplier",
+          "from",
+          "to",
+          "currencies"
+        ],
+        "additionalProperties": false
+      },
+      "AgedPayables": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "asOf": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "suppliers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "notDue": {
+                  "type": "string"
+                },
+                "days1to30": {
+                  "type": "string"
+                },
+                "days31to60": {
+                  "type": "string"
+                },
+                "days61to90": {
+                  "type": "string"
+                },
+                "over90": {
+                  "type": "string"
+                },
+                "unallocatedDebits": {
+                  "type": "string"
+                },
+                "total": {
+                  "type": "string"
+                },
+                "currency": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 3
+                },
+                "supplierRoleId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "accountCode": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "name": {
+                  "type": "string",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "notDue",
+                "days1to30",
+                "days31to60",
+                "days61to90",
+                "over90",
+                "unallocatedDebits",
+                "total",
+                "currency",
+                "supplierRoleId",
+                "accountCode",
+                "name"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "totals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "notDue": {
+                  "type": "string"
+                },
+                "days1to30": {
+                  "type": "string"
+                },
+                "days31to60": {
+                  "type": "string"
+                },
+                "days61to90": {
+                  "type": "string"
+                },
+                "over90": {
+                  "type": "string"
+                },
+                "unallocatedDebits": {
+                  "type": "string"
+                },
+                "total": {
+                  "type": "string"
+                },
+                "currency": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 3
+                }
+              },
+              "required": [
+                "notDue",
+                "days1to30",
+                "days31to60",
+                "days61to90",
+                "over90",
+                "unallocatedDebits",
+                "total",
+                "currency"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "companyId",
+          "asOf",
+          "suppliers",
+          "totals"
+        ],
+        "additionalProperties": false
+      },
       "PurchaseSettings": {
         "type": "object",
         "properties": {
@@ -22726,7 +24081,13 @@
                 },
                 "debitId": {
                   "type": "string",
-                  "format": "uuid"
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "paymentId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
                 },
                 "amount": {
                   "type": "string"
@@ -22763,6 +24124,7 @@
                 "id",
                 "billId",
                 "debitId",
+                "paymentId",
                 "amount",
                 "billFunctional",
                 "debitFunctional",
@@ -31464,6 +32826,133 @@
         },
         "required": [
           "documentId"
+        ],
+        "additionalProperties": false
+      },
+      "CreatePaymentRequest": {
+        "type": "object",
+        "properties": {
+          "supplierRoleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "paymentDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^\\d{1,15}(\\.\\d{1,4})?$"
+          },
+          "bankAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "rateId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "allocations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "billId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "amount": {
+                  "type": "string",
+                  "pattern": "^\\d{1,15}(\\.\\d{1,4})?$"
+                }
+              },
+              "required": [
+                "billId",
+                "amount"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 100,
+            "default": []
+          },
+          "duplicateOverrideReason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "supplierRoleId",
+          "paymentDate",
+          "amount",
+          "bankAccountId"
+        ],
+        "additionalProperties": false
+      },
+      "AllocatePaymentRequest": {
+        "type": "object",
+        "properties": {
+          "allocations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "billId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "amount": {
+                  "type": "string",
+                  "pattern": "^\\d{1,15}(\\.\\d{1,4})?$"
+                }
+              },
+              "required": [
+                "billId",
+                "amount"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 100
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          }
+        },
+        "required": [
+          "allocations"
+        ],
+        "additionalProperties": false
+      },
+      "ReversePaymentRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 1000
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          }
+        },
+        "required": [
+          "reason"
         ],
         "additionalProperties": false
       },

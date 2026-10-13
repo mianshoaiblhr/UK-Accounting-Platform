@@ -169,3 +169,21 @@ describe('purchases through the API (M6a)', () => {
     expect((await as(viewer, 'get', c('/purchases/documents'))).status).toBe(403);
   });
 });
+
+describe('supplier payments through the API (M6b)', () => {
+  it('an accountant pays a bill; a bookkeeper cannot; statement and ageing are readable; a supplier with a prepayment cannot end', async () => {
+    const contact = (await as(owner, 'post', '/contacts', { kind: 'ORGANISATION', name: 'API Paid Supplier Ltd' })).body;
+    const role = (await as(owner, 'post', c('/contact-roles'), { contactId: contact.id, role: 'SUPPLIER', accountCode: 'APIPS', paymentTermsDays: 30, defaultExpenseAccountId: acc['6310'] })).body.id;
+    const d = await as(bookkeeper, 'post', c('/purchases/bills'), { supplierRoleId: role, supplierReference: 'PS-1', issueDate: '2026-07-01', lines: [{ description: 'Service', unitPrice: '80.00' }] });
+    const b = (await as(accountant, 'post', c(`/purchases/documents/${d.body.id}/approve`), {})).body;
+    const body = { supplierRoleId: role, paymentDate: '2026-07-10', amount: '100.00', bankAccountId: acc['1200'], reference: 'BACS-PS-1', allocations: [{ billId: b.id, amount: '80.00' }] };
+    expect((await as(bookkeeper, 'post', c('/purchases/payments'), body)).status).toBe(403);
+    const p = await as(accountant, 'post', c('/purchases/payments'), body);
+    expect(p.status).toBe(201);
+    expect(p.body).toMatchObject({ unallocated: '20.00', bankDetailsUnverified: false, allocations: [{ billId: b.id, amount: '80.0000' }] });
+    expect((await as(reviewer, 'get', c(`/purchases/documents/${b.id}`))).body.paymentStatus).toBe('PAID');
+    expect((await as(reviewer, 'get', `${c(`/purchases/suppliers/${role}/statement`)}?from=2026-07-01&to=2026-07-31`)).body.currencies[0]).toMatchObject({ closing: '-20.00' });
+    expect((await as(reviewer, 'get', `${c('/purchases/aged-payables')}?asOf=2026-07-31&supplierRoleId=${role}`)).body.suppliers[0]).toMatchObject({ unallocatedDebits: '-20.00' });
+    expect((await as(owner, 'post', c(`/contact-roles/${role}/end`), { reason: 'Stopped buying from them' })).body.code).toBe('contact_role_has_open_documents');
+  });
+});

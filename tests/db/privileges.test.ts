@@ -47,7 +47,8 @@ const FORBIDDEN: Record<string, string[]> = {
   purchase_sequence: ['DELETE', 'TRUNCATE'],
   purchase_document: ['DELETE', 'TRUNCATE'],
   purchase_document_line: ['UPDATE', 'DELETE', 'TRUNCATE'],
-  purchase_allocation: ['UPDATE', 'DELETE', 'TRUNCATE'],           // reversed, never deleted; immutable by trigger      // POSTED -> REVERSED once, never removed
+  purchase_allocation: ['UPDATE', 'DELETE', 'TRUNCATE'],
+  purchase_payment: ['DELETE', 'TRUNCATE'],        // reversed, never deleted; immutable by trigger           // reversed, never deleted; immutable by trigger      // POSTED -> REVERSED once, never removed
   notification_preference: ['DELETE', 'TRUNCATE'], // toggled, never removed
   notification_delivery: ['DELETE', 'TRUNCATE'],   // planned deliveries are final once handled
   outbox_event: ['TRUNCATE'],                    // DELETE is system-context only (RLS) and trigger-guarded

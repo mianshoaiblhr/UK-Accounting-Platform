@@ -380,19 +380,34 @@ export class PurchasesService {
     return this.get(tx, a.companyId, d.id);
   }
 
-  // ───── Allocation (DEC-030 mirrored): payables are credit-normal, so a bill that carried more than the debit note releases leaves a credit: a gain ─────
-  async allocate(tx: Tx, a: { organisationId: string; companyId: string; actor: PurchaseActor; billId: string; debitId: string; amount: Money; date: string }) {
+  // ───── Allocation (DEC-030 mirrored): payables are credit-normal, so a bill that carried more than the debit note or payment releases leaves a credit: a gain ─────
+  async allocate(tx: Tx, a: { organisationId: string; companyId: string; actor: PurchaseActor; billId: string; debitId?: string; paymentId?: string; amount: Money; date: string }) {
     await this.need(a.actor, 'purchases:approve', a.companyId);
-    await tx.$queryRaw`SELECT id FROM purchase_document WHERE id IN (${a.billId}::uuid, ${a.debitId}::uuid) ORDER BY id FOR UPDATE`;
-    const [bill, dn] = await Promise.all([tx.purchaseDocument.findFirst({ where: { id: a.billId, companyId: a.companyId } }), tx.purchaseDocument.findFirst({ where: { id: a.debitId, companyId: a.companyId } })]);
-    if (!bill || !dn) throw notFound('Purchase document not found');
-    if (bill.status !== 'APPROVED' || dn.status !== 'APPROVED') throw unprocessable('Only approved documents are allocated', 'document_not_approved');
+    if (!!a.debitId === !!a.paymentId) throw unprocessable('An allocation applies either a debit note or a payment', 'invalid_allocation');
+    await tx.$queryRaw`SELECT id FROM purchase_document WHERE id IN (${a.billId}::uuid, ${a.debitId ?? a.billId}::uuid) ORDER BY id FOR UPDATE`;
+    if (a.paymentId) await tx.$queryRaw`SELECT id FROM purchase_payment WHERE id = ${a.paymentId}::uuid FOR UPDATE`;
+    const bill = await tx.purchaseDocument.findFirst({ where: { id: a.billId, companyId: a.companyId } });
+    if (!bill || bill.kind !== 'BILL') throw notFound('Bill not found');
+    if (bill.status !== 'APPROVED') throw unprocessable('Only approved bills are allocated to', 'document_not_approved');
+    let src: { label: string; supplierRoleId: string; currency: string; outstanding: Money; functionalOutstanding: Money };
+    if (a.debitId) {
+      const dn = await tx.purchaseDocument.findFirst({ where: { id: a.debitId, companyId: a.companyId } });
+      if (!dn) throw notFound('Purchase document not found');
+      if (dn.status !== 'APPROVED') throw unprocessable('Only approved documents are allocated', 'document_not_approved');
+      src = { label: dn.documentNumber!, supplierRoleId: dn.supplierRoleId, currency: dn.currency, outstanding: dn.outstanding, functionalOutstanding: dn.functionalOutstanding };
+    } else {
+      const p = await tx.purchasePayment.findFirst({ where: { id: a.paymentId!, companyId: a.companyId } });
+      if (!p) throw notFound('Payment not found');
+      if (p.status !== 'POSTED') throw unprocessable('A reversed payment cannot be allocated', 'payment_reversed');
+      src = { label: `payment ${p.reference ?? isoDay(p.paymentDate)}`, supplierRoleId: p.supplierRoleId, currency: p.currency, outstanding: p.outstanding, functionalOutstanding: p.functionalOutstanding };
+    }
+    if (src.supplierRoleId !== bill.supplierRoleId || src.currency !== bill.currency) throw unprocessable('An allocation joins documents of one supplier and currency', 'allocation_mismatch');
     if (!a.amount.greaterThan(0)) throw unprocessable('An allocation must be greater than zero', 'invalid_amount');
-    if (a.amount.greaterThan(bill.outstanding) || a.amount.greaterThan(dn.outstanding)) throw unprocessable('An allocation cannot exceed what is outstanding on either document', 'allocation_exceeds_outstanding');
+    if (a.amount.greaterThan(bill.outstanding) || a.amount.greaterThan(src.outstanding)) throw unprocessable('An allocation cannot exceed what is outstanding on either side', 'allocation_exceeds_outstanding');
     const company = await this.company(tx, a.companyId);
     const fm = await this.minorOf(tx, company.baseCurrency);
     const billFunctional = releaseShare(bill.functionalOutstanding, bill.outstanding, a.amount, fm);
-    const debitFunctional = releaseShare(dn.functionalOutstanding, dn.outstanding, a.amount, fm);
+    const debitFunctional = releaseShare(src.functionalOutstanding, src.outstanding, a.amount, fm);
     const diff = billFunctional.minus(debitFunctional);
     const id = randomUUID();
     let fxJournalId: string | null = null;
@@ -403,8 +418,8 @@ export class PurchasesService {
       const amt = fmt(diff.abs(), fm);
       const gain = diff.greaterThan(0);
       const j = await this.posting.post(tx, {
-        organisationId: a.organisationId, companyId: a.companyId, journalDate: a.date, sourceType: 'PURCHASE_ALLOCATION_FX', sourceId: id, sourceReference: `${bill.documentNumber}/${dn.documentNumber}`,
-        description: `Realised exchange ${gain ? 'gain' : 'loss'}: ${dn.documentNumber} allocated to ${bill.documentNumber} (${fmt(a.amount, await this.minorOf(tx, bill.currency))} ${bill.currency})`.slice(0, 500),
+        organisationId: a.organisationId, companyId: a.companyId, journalDate: a.date, sourceType: 'PURCHASE_ALLOCATION_FX', sourceId: id, sourceReference: `${bill.documentNumber}/${src.label}`.slice(0, 100),
+        description: `Realised exchange ${gain ? 'gain' : 'loss'}: ${src.label} allocated to ${bill.documentNumber} (${fmt(a.amount, await this.minorOf(tx, bill.currency))} ${bill.currency})`.slice(0, 500),
         lines: [
           { accountId: settings.payablesAccountId!, debit: gain ? amt : '0', credit: gain ? '0' : amt, description: `FX on ${bill.documentNumber}`, adjustsCurrency: bill.currency },
           { accountId: fx.realisedAccountId, debit: gain ? '0' : amt, credit: gain ? amt : '0', description: 'Realised FX' },
@@ -413,15 +428,15 @@ export class PurchasesService {
       });
       fxJournalId = j.id;
     }
-    const row = await tx.purchaseAllocation.create({ data: { id, organisationId: a.organisationId, companyId: a.companyId, billId: bill.id, debitId: dn.id, amount: a.amount,
+    const row = await tx.purchaseAllocation.create({ data: { id, organisationId: a.organisationId, companyId: a.companyId, billId: bill.id, debitId: a.debitId ?? null, paymentId: a.paymentId ?? null, amount: a.amount,
       billFunctional, debitFunctional, fxDifference: diff, fxJournalId, allocatedOn: toDate(a.date), createdByUserId: a.actor.userId } });
     await this.audit(tx, { action: 'purchase_allocation.created', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actor.userId, entityType: 'purchase_allocation', entityId: id,
-      after: { bill: bill.documentNumber, debitNote: dn.documentNumber, amount: a.amount.toFixed(4), currency: bill.currency, realisedFx: fmt(diff, fm), fxJournalId } });
+      after: { bill: bill.documentNumber, credit: src.label, paymentId: a.paymentId ?? null, amount: a.amount.toFixed(4), currency: bill.currency, realisedFx: fmt(diff, fm), fxJournalId } });
     return this.allocationView(row, fm);
   }
 
   private allocationView(r: AllocRow, fm: number) {
-    return { id: r.id, billId: r.billId, debitId: r.debitId, amount: r.amount.toFixed(4), billFunctional: fmt(r.billFunctional, fm), debitFunctional: fmt(r.debitFunctional, fm),
+    return { id: r.id, billId: r.billId, debitId: r.debitId, paymentId: r.paymentId, amount: r.amount.toFixed(4), billFunctional: fmt(r.billFunctional, fm), debitFunctional: fmt(r.debitFunctional, fm),
       /** Positive = gain, negative = loss, in the company currency. */
       realisedFx: fmt(r.fxDifference, fm), fxJournalId: r.fxJournalId, allocatedOn: isoDay(r.allocatedOn), createdByUserId: r.createdByUserId, createdAt: r.createdAt };
   }
@@ -480,6 +495,7 @@ export class PurchasesService {
     const settings = await tx.purchaseSetting.findFirst({ where: { companyId } });
     if (!settings?.payablesAccountId) throw unprocessable('Set the payables control account in the purchase settings first', 'purchase_settings_missing');
     const docs = await tx.purchaseDocument.groupBy({ by: ['currency', 'kind'], where: { companyId, status: 'APPROVED' }, _sum: { outstanding: true, functionalOutstanding: true } });
+    const payments = await tx.purchasePayment.groupBy({ by: ['currency'], where: { companyId, status: 'POSTED' }, _sum: { outstanding: true, functionalOutstanding: true } });
     const ledger = await tx.$queryRaw<{ currency: string; source_type: string; original: string; functional: string }[]>`
       SELECT coalesce(l.original_currency, l.adjusts_currency, ${company.baseCurrency}) AS currency, j.source_type,
              sum(CASE WHEN l.original_currency IS NOT NULL THEN l.original_credit - l.original_debit WHEN l.adjusts_currency IS NOT NULL THEN 0 ELSE l.credit - l.debit END)::text AS original,
@@ -487,12 +503,13 @@ export class PurchasesService {
         FROM journal_line l JOIN journal j ON j.id = l.journal_id AND j.organisation_id = l.organisation_id
        WHERE l.company_id = ${companyId}::uuid AND l.account_id = ${settings.payablesAccountId}::uuid
        GROUP BY 1, 2`;
-    const currencies = [...new Set([...docs.map((d) => d.currency), ...ledger.map((l) => l.currency)])].sort();
-    const SUB = new Set(['PURCHASE_BILL', 'PURCHASE_DEBIT_NOTE', 'PURCHASE_ALLOCATION_FX']);
+    const currencies = [...new Set([...docs.map((d) => d.currency), ...payments.map((x) => x.currency), ...ledger.map((l) => l.currency)])].sort();
+    const SUB = new Set(['PURCHASE_BILL', 'PURCHASE_DEBIT_NOTE', 'PURCHASE_ALLOCATION_FX', 'PURCHASE_PAYMENT', 'PURCHASE_PAYMENT_REVERSAL']);
     const rows = [];
     for (const c of currencies) {
       const minor = await this.minorOf(tx, c);
-      const sumDocs = (k: 'outstanding' | 'functionalOutstanding') => docs.filter((d) => d.currency === c).reduce((t, d) => (d.kind === 'BILL' ? t.plus(d._sum[k] ?? 0) : t.minus(d._sum[k] ?? 0)), ZERO);
+      const sumDocs = (k: 'outstanding' | 'functionalOutstanding') => docs.filter((d) => d.currency === c).reduce((t, d) => (d.kind === 'BILL' ? t.plus(d._sum[k] ?? 0) : t.minus(d._sum[k] ?? 0)), ZERO)
+        .minus(money(payments.find((x) => x.currency === c)?._sum[k] ?? 0));
       const led = ledger.filter((l) => l.currency === c);
       const sub = (rowsOf: typeof led, k: 'original' | 'functional') => rowsOf.reduce((t, l) => t.plus(money(l[k])), ZERO);
       const fromDocs = led.filter((l) => SUB.has(l.source_type)), other = led.filter((l) => !SUB.has(l.source_type));
@@ -507,5 +524,215 @@ export class PurchasesService {
     }
     return { companyId, payablesAccountId: settings.payablesAccountId, functionalCurrency: company.baseCurrency, currencies: rows,
       reconciled: rows.every((r) => money(r.difference).isZero() && money(r.differenceFunctional).isZero()) };
+  }
+
+  // ───── Supplier payments (M6b, DEC-035): posted when recorded; allocated at entry or later; reversed only while unallocated ─────
+  private async bankAccount(tx: Tx, companyId: string, id: string, date: string) {
+    const a = await tx.account.findFirst({ where: { id, companyId } });
+    if (!a) throw unprocessable('The bank account does not exist in this company', 'unknown_account');
+    if (!['CURRENT_ASSET_BANK', 'CURRENT_ASSET_CASH'].includes(a.subtype)) throw unprocessable(`Account ${a.code} is not a bank or cash account`, 'not_a_bank_account');
+    const d = toDate(date);
+    if ((a.activeFrom && d < a.activeFrom) || (a.activeTo && d > a.activeTo)) throw unprocessable(`Account ${a.code} is not active on ${date}`, 'account_inactive');
+  }
+
+  async recordPayment(tx: Tx, a: { organisationId: string; companyId: string; actor: PurchaseActor; supplierRoleId: string; paymentDate: string; currency?: string; amount: string; bankAccountId: string;
+    reference?: string; notes?: string; rateId?: string; allocations: { billId: string; amount: string }[]; duplicateOverrideReason?: string }) {
+    await this.need(a.actor, 'purchases:approve', a.companyId);
+    const company = await this.company(tx, a.companyId);
+    const { role, profile } = await this.supplier(tx, a.companyId, a.supplierRoleId);
+    if (role.status !== 'ACTIVE') throw conflict('An ended supplier role cannot receive new payments; reactivate it first', 'contact_role_ended');
+    const settings = await tx.purchaseSetting.findFirst({ where: { companyId: a.companyId } });
+    if (!settings?.payablesAccountId) throw unprocessable('Set the payables control account in the purchase settings first', 'purchase_settings_missing');
+    const currency = a.currency ?? company.baseCurrency;
+    const cur = await tx.currency.findUnique({ where: { code: currency } });
+    if (!cur) throw unprocessable(`${currency} is not a known currency`, 'unknown_currency');
+    const amount = money(a.amount);
+    if (!amount.greaterThan(0) || amount.decimalPlaces() > cur.minorUnits) throw unprocessable(`The amount must be greater than zero with at most ${cur.minorUnits} decimal places`, 'invalid_amount');
+    if (a.rateId && currency === company.baseCurrency) throw unprocessable('A rate applies only to foreign-currency payments', 'rate_not_applicable');
+    await this.bankAccount(tx, a.companyId, a.bankAccountId, a.paymentDate);
+    const allocated = a.allocations.reduce((t, x) => t.plus(money(x.amount)), ZERO);
+    if (allocated.greaterThan(amount)) throw unprocessable('The allocations exceed the payment', 'allocation_exceeds_outstanding');
+    if (new Set(a.allocations.map((x) => x.billId)).size !== a.allocations.length) throw unprocessable('Each bill appears once in the allocations', 'invalid_allocation');
+    const dups = await tx.purchasePayment.findMany({ where: { companyId: a.companyId, supplierRoleId: role.id, status: 'POSTED',
+      OR: [{ paymentDate: toDate(a.paymentDate), currency, amount }, ...(a.reference ? [{ reference: a.reference }] : [])] }, select: { id: true }, take: 5 });
+    if (dups.length > 0 && !a.duplicateOverrideReason) throw conflict('Possible duplicate of an earlier payment to this supplier (same date, currency and amount, or the same reference); record it with a duplicateOverrideReason if it is genuine', 'possible_duplicate', { payments: dups.map((d) => d.id) });
+    // DEC-035: recorded, never blocked (the money has gone); the flag lets a review catch payment diversion
+    const bankDetailsUnverified = profile?.bankDetailsStatus === 'UNVERIFIED';
+    const id = randomUUID();
+    const name = (await tx.contact.findFirstOrThrow({ where: { id: role.contactId }, select: { name: true } })).name;
+    const amt = fmt(amount, cur.minorUnits);
+    const j = await this.posting.post(tx, {
+      organisationId: a.organisationId, companyId: a.companyId, journalDate: a.paymentDate, sourceType: 'PURCHASE_PAYMENT', sourceId: id, sourceReference: a.reference ?? null,
+      description: `Payment to ${name}${a.reference ? ` (${a.reference})` : ''}`.slice(0, 500),
+      ...(currency !== company.baseCurrency ? { currency, ...(a.rateId ? { rateId: a.rateId } : {}) } : {}),
+      lines: [
+        { accountId: settings.payablesAccountId, debit: amt, credit: '0', description: `Payment ${name}`.slice(0, 300) },
+        { accountId: a.bankAccountId, debit: '0', credit: amt, description: `Payment ${name}`.slice(0, 300) },
+      ],
+      idempotencyKey: `purchase-payment:${id}`, actor: a.actor,
+    });
+    const pay = await tx.journalLine.findFirstOrThrow({ where: { journalId: j.id, lineNo: 1 } });
+    await tx.purchasePayment.create({ data: { id, organisationId: a.organisationId, companyId: a.companyId, supplierRoleId: role.id, contactId: role.contactId, paymentDate: toDate(a.paymentDate), currency,
+      amount, outstanding: amount, functionalAmount: pay.debit, functionalOutstanding: pay.debit, bankAccountId: a.bankAccountId, exchangeRateId: pay.exchangeRateId, rate: pay.rate,
+      reference: a.reference ?? null, notes: a.notes ?? null, journalId: j.id, duplicateOverrideReason: dups.length > 0 ? a.duplicateOverrideReason!.trim() : null, bankDetailsUnverified, createdByUserId: a.actor.userId } });
+    for (const x of a.allocations) {
+      const b = await tx.purchaseDocument.findFirst({ where: { id: x.billId, companyId: a.companyId }, select: { issueDate: true } });
+      if (!b) throw notFound('Bill not found');
+      const date = isoDay(b.issueDate) > a.paymentDate ? isoDay(b.issueDate) : a.paymentDate;
+      await this.allocate(tx, { organisationId: a.organisationId, companyId: a.companyId, actor: a.actor, billId: x.billId, paymentId: id, amount: money(x.amount), date });
+    }
+    await this.audit(tx, { action: 'purchase_payment.recorded', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actor.userId, entityType: 'purchase_payment', entityId: id,
+      after: { supplierRoleId: role.id, paymentDate: a.paymentDate, currency, amount: amt, allocated: fmt(allocated, cur.minorUnits), journalId: j.id, bankDetailsUnverified }, reason: a.duplicateOverrideReason ?? null,
+      metadata: { duplicateOverride: dups.length > 0, bankDetailsUnverified } });
+    await publishEvent(tx, Events.purchasePaymentRecorded, { aggregateId: id, organisationId: a.organisationId, actorUserId: a.actor.userId,
+      payload: { paymentId: id, companyId: a.companyId, supplierRoleId: role.id, paymentDate: a.paymentDate, currency, amount: amt, allocated: fmt(allocated, cur.minorUnits), journalId: j.id, bankDetailsUnverified } });
+    return this.getPayment(tx, a.companyId, id);
+  }
+
+  async allocatePayment(tx: Tx, a: { organisationId: string; companyId: string; actor: PurchaseActor; paymentId: string; allocations: { billId: string; amount: string }[]; date?: string }) {
+    await this.need(a.actor, 'purchases:approve', a.companyId);
+    const p = await tx.purchasePayment.findFirst({ where: { id: a.paymentId, companyId: a.companyId } });
+    if (!p) throw notFound('Payment not found');
+    if (new Set(a.allocations.map((x) => x.billId)).size !== a.allocations.length) throw unprocessable('Each bill appears once in the allocations', 'invalid_allocation');
+    for (const x of a.allocations) {
+      const b = await tx.purchaseDocument.findFirst({ where: { id: x.billId, companyId: a.companyId }, select: { issueDate: true } });
+      if (!b) throw notFound('Bill not found');
+      const earliest = isoDay(b.issueDate) > isoDay(p.paymentDate) ? isoDay(b.issueDate) : isoDay(p.paymentDate);
+      if (a.date && a.date < earliest) throw unprocessable('An allocation cannot precede the payment or the bill', 'invalid_date');
+      await this.allocate(tx, { organisationId: a.organisationId, companyId: a.companyId, actor: a.actor, billId: x.billId, paymentId: p.id, amount: money(x.amount), date: a.date ?? earliest });
+    }
+    return this.getPayment(tx, a.companyId, p.id);
+  }
+
+  async reversePayment(tx: Tx, a: { organisationId: string; companyId: string; actor: PurchaseActor; id: string; reason: string; date?: string }) {
+    await this.need(a.actor, 'purchases:approve', a.companyId);
+    await tx.$queryRaw`SELECT id FROM purchase_payment WHERE id = ${a.id}::uuid FOR UPDATE`;
+    const p = await tx.purchasePayment.findFirst({ where: { id: a.id, companyId: a.companyId } });
+    if (!p) throw notFound('Payment not found');
+    if (p.status !== 'POSTED') throw conflict('This payment is already reversed', 'payment_reversed');
+    if (!p.outstanding.equals(p.amount)) throw conflict('Part of this payment is allocated to bills; an allocated payment cannot be reversed (unallocating is deferred, DEC-026)', 'payment_allocated');
+    const date = a.date ?? isoDay(p.paymentDate);
+    if (date < isoDay(p.paymentDate)) throw unprocessable('A reversal cannot precede the payment', 'invalid_date');
+    // the exact mirror of the posted lines, original amounts and rate included
+    const posted = await tx.journalLine.findMany({ where: { journalId: p.journalId }, orderBy: { lineNo: 'asc' } });
+    const j = await this.posting.post(tx, {
+      organisationId: a.organisationId, companyId: a.companyId, journalDate: date, sourceType: 'PURCHASE_PAYMENT_REVERSAL', sourceId: p.id, sourceReference: p.reference,
+      description: `Reversal of payment ${p.reference ?? p.id.slice(0, 8)}: ${a.reason.trim()}`.slice(0, 500),
+      lines: [...posted].reverse().map((l) => ({ accountId: l.accountId, debit: l.credit.toFixed(4), credit: l.debit.toFixed(4), description: 'Payment reversed',
+        ...(l.originalCurrency ? { original: { currency: l.originalCurrency, debit: l.originalCredit!.toFixed(4), credit: l.originalDebit!.toFixed(4), rate: l.rate!.toFixed(8), rateId: l.exchangeRateId! } } : {}) })),
+      idempotencyKey: `purchase-payment-reversal:${p.id}`, actor: a.actor, reason: a.reason,
+    });
+    await tx.purchasePayment.update({ where: { id: p.id }, data: { status: 'REVERSED', reversalJournalId: j.id, reversedByUserId: a.actor.userId, reversedAt: new Date(), reversedReason: a.reason.trim() } });
+    await this.audit(tx, { action: 'purchase_payment.reversed', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actor.userId, entityType: 'purchase_payment', entityId: p.id,
+      before: { status: 'POSTED' }, after: { status: 'REVERSED', journalId: j.id, date }, reason: a.reason });
+    return this.getPayment(tx, a.companyId, p.id);
+  }
+
+  async getPayment(tx: Tx, companyId: string, id: string) {
+    const p = await tx.purchasePayment.findFirst({ where: { id, companyId } });
+    if (!p) throw notFound('Payment not found');
+    const company = await this.company(tx, companyId);
+    const [minor, fm] = await Promise.all([this.minorOf(tx, p.currency), this.minorOf(tx, company.baseCurrency)]);
+    const allocs = await tx.purchaseAllocation.findMany({ where: { paymentId: p.id }, orderBy: { createdAt: 'asc' } });
+    return { ...this.paymentView(p, minor, fm), allocations: allocs.map((x) => this.allocationView(x, fm)) };
+  }
+  private paymentView(p: Awaited<ReturnType<Tx['purchasePayment']['findUniqueOrThrow']>>, minor: number, fm: number) {
+    return { id: p.id, companyId: p.companyId, supplierRoleId: p.supplierRoleId, contactId: p.contactId, paymentDate: isoDay(p.paymentDate), currency: p.currency, amount: fmt(p.amount, minor),
+      unallocated: fmt(p.outstanding, minor), functional: { amount: fmt(p.functionalAmount, fm), unallocated: fmt(p.functionalOutstanding, fm) }, rate: p.rate ? p.rate.toFixed(8) : null, exchangeRateId: p.exchangeRateId,
+      bankAccountId: p.bankAccountId, reference: p.reference, notes: p.notes, journalId: p.journalId, duplicateOverrideReason: p.duplicateOverrideReason, bankDetailsUnverified: p.bankDetailsUnverified, status: p.status,
+      reversalJournalId: p.reversalJournalId, reversedByUserId: p.reversedByUserId, reversedAt: p.reversedAt, reversedReason: p.reversedReason, createdByUserId: p.createdByUserId, createdAt: p.createdAt };
+  }
+  async listPayments(tx: Tx, companyId: string, q: { supplierRoleId?: string; status?: string; unallocated?: boolean; bankDetailsUnverified?: boolean; from?: string; to?: string; limit: number; cursor?: string }) {
+    const company = await this.company(tx, companyId);
+    const fm = await this.minorOf(tx, company.baseCurrency);
+    const rows = await tx.purchasePayment.findMany({
+      where: { companyId, ...(q.supplierRoleId ? { supplierRoleId: q.supplierRoleId } : {}), ...(q.status ? { status: q.status } : {}), ...(q.bankDetailsUnverified !== undefined ? { bankDetailsUnverified: q.bankDetailsUnverified } : {}),
+        ...(q.unallocated === true ? { status: 'POSTED', outstanding: { gt: 0 } } : q.unallocated === false ? { outstanding: 0 } : {}),
+        ...(q.from || q.to ? { paymentDate: { ...(q.from ? { gte: toDate(q.from) } : {}), ...(q.to ? { lte: toDate(q.to) } : {}) } } : {}) },
+      orderBy: [{ paymentDate: 'desc' }, { id: 'desc' }], take: q.limit + 1, ...(q.cursor ? { cursor: { id: q.cursor }, skip: 1 } : {}),
+    });
+    const items = [];
+    for (const r of rows.slice(0, q.limit)) items.push(this.paymentView(r, await this.minorOf(tx, r.currency), fm));
+    return { items, nextCursor: rows.length > q.limit ? rows[q.limit - 1]!.id : null };
+  }
+
+  // ───── Supplier statement (what we owe; credit-normal) and aged payables ─────
+  async statement(tx: Tx, companyId: string, supplierRoleId: string, q: { from: string; to: string }) {
+    const { role } = await this.supplier(tx, companyId, supplierRoleId);
+    const docs = await tx.purchaseDocument.findMany({ where: { companyId, supplierRoleId, status: 'APPROVED', issueDate: { lte: toDate(q.to) } } });
+    const payments = await tx.purchasePayment.findMany({ where: { companyId, supplierRoleId, paymentDate: { lte: toDate(q.to) } } });
+    const revDates = new Map((await tx.journal.findMany({ where: { id: { in: payments.map((p) => p.reversalJournalId).filter(Boolean) as string[] } }, select: { id: true, journalDate: true } })).map((j) => [j.id, isoDay(j.journalDate)]));
+    type Entry = { date: string; type: string; reference: string | null; documentNumber: string | null; documentId: string; dueDate: string | null; credit: Money; debit: Money };
+    const byCcy = new Map<string, Entry[]>();
+    const push = (c: string, e: Entry) => { if (!byCcy.has(c)) byCcy.set(c, []); byCcy.get(c)!.push(e); };
+    for (const d of docs) push(d.currency, { date: isoDay(d.issueDate), type: d.kind, reference: d.supplierReference, documentNumber: d.documentNumber, documentId: d.id, dueDate: d.kind === 'BILL' ? isoDay(d.dueDate) : null,
+      credit: d.kind === 'BILL' ? d.grossTotal : ZERO, debit: d.kind === 'BILL' ? ZERO : d.grossTotal });
+    for (const p of payments) {
+      push(p.currency, { date: isoDay(p.paymentDate), type: 'PAYMENT', reference: p.reference, documentNumber: null, documentId: p.id, dueDate: null, credit: ZERO, debit: p.amount });
+      const rd = p.reversalJournalId ? revDates.get(p.reversalJournalId) : undefined;
+      if (rd && rd <= q.to) push(p.currency, { date: rd, type: 'PAYMENT_REVERSAL', reference: p.reference, documentNumber: null, documentId: p.id, dueDate: null, credit: p.amount, debit: ZERO });
+    }
+    const currencies = [];
+    for (const [c, entries] of [...byCcy.entries()].sort(([x], [y]) => x.localeCompare(y))) {
+      const minor = await this.minorOf(tx, c);
+      entries.sort((x, y) => x.date.localeCompare(y.date) || x.type.localeCompare(y.type));
+      const opening = entries.filter((e) => e.date < q.from).reduce((t, e) => t.plus(e.credit).minus(e.debit), ZERO);
+      let bal = opening;
+      const lines = entries.filter((e) => e.date >= q.from).map((e) => { bal = bal.plus(e.credit).minus(e.debit); return { date: e.date, type: e.type, reference: e.reference, documentNumber: e.documentNumber, documentId: e.documentId,
+        dueDate: e.dueDate, debit: fmt(e.debit, minor), credit: fmt(e.credit, minor), balance: fmt(bal, minor) }; });
+      currencies.push({ currency: c, opening: fmt(opening, minor), lines, closing: fmt(bal, minor) });
+    }
+    return { companyId, supplierRoleId, supplier: await buildContactSnapshot(tx, role.id), from: q.from, to: q.to, currencies };
+  }
+
+  async agedPayables(tx: Tx, companyId: string, q: { asOf?: string; supplierRoleId?: string }) {
+    await this.company(tx, companyId);
+    const asOf = q.asOf ?? isoDay(new Date());
+    const d = toDate(asOf);
+    const filt = q.supplierRoleId ? { supplierRoleId: q.supplierRoleId } : {};
+    const docs = await tx.purchaseDocument.findMany({ where: { companyId, ...filt, status: 'APPROVED', issueDate: { lte: d } } });
+    const payments = await tx.purchasePayment.findMany({ where: { companyId, ...filt, paymentDate: { lte: d } } });
+    const revDates = new Map((await tx.journal.findMany({ where: { id: { in: payments.map((p) => p.reversalJournalId).filter(Boolean) as string[] } }, select: { id: true, journalDate: true } })).map((j) => [j.id, j.journalDate]));
+    const allocs = await tx.purchaseAllocation.findMany({ where: { companyId, allocatedOn: { lte: d } } });
+    const used = (pick: (x: AllocRow) => string | null) => { const m = new Map<string, Money>(); for (const x of allocs) { const k = pick(x); if (k) m.set(k, (m.get(k) ?? ZERO).plus(x.amount)); } return m; };
+    const toBill = used((x) => x.billId), fromDebit = used((x) => x.debitId), fromPayment = used((x) => x.paymentId);
+    const BUCKETS = ['notDue', 'days1to30', 'days31to60', 'days61to90', 'over90'] as const;
+    type Row = Record<(typeof BUCKETS)[number] | 'unallocatedDebits', Money>;
+    const rows = new Map<string, { supplierRoleId: string; currency: string; r: Row }>();
+    const row = (s2: string, c: string) => { const k = `${s2}|${c}`; if (!rows.has(k)) rows.set(k, { supplierRoleId: s2, currency: c, r: { notDue: ZERO, days1to30: ZERO, days31to60: ZERO, days61to90: ZERO, over90: ZERO, unallocatedDebits: ZERO } }); return rows.get(k)!.r; };
+    for (const x of docs) {
+      const open = x.kind === 'BILL' ? x.grossTotal.minus(toBill.get(x.id) ?? ZERO) : x.grossTotal.minus(fromDebit.get(x.id) ?? ZERO);
+      if (open.isZero()) continue;
+      const r = row(x.supplierRoleId, x.currency);
+      if (x.kind !== 'BILL') { r.unallocatedDebits = r.unallocatedDebits.minus(open); continue; }
+      const late = Math.round((d.getTime() - x.dueDate.getTime()) / 86_400_000);
+      const b = late <= 0 ? 'notDue' : late <= 30 ? 'days1to30' : late <= 60 ? 'days31to60' : late <= 90 ? 'days61to90' : 'over90';
+      r[b] = r[b].plus(open);
+    }
+    for (const p of payments) {
+      const rev = p.reversalJournalId ? revDates.get(p.reversalJournalId) : undefined;
+      if (rev && rev <= d) continue;
+      const open = p.amount.minus(fromPayment.get(p.id) ?? ZERO);
+      if (!open.isZero()) { const r = row(p.supplierRoleId, p.currency); r.unallocatedDebits = r.unallocatedDebits.minus(open); }
+    }
+    const roles = new Map((await tx.contactRole.findMany({ where: { id: { in: [...new Set([...rows.values()].map((x) => x.supplierRoleId))] } }, select: { id: true, accountCode: true, contactId: true } })).map((x) => [x.id, x]));
+    const names = new Map((await tx.contact.findMany({ where: { id: { in: [...roles.values()].map((x) => x.contactId) } }, select: { id: true, name: true } })).map((x) => [x.id, x.name]));
+    const KEYS = [...BUCKETS, 'unallocatedDebits' as const];
+    const out = []; const totals = new Map<string, Row>();
+    for (const v of [...rows.values()].sort((x, y) => x.currency.localeCompare(y.currency))) {
+      const minor = await this.minorOf(tx, v.currency);
+      const tt = totals.get(v.currency) ?? { notDue: ZERO, days1to30: ZERO, days31to60: ZERO, days61to90: ZERO, over90: ZERO, unallocatedDebits: ZERO };
+      for (const k of KEYS) tt[k] = tt[k].plus(v.r[k]);
+      totals.set(v.currency, tt);
+      const rl = roles.get(v.supplierRoleId);
+      out.push({ supplierRoleId: v.supplierRoleId, accountCode: rl?.accountCode ?? null, name: names.get(rl?.contactId ?? '') ?? null, currency: v.currency,
+        ...Object.fromEntries(KEYS.map((k) => [k, fmt(v.r[k], minor)])), total: fmt(KEYS.reduce((t, k) => t.plus(v.r[k]), ZERO), minor) });
+    }
+    const currencyTotals = [];
+    for (const [c, t] of [...totals.entries()].sort(([x], [y]) => x.localeCompare(y))) {
+      const minor = await this.minorOf(tx, c);
+      currencyTotals.push({ currency: c, ...Object.fromEntries(KEYS.map((k) => [k, fmt(t[k], minor)])), total: fmt(KEYS.reduce((s2, k) => s2.plus(t[k]), ZERO), minor) });
+    }
+    return { companyId, asOf, suppliers: out, totals: currencyTotals };
   }
 }

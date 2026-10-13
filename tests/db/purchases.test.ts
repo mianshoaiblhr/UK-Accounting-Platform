@@ -75,3 +75,23 @@ describe('purchase documents', () => {
     })).rejects.toThrow(/corrected in its sub-ledger/);
   });
 });
+
+describe('supplier payments (M6b)', () => {
+  const payment = (role: string, amount: string, date: string) => t((tx) => purchases.recordPayment(tx, { organisationId: org, companyId: co, actor: me, supplierRoleId: role, paymentDate: date, amount,
+    bankAccountId: acc['1200']!, allocations: [], duplicateOverrideReason: 'Synthetic payments in the database tests' }));
+  it('a payment is immutable; its unallocated amount moves only through an allocation; an allocated payment cannot be marked reversed', async () => {
+    const p = await payment(supB, '90.00', '2026-03-02');
+    await expect(raw([`UPDATE purchase_payment SET bank_details_unverified=true WHERE id='${p.id}'`])).rejects.toThrow(/immutable/);
+    await expect(raw([`UPDATE purchase_payment SET outstanding=0, functional_outstanding=0 WHERE id='${p.id}'`])).rejects.toThrow(/only through an allocation/);
+    const a = await bill(supA, '15.00', 'PAY-A', '2026-03-02');
+    const alloc = (b: string) => `INSERT INTO purchase_allocation(id, organisation_id, company_id, bill_id, payment_id, amount, bill_functional, debit_functional, fx_difference, allocated_on, created_by_user_id)
+      VALUES ('${uuidv7()}','${org}','${co}','${b}','${p.id}',5,5,5,0,'2026-03-02','${user}')`;
+    await expect(raw([alloc(a.id)])).rejects.toThrow(/one company, supplier and currency/);
+    const b = await bill(supB, '15.00', 'PAY-B', '2026-03-02');
+    await raw([alloc(b.id)]);
+    expect(sql(`SELECT outstanding FROM purchase_payment WHERE id='${p.id}'`)).toBe('85.0000');
+    await expect(raw([`UPDATE purchase_payment SET status='REVERSED', reversal_journal_id='${p.journalId}', reversed_by_user_id='${user}', reversed_at=now(), reversed_reason='probe' WHERE id='${p.id}'`]))
+      .rejects.toThrow(/only an unallocated payment/);
+    await expect(raw([`DELETE FROM purchase_payment WHERE id='${p.id}'`])).rejects.toThrow(/permission denied|not permitted/);
+  });
+});

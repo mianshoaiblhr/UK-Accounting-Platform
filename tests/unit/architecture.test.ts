@@ -162,7 +162,7 @@ describe('database access paths that carry security meaning', () => {
     expect(read(`${ROOT}/packages/accounting/src/sales.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany)|INSERT INTO\s+"?journal/);
   });
   it('purchase documents have one writer (M6a), which posts only through the PostingService', () => {
-    const WRITE = /\.(purchaseSetting|purchaseSequence|purchaseDocument|purchaseDocumentLine|purchaseAllocation)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(purchase_setting|purchase_sequence|purchase_document|purchase_document_line|purchase_allocation)"?\b/i;
+    const WRITE = /\.(purchaseSetting|purchaseSequence|purchaseDocument|purchaseDocumentLine|purchaseAllocation|purchasePayment)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(purchase_setting|purchase_sequence|purchase_document|purchase_document_line|purchase_allocation|purchase_payment)"?\b/i;
     expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/purchases.ts']);
     expect(read(`${ROOT}/packages/accounting/src/purchases.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany)|INSERT INTO\s+"?journal/);
   });

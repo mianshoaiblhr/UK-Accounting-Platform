@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, Inject, Injectable, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import type { z } from 'zod';
 import {
-  approvePurchaseDocumentSchema, attachPurchaseDocumentSchema, createBillSchema, createDebitNoteSchema, discardPurchaseDocumentSchema, purchaseDocumentListQuerySchema, purchaseSettingsSchema, updatePurchaseDraftSchema,
+  agedPayablesQuerySchema, allocatePaymentSchema, approvePurchaseDocumentSchema, attachPurchaseDocumentSchema, createPaymentSchema, paymentListQuerySchema, reversePaymentSchema, supplierStatementQuerySchema, createBillSchema, createDebitNoteSchema, discardPurchaseDocumentSchema, purchaseDocumentListQuerySchema, purchaseSettingsSchema, updatePurchaseDraftSchema,
   type Permission,
 } from '@uk/contracts';
 import { notFound } from '@uk/core';
@@ -81,6 +81,30 @@ export class PurchasesController {
   attachments(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('documentId') id: string) { return this.api.attachments(org, c, id); }
   @Post('purchases/documents/:documentId/attachments') @RequirePermissions('purchases:manage') @Idempotent()
   attach(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('documentId') id: string, @Body(new ZodPipe(attachPurchaseDocumentSchema)) b: z.output<typeof attachPurchaseDocumentSchema>) { return this.api.attach(org, c, id, b); }
+  // ───── Supplier payments (M6b) ─────
+  @Post('purchases/payments') @RequirePermissions('purchases:approve') @Idempotent()
+  recordPayment(@Org() org: OrgAccess, @ID('companyId') c: string, @Body(new ZodPipe(createPaymentSchema)) b: z.output<typeof createPaymentSchema>) {
+    return this.api.run(org, (tx, actor) => this.purchases.recordPayment(tx, { organisationId: org.organisationId, companyId: c, actor, ...b }));
+  }
+  @Get('purchases/payments') @RequirePermissions('purchases:read')
+  payments(@Org() org: OrgAccess, @ID('companyId') c: string, @Query(new ZodPipe(paymentListQuerySchema)) q: z.output<typeof paymentListQuerySchema>) { return this.api.run(org, (tx) => this.purchases.listPayments(tx, c, q)); }
+  @Get('purchases/payments/:paymentId') @RequirePermissions('purchases:read')
+  payment(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('paymentId') id: string) { return this.api.run(org, (tx) => this.purchases.getPayment(tx, c, id)); }
+  @Post('purchases/payments/:paymentId/allocations') @HttpCode(200) @RequirePermissions('purchases:approve') @Idempotent()
+  allocatePayment(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('paymentId') id: string, @Body(new ZodPipe(allocatePaymentSchema)) b: z.output<typeof allocatePaymentSchema>) {
+    return this.api.run(org, (tx, actor) => this.purchases.allocatePayment(tx, { organisationId: org.organisationId, companyId: c, actor, paymentId: id, ...b }));
+  }
+  @Post('purchases/payments/:paymentId/reverse') @HttpCode(200) @RequirePermissions('purchases:approve') @Idempotent()
+  reversePayment(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('paymentId') id: string, @Body(new ZodPipe(reversePaymentSchema)) b: z.output<typeof reversePaymentSchema>) {
+    return this.api.run(org, (tx, actor) => this.purchases.reversePayment(tx, { organisationId: org.organisationId, companyId: c, actor, id, ...b }));
+  }
+  @Get('purchases/suppliers/:roleId/statement') @RequirePermissions('purchases:read')
+  statement(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('roleId') id: string, @Query(new ZodPipe(supplierStatementQuerySchema)) q: z.output<typeof supplierStatementQuerySchema>) {
+    return this.api.run(org, (tx) => this.purchases.statement(tx, c, id, q));
+  }
+  @Get('purchases/aged-payables') @RequirePermissions('purchases:read')
+  aged(@Org() org: OrgAccess, @ID('companyId') c: string, @Query(new ZodPipe(agedPayablesQuerySchema)) q: z.output<typeof agedPayablesQuerySchema>) { return this.api.run(org, (tx) => this.purchases.agedPayables(tx, c, q)); }
+
   @Get('purchases/reconciliation') @RequirePermissions('purchases:read')
   reconciliation(@Org() org: OrgAccess, @ID('companyId') c: string) { return this.api.run(org, (tx) => this.purchases.reconciliation(tx, c)); }
 }

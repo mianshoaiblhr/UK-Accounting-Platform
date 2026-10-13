@@ -228,7 +228,7 @@ export const AgedReceivables = z.object({ companyId: uuid, asOf: day, customers:
 export const PurchaseSettings = z.object({ companyId: uuid, payablesAccountId: uuid.nullable(), billPrefix: z.string(), debitNotePrefix: z.string(), billStart: z.number().int(), debitNoteStart: z.number().int(),
   requireSeparateApprover: z.boolean(), lastBillNumber: z.number().int().nullable(), lastDebitNoteNumber: z.number().int().nullable(), numberingFrozen: z.object({ bill: z.boolean(), debitNote: z.boolean() }),
   isDefault: z.boolean(), updatedAt: ts.nullable(), updatedByUserId: uuid.nullable() });
-export const PurchaseAllocation = z.object({ id: uuid, billId: uuid, debitId: uuid, amount: z.string(), billFunctional: z.string(), debitFunctional: z.string(),
+export const PurchaseAllocation = z.object({ id: uuid, billId: uuid, debitId: uuid.nullable(), paymentId: uuid.nullable(), amount: z.string(), billFunctional: z.string(), debitFunctional: z.string(),
   realisedFx: z.string().describe('Company currency; positive = gain, negative = loss'), fxJournalId: uuid.nullable(), allocatedOn: day, createdByUserId: uuid, createdAt: ts });
 const PurchaseDocumentBase = z.object({
   id: uuid, companyId: uuid, kind: z.enum(['BILL', 'DEBIT_NOTE']), status: z.enum(['DRAFT', 'APPROVED', 'DISCARDED']),
@@ -250,4 +250,19 @@ export const PayablesReconciliation = z.object({
     control: z.object({ fromPurchaseDocuments: z.string(), fromPurchaseDocumentsFunctional: z.string(), total: z.string(), totalFunctional: z.string() }),
     difference: z.string(), differenceFunctional: z.string(), otherPostings: z.array(z.object({ sourceType: z.string(), original: z.string(), functional: z.string() })) })),
 });
+
+// ───────────── Supplier payments, statement, aged payables (M6b) ─────────────
+export const PurchasePaymentBase = z.object({
+  id: uuid, companyId: uuid, supplierRoleId: uuid, contactId: uuid, paymentDate: day, currency: z.string().length(3), amount: z.string(), unallocated: z.string(),
+  functional: z.object({ amount: z.string(), unallocated: z.string() }), rate: z.string().nullable(), exchangeRateId: uuid.nullable(), bankAccountId: uuid, reference: z.string().nullable(), notes: z.string().nullable(),
+  journalId: uuid, duplicateOverrideReason: z.string().nullable(), bankDetailsUnverified: z.boolean().describe("The supplier's stored bank details were UNVERIFIED when the payment was recorded (DEC-035): review it"),
+  status: z.enum(['POSTED', 'REVERSED']), reversalJournalId: uuid.nullable(), reversedByUserId: uuid.nullable(), reversedAt: ts.nullable(), reversedReason: z.string().nullable(), createdByUserId: uuid, createdAt: ts,
+});
+export const PurchasePayment = PurchasePaymentBase.extend({ allocations: z.array(PurchaseAllocation) });
+export const PurchasePaymentPage = z.object({ items: z.array(PurchasePaymentBase), nextCursor: z.string().nullable() });
+export const SupplierStatement = z.object({ companyId: uuid, supplierRoleId: uuid, supplier: ContactSnapshot, from: day, to: day,
+  currencies: z.array(z.object({ currency: z.string().length(3), opening: z.string(), closing: z.string().describe('Owed to the supplier (credit-normal)'),
+    lines: z.array(z.object({ date: day, type: z.enum(['BILL', 'DEBIT_NOTE', 'PAYMENT', 'PAYMENT_REVERSAL']), reference: z.string().nullable(), documentNumber: z.string().nullable(), documentId: uuid, dueDate: day.nullable(), debit: z.string(), credit: z.string(), balance: z.string() })) })) });
+const AgedPRow = z.object({ notDue: z.string(), days1to30: z.string(), days31to60: z.string(), days61to90: z.string(), over90: z.string(), unallocatedDebits: z.string(), total: z.string(), currency: z.string().length(3) });
+export const AgedPayables = z.object({ companyId: uuid, asOf: day, suppliers: z.array(AgedPRow.extend({ supplierRoleId: uuid, accountCode: z.string().nullable(), name: z.string().nullable() })), totals: z.array(AgedPRow) });
 

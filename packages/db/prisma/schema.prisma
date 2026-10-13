@@ -1815,7 +1815,9 @@ model PurchaseAllocation {
   organisationId    String   @map("organisation_id") @db.Uuid
   companyId         String   @map("company_id") @db.Uuid
   billId         String   @map("bill_id") @db.Uuid
-  debitId           String   @map("debit_id") @db.Uuid
+  debitId           String?  @map("debit_id") @db.Uuid
+  /// M6b: a payment applied instead of a debit note (exactly one of the two).
+  paymentId         String?  @map("payment_id") @db.Uuid
   amount            Decimal  @db.Decimal(19, 4)
   billFunctional Decimal  @map("bill_functional") @db.Decimal(19, 4)
   debitFunctional  Decimal  @map("debit_functional") @db.Decimal(19, 4)
@@ -1829,4 +1831,42 @@ model PurchaseAllocation {
   @@index([organisationId, billId], map: "purchase_allocation_bill_idx")
   @@index([organisationId, debitId], map: "purchase_allocation_debit_idx")
   @@map("purchase_allocation")
+}
+
+/// Supplier payments (M6b, DEC-035): posted when recorded; outstanding (unallocated) amounts move only through allocations; reversed only while unallocated.
+model PurchasePayment {
+  id                      String    @id @db.Uuid
+  organisationId          String    @map("organisation_id") @db.Uuid
+  companyId               String    @map("company_id") @db.Uuid
+  supplierRoleId          String    @map("supplier_role_id") @db.Uuid
+  partyRole               String    @default("SUPPLIER") @map("party_role")
+  contactId               String    @map("contact_id") @db.Uuid
+  paymentDate             DateTime  @map("payment_date") @db.Date
+  currency                String    @db.Char(3)
+  amount                  Decimal   @db.Decimal(19, 4)
+  outstanding             Decimal   @db.Decimal(19, 4)
+  functionalAmount        Decimal   @map("functional_amount") @db.Decimal(19, 4)
+  functionalOutstanding   Decimal   @map("functional_outstanding") @db.Decimal(19, 4)
+  bankAccountId           String    @map("bank_account_id") @db.Uuid
+  exchangeRateId          String?   @map("exchange_rate_id") @db.Uuid
+  rate                    Decimal?  @db.Decimal(19, 8)
+  reference               String?
+  notes                   String?
+  journalId               String    @map("journal_id") @db.Uuid
+  duplicateOverrideReason String?   @map("duplicate_override_reason")
+  /// DEC-035: the stored bank details were UNVERIFIED when this payment was recorded.
+  bankDetailsUnverified   Boolean   @default(false) @map("bank_details_unverified")
+  status                  String    @default("POSTED")
+  reversalJournalId       String?   @map("reversal_journal_id") @db.Uuid
+  reversedByUserId        String?   @map("reversed_by_user_id") @db.Uuid
+  reversedAt              DateTime? @map("reversed_at") @db.Timestamptz(3)
+  reversedReason          String?   @map("reversed_reason")
+  createdByUserId         String    @map("created_by_user_id") @db.Uuid
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@index([organisationId, companyId, supplierRoleId, status], map: "purchase_payment_supplier_idx")
+  @@index([organisationId, companyId, paymentDate], map: "purchase_payment_date_idx")
+  @@map("purchase_payment")
 }

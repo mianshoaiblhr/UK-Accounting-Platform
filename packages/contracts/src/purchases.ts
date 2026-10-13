@@ -76,3 +76,29 @@ export const purchaseDocumentListQuerySchema = z.object({
 }).strict();
 /** The duplicate key of a supplier reference: upper case without spaces (DEC-034). */
 export const normaliseSupplierReference = (r: string) => r.replace(/\s/g, '').toUpperCase();
+
+// ───────────── Supplier payments (M6b, DEC-035) ─────────────
+const positive = moneyString.refine((a) => Number(a) > 0, 'Must be greater than zero');
+export const paymentAllocationSchema = z.object({ billId: uuid, amount: positive }).strict();
+export const createPaymentSchema = z.object({
+  supplierRoleId: uuid,
+  paymentDate: isoDate,
+  currency: z.string().regex(/^[A-Z]{3}$/, 'ISO 4217 code, upper case').optional(),
+  amount: positive,
+  /** The bank or cash account the money left. */
+  bankAccountId: uuid,
+  reference: z.string().trim().min(1).max(100).optional(),
+  notes: z.string().trim().max(2000).optional(),
+  rateId: uuid.optional(),
+  allocations: z.array(paymentAllocationSchema).max(100).default([]),
+  duplicateOverrideReason: reason.optional(),
+}).strict();
+export const allocatePaymentSchema = z.object({ allocations: z.array(paymentAllocationSchema).min(1).max(100), date: isoDate.optional() }).strict();
+export const reversePaymentSchema = z.object({ reason: z.string().trim().min(3).max(1000), date: isoDate.optional() }).strict();
+export const paymentListQuerySchema = z.object({
+  supplierRoleId: uuid.optional(), status: z.enum(['POSTED', 'REVERSED']).optional(), unallocated: z.enum(['true', 'false']).optional().transform((v) => (v === undefined ? undefined : v === 'true')),
+  bankDetailsUnverified: z.enum(['true', 'false']).optional().transform((v) => (v === undefined ? undefined : v === 'true')),
+  from: isoDate.optional(), to: isoDate.optional(), limit: z.coerce.number().int().min(1).max(200).default(50), cursor: uuid.optional(),
+}).strict();
+export const supplierStatementQuerySchema = z.object({ from: isoDate, to: isoDate }).strict().refine((q) => q.to >= q.from, { message: 'to cannot precede from', path: ['to'] });
+export const agedPayablesQuerySchema = z.object({ asOf: isoDate.optional(), supplierRoleId: uuid.optional() }).strict();

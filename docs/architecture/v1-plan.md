@@ -17,7 +17,7 @@ Tenant isolation by forced row-level security; one central authoriser for compan
 | M5b | Receipts and allocations, realised FX end to end, statements, aged receivables | **verified** (code baseline `376aec6`; package `v1-m5b-acceptance.md`) | Engineering | M5a |
 | M5c | VAT on foreign-currency documents (V1-VAT-15) | to be specified after M5b; unverified rule (DEC-031) | Engineering; the firm's tax reviewer | M5b |
 | M6a | Purchase documents: bills and debit notes (DEC-033/034) | **verified** (code baseline `16c7f12`; package `v1-m6a-acceptance.md`) | Engineering | M5a |
-| M6b | Supplier payments, allocation, realised FX, aged payables (DEC-035) | specified (section 10) | Engineering | M6a, M5b |
+| M6b | Supplier payments, allocation, realised FX, aged payables (DEC-035) | implemented (section 10.2a) | Engineering | M6a, M5b |
 | M6c | Cash transactions without documents and the negative-cash control (DEC-036) | specified (section 10) | Engineering | M6b |
 | M7 | Bank accounts, statement import, transfers, charges, interest, reconciliation | planned | Engineering | M5, M6 |
 | M8 | P&L, balance sheet, drill-down, controls and alerts, FX reporting | planned | Engineering | M3, M5-M7 |
@@ -336,6 +336,18 @@ Recorded before code under the delegation. Statements about VAT law are UNVERIFI
 * **Bank details:** `bankDetailsUnverified` is flagged when the supplier's stored details are UNVERIFIED (DEC-035).
 * **Reports:** supplier statement and aged payables (as at a date).
 * **Acceptance:** mirrors M5b, including foreign settlement at two rates and the flag for unverified bank details.
+
+### 10.2a As built (M6b)
+* **Migration** `20260114000000_v1_purchase_payments` mirrors the verified receipt design:
+  * `purchase_payment`, with `bank_details_unverified` (DEC-035);
+  * `purchase_payment_guard`;
+  * `purchase_allocation` takes a debit note **or** a payment;
+  * payment journals are added to the sub-ledger reversal guard.
+* **Code:** `PurchasesService` adds `recordPayment`, `allocatePayment`, `reversePayment`, the payment reads, `statement` and `agedPayables`; the allocation path is shared with debit notes. The API adds 7 routes. The supplier role-end check and the payables reconciliation include payments.
+* **Hand-calculated evidence:**
+  * Payment of 400.00 allocated 100.00 + 200.00, then 50.00 later, leaving a 50.00 prepayment.
+  * EUR bill of 1000 at 0.85 paid 600 at 0.90 (loss 30.00) and 400 at 0.80 (gain 20.00): a net loss of 10.00 = 860.00 paid less 850.00 carried, with no residue.
+  * A payment recorded while the stored bank details are UNVERIFIED is flagged, audited and filterable.
 
 ### 10.3 M6c - cash transactions
 * **Data:** `cash_transaction` (money in or money out) with lines (account, VAT code, amount) on a bank or cash account, posted when recorded (`CASH_PAYMENT`, `CASH_RECEIPT`). It is reversed only by a mirror reversal with a reason.
