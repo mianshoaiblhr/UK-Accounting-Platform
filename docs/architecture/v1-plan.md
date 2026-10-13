@@ -14,9 +14,11 @@ Tenant isolation by forced row-level security; one central authoriser for compan
 | M4a | Contact roles: customers and suppliers (DEC-011, DEC-023) | **verified** (code baseline `206b14d`; package `v1-m4a-acceptance.md`) | Engineering | M1-M3 |
 | M4b | VAT foundation, standard accounting (DEC-010, DEC-021, DEC-025) | implemented (section 6.4); **every rule usable only after verification by a holder of `tax:rule-verify`**; no figures seeded | Engineering; the firm's qualified tax reviewer | M3, M4a |
 | M5a | Sales documents: invoices, credit notes, numbering, checks, credit-note allocation (DEC-026..031) | **verified** (code baseline `e698562`; package `v1-m5a-acceptance.md`) | Engineering | M2, M3, M4 |
-| M5b | Receipts and allocations, realised FX end to end, statements, aged receivables | implemented (section 9.5; DEC-032) | Engineering | M5a |
+| M5b | Receipts and allocations, realised FX end to end, statements, aged receivables | **verified** (code baseline `376aec6`; package `v1-m5b-acceptance.md`) | Engineering | M5a |
 | M5c | VAT on foreign-currency documents (V1-VAT-15) | to be specified after M5b; unverified rule (DEC-031) | Engineering; the firm's tax reviewer | M5b |
-| M6 | Purchases: bills, debit notes, payments, cash | planned | Engineering | M3, M4, M5 patterns |
+| M6a | Purchase documents: bills and debit notes (DEC-033/034) | specified (section 10) | Engineering | M5a |
+| M6b | Supplier payments, allocation, realised FX, aged payables (DEC-035) | specified (section 10) | Engineering | M6a, M5b |
+| M6c | Cash transactions without documents and the negative-cash control (DEC-036) | specified (section 10) | Engineering | M6b |
 | M7 | Bank accounts, statement import, transfers, charges, interest, reconciliation | planned | Engineering | M5, M6 |
 | M8 | P&L, balance sheet, drill-down, controls and alerts, FX reporting | planned | Engineering | M3, M5-M7 |
 | M9 | V1 UI slices behind feature flags (DEC-002) | planned, parallel from M2 | Engineering (front end) | the API each screen uses |
@@ -290,3 +292,41 @@ Recorded before code under the delegation of 2026-10-12. Statements about VAT la
 
 ### 9.3 Deferred (DEC-026)
 Recurring invoices, quotes, line discounts, invoice rendering and sending (M9 and notifications), online payment, direct debit, refunds, bad-debt relief, deposits before an invoice, write-offs, statutory tax-point derivation (DEC-028), unallocating, VAT on foreign-currency documents until M5c.
+
+## 10. M6 - Purchases (specification; DEC-033..036)
+Recorded before code under the delegation. Statements about VAT law are UNVERIFIED (DEC-022).
+
+### 10.1 M6a - bills and debit notes
+* **Data:** `purchase_setting`, `purchase_sequence`, `purchase_document`, `purchase_document_line` and `purchase_allocation`. They mirror the sales tables (same guards: lifecycle, next number, immutability, allocations never below zero, one supplier and currency, a debit note against its own bill) with these differences:
+  * the party is a SUPPLIER role;
+  * `supplier_reference` is required on bills, and duplicates are also keyed on its normalised form;
+  * a `bankDetailsUnverified` flag is held on payments (M6b).
+* **Postings:** `PURCHASE_BILL` (Dr expense or asset, Dr input VAT or the reverse-charge pair, Cr trade payables) and `PURCHASE_DEBIT_NOTE` (the mirror, at the bill's rate versions). `PURCHASE_ALLOCATION_FX` holds realised FX. Control kinds: TRADE_PAYABLES only. These are sub-ledger journals: no ledger reversal.
+* **Permissions:** `purchases:read`, `purchases:manage` and `purchases:approve`, assigned to roles as for sales. Purchase settings need `ledger:policy`.
+* **Checks:**
+  * duplicate (supplier reference, or date + currency + total) and separate approver;
+  * DEC-031 for foreign currency;
+  * a supplier role with open purchase documents cannot end;
+  * period close refused while draft bills are dated in the period, unless acknowledged.
+* **Read models:** document list and detail, and payables reconciliation by currency.
+* **Acceptance:**
+  * the purchase example, hand-calculated: standard, zero, exempt and reverse charge, exclusive and inclusive;
+  * duplicate on the supplier reference;
+  * debit-note linkage and rate pin;
+  * gapless internal numbering;
+  * database guards against direct SQL;
+  * permissions, isolation and period lock.
+
+### 10.2 M6b - supplier payments
+* **Posting:** `purchase_payment` posts `PURCHASE_PAYMENT` (Dr trade payables / Cr bank or cash) when recorded.
+* **Allocation:** at entry or later, in part or in full. An overpayment is a prepayment held as unallocated debit. Realised FX follows DEC-030.
+* **Duplicates and reversal:** the duplicate check needs a reason. A payment can be reversed only while unallocated (`PURCHASE_PAYMENT_REVERSAL`, mirroring the posted lines).
+* **Bank details:** `bankDetailsUnverified` is flagged when the supplier's stored details are UNVERIFIED (DEC-035).
+* **Reports:** supplier statement and aged payables (as at a date).
+* **Acceptance:** mirrors M5b, including foreign settlement at two rates and the flag for unverified bank details.
+
+### 10.3 M6c - cash transactions
+* **Data:** `cash_transaction` (money in or money out) with lines (account, VAT code, amount) on a bank or cash account, posted when recorded (`CASH_PAYMENT`, `CASH_RECEIPT`). It is reversed only by a mirror reversal with a reason.
+* **Negative cash:** after posting, a bank account below zero on the date carries a `negativeBalance` warning. A cash-in-hand account below zero is refused without a reason (DEC-036).
+* **Acceptance:** both directions with VAT; the overdraft warning; the cash refusal and its override; reversal; database guards.
+

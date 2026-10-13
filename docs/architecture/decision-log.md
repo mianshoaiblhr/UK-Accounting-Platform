@@ -233,3 +233,52 @@ Recorded before the M5b code.
 
 **Event**
 * `sales_receipt.recorded` is published through the outbox.
+
+
+## Decisions of 2026-10-13 (sixth batch: M6 Purchases, under the same delegation)
+
+Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC-022).
+
+| Id | Subject | Decision |
+|---|---|---|
+| DEC-033 | M6 scope and split | M6a bills and debit notes; M6b supplier payments; M6c cash transactions (money in and out without a document) with the negative-cash control. Mirrors M5 with the differences below |
+| DEC-034 | Bills and debit notes | The supplier's own invoice number is required and is the duplicate key; an internal number for audit; input VAT and reverse charge; a debit note at the bill's VAT rate version |
+| DEC-035 | Supplier payments and stored bank details | Payments mirror receipts. A payment to a supplier whose stored bank details are not verified is flagged, not blocked (the money has already gone); payment files and runs stay deferred, and they will require verified details |
+| DEC-036 | Cash transactions and negative cash | Direct money-in and money-out entries with VAT per line. A bank account may go overdrawn with a warning; a cash-in-hand account may not go below zero without a reason |
+
+### DEC-033 - M6 scope and split
+* **M6a - purchase documents:** bills and debit notes. The design is the same as M5a (drafts, approval, sequences, snapshot, immutability, allocation, realised FX, reconciliation) on its own tables (`purchase_*`) and journal sources (`PURCHASE_BILL`, `PURCHASE_DEBIT_NOTE`, `PURCHASE_ALLOCATION_FX`).
+  * The controls reach TRADE_PAYABLES.
+  * The verified sales code is not refactored. Shared arithmetic (`lineAmount`, `releaseShare`, the VAT functions) is reused.
+* **M6b - supplier payments:** Dr trade payables / Cr bank or cash, as DEC-032 mirrored. The same applies to allocation, overpayment (a prepayment held as unallocated debit), realised FX, reversal while unallocated, the supplier ledger statement and aged payables.
+* **M6c - cash transactions (V1-MOD-11):** money out (Dr expense or asset / Dr input VAT / Cr bank or cash) and money in (Dr bank or cash / Cr income / Cr output VAT) without a source document, with the negative-cash control (DEC-036).
+* **Deferred:** purchase orders, expense claims, payment runs and bank file export, supplier refunds, petty-cash float management, recurring bills, and OCR capture of bills (V6).
+
+### DEC-034 - Bills and debit notes
+* **Supplier reference:** a bill records the supplier's invoice number. It is required: it is what the supplier and HMRC see.
+* **Duplicates:** another approved bill from the same supplier with the same supplier reference (case and spaces ignored), or with the same date, currency and total, refuses approval unless a reason is given (V1-CTL-02).
+* **Internal numbering:** approval also takes an internal gapless number (`BILL-` and `DN-` by default) for the audit trail.
+* **Lines:**
+  * go to expense or asset (non-control) accounts;
+  * default to the supplier profile's default expense account;
+  * VAT codes must be PURCHASES or BOTH, and reverse charge is allowed (M4b).
+* **VAT on approval:** input VAT, or the reverse-charge pair, is posted by the PostingService and proved by the database.
+* **Debit notes:**
+  * credit one approved bill of the same supplier and currency;
+  * use only its VAT codes, at its rate versions, at the debit note's own tax point (DEC-029 mirrored, UNVERIFIED);
+  * never more than the bill's outstanding amount;
+  * are allocated to the bill when approved.
+* **Foreign currency:** as for sales (DEC-031), a VAT-registered company does not approve a foreign-currency bill with a tax point on or after its registration date until M5c's rule covers documents in both directions. Foreign purchases (imported services under reverse charge, for example) belong in boxes 1, 4 and 7, so approving them without VAT would understate the return without anyone seeing it.
+
+### DEC-035 - Supplier payments and stored bank details
+* **Posting:** a payment is posted when recorded (Dr trade payables / Cr bank or cash) and follows DEC-032 mirrored.
+* **Duplicates:** the same supplier with the same date, currency and amount, or the same reference, needs a reason.
+* **Stored bank details:** DEC-023 said stored details are "not usable for payments until a second person verifies a change". In V1 the platform records payments that have already been made; it does not send money.
+  * A payment recorded while the supplier's stored details are UNVERIFIED is **flagged** (`bankDetailsUnverified: true`) on the payment and in its audit event, so a review can catch payment-diversion fraud.
+  * When payment runs and bank files are built (deferred), they will **refuse** unverified details.
+
+### DEC-036 - Cash transactions and the negative-cash control
+* **Money in and out:** a transaction posts `CASH_PAYMENT` or `CASH_RECEIPT` with VAT per line, with the same VAT rules as documents.
+* **Bank accounts:** after posting, if the account's balance on that date is below zero, the response and the audit event carry a `negativeBalance` warning. Overdrafts exist.
+* **Cash in hand:** for a cash-in-hand account (subtype CURRENT_ASSET_CASH), a posting that takes the balance below zero is **refused** unless a reason is given. Cash cannot be negative, so it is either an error or a missing entry.
+* **Alerts:** the dashboard and alert list for negative balances are M8 (V1-CTL-04).

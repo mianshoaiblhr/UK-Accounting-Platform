@@ -2,7 +2,7 @@
 
 Source requirements: docs/specifications/V1_Core_Bookkeeping.md, 00_MASTER_IMPLEMENTATION_MANIFEST.md (non-negotiable accounting controls), 13_CROSS_PLATFORM_PRODUCT_REQUIREMENTS.md.
 
-Generated from `v1-compliance-matrix.json` at commit `pending`; CI: <pending>. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
+Generated from `v1-compliance-matrix.json` at commit `376aec6`; CI: <https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/38342847878>. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
 
 ## Plan history (append-only)
 
@@ -34,7 +34,7 @@ Generated from `v1-compliance-matrix.json` at commit `pending`; CI: <pending>. *
 | M2 | Ledger controls: opening-balance permission, control-account adjustments, configurable second-person approval (DEC-012) | ACCEPTED (code baseline d98e3ed; DEC-015) | Engineering (build); product owner (approval thresholds, who may approve) | M1 accepted; V0 notification channel port (S2, delivered) for approver notifications; V0 documents + evidence links for supporting evidence | 5 | 5 |
 | M3 | Foreign-currency foundation: functional/transaction currency, rates, original-currency values, rounding, realised FX, revaluation (DEC-009) | ACCEPTED under delegation (code baseline c8fd8c0; DEC-019) | Engineering (build); product owner (rate source, policies) | M1 accepted; M2 accepted (DEC-015); Decisions recorded: rate source and window (DEC-016), rounding (DEC-017), revaluation and realised FX (DEC-018) | 11 | 8 |
 | M4 | M4a contact roles (customer/supplier, DEC-011, DEC-023) and M4b VAT foundation - standard VAT accounting (DEC-010, DEC-021) | M4a VERIFIED (206b14d; v1-m4a-acceptance.md); M4b VERIFIED (6fb1938; v1-m4b-acceptance.md). VAT rules usable only after verification by the firm's holder of tax:rule-verify | Engineering (build); product owner + qualified tax reviewer (rule verification) | M1-M3 accepted (DEC-008, DEC-015, DEC-019); M4b: verification of each VAT rule by a holder of tax:rule-verify (DEC-021); primary sources not readable in this sandbox (DEC-022) | 25 | 16 |
-| M5 | Sales: invoices, credit notes, receipts; duplicate-document check | M5a VERIFIED (e698562); M5b implemented (receipts, allocation, realised FX, statement, ageing; acceptance package once verified); M5c (VAT on foreign-currency documents) to be specified (DEC-031) | Engineering | M2; M3; M4 | 8 | 5 |
+| M5 | Sales: invoices, credit notes, receipts; duplicate-document check | M5a VERIFIED (e698562; v1-m5a-acceptance.md); M5b VERIFIED (376aec6; v1-m5b-acceptance.md); M5c (VAT on foreign-currency documents) to be specified (DEC-031) | Engineering | M2; M3; M4 | 8 | 5 |
 | M6 | Purchases: bills, debit notes, payments, cash | PLANNED | Engineering | M5 patterns; M3; M4 | 6 | 0 |
 | M7 | Bank accounts, statement import (async), transfers, charges, interest, reconciliation | PLANNED | Engineering | M5; M6 | 15 | 0 |
 | M8 | Profit and loss, balance sheet, drill-down to documents, controls and alerts, FX reporting | PLANNED | Engineering | M3; M5; M6; M7 | 8 | 0 |
@@ -163,7 +163,7 @@ A milestone is accepted by the product owner on an acceptance package: commit SH
 
 ## M5 - Sales: invoices, credit notes, receipts; duplicate-document check
 
-**Status:** M5a VERIFIED (e698562); M5b implemented (receipts, allocation, realised FX, statement, ageing; acceptance package once verified); M5c (VAT on foreign-currency documents) to be specified (DEC-031)  
+**Status:** M5a VERIFIED (e698562; v1-m5a-acceptance.md); M5b VERIFIED (376aec6; v1-m5b-acceptance.md); M5c (VAT on foreign-currency documents) to be specified (DEC-031)  
 **Owner:** Engineering  
 **Depends on:** M2; M3; M4  
 **Acceptance:** To be written when the milestone is specified  

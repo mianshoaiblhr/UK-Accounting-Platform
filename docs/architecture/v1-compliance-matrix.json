@@ -53,7 +53,7 @@
     },
     "M5": {
       "title": "Sales: invoices, credit notes, receipts; duplicate-document check",
-      "status": "M5a VERIFIED (e698562); M5b implemented (receipts, allocation, realised FX, statement, ageing; acceptance package once verified); M5c (VAT on foreign-currency documents) to be specified (DEC-031)",
+      "status": "M5a VERIFIED (e698562; v1-m5a-acceptance.md); M5b VERIFIED (376aec6; v1-m5b-acceptance.md); M5c (VAT on foreign-currency documents) to be specified (DEC-031)",
       "owner": "Engineering",
       "depends": [
         "M2",
