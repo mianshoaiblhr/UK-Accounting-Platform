@@ -91,7 +91,7 @@ export const RETENTION_RULES: readonly RetentionRule[] = [
   ...tableRules('ACCOUNTING_RECORDS', ['document', 'document_version', 'document_extraction', 'document_folder', 'document_access', 'evidence_link', 'accounting_period',
     // V1 ledger: journals and what explains them are accounting records
     'account', 'journal', 'journal_line', 'ledger_sequence', 'journal_request', 'ledger_policy', 'exchange_rate', 'company_fx_setting', 'fx_revaluation_run', 'tax_code', 'tax_rate', 'company_vat_setting',
-    'sales_setting', 'sales_sequence', 'sales_document', 'sales_document_line', 'sales_allocation']),
+    'sales_setting', 'sales_sequence', 'sales_document', 'sales_document_line', 'sales_allocation', 'sales_receipt']),
   ...tableRules('WHILE_ACTIVE', [
     'user', 'user_identity', 'mfa_factor', 'mfa_recovery_code', 'organisation', 'role', 'organisation_membership', 'practice', 'practice_membership', 'company_membership', 'invitation',
     'company', 'company_officer', 'contact', 'contact_role', 'customer_profile', 'supplier_profile', 'address', 'feature_flag_override', 'task', 'task_attachment', 'task_comment', 'workflow_instance', 'workflow_transition',

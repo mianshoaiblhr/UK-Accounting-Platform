@@ -164,8 +164,9 @@ export class ContactRolesService {
       if (status === 'ACTIVE' && l.contact.status !== 'ACTIVE') throw unprocessable('Restore the contact before reactivating its role', 'contact_archived');
       if (status === 'ENDED') {
         // DEC-023 / V1-CON-02: not while the role has drafts or approved documents with something outstanding
-        const open = await tx.salesDocument.count({ where: { customerRoleId: id, OR: [{ status: 'DRAFT' }, { status: 'APPROVED', outstanding: { gt: 0 } }] } });
-        if (open > 0) throw conflict(`This role has ${open} open sales document(s) (drafts, or approved with an amount outstanding); settle, credit or discard them first`, 'contact_role_has_open_documents', { openDocuments: open });
+        const open = await tx.salesDocument.count({ where: { customerRoleId: id, OR: [{ status: 'DRAFT' }, { status: 'APPROVED', outstanding: { gt: 0 } }] } })
+          + await tx.salesReceipt.count({ where: { customerRoleId: id, status: 'POSTED', outstanding: { gt: 0 } } });
+        if (open > 0) throw conflict(`This role has ${open} open sales item(s) (drafts, approved documents with an amount outstanding, or unallocated receipts); settle, credit, allocate or discard them first`, 'contact_role_has_open_documents', { openDocuments: open });
       }
       await tx.contactRole.update({ where: { id }, data: status === 'ENDED' ? { status, endedAt: new Date(), endedByUserId: org.userId, endedReason: reason! } : { status, endedAt: null, endedByUserId: null, endedReason: null } });
       await this.audit.record({ action: status === 'ENDED' ? 'contact_role.ended' : 'contact_role.reactivated', organisationId: org.organisationId, actorUserId: org.userId, companyId, entityType: 'contact_role', entityId: id,

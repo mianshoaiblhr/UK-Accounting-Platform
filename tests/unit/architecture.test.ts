@@ -157,7 +157,7 @@ describe('database access paths that carry security meaning', () => {
     expect(read(`${ROOT}/packages/accounting/src/vat.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany)/);
   });
   it('sales documents have one writer (M5a), which posts only through the PostingService', () => {
-    const WRITE = /\.(salesSetting|salesSequence|salesDocument|salesDocumentLine|salesAllocation)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(sales_setting|sales_sequence|sales_document|sales_document_line|sales_allocation)"?\b/i;
+    const WRITE = /\.(salesSetting|salesSequence|salesDocument|salesDocumentLine|salesAllocation|salesReceipt)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(sales_setting|sales_sequence|sales_document|sales_document_line|sales_allocation|sales_receipt)"?\b/i;
     expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/sales.ts']);
     expect(read(`${ROOT}/packages/accounting/src/sales.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany)|INSERT INTO\s+"?journal/);
   });

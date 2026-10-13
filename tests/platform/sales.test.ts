@@ -263,7 +263,7 @@ describe('fences around the sub-ledger', () => {
     const inv = await approve(coF, (await draft(coF, [L(coF, '4000', '1.00')], { issueDate: '2026-03-10' })).id);
     await rejects(t((tx) => posting.reverse(tx, { organisationId: org, companyId: coF, journalId: inv.journalId!, reason: 'Trying to reverse an invoice', actor: { kind: 'USER', userId: appr, can: async () => true } })), 'subledger_journal', 422);
     await expect(t((tx) => posting.post(tx, { organisationId: org, companyId: coF, journalDate: '2026-03-11', sourceType: 'REVERSAL', sourceId: inv.journalId!, reversesJournalId: inv.journalId!, description: 'Direct reversal',
-      lines: [{ accountId: acc[coF]!['4000']!, debit: '1.00', credit: '0' }, { accountId: acc[coF]!['1100']!, debit: '0', credit: '1.00' }], idempotencyKey: `k-${uuidv7()}`, actor: { kind: 'USER', userId: appr, can: async () => true } }))).rejects.toThrow(/corrected with a credit note/);
+      lines: [{ accountId: acc[coF]!['4000']!, debit: '1.00', credit: '0' }, { accountId: acc[coF]!['1100']!, debit: '0', credit: '1.00' }], idempotencyKey: `k-${uuidv7()}`, actor: { kind: 'USER', userId: appr, can: async () => true } }))).rejects.toThrow(/corrected in the sales ledger/);
   });
   it('sales journals reach trade receivables and no other control account', async () => {
     await rejects(t((tx) => posting.post(tx, { organisationId: org, companyId: coF, journalDate: '2026-03-11', sourceType: 'SALES_INVOICE', sourceId: uuidv7(), description: 'Probe',

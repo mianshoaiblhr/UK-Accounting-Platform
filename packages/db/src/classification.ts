@@ -74,6 +74,7 @@ export const TABLE_PROTECTION: Record<string, { protection: Protection; why: str
   sales_sequence: { protection: 'RLS+APP', why: 'Last sales document number per company and kind; moves forward by one (trigger), only in an approval.' },
   sales_document: { protection: 'RLS+APP', why: 'Sales invoices and credit notes; sales:manage / sales:approve; approved documents immutable (trigger), never deleted.' },
   sales_document_line: { protection: 'RLS+APP', why: 'Append-only line revisions of a sales draft; no UPDATE or DELETE.' },
+  sales_receipt: { protection: 'RLS+APP', why: 'Customer receipts; posted when recorded; outstanding moves only through allocations; reversed only while unallocated (trigger).' },
   sales_allocation: { protection: 'RLS+APP', why: 'Credits applied to invoices; immutable; moves outstanding amounts by trigger, never below zero.' },
   ledger_sequence: { protection: 'RLS', why: 'Per-company journal numbering counter; touched only by the PostingService.' },
   notification_preference: { protection: 'RLS+APP', why: 'Per-user channel opt-ins; the API only ever reads and writes the caller\'s own rows.' },

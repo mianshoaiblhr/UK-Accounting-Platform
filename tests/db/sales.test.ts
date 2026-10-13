@@ -93,7 +93,7 @@ describe('allocations and credit notes', () => {
     // the credit note is fully allocated: any further allocation would take it below zero
     await expect(raw([alloc(a.id, '1')])).rejects.toThrow(/outstanding_ck|violates check/);
     const other = await invoice(roleB, '60.00', '2026-02-17');
-    await expect(raw([alloc(other.id, '1')])).rejects.toThrow(/one company, customer and currency/);
+    await expect(raw([alloc(other.id, '1')])).rejects.toThrow(/one company, customer and currency|invoice it credits/);
     await expect(raw([`UPDATE sales_allocation SET amount=1 WHERE credit_id='${cn.id}'`])).rejects.toThrow(/permission denied|not permitted/);
     // what the trigger did is exact: 50 - 10 outstanding on the invoice
     expect(sql(`SELECT outstanding||'|'||functional_outstanding FROM sales_document WHERE id='${a.id}'`)).toBe('40.0000|40.0000');
@@ -106,12 +106,35 @@ describe('allocations and credit notes', () => {
       await tx.$queryRawUnsafe(`SELECT set_config('app.posting','on',true)`);
       await tx.$executeRawUnsafe(`INSERT INTO journal(id, organisation_id, company_id, period_id, journal_number, journal_date, source_type, source_id, description, currency, total, line_count, actor_type, posted_by_user_id, idempotency_key, content_hash, reverses_journal_id)
         VALUES ('${uuidv7()}','${org}','${co}','${period}',990001,'2026-02-19','REVERSAL','${a.journalId}','x','GBP',70,2,'USER','${user}','k-${uuidv7()}','h','${a.journalId}')`);
-    })).rejects.toThrow(/corrected with a credit note/);
+    })).rejects.toThrow(/corrected in the sales ledger/);
   });
   it('tenant isolation: another organisation sees no sales rows', async () => {
     const other = uuidv7();
     sql(`INSERT INTO organisation(id,type,name) VALUES ('${other}','BUSINESS','Sales DB other')`);
     const n = await db.tenant({ organisationId: other, userId: user }, (tx) => tx.salesDocument.count());
     expect(n).toBe(0);
+  });
+});
+
+describe('receipts (M5b)', () => {
+  const receipt = (role: string, amount: string, date: string) => t((tx) => sales.recordReceipt(tx, { organisationId: org, companyId: co, actor: me, customerRoleId: role, receiptDate: date, amount,
+    bankAccountId: acc['1200']!, allocations: [], duplicateOverrideReason: 'Synthetic receipts in the database tests' }));
+  it('a receipt is immutable; its unallocated amount moves only through an allocation; it is never deleted', async () => {
+    const r = await receipt(roleA, '80.00', '2026-03-01');
+    await expect(raw([`UPDATE sales_receipt SET amount=1 WHERE id='${r.id}'`])).rejects.toThrow(/immutable/);
+    await expect(raw([`UPDATE sales_receipt SET outstanding=0, functional_outstanding=0 WHERE id='${r.id}'`])).rejects.toThrow(/only through an allocation/);
+    await expect(raw([`DELETE FROM sales_receipt WHERE id='${r.id}'`])).rejects.toThrow(/permission denied|not permitted/);
+  });
+  it('a receipt is allocated only to the same customer, and an allocated receipt cannot be marked reversed', async () => {
+    const r = await receipt(roleB, '90.00', '2026-03-02');
+    const a = await invoice(roleA, '15.00', '2026-03-02');
+    const alloc = (inv: string) => `INSERT INTO sales_allocation(id, organisation_id, company_id, invoice_id, receipt_id, amount, invoice_functional, credit_functional, fx_difference, allocated_on, created_by_user_id)
+      VALUES ('${uuidv7()}','${org}','${co}','${inv}','${r.id}',5,5,5,0,'2026-03-02','${user}')`;
+    await expect(raw([alloc(a.id)])).rejects.toThrow(/one company, customer and currency/);
+    const b = await invoice(roleB, '15.00', '2026-03-02');
+    await raw([alloc(b.id)]);
+    expect(sql(`SELECT outstanding FROM sales_receipt WHERE id='${r.id}'`)).toBe('85.0000');
+    await expect(raw([`UPDATE sales_receipt SET status='REVERSED', reversal_journal_id='${r.journalId}', reversed_by_user_id='${user}', reversed_at=now(), reversed_reason='probe' WHERE id='${r.id}'`]))
+      .rejects.toThrow(/only an unallocated receipt/);
   });
 });

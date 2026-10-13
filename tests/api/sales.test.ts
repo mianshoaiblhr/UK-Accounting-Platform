@@ -119,3 +119,32 @@ describe('sales end to end', () => {
     for (const b of bad) expect((await as(bookkeeper, 'post', c('/sales/invoices'), b)).status).toBe(422);
   });
 });
+
+describe('receipts through the API (M5b)', () => {
+  let role: string, inv: { id: string };
+  it('a bookkeeper cannot record a receipt; an accountant records one with an allocation; the overpayment stays unallocated', async () => {
+    const contact = (await as(owner, 'post', '/contacts', { kind: 'ORGANISATION', name: 'API Payer Ltd' })).body;
+    role = (await as(owner, 'post', c('/contact-roles'), { contactId: contact.id, role: 'CUSTOMER', accountCode: 'APIPAY', paymentTermsDays: 30 })).body.id;
+    const d = await as(bookkeeper, 'post', c('/sales/invoices'), { customerRoleId: role, issueDate: '2026-05-01', lines: [line('120.00')] });
+    inv = (await as(accountant, 'post', c(`/sales/documents/${d.body.id}/approve`), {})).body;
+    const body = { customerRoleId: role, receiptDate: '2026-05-10', amount: '150.00', bankAccountId: acc['1200'], reference: 'FPS 123', allocations: [{ invoiceId: inv.id, amount: '120.00' }] };
+    expect((await as(bookkeeper, 'post', c('/sales/receipts'), body)).status).toBe(403);
+    const r = await as(accountant, 'post', c('/sales/receipts'), body);
+    expect(r.status).toBe(201);
+    expect(r.body).toMatchObject({ amount: '150.00', unallocated: '30.00', status: 'POSTED', allocations: [{ invoiceId: inv.id, amount: '120.0000' }] });
+    expect((await as(reviewer, 'get', c(`/sales/documents/${inv.id}`))).body.paymentStatus).toBe('PAID');
+    expect((await as(reviewer, 'get', `${c('/sales/receipts')}?unallocated=true&customerRoleId=${role}`)).body.items.map((x: { id: string }) => x.id)).toEqual([r.body.id]);
+    expect((await as(accountant, 'post', c(`/journals/${r.body.journalId}/reverse`), { reason: 'Trying the ledger route' })).body.code).toBe('subledger_journal');
+  });
+  it('a customer with unallocated credit cannot end; statement and ageing are available to readers', async () => {
+    const end = await as(owner, 'post', c(`/contact-roles/${role}/end`), { reason: 'Stopped trading with them' });
+    expect(end.body.code).toBe('contact_role_has_open_documents');
+    const st = await as(reviewer, 'get', `${c(`/sales/customers/${role}/statement`)}?from=2026-05-01&to=2026-05-31`);
+    expect(st.status).toBe(200);
+    expect(st.body.currencies[0]).toMatchObject({ currency: 'GBP', opening: '0.00', closing: '-30.00' });
+    const aged = await as(reviewer, 'get', `${c('/sales/aged-receivables')}?asOf=2026-06-30&customerRoleId=${role}`);
+    expect(aged.body.customers[0]).toMatchObject({ unallocatedCredits: '-30.00', total: '-30.00' });
+    expect((await as(viewer, 'get', c('/sales/aged-receivables'))).status).toBe(403);
+    expect((await as(reviewer, 'get', `${c(`/sales/customers/${role}/statement`)}?from=2026-05-31&to=2026-05-01`)).status).toBe(422);
+  });
+});

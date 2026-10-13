@@ -1653,7 +1653,9 @@ model SalesAllocation {
   organisationId    String   @map("organisation_id") @db.Uuid
   companyId         String   @map("company_id") @db.Uuid
   invoiceId         String   @map("invoice_id") @db.Uuid
-  creditId          String   @map("credit_id") @db.Uuid
+  creditId          String?  @map("credit_id") @db.Uuid
+  /// M5b: a receipt applied instead of a credit note (exactly one of the two).
+  receiptId         String?  @map("receipt_id") @db.Uuid
   amount            Decimal  @db.Decimal(19, 4)
   invoiceFunctional Decimal  @map("invoice_functional") @db.Decimal(19, 4)
   creditFunctional  Decimal  @map("credit_functional") @db.Decimal(19, 4)
@@ -1667,4 +1669,40 @@ model SalesAllocation {
   @@index([organisationId, invoiceId], map: "sales_allocation_invoice_idx")
   @@index([organisationId, creditId], map: "sales_allocation_credit_idx")
   @@map("sales_allocation")
+}
+
+/// Customer receipts (M5b, DEC-032): posted when recorded; outstanding (unallocated) amounts move only through allocations; reversed only while unallocated.
+model SalesReceipt {
+  id                      String    @id @db.Uuid
+  organisationId          String    @map("organisation_id") @db.Uuid
+  companyId               String    @map("company_id") @db.Uuid
+  customerRoleId          String    @map("customer_role_id") @db.Uuid
+  partyRole               String    @default("CUSTOMER") @map("party_role")
+  contactId               String    @map("contact_id") @db.Uuid
+  receiptDate             DateTime  @map("receipt_date") @db.Date
+  currency                String    @db.Char(3)
+  amount                  Decimal   @db.Decimal(19, 4)
+  outstanding             Decimal   @db.Decimal(19, 4)
+  functionalAmount        Decimal   @map("functional_amount") @db.Decimal(19, 4)
+  functionalOutstanding   Decimal   @map("functional_outstanding") @db.Decimal(19, 4)
+  bankAccountId           String    @map("bank_account_id") @db.Uuid
+  exchangeRateId          String?   @map("exchange_rate_id") @db.Uuid
+  rate                    Decimal?  @db.Decimal(19, 8)
+  reference               String?
+  notes                   String?
+  journalId               String    @map("journal_id") @db.Uuid
+  duplicateOverrideReason String?   @map("duplicate_override_reason")
+  status                  String    @default("POSTED")
+  reversalJournalId       String?   @map("reversal_journal_id") @db.Uuid
+  reversedByUserId        String?   @map("reversed_by_user_id") @db.Uuid
+  reversedAt              DateTime? @map("reversed_at") @db.Timestamptz(3)
+  reversedReason          String?   @map("reversed_reason")
+  createdByUserId         String    @map("created_by_user_id") @db.Uuid
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@index([organisationId, companyId, customerRoleId, status], map: "sales_receipt_customer_idx")
+  @@index([organisationId, companyId, receiptDate], map: "sales_receipt_date_idx")
+  @@map("sales_receipt")
 }

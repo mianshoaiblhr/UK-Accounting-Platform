@@ -34,6 +34,8 @@ export const Events = {
     schema: z.object({ documentId: uuid, companyId: uuid, documentNumber: z.string(), customerRoleId: uuid, issueDate: z.string(), dueDate: z.string(), currency: z.string(), gross: z.string(), journalId: uuid }) }),
   creditNoteCreated: defineEvent({ type: 'credit_note.created', version: 1, aggregateType: 'sales_document',
     schema: z.object({ documentId: uuid, companyId: uuid, documentNumber: z.string(), customerRoleId: uuid, issueDate: z.string(), originalInvoiceId: uuid, currency: z.string(), gross: z.string(), journalId: uuid }) }),
+  salesReceiptRecorded: defineEvent({ type: 'sales_receipt.recorded', version: 1, aggregateType: 'sales_receipt',
+    schema: z.object({ receiptId: uuid, companyId: uuid, customerRoleId: uuid, receiptDate: z.string(), currency: z.string(), amount: z.string(), allocated: z.string(), journalId: uuid }) }),
   ledgerRequestCreated: defineEvent({ type: 'ledger.request_created', version: 1, aggregateType: 'journal_request',
     schema: z.object({ requestId: uuid, companyId: uuid, kind: z.enum(['OPENING_BALANCE', 'CONTROL_ADJUSTMENT']), requestedByUserId: uuid, approvalRequired: z.boolean() }) }),
   ledgerRequestDecided: defineEvent({ type: 'ledger.request_decided', version: 1, aggregateType: 'journal_request',

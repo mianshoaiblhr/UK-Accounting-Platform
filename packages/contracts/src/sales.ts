@@ -96,3 +96,35 @@ export const salesDocumentListQuerySchema = z.object({
   customerRoleId: uuid.optional(), from: isoDate.optional(), to: isoDate.optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50), cursor: uuid.optional(),
 }).strict();
+
+// ───────────── Receipts (M5b, DEC-032) ─────────────
+export const receiptAllocationSchema = z.object({ invoiceId: uuid, amount: moneyString.refine((a) => Number(a) > 0, 'Must be greater than zero') }).strict();
+export const createReceiptSchema = z.object({
+  customerRoleId: uuid,
+  receiptDate: isoDate,
+  /** Otherwise the company's currency. */
+  currency: z.string().regex(/^[A-Z]{3}$/, 'ISO 4217 code, upper case').optional(),
+  amount: moneyString.refine((a) => Number(a) > 0, 'Must be greater than zero'),
+  /** A bank or cash account of the company. */
+  bankAccountId: uuid,
+  reference: z.string().trim().min(1).max(100).optional(),
+  notes: z.string().trim().max(2000).optional(),
+  /** Foreign currency only: a stored rate to use; otherwise the lookup rule applies (M3). */
+  rateId: uuid.optional(),
+  /** Allocate at entry (same customer and currency); the rest stays unallocated credit. */
+  allocations: z.array(receiptAllocationSchema).max(100).default([]),
+  /** Required when the duplicate check finds a possible duplicate receipt. */
+  duplicateOverrideReason: reason.optional(),
+}).strict();
+export const allocateReceiptSchema = z.object({
+  allocations: z.array(receiptAllocationSchema).min(1).max(100),
+  /** Otherwise today, or the receipt date if later. Not before either document. */
+  date: isoDate.optional(),
+}).strict();
+export const reverseReceiptSchema = z.object({ reason: z.string().trim().min(3).max(1000), date: isoDate.optional() }).strict();
+export const receiptListQuerySchema = z.object({
+  customerRoleId: uuid.optional(), status: z.enum(['POSTED', 'REVERSED']).optional(), unallocated: z.enum(['true', 'false']).optional().transform((v) => (v === undefined ? undefined : v === 'true')),
+  from: isoDate.optional(), to: isoDate.optional(), limit: z.coerce.number().int().min(1).max(200).default(50), cursor: uuid.optional(),
+}).strict();
+export const statementQuerySchema = z.object({ from: isoDate, to: isoDate }).strict().refine((q) => q.to >= q.from, { message: 'to cannot precede from', path: ['to'] });
+export const agedReceivablesQuerySchema = z.object({ asOf: isoDate.optional(), customerRoleId: uuid.optional() }).strict();

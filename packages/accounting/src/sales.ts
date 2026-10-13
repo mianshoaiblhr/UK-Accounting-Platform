@@ -413,26 +413,43 @@ export class SalesService {
     return this.get(tx, a.companyId, d.id);
   }
 
-  /** Open balance of a customer in the company currency: approved invoices outstanding less approved credits not yet allocated. */
+  /** Open balance of a customer in the company currency: approved invoices outstanding less credit notes and receipts not yet allocated. */
   async openBalance(tx: Tx, companyId: string, customerRoleId: string): Promise<Money> {
     const rows = await tx.salesDocument.groupBy({ by: ['kind'], where: { companyId, customerRoleId, status: 'APPROVED' }, _sum: { functionalOutstanding: true } });
     const s = (k: string) => rows.find((r) => r.kind === k)?._sum.functionalOutstanding ?? ZERO;
-    return money(s('INVOICE')).minus(money(s('CREDIT_NOTE')));
+    const rc = await tx.salesReceipt.aggregate({ where: { companyId, customerRoleId, status: 'POSTED' }, _sum: { functionalOutstanding: true } });
+    return money(s('INVOICE')).minus(money(s('CREDIT_NOTE'))).minus(money(rc._sum.functionalOutstanding ?? 0));
   }
 
   // ───── Allocation (DEC-030): releases carried amounts on both sides; any difference is realised FX in its own journal ─────
-  async allocate(tx: Tx, a: { organisationId: string; companyId: string; actor: SalesActor; invoiceId: string; creditId: string; amount: Money; date: string }) {
+  async allocate(tx: Tx, a: { organisationId: string; companyId: string; actor: SalesActor; invoiceId: string; creditId?: string; receiptId?: string; amount: Money; date: string }) {
     await this.need(a.actor, 'sales:approve', a.companyId);
-    await tx.$queryRaw`SELECT id FROM sales_document WHERE id IN (${a.invoiceId}::uuid, ${a.creditId}::uuid) ORDER BY id FOR UPDATE`;
-    const [inv, cr] = await Promise.all([tx.salesDocument.findFirst({ where: { id: a.invoiceId, companyId: a.companyId } }), tx.salesDocument.findFirst({ where: { id: a.creditId, companyId: a.companyId } })]);
-    if (!inv || !cr) throw notFound('Sales document not found');
-    if (inv.status !== 'APPROVED' || cr.status !== 'APPROVED') throw unprocessable('Only approved documents are allocated', 'document_not_approved');
+    if (!!a.creditId === !!a.receiptId) throw unprocessable('An allocation applies either a credit note or a receipt', 'invalid_allocation');
+    // lock in a fixed order (documents by id, then the receipt) so concurrent allocations cannot deadlock
+    await tx.$queryRaw`SELECT id FROM sales_document WHERE id IN (${a.invoiceId}::uuid, ${a.creditId ?? a.invoiceId}::uuid) ORDER BY id FOR UPDATE`;
+    if (a.receiptId) await tx.$queryRaw`SELECT id FROM sales_receipt WHERE id = ${a.receiptId}::uuid FOR UPDATE`;
+    const inv = await tx.salesDocument.findFirst({ where: { id: a.invoiceId, companyId: a.companyId } });
+    if (!inv || inv.kind !== 'INVOICE') throw notFound('Invoice not found');
+    if (inv.status !== 'APPROVED') throw unprocessable('Only approved invoices are allocated to', 'document_not_approved');
+    let src: { id: string; label: string; customerRoleId: string; currency: string; outstanding: Money; functionalOutstanding: Money };
+    if (a.creditId) {
+      const cr = await tx.salesDocument.findFirst({ where: { id: a.creditId, companyId: a.companyId } });
+      if (!cr) throw notFound('Sales document not found');
+      if (cr.status !== 'APPROVED') throw unprocessable('Only approved documents are allocated', 'document_not_approved');
+      src = { id: cr.id, label: cr.documentNumber!, customerRoleId: cr.customerRoleId, currency: cr.currency, outstanding: cr.outstanding, functionalOutstanding: cr.functionalOutstanding };
+    } else {
+      const r = await tx.salesReceipt.findFirst({ where: { id: a.receiptId!, companyId: a.companyId } });
+      if (!r) throw notFound('Receipt not found');
+      if (r.status !== 'POSTED') throw unprocessable('A reversed receipt cannot be allocated', 'receipt_reversed');
+      src = { id: r.id, label: `receipt ${r.reference ?? isoDay(r.receiptDate)}`, customerRoleId: r.customerRoleId, currency: r.currency, outstanding: r.outstanding, functionalOutstanding: r.functionalOutstanding };
+    }
+    if (src.customerRoleId !== inv.customerRoleId || src.currency !== inv.currency) throw unprocessable('An allocation joins documents of one customer and currency', 'allocation_mismatch');
     if (!a.amount.greaterThan(0)) throw unprocessable('An allocation must be greater than zero', 'invalid_amount');
-    if (a.amount.greaterThan(inv.outstanding) || a.amount.greaterThan(cr.outstanding)) throw unprocessable('An allocation cannot exceed what is outstanding on either document', 'allocation_exceeds_outstanding');
+    if (a.amount.greaterThan(inv.outstanding) || a.amount.greaterThan(src.outstanding)) throw unprocessable('An allocation cannot exceed what is outstanding on either side', 'allocation_exceeds_outstanding');
     const company = await this.company(tx, a.companyId);
     const fm = await this.minorOf(tx, company.baseCurrency);
     const invoiceFunctional = releaseShare(inv.functionalOutstanding, inv.outstanding, a.amount, fm);
-    const creditFunctional = releaseShare(cr.functionalOutstanding, cr.outstanding, a.amount, fm);
+    const creditFunctional = releaseShare(src.functionalOutstanding, src.outstanding, a.amount, fm);
     const diff = invoiceFunctional.minus(creditFunctional);
     const id = randomUUID();
     let fxJournalId: string | null = null;
@@ -443,8 +460,8 @@ export class SalesService {
       const amt = fmt(diff.abs(), fm);
       const loss = diff.greaterThan(0); // the invoice carried more than the credit releases: a debit is left on receivables
       const j = await this.posting.post(tx, {
-        organisationId: a.organisationId, companyId: a.companyId, journalDate: a.date, sourceType: 'SALES_ALLOCATION_FX', sourceId: id, sourceReference: `${inv.documentNumber}/${cr.documentNumber}`,
-        description: `Realised exchange ${loss ? 'loss' : 'gain'}: ${cr.documentNumber} allocated to ${inv.documentNumber} (${fmt(a.amount, await this.minorOf(tx, inv.currency))} ${inv.currency})`.slice(0, 500),
+        organisationId: a.organisationId, companyId: a.companyId, journalDate: a.date, sourceType: 'SALES_ALLOCATION_FX', sourceId: id, sourceReference: `${inv.documentNumber}/${src.label}`.slice(0, 100),
+        description: `Realised exchange ${loss ? 'loss' : 'gain'}: ${src.label} allocated to ${inv.documentNumber} (${fmt(a.amount, await this.minorOf(tx, inv.currency))} ${inv.currency})`.slice(0, 500),
         lines: [
           { accountId: fx.realisedAccountId, debit: loss ? amt : '0', credit: loss ? '0' : amt, description: 'Realised FX' },
           { accountId: settings.receivablesAccountId!, debit: loss ? '0' : amt, credit: loss ? amt : '0', description: `FX on ${inv.documentNumber}`, adjustsCurrency: inv.currency },
@@ -453,15 +470,15 @@ export class SalesService {
       });
       fxJournalId = j.id;
     }
-    const row = await tx.salesAllocation.create({ data: { id, organisationId: a.organisationId, companyId: a.companyId, invoiceId: inv.id, creditId: cr.id, amount: a.amount,
-      invoiceFunctional, creditFunctional, fxDifference: diff, fxJournalId, allocatedOn: toDate(a.date), createdByUserId: a.actor.userId } });
+    const row = await tx.salesAllocation.create({ data: { id, organisationId: a.organisationId, companyId: a.companyId, invoiceId: inv.id, creditId: a.creditId ?? null, receiptId: a.receiptId ?? null,
+      amount: a.amount, invoiceFunctional, creditFunctional, fxDifference: diff, fxJournalId, allocatedOn: toDate(a.date), createdByUserId: a.actor.userId } });
     await this.audit(tx, { action: 'sales_allocation.created', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actor.userId, entityType: 'sales_allocation', entityId: id,
-      after: { invoice: inv.documentNumber, credit: cr.documentNumber, amount: a.amount.toFixed(4), currency: inv.currency, realisedFx: fmt(diff.negated(), fm), fxJournalId } });
+      after: { invoice: inv.documentNumber, credit: src.label, receiptId: a.receiptId ?? null, amount: a.amount.toFixed(4), currency: inv.currency, realisedFx: fmt(diff.negated(), fm), fxJournalId } });
     return this.allocationView(row, fm);
   }
 
   private allocationView(r: AllocRow, fm: number) {
-    return { id: r.id, invoiceId: r.invoiceId, creditId: r.creditId, amount: r.amount.toFixed(4), invoiceFunctional: fmt(r.invoiceFunctional, fm), creditFunctional: fmt(r.creditFunctional, fm),
+    return { id: r.id, invoiceId: r.invoiceId, creditId: r.creditId, receiptId: r.receiptId, amount: r.amount.toFixed(4), invoiceFunctional: fmt(r.invoiceFunctional, fm), creditFunctional: fmt(r.creditFunctional, fm),
       /** Positive = gain, negative = loss, in the company currency. */
       realisedFx: fmt(r.fxDifference.negated(), fm), fxJournalId: r.fxJournalId, allocatedOn: isoDay(r.allocatedOn), createdByUserId: r.createdByUserId, createdAt: r.createdAt };
   }
@@ -525,6 +542,7 @@ export class SalesService {
     const settings = await tx.salesSetting.findFirst({ where: { companyId } });
     if (!settings?.receivablesAccountId) throw unprocessable('Set the receivables control account in the sales settings first', 'sales_settings_missing');
     const docs = await tx.salesDocument.groupBy({ by: ['currency', 'kind'], where: { companyId, status: 'APPROVED' }, _sum: { outstanding: true, functionalOutstanding: true } });
+    const receipts = await tx.salesReceipt.groupBy({ by: ['currency'], where: { companyId, status: 'POSTED' }, _sum: { outstanding: true, functionalOutstanding: true } });
     const ledger = await tx.$queryRaw<{ currency: string; source_type: string; original: string; functional: string }[]>`
       SELECT coalesce(l.original_currency, l.adjusts_currency, ${company.baseCurrency}) AS currency, j.source_type,
              sum(CASE WHEN l.original_currency IS NOT NULL THEN l.original_debit - l.original_credit WHEN l.adjusts_currency IS NOT NULL THEN 0 ELSE l.debit - l.credit END)::text AS original,
@@ -532,12 +550,13 @@ export class SalesService {
         FROM journal_line l JOIN journal j ON j.id = l.journal_id AND j.organisation_id = l.organisation_id
        WHERE l.company_id = ${companyId}::uuid AND l.account_id = ${settings.receivablesAccountId}::uuid
        GROUP BY 1, 2`;
-    const currencies = [...new Set([...docs.map((d) => d.currency), ...ledger.map((l) => l.currency)])].sort();
-    const SUB = new Set(['SALES_INVOICE', 'SALES_CREDIT_NOTE', 'SALES_ALLOCATION_FX']);
+    const currencies = [...new Set([...docs.map((d) => d.currency), ...receipts.map((r) => r.currency), ...ledger.map((l) => l.currency)])].sort();
+    const SUB = new Set(['SALES_INVOICE', 'SALES_CREDIT_NOTE', 'SALES_ALLOCATION_FX', 'SALES_RECEIPT', 'SALES_RECEIPT_REVERSAL']);
     const rows = [];
     for (const c of currencies) {
       const minor = await this.minorOf(tx, c);
-      const sumDocs = (k: 'outstanding' | 'functionalOutstanding') => docs.filter((d) => d.currency === c).reduce((t, d) => (d.kind === 'INVOICE' ? t.plus(d._sum[k] ?? 0) : t.minus(d._sum[k] ?? 0)), ZERO);
+      const sumDocs = (k: 'outstanding' | 'functionalOutstanding') => docs.filter((d) => d.currency === c).reduce((t, d) => (d.kind === 'INVOICE' ? t.plus(d._sum[k] ?? 0) : t.minus(d._sum[k] ?? 0)), ZERO)
+        .minus(money(receipts.find((r) => r.currency === c)?._sum[k] ?? 0));
       const led = ledger.filter((l) => l.currency === c);
       const sub = (rowsOf: typeof led, k: 'original' | 'functional') => rowsOf.reduce((t, l) => t.plus(money(l[k])), ZERO);
       const fromDocs = led.filter((l) => SUB.has(l.source_type)), other = led.filter((l) => !SUB.has(l.source_type));
@@ -558,5 +577,218 @@ export class SalesService {
   /** Drafts dated in a period (close control, MAN-ACC-08). */
   async draftsIn(tx: Tx, companyId: string, from: Date, to: Date) {
     return tx.salesDocument.findMany({ where: { companyId, status: 'DRAFT', issueDate: { gte: from, lte: to } }, select: { id: true, kind: true, issueDate: true, grossTotal: true, currency: true }, take: 20 });
+  }
+
+  // ───── Receipts (M5b, DEC-032): posted when recorded; allocated at entry or later; reversed only while unallocated ─────
+  private async bankAccount(tx: Tx, companyId: string, id: string, date: string) {
+    const a = await tx.account.findFirst({ where: { id, companyId } });
+    if (!a) throw unprocessable('The bank account does not exist in this company', 'unknown_account');
+    if (!['CURRENT_ASSET_BANK', 'CURRENT_ASSET_CASH'].includes(a.subtype)) throw unprocessable(`Account ${a.code} is not a bank or cash account`, 'not_a_bank_account');
+    const d = toDate(date);
+    if ((a.activeFrom && d < a.activeFrom) || (a.activeTo && d > a.activeTo)) throw unprocessable(`Account ${a.code} is not active on ${date}`, 'account_inactive');
+    return a;
+  }
+
+  async recordReceipt(tx: Tx, a: { organisationId: string; companyId: string; actor: SalesActor; customerRoleId: string; receiptDate: string; currency?: string; amount: string; bankAccountId: string;
+    reference?: string; notes?: string; rateId?: string; allocations: { invoiceId: string; amount: string }[]; duplicateOverrideReason?: string }) {
+    await this.need(a.actor, 'sales:approve', a.companyId);
+    const company = await this.company(tx, a.companyId);
+    const { role } = await this.customer(tx, a.companyId, a.customerRoleId);
+    if (role.status !== 'ACTIVE') throw conflict('An ended customer role cannot receive new receipts; reactivate it first', 'contact_role_ended');
+    const settings = await tx.salesSetting.findFirst({ where: { companyId: a.companyId } });
+    if (!settings?.receivablesAccountId) throw unprocessable('Set the receivables control account in the sales settings first', 'sales_settings_missing');
+    const currency = a.currency ?? company.baseCurrency;
+    const cur = await tx.currency.findUnique({ where: { code: currency } });
+    if (!cur) throw unprocessable(`${currency} is not a known currency`, 'unknown_currency');
+    const amount = money(a.amount);
+    if (!amount.greaterThan(0) || amount.decimalPlaces() > cur.minorUnits) throw unprocessable(`The amount must be greater than zero with at most ${cur.minorUnits} decimal places`, 'invalid_amount');
+    if (a.rateId && currency === company.baseCurrency) throw unprocessable('A rate applies only to foreign-currency receipts', 'rate_not_applicable');
+    await this.bankAccount(tx, a.companyId, a.bankAccountId, a.receiptDate);
+    const allocated = a.allocations.reduce((t, x) => t.plus(money(x.amount)), ZERO);
+    if (allocated.greaterThan(amount)) throw unprocessable('The allocations exceed the receipt', 'allocation_exceeds_outstanding');
+    if (new Set(a.allocations.map((x) => x.invoiceId)).size !== a.allocations.length) throw unprocessable('Each invoice appears once in the allocations', 'invalid_allocation');
+    // duplicate check (DEC-032): same customer and (same date, currency and amount, or the same bank reference)
+    const dups = await tx.salesReceipt.findMany({ where: { companyId: a.companyId, customerRoleId: role.id, status: 'POSTED',
+      OR: [{ receiptDate: toDate(a.receiptDate), currency, amount }, ...(a.reference ? [{ reference: a.reference }] : [])] }, select: { id: true }, take: 5 });
+    if (dups.length > 0 && !a.duplicateOverrideReason) throw conflict('Possible duplicate of an earlier receipt from this customer (same date, currency and amount, or the same reference); record it with a duplicateOverrideReason if it is genuine', 'possible_duplicate', { receipts: dups.map((d) => d.id) });
+    const id = randomUUID();
+    const snapshotName = (await tx.contact.findFirstOrThrow({ where: { id: role.contactId }, select: { name: true } })).name;
+    const amt = fmt(amount, cur.minorUnits);
+    const j = await this.posting.post(tx, {
+      organisationId: a.organisationId, companyId: a.companyId, journalDate: a.receiptDate, sourceType: 'SALES_RECEIPT', sourceId: id, sourceReference: a.reference ?? null,
+      description: `Receipt from ${snapshotName}${a.reference ? ` (${a.reference})` : ''}`.slice(0, 500),
+      ...(currency !== company.baseCurrency ? { currency, ...(a.rateId ? { rateId: a.rateId } : {}) } : {}),
+      lines: [
+        { accountId: a.bankAccountId, debit: amt, credit: '0', description: `Receipt ${snapshotName}`.slice(0, 300) },
+        { accountId: settings.receivablesAccountId, debit: '0', credit: amt, description: `Receipt ${snapshotName}`.slice(0, 300) },
+      ],
+      idempotencyKey: `sales-receipt:${id}`, actor: a.actor,
+    });
+    const recv = await tx.journalLine.findFirstOrThrow({ where: { journalId: j.id, lineNo: 2 } });
+    const functional = recv.credit;
+    await tx.salesReceipt.create({ data: { id, organisationId: a.organisationId, companyId: a.companyId, customerRoleId: role.id, contactId: role.contactId, receiptDate: toDate(a.receiptDate), currency,
+      amount, outstanding: amount, functionalAmount: functional, functionalOutstanding: functional, bankAccountId: a.bankAccountId, exchangeRateId: recv.exchangeRateId, rate: recv.rate,
+      reference: a.reference ?? null, notes: a.notes ?? null, journalId: j.id, duplicateOverrideReason: dups.length > 0 ? a.duplicateOverrideReason!.trim() : null, createdByUserId: a.actor.userId } });
+    for (const x of a.allocations) {
+      const inv = await tx.salesDocument.findFirst({ where: { id: x.invoiceId, companyId: a.companyId }, select: { issueDate: true } });
+      if (!inv) throw notFound('Invoice not found');
+      const date = isoDay(inv.issueDate) > a.receiptDate ? isoDay(inv.issueDate) : a.receiptDate;
+      await this.allocate(tx, { organisationId: a.organisationId, companyId: a.companyId, actor: a.actor, invoiceId: x.invoiceId, receiptId: id, amount: money(x.amount), date });
+    }
+    await this.audit(tx, { action: 'sales_receipt.recorded', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actor.userId, entityType: 'sales_receipt', entityId: id,
+      after: { customerRoleId: role.id, receiptDate: a.receiptDate, currency, amount: amt, allocated: fmt(allocated, cur.minorUnits), journalId: j.id }, reason: a.duplicateOverrideReason ?? null,
+      metadata: { duplicateOverride: dups.length > 0 } });
+    await publishEvent(tx, Events.salesReceiptRecorded, { aggregateId: id, organisationId: a.organisationId, actorUserId: a.actor.userId,
+      payload: { receiptId: id, companyId: a.companyId, customerRoleId: role.id, receiptDate: a.receiptDate, currency, amount: amt, allocated: fmt(allocated, cur.minorUnits), journalId: j.id } });
+    return this.getReceipt(tx, a.companyId, id);
+  }
+
+  /** Allocate (part of) a receipt's unallocated credit to invoices; dated, unless given, when both the receipt and the invoice exist. */
+  async allocateReceipt(tx: Tx, a: { organisationId: string; companyId: string; actor: SalesActor; receiptId: string; allocations: { invoiceId: string; amount: string }[]; date?: string }) {
+    await this.need(a.actor, 'sales:approve', a.companyId);
+    const r = await tx.salesReceipt.findFirst({ where: { id: a.receiptId, companyId: a.companyId } });
+    if (!r) throw notFound('Receipt not found');
+    if (new Set(a.allocations.map((x) => x.invoiceId)).size !== a.allocations.length) throw unprocessable('Each invoice appears once in the allocations', 'invalid_allocation');
+    for (const x of a.allocations) {
+      const inv = await tx.salesDocument.findFirst({ where: { id: x.invoiceId, companyId: a.companyId }, select: { issueDate: true } });
+      if (!inv) throw notFound('Invoice not found');
+      const earliest = isoDay(inv.issueDate) > isoDay(r.receiptDate) ? isoDay(inv.issueDate) : isoDay(r.receiptDate);
+      if (a.date && a.date < earliest) throw unprocessable('An allocation cannot precede the receipt or the invoice', 'invalid_date');
+      await this.allocate(tx, { organisationId: a.organisationId, companyId: a.companyId, actor: a.actor, invoiceId: x.invoiceId, receiptId: r.id, amount: money(x.amount), date: a.date ?? earliest });
+    }
+    return this.getReceipt(tx, a.companyId, r.id);
+  }
+
+  async reverseReceipt(tx: Tx, a: { organisationId: string; companyId: string; actor: SalesActor; id: string; reason: string; date?: string }) {
+    await this.need(a.actor, 'sales:approve', a.companyId);
+    await tx.$queryRaw`SELECT id FROM sales_receipt WHERE id = ${a.id}::uuid FOR UPDATE`;
+    const r = await tx.salesReceipt.findFirst({ where: { id: a.id, companyId: a.companyId } });
+    if (!r) throw notFound('Receipt not found');
+    if (r.status !== 'POSTED') throw conflict('This receipt is already reversed', 'receipt_reversed');
+    if (!r.outstanding.equals(r.amount)) throw conflict('Part of this receipt is allocated to invoices; an allocated receipt cannot be reversed (unallocating is deferred, DEC-026)', 'receipt_allocated');
+    const date = a.date ?? isoDay(r.receiptDate);
+    if (date < isoDay(r.receiptDate)) throw unprocessable('A reversal cannot precede the receipt', 'invalid_date');
+    // the exact mirror of the posted lines, original amounts and rate included (a foreign receipt reverses at its own rate, whatever the date)
+    const posted = await tx.journalLine.findMany({ where: { journalId: r.journalId }, orderBy: { lineNo: 'asc' } });
+    const j = await this.posting.post(tx, {
+      organisationId: a.organisationId, companyId: a.companyId, journalDate: date, sourceType: 'SALES_RECEIPT_REVERSAL', sourceId: r.id, sourceReference: r.reference,
+      description: `Reversal of receipt ${r.reference ?? r.id.slice(0, 8)}: ${a.reason.trim()}`.slice(0, 500),
+      lines: [...posted].reverse().map((l) => ({ accountId: l.accountId, debit: l.credit.toFixed(4), credit: l.debit.toFixed(4), description: 'Receipt reversed',
+        ...(l.originalCurrency ? { original: { currency: l.originalCurrency, debit: l.originalCredit!.toFixed(4), credit: l.originalDebit!.toFixed(4), rate: l.rate!.toFixed(8), rateId: l.exchangeRateId! } } : {}) })),
+      idempotencyKey: `sales-receipt-reversal:${r.id}`, actor: a.actor, reason: a.reason,
+    });
+    await tx.salesReceipt.update({ where: { id: r.id }, data: { status: 'REVERSED', reversalJournalId: j.id, reversedByUserId: a.actor.userId, reversedAt: new Date(), reversedReason: a.reason.trim() } });
+    await this.audit(tx, { action: 'sales_receipt.reversed', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actor.userId, entityType: 'sales_receipt', entityId: r.id,
+      before: { status: 'POSTED' }, after: { status: 'REVERSED', journalId: j.id, date }, reason: a.reason });
+    return this.getReceipt(tx, a.companyId, r.id);
+  }
+
+  async getReceipt(tx: Tx, companyId: string, id: string) {
+    const r = await tx.salesReceipt.findFirst({ where: { id, companyId } });
+    if (!r) throw notFound('Receipt not found');
+    const company = await this.company(tx, companyId);
+    const [minor, fm] = await Promise.all([this.minorOf(tx, r.currency), this.minorOf(tx, company.baseCurrency)]);
+    const allocs = await tx.salesAllocation.findMany({ where: { receiptId: r.id }, orderBy: { createdAt: 'asc' } });
+    return { ...this.receiptView(r, minor, fm), allocations: allocs.map((x) => this.allocationView(x, fm)) };
+  }
+  private receiptView(r: Awaited<ReturnType<Tx['salesReceipt']['findUniqueOrThrow']>>, minor: number, fm: number) {
+    return { id: r.id, companyId: r.companyId, customerRoleId: r.customerRoleId, contactId: r.contactId, receiptDate: isoDay(r.receiptDate), currency: r.currency, amount: fmt(r.amount, minor),
+      unallocated: fmt(r.outstanding, minor), functional: { amount: fmt(r.functionalAmount, fm), unallocated: fmt(r.functionalOutstanding, fm) }, rate: r.rate ? r.rate.toFixed(8) : null, exchangeRateId: r.exchangeRateId,
+      bankAccountId: r.bankAccountId, reference: r.reference, notes: r.notes, journalId: r.journalId, duplicateOverrideReason: r.duplicateOverrideReason, status: r.status,
+      reversalJournalId: r.reversalJournalId, reversedByUserId: r.reversedByUserId, reversedAt: r.reversedAt, reversedReason: r.reversedReason, createdByUserId: r.createdByUserId, createdAt: r.createdAt };
+  }
+  async listReceipts(tx: Tx, companyId: string, q: { customerRoleId?: string; status?: string; unallocated?: boolean; from?: string; to?: string; limit: number; cursor?: string }) {
+    const company = await this.company(tx, companyId);
+    const fm = await this.minorOf(tx, company.baseCurrency);
+    const rows = await tx.salesReceipt.findMany({
+      where: { companyId, ...(q.customerRoleId ? { customerRoleId: q.customerRoleId } : {}), ...(q.status ? { status: q.status } : {}),
+        ...(q.unallocated === true ? { status: 'POSTED', outstanding: { gt: 0 } } : q.unallocated === false ? { outstanding: 0 } : {}),
+        ...(q.from || q.to ? { receiptDate: { ...(q.from ? { gte: toDate(q.from) } : {}), ...(q.to ? { lte: toDate(q.to) } : {}) } } : {}) },
+      orderBy: [{ receiptDate: 'desc' }, { id: 'desc' }], take: q.limit + 1, ...(q.cursor ? { cursor: { id: q.cursor }, skip: 1 } : {}),
+    });
+    const items = [];
+    for (const r of rows.slice(0, q.limit)) items.push(this.receiptView(r, await this.minorOf(tx, r.currency), fm));
+    return { items, nextCursor: rows.length > q.limit ? rows[q.limit - 1]!.id : null };
+  }
+
+  // ───── Customer statement and aged receivables (document currency; from documents, receipts and allocations) ─────
+  async statement(tx: Tx, companyId: string, customerRoleId: string, q: { from: string; to: string }) {
+    const { role } = await this.customer(tx, companyId, customerRoleId);
+    const docs = await tx.salesDocument.findMany({ where: { companyId, customerRoleId, status: 'APPROVED', issueDate: { lte: toDate(q.to) } } });
+    const receipts = await tx.salesReceipt.findMany({ where: { companyId, customerRoleId, receiptDate: { lte: toDate(q.to) } } });
+    const revJournals = new Map((await tx.journal.findMany({ where: { id: { in: receipts.map((r) => r.reversalJournalId).filter(Boolean) as string[] } }, select: { id: true, journalDate: true } })).map((j) => [j.id, isoDay(j.journalDate)]));
+    type Entry = { date: string; type: string; reference: string | null; documentId: string; dueDate: string | null; debit: Money; credit: Money };
+    const byCcy = new Map<string, Entry[]>();
+    const push = (c: string, e: Entry) => { if (!byCcy.has(c)) byCcy.set(c, []); byCcy.get(c)!.push(e); };
+    for (const d of docs) push(d.currency, { date: isoDay(d.issueDate), type: d.kind, reference: d.documentNumber, documentId: d.id, dueDate: d.kind === 'INVOICE' ? isoDay(d.dueDate) : null,
+      debit: d.kind === 'INVOICE' ? d.grossTotal : ZERO, credit: d.kind === 'INVOICE' ? ZERO : d.grossTotal });
+    for (const r of receipts) {
+      push(r.currency, { date: isoDay(r.receiptDate), type: 'RECEIPT', reference: r.reference, documentId: r.id, dueDate: null, debit: ZERO, credit: r.amount });
+      const rd = r.reversalJournalId ? revJournals.get(r.reversalJournalId) : undefined;
+      if (rd && rd <= q.to) push(r.currency, { date: rd, type: 'RECEIPT_REVERSAL', reference: r.reference, documentId: r.id, dueDate: null, debit: r.amount, credit: ZERO });
+    }
+    const currencies = [];
+    for (const [c, entries] of [...byCcy.entries()].sort(([x], [y]) => x.localeCompare(y))) {
+      const minor = await this.minorOf(tx, c);
+      entries.sort((x, y) => x.date.localeCompare(y.date) || x.type.localeCompare(y.type));
+      const opening = entries.filter((e) => e.date < q.from).reduce((t, e) => t.plus(e.debit).minus(e.credit), ZERO);
+      let bal = opening;
+      const lines = entries.filter((e) => e.date >= q.from).map((e) => { bal = bal.plus(e.debit).minus(e.credit); return { date: e.date, type: e.type, reference: e.reference, documentId: e.documentId, dueDate: e.dueDate,
+        debit: fmt(e.debit, minor), credit: fmt(e.credit, minor), balance: fmt(bal, minor) }; });
+      currencies.push({ currency: c, opening: fmt(opening, minor), lines, closing: fmt(bal, minor) });
+    }
+    return { companyId, customerRoleId, customer: await buildContactSnapshot(tx, role.id), from: q.from, to: q.to, currencies };
+  }
+
+  async agedReceivables(tx: Tx, companyId: string, q: { asOf?: string; customerRoleId?: string }) {
+    await this.company(tx, companyId);
+    const asOf = q.asOf ?? isoDay(new Date());
+    const d = toDate(asOf);
+    const filt = q.customerRoleId ? { customerRoleId: q.customerRoleId } : {};
+    const invoices = await tx.salesDocument.findMany({ where: { companyId, ...filt, status: 'APPROVED', issueDate: { lte: d } } });
+    const receipts = await tx.salesReceipt.findMany({ where: { companyId, ...filt, receiptDate: { lte: d } } });
+    const revDates = new Map((await tx.journal.findMany({ where: { id: { in: receipts.map((r) => r.reversalJournalId).filter(Boolean) as string[] } }, select: { id: true, journalDate: true } })).map((j) => [j.id, j.journalDate]));
+    const allocs = await tx.salesAllocation.findMany({ where: { companyId, allocatedOn: { lte: d } } });
+    const used = (pick: (x: AllocRow) => string | null) => { const m = new Map<string, Money>(); for (const x of allocs) { const k = pick(x); if (k) m.set(k, (m.get(k) ?? ZERO).plus(x.amount)); } return m; };
+    const toInvoice = used((x) => x.invoiceId), fromCredit = used((x) => x.creditId), fromReceipt = used((x) => x.receiptId);
+    const BUCKETS = ['notDue', 'days1to30', 'days31to60', 'days61to90', 'over90'] as const;
+    type Row = Record<(typeof BUCKETS)[number] | 'unallocatedCredits', Money>;
+    const rows = new Map<string, { customerRoleId: string; currency: string; r: Row }>();
+    const row = (cust: string, c: string) => { const k = `${cust}|${c}`; if (!rows.has(k)) rows.set(k, { customerRoleId: cust, currency: c, r: { notDue: ZERO, days1to30: ZERO, days31to60: ZERO, days61to90: ZERO, over90: ZERO, unallocatedCredits: ZERO } }); return rows.get(k)!.r; };
+    for (const i of invoices) {
+      const open = i.kind === 'INVOICE' ? i.grossTotal.minus(toInvoice.get(i.id) ?? ZERO) : i.grossTotal.minus(fromCredit.get(i.id) ?? ZERO);
+      if (open.isZero()) continue;
+      const r = row(i.customerRoleId, i.currency);
+      if (i.kind !== 'INVOICE') { r.unallocatedCredits = r.unallocatedCredits.minus(open); continue; }
+      const late = Math.round((d.getTime() - i.dueDate.getTime()) / 86_400_000);
+      const b = late <= 0 ? 'notDue' : late <= 30 ? 'days1to30' : late <= 60 ? 'days31to60' : late <= 90 ? 'days61to90' : 'over90';
+      r[b] = r[b].plus(open);
+    }
+    for (const rc of receipts) {
+      const rev = rc.reversalJournalId ? revDates.get(rc.reversalJournalId) : undefined;
+      if (rev && rev <= d) continue;
+      const open = rc.amount.minus(fromReceipt.get(rc.id) ?? ZERO);
+      if (!open.isZero()) { const r = row(rc.customerRoleId, rc.currency); r.unallocatedCredits = r.unallocatedCredits.minus(open); }
+    }
+    const names = new Map((await tx.contactRole.findMany({ where: { id: { in: [...new Set([...rows.values()].map((x) => x.customerRoleId))] } }, select: { id: true, accountCode: true, contactId: true } })).map((x) => [x.id, x]));
+    const contactNames = new Map((await tx.contact.findMany({ where: { id: { in: [...names.values()].map((x) => x.contactId) } }, select: { id: true, name: true } })).map((x) => [x.id, x.name]));
+    const out = [];
+    const totals = new Map<string, Row>();
+    for (const v of [...rows.values()].sort((x, y) => x.currency.localeCompare(y.currency) || (contactNames.get(names.get(x.customerRoleId)?.contactId ?? '') ?? '').localeCompare(contactNames.get(names.get(y.customerRoleId)?.contactId ?? '') ?? ''))) {
+      const minor = await this.minorOf(tx, v.currency);
+      const total = [...BUCKETS, 'unallocatedCredits' as const].reduce((t, k) => t.plus(v.r[k]), ZERO);
+      const tt = totals.get(v.currency) ?? { notDue: ZERO, days1to30: ZERO, days31to60: ZERO, days61to90: ZERO, over90: ZERO, unallocatedCredits: ZERO };
+      for (const k of [...BUCKETS, 'unallocatedCredits' as const]) tt[k] = tt[k].plus(v.r[k]);
+      totals.set(v.currency, tt);
+      const n = names.get(v.customerRoleId);
+      out.push({ customerRoleId: v.customerRoleId, accountCode: n?.accountCode ?? null, name: contactNames.get(n?.contactId ?? '') ?? null, currency: v.currency,
+        ...Object.fromEntries([...BUCKETS, 'unallocatedCredits'].map((k) => [k, fmt(v.r[k as keyof Row], minor)])), total: fmt(total, minor) });
+    }
+    const currencyTotals = [];
+    for (const [c, t] of [...totals.entries()].sort(([x], [y]) => x.localeCompare(y))) {
+      const minor = await this.minorOf(tx, c);
+      currencyTotals.push({ currency: c, ...Object.fromEntries([...BUCKETS, 'unallocatedCredits'].map((k) => [k, fmt(t[k as keyof Row], minor)])), total: fmt([...BUCKETS, 'unallocatedCredits' as const].reduce((s2, k) => s2.plus(t[k]), ZERO), minor) });
+    }
+    return { companyId, asOf, customers: out, totals: currencyTotals };
   }
 }

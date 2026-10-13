@@ -77,6 +77,8 @@ export const JOURNAL_SOURCES: Record<string, JournalSourceDef> = {
   REVERSAL: { actors: ['USER'], permission: 'journal:post', controlAccounts: true, description: 'Mirror of an earlier journal (corrections are reversals, never edits)' },
   SALES_INVOICE: { actors: ['USER'], permission: 'sales:approve', controlAccounts: true, controlKinds: ['TRADE_RECEIVABLES'], subLedger: true, description: 'Approved sales invoice (Dr trade receivables / Cr revenue / Cr output VAT)' },
   SALES_CREDIT_NOTE: { actors: ['USER'], permission: 'sales:approve', controlAccounts: true, controlKinds: ['TRADE_RECEIVABLES'], subLedger: true, description: 'Approved sales credit note, linked to its invoice' },
+  SALES_RECEIPT: { actors: ['USER'], permission: 'sales:approve', controlAccounts: true, controlKinds: ['TRADE_RECEIVABLES', 'BANK', 'CASH'], subLedger: true, description: 'Customer receipt (Dr bank or cash / Cr trade receivables)' },
+  SALES_RECEIPT_REVERSAL: { actors: ['USER'], permission: 'sales:approve', controlAccounts: true, controlKinds: ['TRADE_RECEIVABLES', 'BANK', 'CASH'], subLedger: true, description: 'Reversal of an unallocated customer receipt (same rate)' },
   SALES_ALLOCATION_FX: { actors: ['USER'], permission: 'sales:approve', controlAccounts: true, controlKinds: ['TRADE_RECEIVABLES'], subLedger: true, description: 'Realised exchange difference of an allocation between sales documents' },
 };
 export const isJournalSource = (s: string) => Object.prototype.hasOwnProperty.call(JOURNAL_SOURCES, s);

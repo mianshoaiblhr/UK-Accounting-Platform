@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, Inject, Injectable, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import type { z } from 'zod';
 import {
-  approveSalesDocumentSchema, attachSalesDocumentSchema, createCreditNoteSchema, createInvoiceSchema, discardSalesDocumentSchema, salesDocumentListQuerySchema, salesSettingsSchema, updateSalesDraftSchema,
+  agedReceivablesQuerySchema, allocateReceiptSchema, approveSalesDocumentSchema, attachSalesDocumentSchema, createReceiptSchema, receiptListQuerySchema, reverseReceiptSchema, statementQuerySchema, createCreditNoteSchema, createInvoiceSchema, discardSalesDocumentSchema, salesDocumentListQuerySchema, salesSettingsSchema, updateSalesDraftSchema,
   type Permission,
 } from '@uk/contracts';
 import { notFound } from '@uk/core';
@@ -91,6 +91,30 @@ export class SalesController {
   attachments(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('documentId') id: string) { return this.api.attachments(org, c, id); }
   @Post('sales/documents/:documentId/attachments') @RequirePermissions('sales:manage') @Idempotent()
   attach(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('documentId') id: string, @Body(new ZodPipe(attachSalesDocumentSchema)) b: z.output<typeof attachSalesDocumentSchema>) { return this.api.attach(org, c, id, b); }
+  // ───── Receipts (M5b) ─────
+  @Post('sales/receipts') @RequirePermissions('sales:approve') @Idempotent()
+  recordReceipt(@Org() org: OrgAccess, @ID('companyId') c: string, @Body(new ZodPipe(createReceiptSchema)) b: z.output<typeof createReceiptSchema>) {
+    return this.api.run(org, (tx, actor) => this.sales.recordReceipt(tx, { organisationId: org.organisationId, companyId: c, actor, ...b }));
+  }
+  @Get('sales/receipts') @RequirePermissions('sales:read')
+  receipts(@Org() org: OrgAccess, @ID('companyId') c: string, @Query(new ZodPipe(receiptListQuerySchema)) q: z.output<typeof receiptListQuerySchema>) { return this.api.run(org, (tx) => this.sales.listReceipts(tx, c, q)); }
+  @Get('sales/receipts/:receiptId') @RequirePermissions('sales:read')
+  receipt(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('receiptId') id: string) { return this.api.run(org, (tx) => this.sales.getReceipt(tx, c, id)); }
+  @Post('sales/receipts/:receiptId/allocations') @HttpCode(200) @RequirePermissions('sales:approve') @Idempotent()
+  allocateReceipt(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('receiptId') id: string, @Body(new ZodPipe(allocateReceiptSchema)) b: z.output<typeof allocateReceiptSchema>) {
+    return this.api.run(org, (tx, actor) => this.sales.allocateReceipt(tx, { organisationId: org.organisationId, companyId: c, actor, receiptId: id, ...b }));
+  }
+  @Post('sales/receipts/:receiptId/reverse') @HttpCode(200) @RequirePermissions('sales:approve') @Idempotent()
+  reverseReceipt(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('receiptId') id: string, @Body(new ZodPipe(reverseReceiptSchema)) b: z.output<typeof reverseReceiptSchema>) {
+    return this.api.run(org, (tx, actor) => this.sales.reverseReceipt(tx, { organisationId: org.organisationId, companyId: c, actor, id, ...b }));
+  }
+  @Get('sales/customers/:roleId/statement') @RequirePermissions('sales:read')
+  statement(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('roleId') id: string, @Query(new ZodPipe(statementQuerySchema)) q: z.output<typeof statementQuerySchema>) {
+    return this.api.run(org, (tx) => this.sales.statement(tx, c, id, q));
+  }
+  @Get('sales/aged-receivables') @RequirePermissions('sales:read')
+  aged(@Org() org: OrgAccess, @ID('companyId') c: string, @Query(new ZodPipe(agedReceivablesQuerySchema)) q: z.output<typeof agedReceivablesQuerySchema>) { return this.api.run(org, (tx) => this.sales.agedReceivables(tx, c, q)); }
+
   @Get('sales/reconciliation') @RequirePermissions('sales:read')
   reconciliation(@Org() org: OrgAccess, @ID('companyId') c: string) { return this.api.run(org, (tx) => this.sales.reconciliation(tx, c)); }
 }

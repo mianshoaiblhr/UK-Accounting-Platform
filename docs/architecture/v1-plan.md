@@ -14,7 +14,7 @@ Tenant isolation by forced row-level security; one central authoriser for compan
 | M4a | Contact roles: customers and suppliers (DEC-011, DEC-023) | **verified** (code baseline `206b14d`; package `v1-m4a-acceptance.md`) | Engineering | M1-M3 |
 | M4b | VAT foundation, standard accounting (DEC-010, DEC-021, DEC-025) | implemented (section 6.4); **every rule usable only after verification by a holder of `tax:rule-verify`**; no figures seeded | Engineering; the firm's qualified tax reviewer | M3, M4a |
 | M5a | Sales documents: invoices, credit notes, numbering, checks, credit-note allocation (DEC-026..031) | **verified** (code baseline `e698562`; package `v1-m5a-acceptance.md`) | Engineering | M2, M3, M4 |
-| M5b | Receipts and allocations, realised FX end to end, statements, aged receivables | specified (section 9) | Engineering | M5a |
+| M5b | Receipts and allocations, realised FX end to end, statements, aged receivables | implemented (section 9.5; DEC-032) | Engineering | M5a |
 | M5c | VAT on foreign-currency documents (V1-VAT-15) | to be specified after M5b; unverified rule (DEC-031) | Engineering; the firm's tax reviewer | M5b |
 | M6 | Purchases: bills, debit notes, payments, cash | planned | Engineering | M3, M4, M5 patterns |
 | M7 | Bank accounts, statement import, transfers, charges, interest, reconciliation | planned | Engineering | M5, M6 |
@@ -270,6 +270,23 @@ Recorded before code under the delegation of 2026-10-12. Statements about VAT la
 * **Defects found while testing and fixed before commit:**
   * plpgsql read a `CASE ... THEN` inside an `IF` condition as the end of the condition. Fixed by wrapping the expression in parentheses.
   * The approval guard compared the text `journal.source_id` with a uuid. Fixed with an explicit cast.
+
+### 9.5 As built (M5b)
+* **Migration** `20260112000000_v1_sales_receipts` (additive):
+  * `sales_receipt` with forced RLS and no `DELETE`/`TRUNCATE`;
+  * `sales_receipt_guard`: created POSTED with its own `SALES_RECEIPT` journal into a bank or cash account; immutable; unallocated amounts move only through allocations; POSTED -> REVERSED once, only while unallocated, with its own `SALES_RECEIPT_REVERSAL` journal;
+  * `sales_allocation` takes a credit note **or** a receipt (exactly one), and `sales_allocation_apply` checks either;
+  * receipt journals are added to the sub-ledger reversal guard.
+* **Code:** `SalesService` adds `recordReceipt`, `allocateReceipt`, `reverseReceipt` and the receipt reads, `statement` and `agedReceivables`. The allocation path is shared by credit notes and receipts.
+  * Sources `SALES_RECEIPT` and `SALES_RECEIPT_REVERSAL` may touch the TRADE_RECEIVABLES, BANK and CASH control kinds.
+  * The reversal mirrors the posted lines (original amounts and rate), so a foreign receipt reverses at its own rate whatever the date.
+  * The reconciliation, open balance and role-end check include receipts.
+  * The API gains 7 routes, all in OpenAPI.
+* **Hand-calculated evidence:**
+  * Receipt of 400.00 allocated 100.00 + 200.00, leaving 100.00 unallocated; 50.00 allocated later.
+  * EUR invoice of 1000 at 0.85 settled by 600 at 0.90 (gain 30.00) and 400 at 0.80 (loss 20.00), net 10.00 with no residue.
+  * Ageing as at two dates: an allocation dated later does not rewrite the past.
+* **Defect found by the tests and fixed before commit:** a foreign receipt reversed on a later date looked up a new rate (and failed outside the 7-day window). The reversal now mirrors the posted lines.
 
 ### 9.3 Deferred (DEC-026)
 Recurring invoices, quotes, line discounts, invoice rendering and sending (M9 and notifications), online payment, direct debit, refunds, bad-debt relief, deposits before an invoice, write-offs, statutory tax-point derivation (DEC-028), unallocating, VAT on foreign-currency documents until M5c.
