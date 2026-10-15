@@ -32,6 +32,8 @@ const t = <T>(fn: (tx: Tx) => Promise<T>) => db.tenant({ organisationId: org, us
 const me = (deny: string[] = []): SalesActor => ({ kind: 'USER', userId: user, can: async (p) => !deny.includes(p) });
 const all = (deny: string[] = []) => async (p: string) => !deny.includes(p);
 const src = { url: 'https://example.invalid/synthetic-rule', provision: 'Synthetic Act 2026, s.1 (test fixture, not a real rule)', retrievedOn: '2025-01-01' };
+/** Statement lines are a union: totals carry no accounts. */
+const accountsOf = (l: object) => ('accounts' in l ? (l.accounts as { accountId: string; code: string; amount: string; drilldown: unknown }[]) : []);
 const amounts = (lines: { key: string; amount: string; comparative?: string }[]) => Object.fromEntries(lines.map((l) => [l.key, l.comparative === undefined ? l.amount : `${l.amount} | ${l.comparative}`]));
 
 async function setupCompany(name: string, periods: [string, string][]) {
@@ -116,8 +118,8 @@ describe('the books of Report Co', () => {
     });
     expect(pl.reconciliation).toEqual({ incomeLessExpensesFromLedger: '1685.00', difference: '0.00', reconciled: true, comparative: { incomeLessExpensesFromLedger: '400.00', reconciled: true } });
     const admin = pl.lines.find((l) => l.key === 'PL.ADMIN_EXPENSES')!;
-    expect(admin.accounts!.map((a) => `${a.code}:${a.amount}`)).toEqual(['6100:800.00', '6310:200.00', '6800:25.00']);
-    expect(admin.accounts![0]!.drilldown).toEqual({ accountId: acc[co]!['6100'], from: '2026-01-01', to: '2026-12-31' });
+    expect(accountsOf(admin).map((a) => `${a.code}:${a.amount}`)).toEqual(['6100:800.00', '6310:200.00', '6800:25.00']);
+    expect(accountsOf(admin)[0]!.drilldown).toEqual({ accountId: acc[co]!['6100'], from: '2026-01-01', to: '2026-12-31' });
     const withEmpty = await t((tx) => reports.profitAndLoss(tx, co, { from: '2026-01-01', to: '2026-12-31', includeEmpty: true }));
     expect(withEmpty.lines.map((l) => l.key)).toContain('PL.TAXATION');
   });
@@ -131,11 +133,11 @@ describe('the books of Report Co', () => {
     expect(bs.reconciliation).toMatchObject({ netAssets: '3085.00', capitalAndReserves: '3085.00', difference: '0.00', balanced: true, trialBalance: { balanced: true }, comparative: { balanced: true } });
     expect(bs.financialYearStart).toBe('2026-01-01');
     const debtors = bs.lines.find((l) => l.key === 'BS.CURRENT_ASSETS.DEBTORS')!;
-    expect(debtors.accounts!.map((a) => `${a.code}:${a.amount}`)).toEqual(['1100:1125.00', '1150:162.50']);
+    expect(accountsOf(debtors).map((a) => `${a.code}:${a.amount}`)).toEqual(['1100:1125.00', '1150:162.50']);
     const cashLine = bs.lines.find((l) => l.key === 'BS.CURRENT_ASSETS.CASH')!;
-    expect(cashLine.accounts!.map((a) => `${a.code}:${a.amount}`)).toEqual(['1200:2347.50', '1220:100.00']);
+    expect(accountsOf(cashLine).map((a) => `${a.code}:${a.amount}`)).toEqual(['1200:2347.50', '1220:100.00']);
     const creditors = bs.lines.find((l) => l.key === 'BS.CREDITORS_WITHIN_ONE_YEAR')!;
-    expect(creditors.accounts!.map((a) => `${a.code}:${a.amount}`)).toEqual(['2100:225.00', '2200:425.00']);
+    expect(accountsOf(creditors).map((a) => `${a.code}:${a.amount}`)).toEqual(['2100:225.00', '2200:425.00']);
   });
   it('drill-down: statement line -> account -> journal -> the document that posted it, for every kind of source in these books', async () => {
     const journals = sql(`SELECT string_agg(id::text || ':' || source_type, ',' ORDER BY journal_number) FROM journal WHERE company_id='${co}'`).split(',').map((x) => x.split(':') as [string, string]);
