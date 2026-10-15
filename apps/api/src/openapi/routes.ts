@@ -25,7 +25,7 @@ const page = z.object({ limit: z.number().int().min(1).max(100).default(25).desc
 export const NAMED_RESPONSES: Record<string, ZodTypeAny> = {
   Company: R.Company, Period: R.Period, DocumentRecord: R.DocumentRecord, DocumentVersion: R.DocumentVersion, DocumentCreated: R.DocumentCreated, DocumentFolder: R.DocumentFolder, EvidenceLink: R.EvidenceLink, DocumentExtraction: R.DocumentExtraction, DocumentAccessGrant: R.DocumentAccessGrant,
   Job: R.Job, JobAccepted: R.JobAccepted, Task: R.Task, TaskComment: R.TaskComment, TaskAttachment: R.TaskAttachment, TaskReminder: R.TaskReminder, Notification: R.Notification, WorkflowInstance: R.WorkflowInstance, WorkflowDetail: R.WorkflowDetail,
-  Connection: R.Connection, AiProposal: R.AiProposal, Practice: R.Practice, FeatureFlag: R.FeatureFlag, Contact: R.Contact, Address: R.Address, Officer: R.Officer, ProposedPeriod: R.ProposedPeriod, GrantList: R.GrantList, GrantResult: R.GrantResult, Role: R.Role, Invitation: R.Invitation, Organisation: R.Organisation, OrgMe: R.OrgMe, Me: R.Me,
+  Connection: R.Connection, AiProposal: R.AiProposal, Practice: R.Practice, FeatureFlag: R.FeatureFlag, Contact: R.Contact, Address: R.Address, Officer: R.Officer, ProposedPeriod: R.ProposedPeriod, GrantList: R.GrantList, GrantResult: R.GrantResult, Role: R.Role, Invitation: R.Invitation, Organisation: R.Organisation, OrgMe: R.OrgMe, CompanyAccess: R.CompanyAccess, Me: R.Me,
   LoginResult: R.LoginResult, Message: R.Message, Health: R.Health, MfaStatus: R.MfaStatus, MfaEnrol: R.MfaEnrol, MfaConfirmed: R.MfaConfirmed,
   DownloadLink: R.DownloadLink, CheckResult: R.CheckResult,
   AccountView: R.AccountView, AccountList: R.items(R.AccountView), JournalDetail: R.JournalDetail, JournalPage: R.JournalPage, GeneralLedger: R.GeneralLedger, TrialBalance: R.TrialBalance, PeriodState: R.PeriodState,
@@ -95,6 +95,7 @@ export const ROUTES: Record<string, RouteDoc> = {
   [`POST ${v}/companies`]: { tag: 'Companies', summary: 'Create a company', body: ['CreateCompanyRequest', C.createCompanySchema], ok: [201, 'Company', 'Created'], extraErrors: [409] },
   [`GET ${v}/companies`]: { tag: 'Companies', summary: 'List companies the caller can access', query: page, ok: [200, 'CompanyPage', 'Page of companies'] },
   [`GET ${v}/companies/{companyId}`]: { tag: 'Companies', summary: 'Get a company', ok: [200, 'Company', 'Company'] },
+  [`GET ${v}/companies/{companyId}/my-access`]: { tag: 'Companies', summary: 'What the caller may do in this company and which features are on (for screens; the API still enforces every route)', ok: [200, 'CompanyAccess', 'Access'] },
   [`PATCH ${v}/companies/{companyId}`]: { tag: 'Companies', summary: 'Rename a company', body: ['UpdateCompanyRequest', C.updateCompanySchema], ok: [200, 'Company', 'Updated'], extraErrors: [422] },
   [`GET ${v}/companies/{companyId}/periods/next`]: { tag: 'Companies', summary: 'The accounting period that follows the latest one, derived from the company\'s financial year-end (and incorporation date for the first period)', ok: [200, 'ProposedPeriod', 'Proposed period'], extraErrors: [422] },
   [`GET ${v}/companies/{companyId}/periods`]: { tag: 'Companies', summary: 'List accounting periods', ok: [200, 'PeriodList', 'Periods'] },

@@ -396,7 +396,7 @@ These choices refine DEC-036. None of them is a tax rule; the VAT arithmetic is 
 * **Rule for every screen:** it displays amounts, totals, balances and statuses exactly as the API returns them; it never adds, rounds or derives an accounting figure. Errors are the API's RFC 9457 title and field errors.
 
 ### DEC-049 - What a screen may show and do
-* **Endpoint:** `GET /organisations/{org}/companies/{company}/access` returns the caller's effective permissions for that company (the same resolution the API's guards use) and the resolved feature flags. Read-only, needs only membership; another organisation's company is 404.
+* **Endpoint:** `GET /organisations/{org}/companies/{company}/my-access` (the existing `.../access` lists company role grants) returns the caller's effective permissions for that company (the same resolution the API's guards use) and the resolved feature flags. Read-only, needs only membership; another organisation's company is 404.
 * **Use:** screens hide actions the caller may not take and say why a section is empty. The API remains the only enforcement; a test proves a forbidden action is still refused by the API when called directly.
 * **Flag off:** navigation hides the bookkeeping entries and their pages say the feature is not enabled for the organisation; nothing is fetched from the gated API.
 

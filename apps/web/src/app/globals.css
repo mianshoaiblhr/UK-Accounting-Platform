@@ -16,3 +16,12 @@ nav { display:flex; gap:16px; align-items:center; justify-content:space-between;
 nav a { color:var(--fg); text-decoration:none; margin-right:14px; }
 table { width:100%; border-collapse:collapse; } td, th { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); }
 code { background:var(--bg); padding:2px 6px; border-radius:4px; }
+main.wide { max-width: 1100px; }
+.num { text-align:right; font-variant-numeric: tabular-nums; white-space:nowrap; }
+nav.tabs { justify-content:flex-start; flex-wrap:wrap; gap:4px; border:1px solid var(--line); border-radius:10px; padding:8px 10px; }
+nav.tabs a[aria-current=page] { font-weight:700; text-decoration:underline; }
+.row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; } .row > div { flex:1 1 160px; }
+.badge { display:inline-block; padding:1px 8px; border-radius:999px; font-size:12px; font-weight:700; border:1px solid var(--line); }
+.badge.HIGH { color:var(--danger); border-color:var(--danger); } .badge.MEDIUM { color:#b54708; border-color:#b54708; }
+tr.total td { font-weight:700; } td.indent { padding-left:28px; }
+.inline-actions button { margin:0 6px 0 0; padding:4px 10px; }

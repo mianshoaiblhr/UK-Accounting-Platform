@@ -30,4 +30,6 @@ export interface Me {
   mfa: { enabled: boolean; recoveryCodesRemaining: number };
   organisations: { id: string; name: string; type: 'PRACTICE' | 'BUSINESS'; role: string; roleName: string }[];
 }
-export interface Company { id: string; name: string; companyNumber: string | null; legalForm: string }
+export interface Company { id: string; name: string; companyNumber: string | null; legalForm: string; baseCurrency: string }
+/** M9 (DEC-049): what the caller may do in a company and which features are on. */
+export interface CompanyAccess { companyId: string; permissions: string[]; features: Record<string, boolean> }

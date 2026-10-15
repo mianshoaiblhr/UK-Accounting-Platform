@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { Field, Form } from '@/components/Form';
@@ -46,7 +47,7 @@ export default function Dashboard() {
           {companies.length === 0 ? <p className="muted">No companies yet.</p> : (
             <table data-testid="companies">
               <thead><tr><th>Name</th><th>Number</th><th>Type</th></tr></thead>
-              <tbody>{companies.map((c) => <tr key={c.id}><td>{c.name}</td><td>{c.companyNumber ?? '—'}</td><td>{c.legalForm}</td></tr>)}</tbody>
+              <tbody>{companies.map((c) => <tr key={c.id}><td><Link href={`/org/${orgId}/companies/${c.id}`}>{c.name}</Link></td><td>{c.companyNumber ?? '—'}</td><td>{c.legalForm}</td></tr>)}</tbody>
             </table>
           )}
         </div>

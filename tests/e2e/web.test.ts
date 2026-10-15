@@ -1,56 +1,19 @@
-import { spawn, execFileSync, type ChildProcess } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { expect as pw } from '@playwright/test';
-import { chromium, type Browser, type Page } from 'playwright';
+import type { Browser } from 'playwright';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { base32Decode, totpAt, totpStep } from '@uk/core';
-import { startStack, uniq, PASSWORD, type Stack } from '../helpers/stack';
+import { uniq, PASSWORD, type Stack } from '../helpers/stack';
+import { WEB, fill, startWeb, stopWeb, type WebStack } from '../helpers/web';
 
-/**
- * Real browser, real stack: Next.js (production build) -> same-origin proxy -> NestJS API -> Postgres/Redis -> BullMQ worker.
- * Fixed ports because the web build bakes the API proxy target (default http://localhost:4000).
- */
-const ROOT = resolve(__dirname, '../..');
-const WEB = 'http://localhost:3000';
-let stack: Stack, web: ChildProcess, browser: Browser;
-
-function findChromium(): string | undefined {
-  const cands = ['/opt/pw-browsers/chromium-1194/chrome-linux/chrome', '/opt/pw-browsers/chromium/chrome-linux/chrome'];
-  return cands.find((p) => existsSync(p));
-}
-
-async function waitHttp(url: string, ms = 60_000) {
-  const t0 = Date.now();
-  for (;;) {
-    try { if ((await fetch(url)).status < 500) return; } catch { /* not up yet */ }
-    if (Date.now() - t0 > ms) throw new Error(`${url} did not start`);
-    await new Promise((r) => setTimeout(r, 300));
-  }
-}
+/** Real browser, real stack (tests/helpers/web.ts): the V0 onboarding journeys. */
+let w: WebStack, stack: Stack, browser: Browser;
 
 beforeAll(async () => {
-  stack = await startStack({ API_PORT: '4000' });
-  await stack.app.close().catch(() => undefined); // replace the ephemeral listener with port 4000 below
-  const { createApp } = await import('../../apps/api/src/bootstrap');
-  stack.app = await createApp(stack.config);
-  await stack.app.listen(4000, '127.0.0.1');
-  if (!existsSync(resolve(ROOT, 'apps/web/.next/BUILD_ID'))) {
-    execFileSync('pnpm', ['--filter', '@uk/web', 'build'], { cwd: ROOT, stdio: 'pipe', env: { ...process.env, API_INTERNAL_URL: 'http://127.0.0.1:4000' } });
-  }
-  web = spawn('pnpm', ['--filter', '@uk/web', 'exec', 'next', 'start', '-p', '3000'], { cwd: ROOT, stdio: 'ignore', env: { ...process.env, NODE_ENV: 'production' } });
-  await waitHttp(WEB);
-  browser = await chromium.launch({ executablePath: findChromium(), args: ['--no-sandbox'] });
+  w = await startWeb();
+  ({ stack, browser } = w);
 });
 
-afterAll(async () => {
-  await browser?.close();
-  web?.kill('SIGTERM');
-  await stack?.worker.stop();
-  await stack?.app.close().catch(() => undefined);
-});
-
-const fill = async (p: Page, label: string, value: string) => p.getByLabel(label, { exact: false }).first().fill(value);
+afterAll(async () => { await stopWeb(w ?? {}); });
 
 describe('browser journey: practice onboarding with MFA', () => {
   it('registers, verifies via emailed link, signs in, adds a client company, enables MFA, signs in again with a TOTP code', async () => {
