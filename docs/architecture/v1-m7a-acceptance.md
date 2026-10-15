@@ -8,7 +8,7 @@ Prepared under the product owner's delegation (DEC-019, DEC-038..041). This is m
 | Code baseline commit | `e100429` (branch `claude/adoring-cori-mra6ze`); decisions recorded before code in `11a5e9f`; later commits for M7a are documentation only |
 | CI | <https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/38807269994> - **success** (all jobs) |
 | CodeQL | <https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/38807270010> - **success** |
-| Clean clone of `e100429` | CLEAN_CLONE_RESULT |
+| Clean clone of `e100429` | install, build, typecheck and lint exit 0; `pnpm test` **93 files, 1825 tests passed, 0 failed, 0 skipped**; end-to-end 4/4; no OpenAPI drift |
 | Local full run | `pnpm test` **93 files, 1825 tests passed, 0 failed, 0 skipped** (M6c: 89 / 1750), run alone |
 
 ## 2. What M7a delivers (DEC-038..041; plan sections 11.1 and 11.1a)
