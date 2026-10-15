@@ -8,7 +8,7 @@ Prepared under the product owner's delegation (DEC-019, DEC-036, DEC-037). This 
 | Code baseline commit | `7f4adad` (branch `claude/adoring-cori-mra6ze`); DEC-036 specified before code in the M6 plan; DEC-037 records the build choices; later commits are documentation only |
 | CI | <https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/38798396155> - **success** (all jobs) |
 | CodeQL | <https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/38798395945> - **success** |
-| Clean clone of `7f4adad` | running at the time of writing; the result is recorded in the next documentation commit |
+| Clean clone of `7f4adad` | install, build, typecheck and lint exit 0; `pnpm test` **89 files, 1750 tests passed, 0 failed, 0 skipped**; end-to-end 4/4; no OpenAPI drift |
 | Local full run | `pnpm test` **89 files, 1750 tests passed, 0 failed, 0 skipped** (M6b: 87 / 1705), run alone |
 
 ## 2. What M6c delivers (DEC-036, DEC-037; plan sections 10.3 and 10.3a)
