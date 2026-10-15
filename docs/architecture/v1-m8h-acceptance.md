@@ -5,11 +5,11 @@ Prepared under the product owner's delegation (DEC-019, DEC-046, DEC-047). This 
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | BASELINE (branch `claude/adoring-cori-mra6ze`); decisions recorded before code in `DECISIONS_SHA` |
+| Code baseline commit | `e358a26` (branch `claude/adoring-cori-mra6ze`); decisions recorded before code in the commit that precedes it (DEC-046/047, plan section 12a) |
 | CI | CI_RESULT |
-| CodeQL | CODEQL_RESULT |
-| Clean clone | CLEAN_CLONE_RESULT |
-| Local full run | LOCAL_RESULT |
+| CodeQL | **success**: run 38820398602 on `e358a26` |
+| Clean clone of `e358a26` | install, build, typecheck, lint: exit 0; **1877 tests passed**; e2e **4/4**; OpenAPI drift 0 |
+| Local full run | `pnpm test` **100 files, 1877 tests passed**, run alone (M8: 98 / 1864) |
 
 ## 2. What M8h delivers (plan section 12a)
 * **Customer default VAT code (DEC-046, V1-MOD-02).** Migration `20260118000000_v1_customer_default_tax_code` (additive): `customer_profile.default_tax_code_id`, a foreign key to the organisation's VAT codes and a trigger that admits only a sales or both-direction code that is not reverse charge. The API takes `defaultTaxCodeId` on customer role create and update (refused for suppliers) and returns it; changes are audited before/after. An invoice line without `taxCodeId` takes the default when it is written (create, or replacement of the lines); `taxCodeId: null` keeps no code; the stored line is explicit, so a later change of the default never alters a document. Credit notes are unaffected. Foreign-currency drafts are not given the default (VAT on them is M5c) and say so in their warnings.
