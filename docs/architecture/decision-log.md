@@ -245,6 +245,11 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-034 | Bills and debit notes | The supplier's own invoice number is required and is the duplicate key; an internal number for audit; input VAT and reverse charge; a debit note at the bill's VAT rate version |
 | DEC-035 | Supplier payments and stored bank details | Payments mirror receipts. A payment to a supplier whose stored bank details are not verified is flagged, not blocked (the money has already gone); payment files and runs stay deferred, and they will require verified details |
 | DEC-036 | Cash transactions and negative cash | Direct money-in and money-out entries with VAT per line. A bank account may go overdrawn with a warning; a cash-in-hand account may not go below zero without a reason |
+| DEC-038 | M7 scope and split | M7a bank accounts, CSV statement import (async), statement lines, transfers; M7b reconciliation, charges and interest from statements, unmatched ageing. CSV only in V1 (open decision 5 closed) |
+| DEC-039 | Bank accounts | A bank-account record over a ledger account of subtype CURRENT_ASSET_BANK, with its currency, encrypted account details shown masked, and the bank's opening statement balance; new `bank:*` permissions |
+| DEC-040 | Statement import | CSV document (AV-scanned) imported by an asynchronous job, all or nothing, with row errors; duplicate file refused without a reason; overlapping lines skipped by fingerprint; lines immutable; an import can be voided while nothing is matched |
+| DEC-041 | Transfers | Between two bank or cash accounts of the company in the same currency: one balanced journal, negative-cash rule applies, mirror reversal with reason; cross-currency transfers deferred |
+| DEC-042 | Reconciliation (M7b) | Matches link statement lines to journal lines on the account, in parts, never above either side (database-proven); unmatch with reason; deterministic suggestions that never post; charges and interest posted from a statement line as cash transactions; unmatched ageing; a signed-off reconciliation proof |
 | DEC-037 | How M6c is built (delegated, DEC-019) | The negative-cash rule lives in the PostingService and the database, so it covers every posting a person makes to cash in hand (not only cash transactions), checks every later day, and stores the reason on the journal. Cash transactions are in the company currency, have new `cash:*` permissions and a proven mirror reversal |
 
 ### DEC-033 - M6 scope and split
@@ -302,3 +307,43 @@ These choices refine DEC-036. None of them is a tax rule; the VAT arithmetic is 
   * The till receipt or slip can be attached as evidence (`cash_transaction` joins the evidence graph).
 * **Permissions.** `cash:read` (every role that reads the ledger) and `cash:record` (roles that may approve purchases: owner, administrator, partner, accountant). A cash transaction posts at once, so recording it is an approval-level act.
 * **Reversal.** One reversal per transaction, dated on or after it, with a reason. It is the exact mirror of the posted journal, line by line and in the same order. The VAT facts and rate versions are kept, so each VAT line still points at its net line. The database proves the mirror before the transaction can become REVERSED. The reversal keeps the original tax point, as a ledger reversal does (M4b). Whether a correction found after a VAT return was filed should instead go in the current return (HMRC VAT Notice 700/45) is listed for the tax reviewer; returns are not filed in V1.
+
+### DEC-038 - M7 scope and split (delegated, DEC-019)
+* **M7a:** bank accounts (V1-MOD-10, V1-BANK-01), CSV statement import as an asynchronous job (V1-BANK-02), immutable statement lines (V1-BANK-03) and transfers (V1-BANK-06).
+* **M7b:** reconciliation (V1-MOD-18, V1-BANK-04, V1-REC-01..05), charges and interest from statements (V1-BANK-07/08), unmatched items with ageing (V1-BANK-05).
+* **Formats:** CSV only in V1; it is what every UK bank exports. OFX, MT940/CAMT and Open Banking feeds stay deferred (plan section 7, decision 5, now closed). The column mapping is given with each import and remembered per bank account.
+* **Deferred:** Open Banking (V11), AI match suggestions (V6), payment files, cross-currency transfers, bank rules that post automatically.
+
+### DEC-039 - Bank accounts
+* **What it is:** a `bank_account` record over exactly one ledger account of subtype CURRENT_ASSET_BANK of the same company. The ledger account stays the place where money is booked; the record adds what the bank knows. Cash in hand has no statements and gets no bank-account record.
+* **Fields:** a name; the bank's name; the account currency (the company's currency or a foreign one; it cannot change once a statement line exists); account details (sort code, account number, IBAN, BIC) **encrypted** with the platform field key and shown only masked (`**-**-56 ****5678`); full details only through an audited read by a holder of `bank:manage`.
+* **Statement opening point:** `statementOpeningDate` and `statementOpeningBalance` (the balance on the bank's own statement at the start of record keeping on the platform). The reconciliation proof (M7b) starts from it. The ledger's opening balance is still posted through the M2 request and approval.
+* **Status:** ACTIVE or CLOSED; closing needs a reason (and, from M7b, no unmatched lines).
+* **Permissions:** `bank:read` (every role that reads the ledger), `bank:manage` (create and edit accounts, import and void statements: owner, administrator, partner, accountant, manager, bookkeeper - preparing records), `bank:reconcile` (match and unmatch, M7b: the same roles). Posting from the bank module still needs the posting permission of what is posted (`cash:record` for a charge, `bank:transfer` for a transfer: owner, administrator, partner, accountant).
+
+### DEC-040 - Statement import
+* **Input:** a CSV uploaded as a company document (size limit and virus scan as for every upload; only an AVAILABLE version can be imported) and a column mapping: date column and format (`DD/MM/YYYY`, `YYYY-MM-DD`, `DD-MM-YYYY`, `MM/DD/YYYY`, `DD MMM YYYY`), description, either one signed amount column or separate money-in and money-out columns (with an option to flip the sign), optional reference and running-balance columns, header row, delimiter.
+* **Processing:** an asynchronous job (`bank.statement.import`, `imports` queue) with progress, retries and failures visible through the job record (V1-BANK-02). The import's own record says QUEUED, COMPLETED or FAILED, with counts (rows read, imported, duplicates skipped) and up to 100 row errors.
+* **All or nothing:** one invalid row fails the whole import; nothing is stored. Rows are checked for: a valid date, not after today; a decimal amount (thousands separators, a currency symbol and parentheses for negatives are accepted) with no more decimals than the account currency; a non-zero amount; when a balance column is mapped, every balance equals the previous balance plus the amount (a broken file or a wrong mapping is caught); at most 20,000 rows.
+* **Duplicates:**
+  * the same file (same SHA-256) imported again into the same bank account is refused unless a reason is given;
+  * each line gets a fingerprint from the account, date, amount, normalised description, reference and its occurrence number among identical lines in the file. A line whose fingerprint already exists is skipped and counted, so overlapping statements import cleanly while two genuine identical payments on one day are both kept.
+* **Immutable lines:** statement lines are never edited or deleted (V1-BANK-03). An import made with a wrong mapping is **voided** with a reason while none of its lines is matched; its lines are marked void, stay visible, and their fingerprints are released so the file can be imported again correctly.
+* **The worker never posts** (ADR-61): it writes statement data only.
+
+### DEC-041 - Transfers between bank and cash accounts
+* **What:** money moved between two bank or cash accounts of the company in the **same currency** (bank to bank, bank to petty cash, cash to bank). It posts one `BANK_TRANSFER` journal through the PostingService: Dr the receiving account / Cr the paying account. The negative-cash rule (DEC-037) applies to the paying account; an overdrawn bank is a warning.
+* **Foreign currency:** a transfer between two accounts in the same foreign currency posts in that currency at one rate, so no exchange difference arises. A transfer between different currencies needs two amounts and a realised difference; it is **deferred** and refused with a clear error.
+* **Duplicates:** the same accounts, date and amount, or the same reference, need a reason.
+* **Correction:** a mirror reversal with a reason, once (`BANK_TRANSFER_REVERSAL`); the ledger does not reverse transfer journals.
+* **Reconciliation (M7b):** the money-out line on one statement and the money-in line on the other each match one side of the transfer's journal.
+* **Permission:** `bank:transfer` (owner, administrator, partner, accountant), because it posts.
+
+### DEC-042 - Reconciliation (M7b; recorded now so M7a's data fits it)
+* **A match** links one statement line to one journal line on the bank account's ledger account, in the same direction, for an amount in the account currency (the original amount of a foreign line, otherwise the functional amount). A statement line can be matched to several journal lines and the reverse (partial matching, V1-REC-02); the database proves that matched totals never exceed either side.
+* **Never edited:** a match is undone by an **unmatch** with a reason, audited; the row stays (V1-REC-01).
+* **Override:** a manual match whose dates are more than 14 days apart needs a reason (V1-REC-05).
+* **Suggestions** (V1-REC-04) are deterministic and computed on request: an unmatched journal line with exactly the remaining amount, in the same direction, within 7 days, ranked by reference match and date distance, with ambiguous ties shown as such. Lines that read like bank charges or interest are proposed for posting. A suggestion never matches or posts by itself.
+* **Charges and interest from the statement** (V1-BANK-07/08): from an unmatched line a person posts a cash transaction (to the bank account's charges, interest-received or interest-paid account, or any other account and VAT code) dated on the line's date, and it is matched in the same transaction.
+* **Unmatched items** (V1-BANK-05, V1-REC-03): statement lines and ledger lines not fully matched, with age buckets (0-7, 8-30, 31-60, over 60 days) as at a date, and counts per account for the dashboard.
+* **Proof and sign-off:** as at a date, statement balance (opening point plus lines) against ledger balance, explained by unmatched items; the difference must be zero. A person signs off a reconciliation (immutable record of the figures). Unmatching anything dated on or before a signed-off date needs a reason and is flagged on the audit event.

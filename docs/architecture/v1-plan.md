@@ -19,7 +19,8 @@ Tenant isolation by forced row-level security; one central authoriser for compan
 | M6a | Purchase documents: bills and debit notes (DEC-033/034) | **verified** (code baseline `16c7f12`; package `v1-m6a-acceptance.md`) | Engineering | M5a |
 | M6b | Supplier payments, allocation, realised FX, aged payables (DEC-035) | **verified** (code baseline `a753db0`; package `v1-m6b-acceptance.md`) | Engineering | M6a, M5b |
 | M6c | Cash transactions without documents and the negative-cash control (DEC-036, DEC-037) | **verified** (code baseline `7f4adad`; package `v1-m6c-acceptance.md`) | Engineering | M6b |
-| M7 | Bank accounts, statement import, transfers, charges, interest, reconciliation | planned | Engineering | M5, M6 |
+| M7a | Bank accounts, CSV statement import (asynchronous), statement lines, transfers (DEC-038..041) | specified (section 11) | Engineering | M6c |
+| M7b | Reconciliation, charges and interest from statements, unmatched ageing (DEC-042) | specified (section 11) | Engineering | M7a |
 | M8 | P&L, balance sheet, drill-down, controls and alerts, FX reporting | planned | Engineering | M3, M5-M7 |
 | M9 | V1 UI slices behind feature flags (DEC-002) | planned, parallel from M2 | Engineering (front end) | the API each screen uses |
 | Privacy track | Session / challenge IP and user agent (DEC-013) | investigation in progress, **never marked resolved without review** | Engineering; DPO / legal | DEC-003 |
@@ -181,7 +182,7 @@ Property tests for conversion and rounding (reverse conversion within tolerance;
 | 2 | **Exchange-rate source** (manual entry only, an official published series such as HMRC monthly rates or the Bank of England, a commercial provider) and the lookup window | M3 | Product owner | **decided (DEC-016)**: manual always + official importers (HMRC monthly, Bank of England daily), 7-day window; live adapters gated |
 | 3 | Rounding policy (precision, mode, line vs document) and revaluation policy (which items, which rate, auto-reverse) | M3 | Product owner | **decided (DEC-017, DEC-018)**: per-line half-up with visible rounding line; monetary items, explicit revaluation, auto-reverse |
 | 4 | Who verifies the VAT rules and sources (a named qualified tax reviewer), and the verification record format | M4 | Product owner | **open - blocks M4 activation** |
-| 5 | Bank statement formats beyond CSV | M7 | Product owner | later |
+| 5 | Bank statement formats beyond CSV | M7 | Product owner | **decided under delegation (DEC-038)**: CSV only in V1 |
 | 6 | Whether a firm may relax the control-account rule further | later | Product owner | closed by DEC-012 (permission + approval) |
 Decided: foreign currency in V1 (DEC-009); standard VAT first (DEC-010); contact roles (DEC-011); opening balances/control accounts (DEC-012).
 
@@ -369,3 +370,17 @@ Recorded before code under the delegation. Statements about VAT law are UNVERIFI
   * VAT workpaper: boxes 1 75.00, 4 60.00, 6 230.00, 7 495.00; after reversing the 105.00 payment, box 4 50.00 and box 7 400.00.
   * A back-dated 200.00 payment on 3 February leaves 55.00 that day but -50.00 on 5 February: refused, with the lowest point and its date.
 
+
+## 11. M7 - Bank (specification; DEC-038..042, ADR-61)
+Recorded before code under the delegation (DEC-019).
+
+### 11.1 M7a - accounts, statement import, transfers
+* **Data (additive migration):** `bank_account` (one per CURRENT_ASSET_BANK ledger account; encrypted details, masked; statement opening point; currency; status), `bank_statement_import` (document version, SHA-256, mapping, status, counts, row errors, void fields), `bank_statement_line` (signed amount in the account currency, date, description, reference, running balance, fingerprint unique per account while not void, matched amount for M7b), `bank_transfer`.
+* **Guards:** lines inserted only by an import in its own transaction and never changed except void (with their import) and, from M7b, the matched amount; an import is voided once, only while nothing is matched; transfer guard as for cash transactions (own journal, mirror reversal proven).
+* **Postings:** `BANK_TRANSFER` and `BANK_TRANSFER_REVERSAL` (sub-ledger journals, control kinds BANK and CASH).
+* **Job:** `bank.statement.import` on the `imports` queue; the parser and importer live in `packages/platform` (ADR-61).
+* **API:** bank accounts (create, list, get, update, close, audited details read), statement imports (request, list, get, void), statement lines (list with filters), transfers (create, list, get, reverse).
+* **Acceptance:** an import with a header and a running balance; separate in/out columns; date formats; row errors fail the whole import; a duplicate file refused; overlapping statements skip only the overlap; two identical genuine lines kept; void and re-import; a transfer bank to cash and back with the negative-cash rule; database guards; permissions and isolation.
+
+### 11.2 M7b - reconciliation
+As DEC-042: matching (one-to-many both ways), unmatch, override reason, suggestions, posting charges and interest from a line, unmatched ageing and counts, the proof and sign-off.
