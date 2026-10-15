@@ -135,7 +135,7 @@ describe('M9a workspace in the browser', () => {
     await page.goto(ws('/accounts'));
     await pw(page.getByTestId('accounts')).toBeVisible();
     await pw(page.getByTestId('new-account')).toHaveCount(0);
-    const period = (await call(owner, 'get', co('/periods'))).body.items.find((p: { startDate: string }) => p.startDate === '2026-07-01');
+    const period = (await call(owner, 'get', co('/periods'))).body.items.find((p: { startDate: string }) => p.startDate.startsWith('2026-07-01'));
     expect((await call(reviewer, 'post', co(`/periods/${period.id}/close`), {})).status).toBe(403);
     await page.context().close();
   });

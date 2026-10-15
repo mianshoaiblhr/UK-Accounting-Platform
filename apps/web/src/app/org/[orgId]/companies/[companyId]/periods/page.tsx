@@ -19,8 +19,10 @@ const ACKS: Record<string, { field: string; label: string }> = {
   suspense_balance: { field: 'acknowledgeSuspenseBalance', label: 'Lock with the suspense balance' },
 };
 
-function PeriodRow({ p, onDone }: { p: Period; onDone: () => Promise<void> }) {
+function PeriodRow({ p: raw, onDone }: { p: Period; onDone: () => Promise<void> }) {
   const w = useWorkspace();
+  // the period list returns timestamps at midnight UTC; the period is its calendar dates
+  const p = { ...raw, startDate: raw.startDate.slice(0, 10), endDate: raw.endDate.slice(0, 10) };
   const [reason, setReason] = useState('');
   const [acks, setAcks] = useState<Record<string, boolean>>({});
   const [pending, setPending] = useState<{ code: string; message: string }[]>([]);

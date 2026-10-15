@@ -2,6 +2,7 @@ import { spawn, execFileSync, type ChildProcess } from 'node:child_process';
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { chromium, type Browser, type Page } from 'playwright';
+import request from 'supertest';
 import { PASSWORD, startStack, type Stack } from './stack';
 
 /**
@@ -42,6 +43,8 @@ export async function startWeb(): Promise<WebStack> {
   const { createApp } = await import('../../apps/api/src/bootstrap');
   stack.app = await createApp(stack.config);
   await stack.app.listen(4000, '127.0.0.1');
+  // API calls made by the tests go to the app that is now listening (the original listener is closed)
+  stack.api = () => request.agent(stack.app.getHttpServer());
   const buildId = resolve(ROOT, 'apps/web/.next/BUILD_ID');
   // a build older than the screens it should serve would hide new pages: rebuild when any web source is newer
   if (!existsSync(buildId) || statSync(buildId).mtimeMs < newest(resolve(ROOT, 'apps/web/src'))) {

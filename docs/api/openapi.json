@@ -933,6 +933,62 @@
         }
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/my-access": {
+      "get": {
+        "operationId": "Companies_myAccess",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyAccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Companies"
+        ],
+        "x-required-permissions": [
+          "company:read"
+        ],
+        "summary": "What the caller may do in this company and which features are on (for screens; the API still enforces every route)",
+        "description": "**Requires permission:** `company:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/organisations/{organisationId}/companies/{companyId}/periods/next": {
       "get": {
         "operationId": "Companies_nextPeriod",
@@ -22246,6 +22302,35 @@
           "companyScope",
           "companyIds",
           "practiceIds"
+        ],
+        "additionalProperties": false
+      },
+      "CompanyAccess": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Effective permissions on this company (organisation, practice and company grants resolved as the guards do)"
+          },
+          "features": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "description": "Every registered feature flag, resolved for the organisation"
+          }
+        },
+        "required": [
+          "companyId",
+          "permissions",
+          "features"
         ],
         "additionalProperties": false
       },
