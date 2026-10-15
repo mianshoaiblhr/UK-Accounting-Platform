@@ -5,10 +5,11 @@ Prepared under the product owner's delegation (DEC-019, DEC-043..045). This is m
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | `08f226c` (branch `claude/adoring-cori-mra6ze`); decisions recorded before code in `3b5af9b` |
-| CI | CI_RESULT |
-| CodeQL | CODEQL_RESULT |
-| Clean clone of `08f226c` | CLEAN_CLONE_RESULT |
+| Code baseline commit | `b1e69af` (branch `claude/adoring-cori-mra6ze`) = M8 code `08f226c` + a test-typing fix; decisions recorded before code in `3b5af9b` |
+| CI on `08f226c` | **failed** at `pnpm typecheck` (run 38816514884): the new report tests read `accounts` on a union of statement-line types (vitest does not typecheck). Reproduced locally, fixed in the tests only (`b1e69af`), no product code changed |
+| CI | **success**: run 38817306319 on `b1e69af` (migrations from scratch, terraform validate, S3/ClamAV, build/lint/typecheck/unit/integration/e2e, audit and secret scan, all images) |
+| CodeQL | **success**: run 38817306283 on `b1e69af` |
+| Clean clone of `b1e69af` | install, build, typecheck, lint: exit 0; **1864 tests passed**; e2e **4/4**; OpenAPI drift 0 |
 | Local full run | `pnpm test` **98 files, 1864 tests passed, 0 failed, 0 skipped** (M7b: 95 / 1853), run alone |
 
 ## 2. What M8 delivers (DEC-043..045; plan section 12)
