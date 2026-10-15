@@ -166,6 +166,10 @@ export const periodTransitionSchema = z.object({
   acknowledgeUnrevaluedFx: z.boolean().default(false),
   /** M5a close control: close although draft sales documents are dated in the period (recorded on the audit event). */
   acknowledgeDraftDocuments: z.boolean().default(false),
+  /** M8 close control: close although bank statement lines dated in the period are not reconciled (recorded on the audit event). */
+  acknowledgeUnreconciledBank: z.boolean().default(false),
+  /** M8 lock control (V1-CTL-03): lock although the suspense account holds a balance at the period end (reason required, recorded). */
+  acknowledgeSuspenseBalance: z.boolean().default(false),
 }).strict();
 export const accountListQuerySchema = z.object({ active: z.enum(['true', 'false']).optional().transform((v) => (v === undefined ? undefined : v === 'true')), type: z.enum(ACCOUNT_TYPES).optional() }).strict();
 

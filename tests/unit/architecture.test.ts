@@ -187,6 +187,12 @@ describe('database access paths that carry security meaning', () => {
     expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/platform/src/bank-statements.ts']);
     expect(read(`${ROOT}/packages/platform/src/bank-statements.ts`)).not.toMatch(/PostingService|\.journal(Line)?\.(create|createMany)|app\.posting/);
   });
+  it('financial statements read the ledger only, never a source-document table (V1-ARC-02, M8)', () => {
+    const src = read(`${ROOT}/packages/accounting/src/reports.ts`);
+    expect(src).not.toMatch(/\.(salesDocument|salesReceipt|salesAllocation|purchaseDocument|purchasePayment|purchaseAllocation|cashTransaction|bankTransfer|bankStatement\w*|bankMatch|journalRequest|contact\w*)\./);
+    expect(src).not.toMatch(/\b(FROM|JOIN)\s+"?(sales_|purchase_|cash_|bank_|contact|journal_request)/i);
+    expect(src).not.toMatch(/\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\(/);
+  });
   it('customer and supplier roles have one writer (M4a), and only it touches supplier bank-detail ciphertext', () => {
     const WRITE = /\.(contactRole|customerProfile|supplierProfile)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(contact_role|customer_profile|supplier_profile)"?\b/i;
     expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['apps/api/src/master-data/contact-roles.service.ts']);

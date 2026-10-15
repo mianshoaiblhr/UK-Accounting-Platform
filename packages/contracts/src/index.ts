@@ -16,3 +16,4 @@ export * from './sales';
 export * from './purchases';
 export * from './cash';
 export * from './bank';
+export * from './reports';

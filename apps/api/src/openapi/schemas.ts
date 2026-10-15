@@ -252,6 +252,34 @@ export const PayablesReconciliation = z.object({
     difference: z.string(), differenceFunctional: z.string(), otherPostings: z.array(z.object({ sourceType: z.string(), original: z.string(), functional: z.string() })) })),
 });
 
+// ───────────── Reports (M8) ─────────────
+const ReportAccount = z.object({ accountId: uuid, code: z.string(), name: z.string(), amount: z.string(), drilldown: z.object({ accountId: uuid, from: day.nullable(), to: day }).describe('Opens the general ledger of the account for the range') });
+const ReportLine = z.object({ key: z.string(), name: z.string(), amount: z.string(), comparative: z.string().optional(), total: z.boolean().optional(), accounts: z.array(ReportAccount).optional(), drilldown: z.record(z.unknown()).optional() });
+export const ProfitAndLoss = z.object({
+  companyId: uuid, companyName: z.string(), currency: z.string().length(3), from: day, to: day, comparative: z.object({ from: day, to: day }).nullable(), mappingVersion: z.number().int(),
+  lines: z.array(ReportLine), profitForPeriod: z.string(),
+  reconciliation: z.object({ incomeLessExpensesFromLedger: z.string(), difference: z.string(), reconciled: z.boolean(), comparative: z.object({ incomeLessExpensesFromLedger: z.string(), reconciled: z.boolean() }).optional() }).describe('The P&L against the net of every income and expense account: must reconcile to the cent'),
+  notice: z.string(),
+});
+const BsProof = z.object({ netAssets: z.string(), capitalAndReserves: z.string(), difference: z.string(), balanced: z.boolean(), trialBalance: z.object({ debit: z.string(), credit: z.string(), balanced: z.boolean() }) });
+export const BalanceSheet = z.object({
+  companyId: uuid, companyName: z.string(), currency: z.string().length(3), asOf: day, compareAsOf: day.nullable(), financialYearStart: day.nullable(), mappingVersion: z.number().int(),
+  lines: z.array(ReportLine), netAssets: z.string(), reconciliation: BsProof.extend({ comparative: BsProof.optional() }), notice: z.string(),
+});
+const FxSummary = z.object({ total: z.string(), byCurrency: z.array(z.object({ currency: z.string(), gain: z.string() })),
+  journals: z.array(z.object({ journalId: uuid, journalNumber: z.number().int(), journalDate: day, sourceType: z.string(), currency: z.string().nullable(), gain: z.string() })) });
+export const FxReport = z.object({ companyId: uuid, currency: z.string().length(3), from: day, to: day, realised: FxSummary, unrealised: FxSummary, revaluedAtClosingRate: z.boolean(), notice: z.string(),
+  openBalances: z.array(z.object({ accountId: uuid, accountCode: z.string(), accountName: z.string(), currency: z.string(), originalBalance: z.string(), carryingAmount: z.string(), closingRate: z.string().nullable(),
+    rateId: uuid.nullable(), atClosingRate: z.string().nullable(), unrevaluedDifference: z.string().nullable(), rateError: z.string().nullable() })) });
+export const JournalSource = z.object({
+  journal: z.object({ id: uuid, journalNumber: z.number().int(), journalDate: day, sourceType: z.string(), sourceId: z.string().nullable(), sourceReference: z.string().nullable(), description: z.string(), total: z.string(), postedByUserId: uuid.nullable(), reversesJournalId: uuid.nullable() }),
+  lines: z.array(z.object({ lineNo: z.number().int(), accountId: uuid, accountCode: z.string().nullable(), accountName: z.string().nullable(), debit: z.string(), credit: z.string(), description: z.string().nullable(), drilldown: z.record(z.unknown()) })),
+  source: z.record(z.unknown()).nullable().describe('The transaction that posted the journal (document, receipt, payment, cash transaction, transfer, request, revaluation, reversed journal) with its attachments; restricted when the reader may not see that module'),
+  sourceResolver: z.string(), journalAttachments: z.array(z.record(z.unknown())), bankMatches: z.array(z.object({ id: uuid, statementLineId: uuid, journalLineId: uuid, amount: z.string() })),
+});
+export const AlertList = z.object({ companyId: uuid, asOf: day, thresholds: z.object({ draftDays: z.number().int(), unmatchedDays: z.number().int() }), count: z.number().int(), high: z.number().int(),
+  alerts: z.array(z.object({ code: z.string(), severity: z.enum(['HIGH', 'MEDIUM', 'LOW']), title: z.string(), count: z.number().int(), total: z.string().optional(), oldestDate: day.nullable().optional(), items: z.array(z.record(z.unknown())) })) });
+
 // ───────────── Bank (M7a) ─────────────
 export const BankAccountView = z.object({
   id: uuid, companyId: uuid, accountId: uuid, accountCode: z.string(), accountName: z.string(), name: z.string(), bankName: z.string().nullable(), currency: z.string().length(3),
