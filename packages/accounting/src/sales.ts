@@ -659,7 +659,7 @@ export class SalesService {
     return this.getReceipt(tx, a.companyId, r.id);
   }
 
-  async reverseReceipt(tx: Tx, a: { organisationId: string; companyId: string; actor: SalesActor; id: string; reason: string; date?: string }) {
+  async reverseReceipt(tx: Tx, a: { organisationId: string; companyId: string; actor: SalesActor; id: string; reason: string; date?: string; negativeCashReason?: string }) {
     await this.need(a.actor, 'sales:approve', a.companyId);
     await tx.$queryRaw`SELECT id FROM sales_receipt WHERE id = ${a.id}::uuid FOR UPDATE`;
     const r = await tx.salesReceipt.findFirst({ where: { id: a.id, companyId: a.companyId } });
@@ -675,7 +675,7 @@ export class SalesService {
       description: `Reversal of receipt ${r.reference ?? r.id.slice(0, 8)}: ${a.reason.trim()}`.slice(0, 500),
       lines: [...posted].reverse().map((l) => ({ accountId: l.accountId, debit: l.credit.toFixed(4), credit: l.debit.toFixed(4), description: 'Receipt reversed',
         ...(l.originalCurrency ? { original: { currency: l.originalCurrency, debit: l.originalCredit!.toFixed(4), credit: l.originalDebit!.toFixed(4), rate: l.rate!.toFixed(8), rateId: l.exchangeRateId! } } : {}) })),
-      idempotencyKey: `sales-receipt-reversal:${r.id}`, actor: a.actor, reason: a.reason,
+      idempotencyKey: `sales-receipt-reversal:${r.id}`, actor: a.actor, reason: a.reason, negativeCashReason: a.negativeCashReason,
     });
     await tx.salesReceipt.update({ where: { id: r.id }, data: { status: 'REVERSED', reversalJournalId: j.id, reversedByUserId: a.actor.userId, reversedAt: new Date(), reversedReason: a.reason.trim() } });
     await this.audit(tx, { action: 'sales_receipt.reversed', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actor.userId, entityType: 'sales_receipt', entityId: r.id,

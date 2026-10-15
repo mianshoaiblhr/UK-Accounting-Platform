@@ -11,6 +11,16 @@ import { ZERO, fmt, money, type Money } from './money';
  */
 const isoDay = (d: Date) => d.toISOString().slice(0, 10);
 const toDate = (s: string) => new Date(`${s}T00:00:00.000Z`);
+/**
+ * The VAT side a journal source fixes, or null when the side follows the line. A document or cash journal knows its direction (a sales credit note
+ * is still sales, a purchase debit note still purchases, the reversal of a cash payment still purchases); a manual journal on a BOTH code does not.
+ */
+export function sourceVatSide(sourceType: string): 'SALES' | 'PURCHASES' | null {
+  if (sourceType.startsWith('SALES_') || sourceType.startsWith('CASH_RECEIPT')) return 'SALES';
+  if (sourceType.startsWith('PURCHASE_') || sourceType.startsWith('CASH_PAYMENT')) return 'PURCHASES';
+  return null;
+}
+
 export interface VatActor { userId: string; kind?: string; can(permission: string, companyId: string): boolean | Promise<boolean>;
   /** Per-document visibility (restricted documents), supplied by the API from the central authoriser. */
   canReadDocument?(d: { id: string; companyId: string | null; visibility: string; createdByUserId: string | null }): boolean | Promise<boolean> }
@@ -210,7 +220,8 @@ export class VatService {
       const d = money(r.debit), c = money(r.credit);
       if (r.vat_role === 'NET') {
         // a document journal knows its side (a sales credit note reduces sales; a purchase debit note reduces purchases); otherwise a BOTH code follows the side
-        const salesSide = r.source_type.startsWith('SALES_') ? true : r.source_type.startsWith('PURCHASE_') ? false : r.direction === 'SALES' || (r.direction === 'BOTH' && c.greaterThan(0));
+        const fixed = sourceVatSide(r.source_type);
+        const salesSide = fixed ? fixed === 'SALES' : r.direction === 'SALES' || (r.direction === 'BOTH' && c.greaterThan(0));
         for (const b of r.net_boxes) if (salesSide ? b === 6 || b === 8 : b === 7 || b === 9) add(b, salesSide ? c.minus(d) : d.minus(c), r);
       } else {
         const output = r.account_id === settings.outputAccountId && r.vat_role !== 'RC_INPUT';

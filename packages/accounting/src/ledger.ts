@@ -44,11 +44,11 @@ export class LedgerQueries {
         vat: l.taxRateId ? { taxCodeId: l.taxCodeId, taxRateId: l.taxRateId, role: l.vatRole, taxPoint: isoDay(l.taxPoint!), netLineNo: l.vatNetLineNo, inclusive: l.vatInclusive, ratePoint: l.vatRatePoint ? isoDay(l.vatRatePoint) : null } : null }; }) };
   }
 
-  private header(j: { id: string; journalNumber: number; journalDate: Date; periodId: string; sourceType: string; sourceId: string | null; sourceReference: string | null; description: string; total: Money; lineCount: number; actorType: string; postedByUserId: string | null; postedAt: Date; reversesJournalId: string | null; requestId: string | null; requestedByUserId: string | null; approvedByUserId: string | null },
+  private header(j: { id: string; journalNumber: number; journalDate: Date; periodId: string; sourceType: string; sourceId: string | null; sourceReference: string | null; description: string; total: Money; lineCount: number; actorType: string; postedByUserId: string | null; postedAt: Date; reversesJournalId: string | null; requestId: string | null; requestedByUserId: string | null; approvedByUserId: string | null; negativeCashReason?: string | null },
     minor: number, reversedBy?: { id: string; journalNumber: number }) {
     return { id: j.id, journalNumber: j.journalNumber, journalDate: isoDay(j.journalDate), periodId: j.periodId, sourceType: j.sourceType, sourceId: j.sourceId, sourceReference: j.sourceReference, description: j.description,
       total: fmt(j.total, minor), lineCount: j.lineCount, actorType: j.actorType, postedByUserId: j.postedByUserId, postedAt: j.postedAt, reversesJournalId: j.reversesJournalId,
-      requestId: j.requestId, requestedByUserId: j.requestedByUserId, approvedByUserId: j.approvedByUserId,
+      requestId: j.requestId, requestedByUserId: j.requestedByUserId, approvedByUserId: j.approvedByUserId, negativeCashReason: j.negativeCashReason ?? null,
       reversedByJournalId: reversedBy?.id ?? null, reversedByJournalNumber: reversedBy?.journalNumber ?? null };
   }
 

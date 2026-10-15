@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { moneyString } from './ledger';
+import { moneyString, negativeCashReason } from './ledger';
 
 /**
  * V1-M5a sales documents (DEC-026..031, ADR-59): invoices and credit notes. A DRAFT has no number and no ledger effect; approval numbers it without gaps,
@@ -121,7 +121,7 @@ export const allocateReceiptSchema = z.object({
   /** Otherwise today, or the receipt date if later. Not before either document. */
   date: isoDate.optional(),
 }).strict();
-export const reverseReceiptSchema = z.object({ reason: z.string().trim().min(3).max(1000), date: isoDate.optional() }).strict();
+export const reverseReceiptSchema = z.object({ reason: z.string().trim().min(3).max(1000), date: isoDate.optional(), /** DEC-037 */ negativeCashReason: negativeCashReason.optional() }).strict();
 export const receiptListQuerySchema = z.object({
   customerRoleId: uuid.optional(), status: z.enum(['POSTED', 'REVERSED']).optional(), unallocated: z.enum(['true', 'false']).optional().transform((v) => (v === undefined ? undefined : v === 'true')),
   from: isoDate.optional(), to: isoDate.optional(), limit: z.coerce.number().int().min(1).max(200).default(50), cursor: uuid.optional(),

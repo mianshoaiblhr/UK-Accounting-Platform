@@ -41,6 +41,7 @@ export class EvidenceService {
       case 'accounting_period': { const x = await tx.accountingPeriod.findUnique({ where: { id }, select: { companyId: true } }); return x ? readable('period:read', x.companyId) : null; }
       case 'purchase_document': { const x = await tx.purchaseDocument.findUnique({ where: { id }, select: { companyId: true } }); return x ? readable('purchases:read', x.companyId) : null; }
       case 'sales_document': { const x = await tx.salesDocument.findUnique({ where: { id }, select: { companyId: true } }); return x ? readable('sales:read', x.companyId) : null; }
+      case 'cash_transaction': { const x = await tx.cashTransaction.findUnique({ where: { id }, select: { companyId: true } }); return x ? readable('cash:read', x.companyId) : null; }
     }
   }
 

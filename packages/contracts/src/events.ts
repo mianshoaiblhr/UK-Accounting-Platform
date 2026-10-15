@@ -42,6 +42,8 @@ export const Events = {
     schema: z.object({ documentId: uuid, companyId: uuid, documentNumber: z.string(), supplierRoleId: uuid, supplierReference: z.string().nullable(), issueDate: z.string(), originalBillId: uuid, currency: z.string(), gross: z.string(), journalId: uuid }) }),
   purchasePaymentRecorded: defineEvent({ type: 'purchase_payment.recorded', version: 1, aggregateType: 'purchase_payment',
     schema: z.object({ paymentId: uuid, companyId: uuid, supplierRoleId: uuid, paymentDate: z.string(), currency: z.string(), amount: z.string(), allocated: z.string(), journalId: uuid, bankDetailsUnverified: z.boolean() }) }),
+  cashTransactionRecorded: defineEvent({ type: 'cash_transaction.recorded', version: 1, aggregateType: 'cash_transaction',
+    schema: z.object({ transactionId: uuid, companyId: uuid, direction: z.enum(['PAYMENT', 'RECEIPT']), transactionDate: z.string(), bankAccountId: uuid, currency: z.string(), gross: z.string(), vat: z.string(), journalId: uuid, negativeCashOverride: z.boolean() }) }),
   ledgerRequestCreated: defineEvent({ type: 'ledger.request_created', version: 1, aggregateType: 'journal_request',
     schema: z.object({ requestId: uuid, companyId: uuid, kind: z.enum(['OPENING_BALANCE', 'CONTROL_ADJUSTMENT']), requestedByUserId: uuid, approvalRequired: z.boolean() }) }),
   ledgerRequestDecided: defineEvent({ type: 'ledger.request_decided', version: 1, aggregateType: 'journal_request',

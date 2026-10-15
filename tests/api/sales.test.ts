@@ -187,3 +187,44 @@ describe('supplier payments through the API (M6b)', () => {
     expect((await as(owner, 'post', c(`/contact-roles/${role}/end`), { reason: 'Stopped buying from them' })).body.code).toBe('contact_role_has_open_documents');
   });
 });
+
+describe('cash transactions through the API (M6c)', () => {
+  it('readers read, only cash:record records; cash in hand below zero needs a reason; the reversal mirrors; a till receipt is attached', async () => {
+    for (const [u, status] of [[reviewer, 200], [bookkeeper, 200], [manager, 200], [viewer, 403]] as const) expect((await as(u, 'get', c('/cash-transactions'))).status).toBe(status);
+    const body = { direction: 'PAYMENT', transactionDate: '2026-08-03', bankAccountId: acc['1220'], counterparty: 'Corner shop', description: 'Milk and tea for the office', lines: [{ description: 'Refreshments', accountId: acc['8000'], amount: '6.40' }] };
+    for (const u of [bookkeeper, manager, reviewer]) expect((await as(u, 'post', c('/cash-transactions'), body)).status).toBe(403);
+    // the box is empty: refused with the figures, then recorded with the reason
+    const refused = await as(accountant, 'post', c('/cash-transactions'), body);
+    expect(refused.status).toBe(422);
+    expect(refused.body).toMatchObject({ code: 'negative_cash', errors: { accountCode: '1220', lowestBalance: '-6.40', onDate: '2026-08-03' } });
+    const ok = await as(accountant, 'post', c('/cash-transactions'), { ...body, negativeCashReason: 'Paid from petty cash before the float was recorded' });
+    expect(ok.status).toBe(201);
+    expect(ok.body).toMatchObject({ direction: 'PAYMENT', gross: '6.40', status: 'POSTED', balanceWarnings: [{ kind: 'CASH', lowestBalance: '-6.40', overridden: true }], lines: [{ lineNo: 1, amount: '6.40', vat: '0.00' }] });
+    const j = await as(reviewer, 'get', c(`/journals/${ok.body.journalId}`));
+    expect(j.body).toMatchObject({ sourceType: 'CASH_PAYMENT', negativeCashReason: 'Paid from petty cash before the float was recorded' });
+    // the float arrives: money in is never refused
+    const inn = await as(owner, 'post', c('/cash-transactions'), { direction: 'RECEIPT', transactionDate: '2026-08-04', bankAccountId: acc['1220'], description: 'Petty cash float', lines: [{ description: 'Float', accountId: acc['2230'], amount: '50.00' }] });
+    expect(inn.status).toBe(201);
+    // a stored till receipt is attached
+    const doc = await as(owner, 'post', '/documents', { name: 'till-receipt.jpg', companyId: company.id, contentType: 'image/jpeg', sizeBytes: 60 });
+    const docId = doc.body.document?.id ?? doc.body.id;
+    const at = await as(accountant, 'post', c(`/cash-transactions/${ok.body.id}/attachments`), { documentId: docId, note: 'Till receipt' });
+    expect(at.status).toBe(201);
+    expect(at.body).toMatchObject({ targetType: 'cash_transaction', targetId: ok.body.id });
+    expect((await as(reviewer, 'get', c(`/cash-transactions/${ok.body.id}/attachments`))).body.items.map((x: { sourceId: string }) => x.sourceId)).toEqual([docId]);
+    // reversal: by cash:record only, mirrored; the ledger route refuses
+    expect((await as(bookkeeper, 'post', c(`/cash-transactions/${ok.body.id}/reverse`), { reason: 'Personal purchase' })).status).toBe(403);
+    expect((await as(accountant, 'post', c(`/journals/${ok.body.journalId}/reverse`), { reason: 'Ledger route' })).body.code).toBe('subledger_journal');
+    const rev = await as(accountant, 'post', c(`/cash-transactions/${ok.body.id}/reverse`), { reason: 'Personal purchase, repaid by the director', date: '2026-08-05' });
+    expect(rev.status).toBe(200);
+    expect(rev.body).toMatchObject({ status: 'REVERSED', reversedReason: 'Personal purchase, repaid by the director' });
+    expect((await as(reviewer, 'get', `${c('/cash-transactions')}?status=REVERSED`)).body.items.map((x: { id: string }) => x.id)).toEqual([ok.body.id]);
+    expect((await as(reviewer, 'get', c(`/cash-transactions/${GHOST}`))).status).toBe(404);
+  });
+  it('requests are validated: strict bodies, decimal strings, a direction, at least one line', async () => {
+    const good = { direction: 'RECEIPT', transactionDate: '2026-08-06', bankAccountId: acc['1220'], description: 'x', lines: [{ description: 'y', accountId: acc['4100'], amount: '1.00' }] };
+    for (const b of [{ ...good, direction: 'TRANSFER' }, { ...good, lines: [] }, { ...good, lines: [{ ...good.lines[0], amount: 1 }] }, { ...good, status: 'REVERSED' }, { ...good, negativeCashReason: 'short' }]) {
+      expect((await as(accountant, 'post', c('/cash-transactions'), b)).status).toBe(422);
+    }
+  });
+});

@@ -354,3 +354,18 @@ Recorded before code under the delegation. Statements about VAT law are UNVERIFI
 * **Negative cash:** after posting, a bank account below zero on the date carries a `negativeBalance` warning. A cash-in-hand account below zero is refused without a reason (DEC-036).
 * **Acceptance:** both directions with VAT; the overdraft warning; the cash refusal and its override; reversal; database guards.
 
+### 10.3a As built (M6c; DEC-037)
+* **Migration** `20260115000000_v1_cash_transactions`:
+  * `cash_transaction` and `cash_transaction_line` (RLS forced, no DELETE/TRUNCATE; lines also no UPDATE);
+  * `cash_transaction_guard` (created POSTED by its own journal of its direction from a bank or cash account; immutable; REVERSED once, by its own reversal journal that must mirror the posted one line by line);
+  * `cash_transaction_line_guard` (written in the creating transaction only, to a non-control, non-bank account) and the commit-time totals check (lines, totals and the bank line agree);
+  * `journal.negative_cash_reason` and the commit-time `journal_cash_check` (cash in hand never below zero on the date or later without a reason, for a person's journal not posted from a request);
+  * the sub-ledger reversal guard and `journal_vat_check` extended to the four cash sources; `cash_transaction` joins the evidence graph; permissions `cash:read` and `cash:record`.
+* **Code:** `CashService` (`packages/accounting/src/cash.ts`) is the only writer of the cash tables. The PostingService gains the negative-cash check and returns `balanceWarnings`; the VAT side of a journal is fixed by its source (`sourceVatSide`), so the reversal of a cash payment still reduces purchases. Supplier payments, receipt reversals and ledger reversals accept `negativeCashReason`. The API adds `CashController` (6 routes).
+* **Hand-calculated evidence (12.5% synthetic):**
+  * Money in 200.00 standard + 30.00 zero-rated: Dr cash 255.00 / Cr 4000 200.00 / Cr VAT 25.00 / Cr 4100 30.00.
+  * Money out 90.00 inclusive standard + 15.00 exempt: VAT 10.00, net 80.00; Cr cash 105.00.
+  * Reverse charge 400.00 from the bank: paid 400.00, pair 50.00 / 50.00; the bank ends at -400.00, a warning.
+  * VAT workpaper: boxes 1 75.00, 4 60.00, 6 230.00, 7 495.00; after reversing the 105.00 payment, box 4 50.00 and box 7 400.00.
+  * A back-dated 200.00 payment on 3 February leaves 55.00 that day but -50.00 on 5 February: refused, with the lowest point and its date.
+

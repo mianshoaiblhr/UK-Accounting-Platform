@@ -536,7 +536,7 @@ export class PurchasesService {
   }
 
   async recordPayment(tx: Tx, a: { organisationId: string; companyId: string; actor: PurchaseActor; supplierRoleId: string; paymentDate: string; currency?: string; amount: string; bankAccountId: string;
-    reference?: string; notes?: string; rateId?: string; allocations: { billId: string; amount: string }[]; duplicateOverrideReason?: string }) {
+    reference?: string; notes?: string; rateId?: string; allocations: { billId: string; amount: string }[]; duplicateOverrideReason?: string; negativeCashReason?: string }) {
     await this.need(a.actor, 'purchases:approve', a.companyId);
     const company = await this.company(tx, a.companyId);
     const { role, profile } = await this.supplier(tx, a.companyId, a.supplierRoleId);
@@ -569,7 +569,7 @@ export class PurchasesService {
         { accountId: settings.payablesAccountId, debit: amt, credit: '0', description: `Payment ${name}`.slice(0, 300) },
         { accountId: a.bankAccountId, debit: '0', credit: amt, description: `Payment ${name}`.slice(0, 300) },
       ],
-      idempotencyKey: `purchase-payment:${id}`, actor: a.actor,
+      idempotencyKey: `purchase-payment:${id}`, actor: a.actor, negativeCashReason: a.negativeCashReason,
     });
     const pay = await tx.journalLine.findFirstOrThrow({ where: { journalId: j.id, lineNo: 1 } });
     await tx.purchasePayment.create({ data: { id, organisationId: a.organisationId, companyId: a.companyId, supplierRoleId: role.id, contactId: role.contactId, paymentDate: toDate(a.paymentDate), currency,

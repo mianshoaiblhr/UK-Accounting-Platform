@@ -1268,6 +1268,8 @@ model Journal {
   requestId         String?  @unique @map("request_id") @db.Uuid
   requestedByUserId String?  @map("requested_by_user_id") @db.Uuid
   approvedByUserId  String?  @map("approved_by_user_id") @db.Uuid
+  /// DEC-037: why a person took a cash-in-hand account below zero (the database refuses it otherwise).
+  negativeCashReason String? @map("negative_cash_reason")
 
   lines JournalLine[]
 
@@ -1869,4 +1871,59 @@ model PurchasePayment {
   @@index([organisationId, companyId, supplierRoleId, status], map: "purchase_payment_supplier_idx")
   @@index([organisationId, companyId, paymentDate], map: "purchase_payment_date_idx")
   @@map("purchase_payment")
+}
+
+/// M6c (DEC-036, DEC-037): money in or out of a bank or cash account without a source document. Posted when recorded; immutable; reversed only by
+/// its own mirror journal. Written only by CashService.
+model CashTransaction {
+  id                      String    @id @db.Uuid
+  organisationId          String    @map("organisation_id") @db.Uuid
+  companyId               String    @map("company_id") @db.Uuid
+  direction               String
+  transactionDate         DateTime  @map("transaction_date") @db.Date
+  taxPoint                DateTime? @map("tax_point") @db.Date
+  bankAccountId           String    @map("bank_account_id") @db.Uuid
+  contactId               String?   @map("contact_id") @db.Uuid
+  counterparty            String?
+  reference               String?
+  description             String
+  currency                String    @db.Char(3)
+  amountsIncludeVat       Boolean   @default(false) @map("amounts_include_vat")
+  netTotal                Decimal   @map("net_total") @db.Decimal(19, 4)
+  vatTotal                Decimal   @map("vat_total") @db.Decimal(19, 4)
+  grossTotal              Decimal   @map("gross_total") @db.Decimal(19, 4)
+  journalId               String    @map("journal_id") @db.Uuid
+  duplicateOverrideReason String?   @map("duplicate_override_reason")
+  status                  String    @default("POSTED")
+  reversalJournalId       String?   @map("reversal_journal_id") @db.Uuid
+  reversedByUserId        String?   @map("reversed_by_user_id") @db.Uuid
+  reversedAt              DateTime? @map("reversed_at") @db.Timestamptz(3)
+  reversedReason          String?   @map("reversed_reason")
+  createdByUserId         String    @map("created_by_user_id") @db.Uuid
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@index([organisationId, companyId, bankAccountId, transactionDate], map: "cash_transaction_account_idx")
+  @@index([organisationId, companyId, transactionDate], map: "cash_transaction_date_idx")
+  @@map("cash_transaction")
+}
+
+model CashTransactionLine {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  companyId      String   @map("company_id") @db.Uuid
+  transactionId  String   @map("transaction_id") @db.Uuid
+  lineNo         Int      @map("line_no")
+  description    String
+  accountId      String   @map("account_id") @db.Uuid
+  taxCodeId      String?  @map("tax_code_id") @db.Uuid
+  amount         Decimal  @db.Decimal(19, 4)
+  net            Decimal  @db.Decimal(19, 4)
+  vat            Decimal  @db.Decimal(19, 4)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([transactionId, lineNo], map: "cash_transaction_line_no_key")
+  @@index([organisationId, companyId, transactionId], map: "cash_transaction_line_org_idx")
+  @@map("cash_transaction_line")
 }

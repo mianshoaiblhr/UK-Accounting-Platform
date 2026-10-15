@@ -14,3 +14,4 @@ export * from './fx';
 export * from './vat';
 export * from './sales';
 export * from './purchases';
+export * from './cash';

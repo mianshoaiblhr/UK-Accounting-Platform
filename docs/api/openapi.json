@@ -2658,7 +2658,8 @@
                 "accounting_period",
                 "journal",
                 "sales_document",
-                "purchase_document"
+                "purchase_document",
+                "cash_transaction"
               ]
             }
           },
@@ -15981,6 +15982,538 @@
         ]
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/cash-transactions": {
+      "post": {
+        "operationId": "Cash_record",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Recorded and posted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashTransaction"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Cash"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "cash:record"
+        ],
+        "summary": "Record money in or out of a bank or cash account without a source document, with VAT per line (posted when recorded). Cash in hand below zero needs a negativeCashReason; an overdrawn bank account is returned as a warning",
+        "description": "**Requires permission:** `cash:record`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCashTransactionRequest"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "Cash_list",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PAYMENT",
+                "RECEIPT"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "POSTED",
+                "REVERSED"
+              ]
+            }
+          },
+          {
+            "name": "bankAccountId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "contactId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashTransactionPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Cash"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "cash:read"
+        ],
+        "summary": "Cash transactions (filter by direction, status, account, contact or dates)",
+        "description": "**Requires permission:** `cash:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/cash-transactions/{transactionId}": {
+      "get": {
+        "operationId": "Cash_get",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "transactionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashTransaction"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Cash"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "cash:read"
+        ],
+        "summary": "One cash transaction with its lines",
+        "description": "**Requires permission:** `cash:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/cash-transactions/{transactionId}/reverse": {
+      "post": {
+        "operationId": "Cash_reverse",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "transactionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reversed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashTransaction"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Cash"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "cash:record"
+        ],
+        "summary": "Reverse a cash transaction by its exact mirror journal (reason required; same VAT rate versions and tax point)",
+        "description": "**Requires permission:** `cash:record`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReverseCashTransactionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/cash-transactions/{transactionId}/attachments": {
+      "get": {
+        "operationId": "Cash_attachments",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "transactionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Attachments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceLinkList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Cash"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "cash:read"
+        ],
+        "summary": "Documents attached to a cash transaction",
+        "description": "**Requires permission:** `cash:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "Cash_attach",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "transactionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Attached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceLink"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Cash"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "cash:record"
+        ],
+        "summary": "Attach a stored document (for example the till receipt)",
+        "description": "**Requires permission:** `cash:record`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttachCashTransactionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -16954,6 +17487,9 @@
     },
     {
       "name": "Purchases"
+    },
+    {
+      "name": "Cash"
     },
     {
       "name": "Notifications"
@@ -19831,6 +20367,11 @@
             "format": "uuid",
             "nullable": true
           },
+          "negativeCashReason": {
+            "type": "string",
+            "nullable": true,
+            "description": "DEC-037: why the person took a cash-in-hand account below zero (the database refuses it without a reason)"
+          },
           "reversedByJournalId": {
             "type": "string",
             "format": "uuid",
@@ -20032,6 +20573,7 @@
           "requestId",
           "requestedByUserId",
           "approvedByUserId",
+          "negativeCashReason",
           "reversedByJournalId",
           "reversedByJournalNumber",
           "currency",
@@ -20127,6 +20669,11 @@
                   "format": "uuid",
                   "nullable": true
                 },
+                "negativeCashReason": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "DEC-037: why the person took a cash-in-hand account below zero (the database refuses it without a reason)"
+                },
                 "reversedByJournalId": {
                   "type": "string",
                   "format": "uuid",
@@ -20155,6 +20702,7 @@
                 "requestId",
                 "requestedByUserId",
                 "approvedByUserId",
+                "negativeCashReason",
                 "reversedByJournalId",
                 "reversedByJournalNumber"
               ],
@@ -22907,6 +23455,384 @@
           "asOf",
           "customers",
           "totals"
+        ],
+        "additionalProperties": false
+      },
+      "CashTransaction": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "PAYMENT",
+              "RECEIPT"
+            ]
+          },
+          "transactionDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "taxPoint": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "bankAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "contactId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "counterparty": {
+            "type": "string",
+            "nullable": true
+          },
+          "reference": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "amountsIncludeVat": {
+            "type": "boolean"
+          },
+          "net": {
+            "type": "string"
+          },
+          "vat": {
+            "type": "string"
+          },
+          "gross": {
+            "type": "string"
+          },
+          "journalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "duplicateOverrideReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "POSTED",
+              "REVERSED"
+            ]
+          },
+          "reversalJournalId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "reversedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "reversedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "reversedReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "lineNo": {
+                  "type": "integer"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "taxCodeId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "amount": {
+                  "type": "string"
+                },
+                "net": {
+                  "type": "string"
+                },
+                "vat": {
+                  "type": "string"
+                },
+                "gross": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "lineNo",
+                "description",
+                "accountId",
+                "taxCodeId",
+                "amount",
+                "net",
+                "vat",
+                "gross"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "balanceWarnings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "accountCode": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "BANK",
+                    "CASH"
+                  ]
+                },
+                "lowestBalance": {
+                  "type": "string"
+                },
+                "onDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "overridden": {
+                  "type": "boolean",
+                  "description": "Cash in hand: true when the person gave a negativeCashReason (otherwise the posting is refused)"
+                }
+              },
+              "required": [
+                "accountId",
+                "accountCode",
+                "kind",
+                "lowestBalance",
+                "onDate",
+                "overridden"
+              ],
+              "additionalProperties": false,
+              "description": "DEC-036/037: an account this posting lowers that is below zero on its date or a later date. A bank account is a warning (overdraft); cash in hand needs a reason"
+            },
+            "description": "Returned when recording or reversing"
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "direction",
+          "transactionDate",
+          "taxPoint",
+          "bankAccountId",
+          "contactId",
+          "counterparty",
+          "reference",
+          "description",
+          "currency",
+          "amountsIncludeVat",
+          "net",
+          "vat",
+          "gross",
+          "journalId",
+          "duplicateOverrideReason",
+          "status",
+          "reversalJournalId",
+          "reversedByUserId",
+          "reversedAt",
+          "reversedReason",
+          "createdByUserId",
+          "createdAt",
+          "lines"
+        ],
+        "additionalProperties": false
+      },
+      "CashTransactionPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "PAYMENT",
+                    "RECEIPT"
+                  ]
+                },
+                "transactionDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "taxPoint": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "bankAccountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "contactId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "counterparty": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "reference": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "description": {
+                  "type": "string"
+                },
+                "currency": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 3
+                },
+                "amountsIncludeVat": {
+                  "type": "boolean"
+                },
+                "net": {
+                  "type": "string"
+                },
+                "vat": {
+                  "type": "string"
+                },
+                "gross": {
+                  "type": "string"
+                },
+                "journalId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "duplicateOverrideReason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "POSTED",
+                    "REVERSED"
+                  ]
+                },
+                "reversalJournalId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "reversedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "reversedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "reversedReason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "direction",
+                "transactionDate",
+                "taxPoint",
+                "bankAccountId",
+                "contactId",
+                "counterparty",
+                "reference",
+                "description",
+                "currency",
+                "amountsIncludeVat",
+                "net",
+                "vat",
+                "gross",
+                "journalId",
+                "duplicateOverrideReason",
+                "status",
+                "reversalJournalId",
+                "reversedByUserId",
+                "reversedAt",
+                "reversedReason",
+                "createdByUserId",
+                "createdAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
         ],
         "additionalProperties": false
       },
@@ -29528,7 +30454,9 @@
                 "sales:approve",
                 "purchases:read",
                 "purchases:manage",
-                "purchases:approve"
+                "purchases:approve",
+                "cash:read",
+                "cash:record"
               ]
             },
             "minItems": 1
@@ -30067,7 +30995,8 @@
               "accounting_period",
               "journal",
               "sales_document",
-              "purchase_document"
+              "purchase_document",
+              "cash_transaction"
             ]
           },
           "sourceId": {
@@ -30087,7 +31016,8 @@
               "accounting_period",
               "journal",
               "sales_document",
-              "purchase_document"
+              "purchase_document",
+              "cash_transaction"
             ]
           },
           "targetId": {
@@ -31129,6 +32059,11 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 500
+          },
+          "negativeCashReason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
           }
         },
         "required": [
@@ -32484,6 +33419,11 @@
           "date": {
             "type": "string",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "negativeCashReason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
           }
         },
         "required": [
@@ -32892,6 +33832,11 @@
             "type": "string",
             "minLength": 10,
             "maxLength": 1000
+          },
+          "negativeCashReason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
           }
         },
         "required": [
@@ -32953,6 +33898,148 @@
         },
         "required": [
           "reason"
+        ],
+        "additionalProperties": false
+      },
+      "CreateCashTransactionRequest": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": [
+              "PAYMENT",
+              "RECEIPT"
+            ]
+          },
+          "transactionDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "taxPoint": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "bankAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "contactId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "counterparty": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "reference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "amountsIncludeVat": {
+            "type": "boolean",
+            "default": false
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "description": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 300
+                },
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "amount": {
+                  "type": "string",
+                  "pattern": "^\\d{1,15}(\\.\\d{1,4})?$"
+                },
+                "taxCodeId": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "description",
+                "accountId",
+                "amount"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 150
+          },
+          "duplicateOverrideReason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          },
+          "negativeCashReason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "direction",
+          "transactionDate",
+          "bankAccountId",
+          "description",
+          "lines"
+        ],
+        "additionalProperties": false
+      },
+      "ReverseCashTransactionRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 1000
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "negativeCashReason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "AttachCashTransactionRequest": {
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "documentId"
         ],
         "additionalProperties": false
       },

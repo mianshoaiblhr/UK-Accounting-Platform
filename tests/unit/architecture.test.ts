@@ -166,6 +166,11 @@ describe('database access paths that carry security meaning', () => {
     expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/purchases.ts']);
     expect(read(`${ROOT}/packages/accounting/src/purchases.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany)|INSERT INTO\s+"?journal/);
   });
+  it('cash transactions have one writer (M6c), which posts only through the PostingService', () => {
+    const WRITE = /\.(cashTransaction|cashTransactionLine)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(cash_transaction|cash_transaction_line)"?\b/i;
+    expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/cash.ts']);
+    expect(read(`${ROOT}/packages/accounting/src/cash.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany)|INSERT INTO\s+"?journal/);
+  });
   it('customer and supplier roles have one writer (M4a), and only it touches supplier bank-detail ciphertext', () => {
     const WRITE = /\.(contactRole|customerProfile|supplierProfile)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(contact_role|customer_profile|supplier_profile)"?\b/i;
     expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['apps/api/src/master-data/contact-roles.service.ts']);

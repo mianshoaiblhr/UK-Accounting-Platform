@@ -78,6 +78,8 @@ export const TABLE_PROTECTION: Record<string, { protection: Protection; why: str
   purchase_sequence: { protection: 'RLS+APP', why: 'Last internal bill / debit-note number per company; moves forward by one (trigger), only in an approval.' },
   purchase_document: { protection: 'RLS+APP', why: 'Supplier bills and debit notes; purchases:manage / purchases:approve; approved documents immutable (trigger), never deleted.' },
   purchase_document_line: { protection: 'RLS+APP', why: 'Append-only line revisions of a purchase draft; no UPDATE or DELETE.' },
+  cash_transaction: { protection: 'RLS+APP', why: 'Money in and out without a source document (M6c); cash:record; posted when recorded; immutable; reversed once by a proven mirror journal (trigger).' },
+  cash_transaction_line: { protection: 'RLS+APP', why: 'Lines of a cash transaction; written once with it (trigger); no UPDATE/DELETE privilege.' },
   purchase_payment: { protection: 'RLS+APP', why: 'Supplier payments; posted when recorded; unallocated amount moves only through allocations; reversed only while unallocated (trigger); flags unverified bank details.' },
   purchase_allocation: { protection: 'RLS+APP', why: 'Debit notes applied to bills; immutable; moves outstanding amounts by trigger, never below zero.' },
   sales_receipt: { protection: 'RLS+APP', why: 'Customer receipts; posted when recorded; outstanding moves only through allocations; reversed only while unallocated (trigger).' },

@@ -4,7 +4,7 @@ import { conflict, forbidden, getContext, notFound, unprocessable } from '@uk/co
 import type { Tx } from '@uk/db';
 import { auditRow, publishEvent } from '@uk/platform';
 import { RateService, convert, roundingTolerance } from './fx';
-import { VatService, vatInGross, vatOnNet } from './vat';
+import { VatService, sourceVatSide, vatInGross, vatOnNet } from './vat';
 import { ZERO, fmt, money, type Money } from './money';
 
 /**
@@ -66,11 +66,18 @@ export interface PostInput {
   reason?: string | null;
   /** Only for sources that `requiresRequest` (opening balance, control adjustment): the request being posted. Set by the RequestService; the actor is the approver. */
   request?: { id: string; requestedByUserId: string; selfApproved: boolean };
+  /** DEC-037: why a person takes a cash-in-hand account below zero. Without it such a posting is refused; with it the reason is kept on the journal. */
+  negativeCashReason?: string | null;
 }
+
+/** DEC-036/037: a bank or cash account this journal lowers that is below zero on the journal date or a later date, once the journal is posted. */
+export interface BalanceWarning { accountId: string; accountCode: string; kind: 'BANK' | 'CASH'; lowestBalance: string; onDate: string; overridden: boolean }
 
 export interface PostedJournal {
   id: string; journalNumber: number; journalDate: string; periodId: string; companyId: string; sourceType: string; sourceId: string | null;
   total: string; lineCount: number; reversesJournalId: string | null; replayed: boolean;
+  /** Fresh postings only (a replay returns none). */
+  balanceWarnings?: BalanceWarning[];
 }
 
 /** Context handed to extra validators (the VAT validator joins in M2). */
@@ -230,6 +237,11 @@ export class PostingService {
     const ctx: PostingContext = { tx, input, period, accounts: accounts as PostingContext['accounts'], lines };
     for (const v of this.opts.validators ?? []) await v(ctx);
 
+    // 9a. negative bank and cash (DEC-036, DEC-037): the database proves the cash refusal again at commit
+    const balanceWarnings = await this.balanceCheck(tx, input, lines, accounts as Map<string, { id: string; code: string; subtype: string }>, cur.minorUnits);
+    const negativeCash = balanceWarnings.filter((w) => w.kind === 'CASH');
+    const cashOverride = negativeCash.length > 0 && actor.kind === 'USER' && !input.request;
+
     // 10. number, insert (only here may the posting flag be on), audit, event
     await tx.$queryRaw`SELECT set_config('app.posting', 'on', true)`;
     try {
@@ -242,7 +254,7 @@ export class PostingService {
         sourceType: input.sourceType, sourceId: input.sourceId ?? null, sourceReference: input.sourceReference ?? null, description: input.description.trim(),
         currency: company.baseCurrency, total: debits, lineCount: lines.length, actorType: actor.kind, postedByUserId: actor.userId ?? null,
         idempotencyKey: input.idempotencyKey, contentHash, reversesJournalId: input.reversesJournalId ?? null,
-        correlationId: getContext()?.correlationId,
+        correlationId: getContext()?.correlationId, negativeCashReason: cashOverride ? input.negativeCashReason!.trim() : null,
         ...(input.request ? { requestId: input.request.id, requestedByUserId: input.request.requestedByUserId, approvedByUserId: actor.userId! } : {}),
       } });
       await tx.journalLine.createMany({ data: lines.map((l, i) => ({
@@ -256,11 +268,11 @@ export class PostingService {
         action: input.sourceType === 'REVERSAL' ? 'journal.reversed' : 'journal.posted', organisationId: input.organisationId, companyId: input.companyId, actorUserId: actor.userId ?? null,
         entityType: 'journal', entityId: journal.id, reason: input.reason ?? null,
         after: { journalNumber, journalDate: input.journalDate, sourceType: input.sourceType, total: fmt(debits, cur.minorUnits), lines: lines.length },
-        metadata: { periodId: period.id, reverses: input.reversesJournalId ?? null, actorKind: actor.kind, ...(input.request ? { requestId: input.request.id, requestedBy: input.request.requestedByUserId, approvedBy: actor.userId, selfApproved: input.request.selfApproved } : {}) },
+        metadata: { periodId: period.id, reverses: input.reversesJournalId ?? null, actorKind: actor.kind, ...(balanceWarnings.length > 0 ? { balanceWarnings, ...(cashOverride ? { negativeCashReason: input.negativeCashReason!.trim() } : {}) } : {}), ...(input.request ? { requestId: input.request.id, requestedBy: input.request.requestedByUserId, approvedBy: actor.userId, selfApproved: input.request.selfApproved } : {}) },
       }, this.opts.captureDeviceMetadata)] });
       await publishEvent(tx, Events.transactionPosted, { aggregateId: journal.id, organisationId: input.organisationId, actorUserId: actor.userId ?? null,
         payload: { journalId: journal.id, companyId: input.companyId, periodId: period.id, journalNumber, journalDate: input.journalDate, sourceType: input.sourceType, sourceId: input.sourceId ?? null, total: fmt(debits, cur.minorUnits), reversesJournalId: input.reversesJournalId ?? null } });
-      return { ...this.view(journal, cur.minorUnits), replayed: false };
+      return { ...this.view(journal, cur.minorUnits), replayed: false, balanceWarnings };
     } finally {
       // The switch is transaction-local, so it dies with the transaction anyway. When the database refused the insert the transaction is already
       // aborted and this statement would fail too - and hide the real error - so it is best-effort.
@@ -319,7 +331,8 @@ export class PostingService {
       const netLineNo = out.length + 1;
       out.push({ accountId: l.accountId, description: l.description, ...side(net), vat: { ...facts, role: 'NET' } });
       // a document journal knows its direction (a sales credit note is still sales; a purchase debit note still purchases); otherwise a BOTH code follows the side
-      const salesSide = input.sourceType.startsWith('SALES_') ? true : input.sourceType.startsWith('PURCHASE_') ? false : code.direction === 'SALES' || (code.direction === 'BOTH' && !isDebit);
+      const fixed = sourceVatSide(input.sourceType);
+      const salesSide = fixed ? fixed === 'SALES' : code.direction === 'SALES' || (code.direction === 'BOTH' && !isDebit);
       if (vatAmt.greaterThan(0)) {
         out.push({ accountId: salesSide ? settings.outputAccountId : settings.inputAccountId, description: `VAT ${code.code} on line ${i + 1}`, ...side(vatAmt), generated: true, vat: { ...facts, role: 'VAT', netLineNo } });
       }
@@ -423,10 +436,46 @@ export class PostingService {
   }
 
   /**
+   * DEC-036/037. For every bank or cash account the journal lowers, the lowest balance on the journal date or any later date once this journal is
+   * included (a back-dated payment can overdraw a later day). Cash in hand below zero is refused for a person unless a reason is given (an approved
+   * journal request is its own authority; a system posting only warns); a bank account below zero is a warning (overdrafts exist).
+   */
+  private async balanceCheck(tx: Tx, input: PostInput, lines: { accountId: string; debit: Money; credit: Money; adjustsCurrency?: string }[], accounts: Map<string, { id: string; code: string; subtype: string }>, minor: number): Promise<BalanceWarning[]> {
+    const delta = new Map<string, Money>();
+    // a functional-only revaluation adjustment (and its reversal) revalues a balance; it moves no money, so it is never the posting that is refused
+    for (const l of lines) if (!l.adjustsCurrency) delta.set(l.accountId, (delta.get(l.accountId) ?? ZERO).plus(l.debit).minus(l.credit));
+    const out: BalanceWarning[] = [];
+    for (const [id, d] of [...delta.entries()].sort(([x], [y]) => (x < y ? -1 : 1))) {
+      const a = accounts.get(id)!;
+      const kind = a.subtype === 'CURRENT_ASSET_CASH' ? 'CASH' : a.subtype === 'CURRENT_ASSET_BANK' ? 'BANK' : null;
+      if (!kind || !d.isNegative()) continue;
+      // the same per-account lock the commit-time check takes; postings of one company are already serialised by the journal number
+      if (kind === 'CASH') await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${'cash:' + id}, 0))`;
+      const [r] = await tx.$queryRaw<{ opening: string | null; low_d: Date | null; low_bal: string | null }[]>`
+        WITH mv AS (SELECT j.journal_date AS d, sum(l.debit - l.credit) AS amt FROM journal_line l JOIN journal j ON j.id = l.journal_id AND j.organisation_id = l.organisation_id
+                     WHERE l.company_id = ${input.companyId}::uuid AND l.account_id = ${id}::uuid GROUP BY j.journal_date),
+             run AS (SELECT d, sum(amt) OVER (ORDER BY d) AS bal FROM mv)
+        SELECT (SELECT bal FROM run WHERE d <= ${input.journalDate}::date ORDER BY d DESC LIMIT 1)::text AS opening,
+               (SELECT d FROM run WHERE d > ${input.journalDate}::date ORDER BY bal, d LIMIT 1) AS low_d,
+               (SELECT min(bal) FROM run WHERE d > ${input.journalDate}::date)::text AS low_bal`;
+      let low = money(r?.opening ?? '0').plus(d), on = input.journalDate;
+      if (r?.low_bal !== null && r?.low_bal !== undefined && money(r.low_bal).plus(d).lessThan(low)) { low = money(r.low_bal).plus(d); on = isoDay(r.low_d!); }
+      if (!low.isNegative()) continue;
+      const overridden = kind === 'CASH' && input.actor.kind === 'USER' && !input.request;
+      if (overridden && !input.negativeCashReason?.trim()) {
+        throw unprocessable(`This takes cash account ${a.code} below zero (${fmt(low, minor)} on ${on}). Cash in hand cannot be negative: check for a missing receipt, or give a negativeCashReason if it is genuine`, 'negative_cash',
+          { accountId: id, accountCode: a.code, lowestBalance: fmt(low, minor), onDate: on });
+      }
+      out.push({ accountId: id, accountCode: a.code, kind, lowestBalance: fmt(low, minor), onDate: on, overridden });
+    }
+    return out;
+  }
+
+  /**
    * Corrections are reversals (manifest control 3): a mirror journal in an OPEN period, dated on or after the original, linked both
    * ways, at most once per original; a reversal cannot itself be reversed (post a new journal instead).
    */
-  async reverse(tx: Tx, a: { organisationId: string; companyId: string; journalId: string; journalDate?: string; reason: string; actor: PostingActor }): Promise<PostedJournal> {
+  async reverse(tx: Tx, a: { organisationId: string; companyId: string; journalId: string; journalDate?: string; reason: string; actor: PostingActor; negativeCashReason?: string }): Promise<PostedJournal> {
     const original = await tx.journal.findFirst({ where: { id: a.journalId, companyId: a.companyId }, include: { lines: { orderBy: { lineNo: 'asc' } } } });
     if (!original) throw notFound('Journal not found');
     if (original.sourceType === 'REVERSAL') throw unprocessable('A reversal cannot be reversed; post a new journal instead', 'cannot_reverse_reversal');
@@ -443,7 +492,7 @@ export class PostingService {
         ...(l.adjustsCurrency ? { adjustsCurrency: l.adjustsCurrency } : {}),
         ...(l.taxRateId ? { vat: { taxCodeId: l.taxCodeId!, taxRateId: l.taxRateId, role: l.vatRole as PostLineVat['role'], taxPoint: isoDay(l.taxPoint!), netLineNo: l.vatNetLineNo ?? undefined, inclusive: !!l.vatInclusive,
           ...(l.vatRatePoint ? { ratePoint: isoDay(l.vatRatePoint) } : {}) } } : {}) })),
-      idempotencyKey: `reversal:${original.id}`, actor: a.actor, reversesJournalId: original.id, reason: a.reason,
+      idempotencyKey: `reversal:${original.id}`, actor: a.actor, reversesJournalId: original.id, reason: a.reason, negativeCashReason: a.negativeCashReason,
     });
   }
 

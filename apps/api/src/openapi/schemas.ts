@@ -82,6 +82,7 @@ export const JournalHeader = z.object({
   id: uuid, journalNumber: z.number().int(), journalDate: day, periodId: uuid, sourceType: z.string(), sourceId: z.string().nullable(), sourceReference: z.string().nullable(), description: z.string(),
   total: money, lineCount: z.number().int(), actorType: z.enum(['USER', 'SYSTEM']), postedByUserId: uuid.nullable(), postedAt: ts, reversesJournalId: uuid.nullable(),
   requestId: uuid.nullable().describe('The approved journal request this journal was posted from (opening balances and control adjustments only)'), requestedByUserId: uuid.nullable(), approvedByUserId: uuid.nullable(),
+  negativeCashReason: z.string().nullable().describe('DEC-037: why the person took a cash-in-hand account below zero (the database refuses it without a reason)'),
   reversedByJournalId: uuid.nullable(), reversedByJournalNumber: z.number().int().nullable(),
 });
 export const JournalDetail = JournalHeader.extend({
@@ -250,6 +251,22 @@ export const PayablesReconciliation = z.object({
     control: z.object({ fromPurchaseDocuments: z.string(), fromPurchaseDocumentsFunctional: z.string(), total: z.string(), totalFunctional: z.string() }),
     difference: z.string(), differenceFunctional: z.string(), otherPostings: z.array(z.object({ sourceType: z.string(), original: z.string(), functional: z.string() })) })),
 });
+
+// ───────────── Cash transactions (M6c) ─────────────
+export const BalanceWarning = z.object({ accountId: uuid, accountCode: z.string(), kind: z.enum(['BANK', 'CASH']), lowestBalance: z.string(), onDate: day,
+  overridden: z.boolean().describe('Cash in hand: true when the person gave a negativeCashReason (otherwise the posting is refused)') })
+  .describe('DEC-036/037: an account this posting lowers that is below zero on its date or a later date. A bank account is a warning (overdraft); cash in hand needs a reason');
+export const CashTransactionBase = z.object({
+  id: uuid, companyId: uuid, direction: z.enum(['PAYMENT', 'RECEIPT']), transactionDate: day, taxPoint: day.nullable(), bankAccountId: uuid, contactId: uuid.nullable(), counterparty: z.string().nullable(),
+  reference: z.string().nullable(), description: z.string(), currency: z.string().length(3), amountsIncludeVat: z.boolean(), net: z.string(), vat: z.string(), gross: z.string(), journalId: uuid,
+  duplicateOverrideReason: z.string().nullable(), status: z.enum(['POSTED', 'REVERSED']), reversalJournalId: uuid.nullable(), reversedByUserId: uuid.nullable(), reversedAt: ts.nullable(), reversedReason: z.string().nullable(),
+  createdByUserId: uuid, createdAt: ts,
+});
+export const CashTransaction = CashTransactionBase.extend({
+  lines: z.array(z.object({ lineNo: z.number().int(), description: z.string(), accountId: uuid, taxCodeId: uuid.nullable(), amount: z.string(), net: z.string(), vat: z.string(), gross: z.string() })),
+  balanceWarnings: z.array(BalanceWarning).optional().describe('Returned when recording or reversing'),
+});
+export const CashTransactionPage = z.object({ items: z.array(CashTransactionBase), nextCursor: z.string().nullable() });
 
 // ───────────── Supplier payments, statement, aged payables (M6b) ─────────────
 export const PurchasePaymentBase = z.object({

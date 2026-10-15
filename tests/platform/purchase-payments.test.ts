@@ -30,9 +30,9 @@ const bill = async (company: string, role: string, amount: string, issueDate: st
     lines: [{ description: 'Synthetic goods', quantity: '1', unitPrice: amount }] }));
   return t((tx) => purchases.approve(tx, { organisationId: org, companyId: company, actor: me(), id: d.id, duplicateOverrideReason: 'Synthetic test bills may repeat' }));
 };
-const pay = (company: string, role: string, amount: string, paymentDate: string, o: { allocations?: { billId: string; amount: string }[]; currency?: string; reference?: string; bank?: string; duplicateOverrideReason?: string; actor?: PurchaseActor } = {}) =>
+const pay = (company: string, role: string, amount: string, paymentDate: string, o: { allocations?: { billId: string; amount: string }[]; currency?: string; reference?: string; bank?: string; duplicateOverrideReason?: string; negativeCashReason?: string; actor?: PurchaseActor } = {}) =>
   t((tx) => purchases.recordPayment(tx, { organisationId: org, companyId: company, actor: o.actor ?? me(), supplierRoleId: role, paymentDate, amount, bankAccountId: acc[company]![o.bank ?? '1200']!,
-    allocations: o.allocations ?? [], ...(o.currency ? { currency: o.currency } : {}), ...(o.reference ? { reference: o.reference } : {}), ...(o.duplicateOverrideReason ? { duplicateOverrideReason: o.duplicateOverrideReason } : {}) }));
+    allocations: o.allocations ?? [], ...(o.currency ? { currency: o.currency } : {}), ...(o.reference ? { reference: o.reference } : {}), ...(o.duplicateOverrideReason ? { duplicateOverrideReason: o.duplicateOverrideReason } : {}), ...(o.negativeCashReason ? { negativeCashReason: o.negativeCashReason } : {}) }));
 const doc = (company: string, id: string) => t((tx) => purchases.get(tx, company, id));
 
 beforeAll(async () => {
@@ -88,7 +88,10 @@ describe('supplier payments (V1-MOD-09, V1-EX-04)', () => {
     await rejects(pay(co, sup, '5.00', '2026-03-10', { bank: '2100' }), 'not_a_bank_account');
     await rejects(pay(co, sup, '5.00', '2026-03-10', { actor: me(['purchases:approve']) }), 'permission_denied', 403);
     await rejects(t((tx) => purchases.reversePayment(tx, { organisationId: org, companyId: co, actor: me(), id: p.id, reason: 'Paid to the wrong supplier' })), 'payment_allocated', 409);
-    const lone = await pay(co, sup, '75.00', '2026-03-05', { reference: 'CASH 7', bank: '1220' });
+    // DEC-037: the cash box holds nothing, so paying 75.00 from it is refused until someone says why
+    await rejects(pay(co, sup, '75.00', '2026-03-05', { reference: 'CASH 7', bank: '1220' }), 'negative_cash', 422);
+    const lone = await pay(co, sup, '75.00', '2026-03-05', { reference: 'CASH 7', bank: '1220', negativeCashReason: 'Paid from the owner\'s pocket; cash float not yet recorded' });
+    expect(sql(`SELECT negative_cash_reason FROM journal WHERE id='${lone.journalId}'`)).toMatch(/owner's pocket/);
     const rev = await t((tx) => purchases.reversePayment(tx, { organisationId: org, companyId: co, actor: me(), id: lone.id, reason: 'Payment bounced back' }));
     expect(linesOf(rev.reversalJournalId!)).toBe('1220:75.0000/0.0000 ; 2100:0.0000/75.0000');
     await rejects(t((tx) => new PostingService().reverse(tx, { organisationId: org, companyId: co, journalId: p.journalId, reason: 'Ledger route', actor: { kind: 'USER', userId: user, can: async () => true } })), 'subledger_journal');

@@ -245,6 +245,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-034 | Bills and debit notes | The supplier's own invoice number is required and is the duplicate key; an internal number for audit; input VAT and reverse charge; a debit note at the bill's VAT rate version |
 | DEC-035 | Supplier payments and stored bank details | Payments mirror receipts. A payment to a supplier whose stored bank details are not verified is flagged, not blocked (the money has already gone); payment files and runs stay deferred, and they will require verified details |
 | DEC-036 | Cash transactions and negative cash | Direct money-in and money-out entries with VAT per line. A bank account may go overdrawn with a warning; a cash-in-hand account may not go below zero without a reason |
+| DEC-037 | How M6c is built (delegated, DEC-019) | The negative-cash rule lives in the PostingService and the database, so it covers every posting a person makes to cash in hand (not only cash transactions), checks every later day, and stores the reason on the journal. Cash transactions are in the company currency, have new `cash:*` permissions and a proven mirror reversal |
 
 ### DEC-033 - M6 scope and split
 * **M6a - purchase documents:** bills and debit notes. The design is the same as M5a (drafts, approval, sequences, snapshot, immutability, allocation, realised FX, reconciliation) on its own tables (`purchase_*`) and journal sources (`PURCHASE_BILL`, `PURCHASE_DEBIT_NOTE`, `PURCHASE_ALLOCATION_FX`).
@@ -282,3 +283,22 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 * **Bank accounts:** after posting, if the account's balance on that date is below zero, the response and the audit event carry a `negativeBalance` warning. Overdrafts exist.
 * **Cash in hand:** for a cash-in-hand account (subtype CURRENT_ASSET_CASH), a posting that takes the balance below zero is **refused** unless a reason is given. Cash cannot be negative, so it is either an error or a missing entry.
 * **Alerts:** the dashboard and alert list for negative balances are M8 (V1-CTL-04).
+
+### DEC-037 - How M6c is built (recorded before acceptance under the delegation, DEC-019)
+These choices refine DEC-036. None of them is a tax rule; the VAT arithmetic is the verified M4b arithmetic.
+* **Where the negative-cash rule lives.** DEC-036 says "a posting that takes the balance below zero is refused". The rule is therefore enforced by the PostingService for **every** posting by a person, not only by cash transactions: a supplier payment from cash in hand, the reversal of a customer receipt paid in cash, a cash transaction or its reversal, and a ledger reversal. The database re-checks it at commit (`journal_cash_check`), so code that bypasses the PostingService cannot leave cash in hand negative either.
+* **Which days are checked.** The lowest balance on the posting date **or any later date** once the journal is included. A back-dated payment that leaves its own day positive but overdraws a later day is caught; checking the posting date alone would miss it.
+* **The reason.** `negativeCashReason` (10 to 1,000 characters) is stored on the journal itself (`journal.negative_cash_reason`, immutable like the rest of the journal) and on its audit event. It is stored only when it was needed.
+* **What is not a movement of money.** A functional-only FX revaluation adjustment (and its automatic reversal) revalues a foreign-currency balance; it is never the posting that is refused, so period-end revaluation cannot be blocked by an earlier shortfall.
+* **Who is exempt.** A journal posted from an approved journal request (opening balance, control adjustment) carries its second-person approval as its authority. A system posting (none touch cash today) warns only, so a background job can never be blocked.
+* **Bank accounts.** An account of subtype CURRENT_ASSET_BANK that ends below zero on the date or a later date produces a `balanceWarnings` entry in the response and the audit event. It is never refused (overdrafts exist). Dashboards and alert lists stay with M8 (V1-CTL-04).
+* **Concurrency.** Postings of one company are already serialised by the journal number; the cash check also takes a per-account transaction lock in the application and in the database.
+* **Scope of cash transactions in M6c.**
+  * The company's currency only. Foreign-currency bank accounts come with M7; VAT on foreign currency with M5c (DEC-031).
+  * Lines go to non-control accounts that are not bank, cash, VAT or FX accounts. A transfer between bank and cash accounts is M7. Receivables and payables stay with their sub-ledgers.
+  * VAT codes must fit the direction: money out uses purchases codes (reverse charge allowed, entered net); money in uses sales codes (no reverse charge).
+  * Duplicate check: the same account, direction, date and total, or the same reference, needs a reason.
+  * An optional contact (organisation-level or of the company) or a free-text counterparty.
+  * The till receipt or slip can be attached as evidence (`cash_transaction` joins the evidence graph).
+* **Permissions.** `cash:read` (every role that reads the ledger) and `cash:record` (roles that may approve purchases: owner, administrator, partner, accountant). A cash transaction posts at once, so recording it is an approval-level act.
+* **Reversal.** One reversal per transaction, dated on or after it, with a reason. It is the exact mirror of the posted journal, line by line and in the same order. The VAT facts and rate versions are kept, so each VAT line still points at its net line. The database proves the mirror before the transaction can become REVERSED. The reversal keeps the original tax point, as a ledger reversal does (M4b). Whether a correction found after a VAT return was filed should instead go in the current return (HMRC VAT Notice 700/45) is listed for the tax reviewer; returns are not filed in V1.

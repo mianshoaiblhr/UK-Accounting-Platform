@@ -42,8 +42,8 @@ export class LedgerApiService {
     }));
     return this.t(org, (tx) => this.queries.getJournal(tx, companyId, j.id)).then((view) => ({ ...view, replayed: j.replayed }));
   }
-  async reverseJournal(org: OrgAccess, companyId: string, id: string, b: { journalDate?: string; reason: string }) {
-    const j = await this.t(org, (tx) => this.posting.reverse(tx, { organisationId: org.organisationId, companyId, journalId: id, journalDate: b.journalDate, reason: b.reason, actor: this.actor(org) }));
+  async reverseJournal(org: OrgAccess, companyId: string, id: string, b: { journalDate?: string; reason: string; negativeCashReason?: string }) {
+    const j = await this.t(org, (tx) => this.posting.reverse(tx, { organisationId: org.organisationId, companyId, journalId: id, journalDate: b.journalDate, reason: b.reason, negativeCashReason: b.negativeCashReason, actor: this.actor(org) }));
     return this.t(org, (tx) => this.queries.getJournal(tx, companyId, j.id));
   }
   listJournals(org: OrgAccess, companyId: string, q: z.output<typeof journalListQuerySchema>) { return this.t(org, (tx) => this.queries.listJournals(tx, companyId, q)); }

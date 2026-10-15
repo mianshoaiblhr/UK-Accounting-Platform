@@ -85,6 +85,10 @@ export const JOURNAL_SOURCES: Record<string, JournalSourceDef> = {
   PURCHASE_PAYMENT_REVERSAL: { actors: ['USER'], permission: 'purchases:approve', controlAccounts: true, controlKinds: ['TRADE_PAYABLES', 'BANK', 'CASH'], subLedger: true, description: 'Reversal of an unallocated supplier payment (same rate)' },
   PURCHASE_ALLOCATION_FX: { actors: ['USER'], permission: 'purchases:approve', controlAccounts: true, controlKinds: ['TRADE_PAYABLES'], subLedger: true, description: 'Realised exchange difference of an allocation between purchase documents' },
   SALES_ALLOCATION_FX: { actors: ['USER'], permission: 'sales:approve', controlAccounts: true, controlKinds: ['TRADE_RECEIVABLES'], subLedger: true, description: 'Realised exchange difference of an allocation between sales documents' },
+  CASH_PAYMENT: { actors: ['USER'], permission: 'cash:record', controlAccounts: true, controlKinds: ['BANK', 'CASH'], subLedger: true, description: 'Money out without a source document (Dr expense or asset / Dr input VAT / Cr bank or cash)' },
+  CASH_RECEIPT: { actors: ['USER'], permission: 'cash:record', controlAccounts: true, controlKinds: ['BANK', 'CASH'], subLedger: true, description: 'Money in without a source document (Dr bank or cash / Cr income / Cr output VAT)' },
+  CASH_PAYMENT_REVERSAL: { actors: ['USER'], permission: 'cash:record', controlAccounts: true, controlKinds: ['BANK', 'CASH', 'VAT_CONTROL'], subLedger: true, description: 'Mirror reversal of a cash payment (same lines, same VAT rate versions)' },
+  CASH_RECEIPT_REVERSAL: { actors: ['USER'], permission: 'cash:record', controlAccounts: true, controlKinds: ['BANK', 'CASH', 'VAT_CONTROL'], subLedger: true, description: 'Mirror reversal of a cash receipt (same lines, same VAT rate versions)' },
 };
 export const isJournalSource = (s: string) => Object.prototype.hasOwnProperty.call(JOURNAL_SOURCES, s);
 /** Sources a client may name on POST /journals. Opening balances and control adjustments go through journal requests (DEC-012). */
@@ -141,7 +145,9 @@ export const postJournalSchema = z.object({
   lines: z.array(journalLineSchema).min(2).max(500),
   idempotencyKey: z.string().trim().min(8).max(100).optional(),
 }).strict().refine((b) => !(b.rateId && b.manualRate), { message: 'Give either rateId or manualRate, not both', path: ['manualRate'] });
-export const reverseJournalSchema = z.object({ journalDate: isoDate.optional(), reason: z.string().trim().min(1).max(500) }).strict();
+/** DEC-037: a person taking a cash-in-hand account below zero gives the reason (recorded on the journal); without it the posting is refused. */
+export const negativeCashReason = z.string().trim().min(10).max(1000);
+export const reverseJournalSchema = z.object({ journalDate: isoDate.optional(), reason: z.string().trim().min(1).max(500), negativeCashReason: negativeCashReason.optional() }).strict();
 export const journalListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(25), cursor: z.string().max(100).optional(),
   from: isoDate.optional(), to: isoDate.optional(), source: z.string().max(40).optional(), accountId: z.string().uuid().optional(),

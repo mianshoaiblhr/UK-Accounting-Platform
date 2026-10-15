@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { moneyString } from './ledger';
+import { moneyString, negativeCashReason } from './ledger';
 import { quantityString } from './sales';
 
 /**
@@ -92,6 +92,8 @@ export const createPaymentSchema = z.object({
   rateId: uuid.optional(),
   allocations: z.array(paymentAllocationSchema).max(100).default([]),
   duplicateOverrideReason: reason.optional(),
+  /** DEC-037: paying from cash in hand that would go below zero needs the reason. */
+  negativeCashReason: negativeCashReason.optional(),
 }).strict();
 export const allocatePaymentSchema = z.object({ allocations: z.array(paymentAllocationSchema).min(1).max(100), date: isoDate.optional() }).strict();
 export const reversePaymentSchema = z.object({ reason: z.string().trim().min(3).max(1000), date: isoDate.optional() }).strict();

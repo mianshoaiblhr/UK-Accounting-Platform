@@ -65,7 +65,7 @@
     },
     "M6": {
       "title": "Purchases: bills, debit notes, payments, cash",
-      "status": "M6a VERIFIED (16c7f12; v1-m6a-acceptance.md); M6b VERIFIED (a753db0; v1-m6b-acceptance.md); M6c cash transactions specified (DEC-036)",
+      "status": "M6a VERIFIED (16c7f12; v1-m6a-acceptance.md); M6b VERIFIED (a753db0; v1-m6b-acceptance.md); M6c cash transactions built (DEC-036/037), acceptance package after CI",
       "owner": "Engineering",
       "depends": [
         "M5 patterns",
@@ -257,9 +257,9 @@
       "ref": "V1 Modules",
       "req": "Cash",
       "m": "M6",
-      "s": "M",
-      "ev": "",
-      "note": "",
+      "s": "I",
+      "ev": "Cash transactions (money in and out without a source document) post CASH_RECEIPT (Dr bank or cash / Cr income / Cr output VAT) or CASH_PAYMENT (Dr expense or asset / Dr input VAT / Cr bank or cash) when recorded, with VAT per line (standard, zero, exempt, reverse charge; exclusive or inclusive), hand-calculated (money in 255.00 with VAT 25.00; money out 105.00 inclusive with VAT 10.00; reverse charge 400.00 with the 50.00 pair; workpaper boxes 1 75.00, 4 60.00, 6 230.00, 7 495.00); duplicate check with reason; immutable; reversed once by a mirror journal that the database proves line by line; till receipts attachable as evidence. Negative cash at posting: cash in hand below zero on the date or any later date is refused without a reason (stored on the journal), for every posting by a person, and re-checked by the database at commit; an overdrawn bank account is a warning in the response and audit event (DEC-036, DEC-037). Tests: tests/platform/cash.test.ts, tests/db/cash.test.ts, tests/api/sales.test.ts (cash section), tests/platform/purchase-payments.test.ts",
+      "note": "M6c delivered (DEC-036, DEC-037). Company currency only (foreign-currency bank accounts M7; VAT on foreign currency M5c). Dashboard alerts are V1-CTL-04 (M8).",
       "owner": "Engineering",
       "deps": "M1",
       "accept": "Cash accounts and cash transactions with negative-cash alerts.",
@@ -907,9 +907,9 @@
       "ref": "V1 Controls",
       "req": "Negative cash alerts",
       "m": "M8",
-      "s": "M",
-      "ev": "",
-      "note": "",
+      "s": "P",
+      "ev": "At posting (M6c, DEC-036/037): every posting by a person that takes cash in hand below zero on its date or any later date is refused without a reason (PostingService, re-checked by the database at commit); an overdrawn bank account is returned as balanceWarnings and recorded on the audit event. Tests: tests/platform/cash.test.ts, tests/db/cash.test.ts",
+      "note": "The dashboard and alert list for negative balances remain M8.",
       "owner": "Engineering",
       "deps": "M7",
       "accept": "Negative cash/bank balances alert at posting and on the dashboard.",
@@ -1592,7 +1592,7 @@
       "deferred": "Any deletion job (S4(b) is frozen)"
     }
   ],
-  "version": 2,
+  "version": 3,
   "history": [
     "v1 (2026-10-09): 77 rows, milestones M1-M6 (initial plan, commit 0aeff94 lineage).",
     "v2 (2026-10-09, DEC-008..014): M1 accepted (fae5270). Milestones re-sequenced: new M2 (ledger controls), M3 (foreign currency), M4 (contact roles + VAT foundation); old M2 -> M5 (sales) + M4 (VAT/customers), old M3 -> M6, old M4 -> M7, old M5 -> M8, old M6 -> M9. Rows added: V1-FX-*, V1-VAT-*, V1-CON-*, V1-CTL-07..11, V1-PRIV-01. Each row now carries owner, dependencies, acceptance criteria and deferred scope.",
@@ -1604,6 +1604,7 @@
     "v2.6 (2026-10-12, DEC-026..031): M5a sales documents implemented. V1-MOD-06, V1-EX-01, V1-CON-04 -> Implemented; V1-MOD-04, V1-EX-05, V1-CTL-02, V1-CTL-05 -> Partially implemented (receipts M5b; purchases M6; alert thresholds M8); evidence extended on V1-CON-02, V1-ARC-01, MAN-ACC-06, MAN-ACC-08, XP-07, V1-VAT-04/05/07, V1-FX-07, V1-CTL-06, V1-RPT-02. No rows added or removed.",
     "v2.7 (2026-10-13, DEC-032): M5b receipts implemented. V1-MOD-08, V1-EX-03 -> Implemented; V1-MOD-04 -> Implemented (paid by receipts); evidence extended on V1-FX-07 (end to end on receipts; payments M6), V1-CON-02, XP-07. No rows added or removed.",
     "v2.8 (2026-10-13, DEC-033/034): M6a purchase documents implemented. V1-MOD-07, V1-EX-02, V1-EX-05, V1-CTL-02 -> Implemented; V1-MOD-05 -> Partially implemented (payments M6b); evidence extended on V1-VAT-04/05/08, V1-CON-02, MAN-ACC-08, including two VAT direction fixes for credits. No rows added or removed.",
-    "v2.9 (2026-10-13, DEC-035): M6b supplier payments implemented. V1-MOD-09, V1-EX-04, V1-MOD-05, V1-FX-07, V1-CON-02 -> Implemented; evidence extended on XP-07. No rows added or removed."
+    "v2.9 (2026-10-13, DEC-035): M6b supplier payments implemented. V1-MOD-09, V1-EX-04, V1-MOD-05, V1-FX-07, V1-CON-02 -> Implemented; evidence extended on XP-07. No rows added or removed.",
+    "v3.0 (2026-10-15, DEC-036/037): M6c cash transactions and the negative-cash control implemented. V1-MOD-11 -> Implemented; V1-CTL-04 -> Partially implemented (at posting; dashboard M8). No rows added or removed."
   ]
 }
