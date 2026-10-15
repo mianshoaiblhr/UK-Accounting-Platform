@@ -66,27 +66,29 @@ export interface JournalSourceDef {
   controlKinds?: readonly ControlKind[];
   /** Journals of a sub-ledger document: corrected in the sub-ledger (credit note), never reversed in the ledger (ADR-59). */
   subLedger?: boolean;
+  /** Lines may name a VAT code (DEC-047): the documents and money movements that are supplies. Mirrors carry the original's VAT facts instead. */
+  vatCodes?: boolean;
   description: string;
 }
 /** Later milestones append their sources here (SALES_INVOICE, RECEIPT, ...); the PostingService reads only this registry. */
 export const JOURNAL_SOURCES: Record<string, JournalSourceDef> = {
-  MANUAL: { actors: ['USER'], permission: 'journal:post', controlAccounts: false, description: 'Manual journal entered by a person' },
+  MANUAL: { actors: ['USER'], permission: 'journal:post', controlAccounts: false, vatCodes: true, description: 'Manual journal entered by a person' },
   OPENING_BALANCE: { actors: ['USER'], permission: 'ledger:opening-balance', controlAccounts: true, requiresRequest: true, description: 'Opening balances at the start of record keeping (request + approval policy)' },
   CONTROL_ADJUSTMENT: { actors: ['USER'], permission: 'ledger:control-adjustment', controlAccounts: true, requiresRequest: true, description: 'Exceptional adjustment of a control account (reason, evidence, approval policy)' },
   FX_REVALUATION: { actors: ['USER'], permission: 'period:manage', controlAccounts: true, description: 'Period-end revaluation of foreign-currency monetary items (unrealised FX; auto-reversed next period)' },
   REVERSAL: { actors: ['USER'], permission: 'journal:post', controlAccounts: true, description: 'Mirror of an earlier journal (corrections are reversals, never edits)' },
-  SALES_INVOICE: { actors: ['USER'], permission: 'sales:approve', controlAccounts: true, controlKinds: ['TRADE_RECEIVABLES'], subLedger: true, description: 'Approved sales invoice (Dr trade receivables / Cr revenue / Cr output VAT)' },
-  SALES_CREDIT_NOTE: { actors: ['USER'], permission: 'sales:approve', controlAccounts: true, controlKinds: ['TRADE_RECEIVABLES'], subLedger: true, description: 'Approved sales credit note, linked to its invoice' },
+  SALES_INVOICE: { actors: ['USER'], permission: 'sales:approve', controlAccounts: true, controlKinds: ['TRADE_RECEIVABLES'], subLedger: true, vatCodes: true, description: 'Approved sales invoice (Dr trade receivables / Cr revenue / Cr output VAT)' },
+  SALES_CREDIT_NOTE: { actors: ['USER'], permission: 'sales:approve', controlAccounts: true, controlKinds: ['TRADE_RECEIVABLES'], subLedger: true, vatCodes: true, description: 'Approved sales credit note, linked to its invoice' },
   SALES_RECEIPT: { actors: ['USER'], permission: 'sales:approve', controlAccounts: true, controlKinds: ['TRADE_RECEIVABLES', 'BANK', 'CASH'], subLedger: true, description: 'Customer receipt (Dr bank or cash / Cr trade receivables)' },
   SALES_RECEIPT_REVERSAL: { actors: ['USER'], permission: 'sales:approve', controlAccounts: true, controlKinds: ['TRADE_RECEIVABLES', 'BANK', 'CASH'], subLedger: true, description: 'Reversal of an unallocated customer receipt (same rate)' },
-  PURCHASE_BILL: { actors: ['USER'], permission: 'purchases:approve', controlAccounts: true, controlKinds: ['TRADE_PAYABLES'], subLedger: true, description: 'Approved supplier bill (Dr expense or asset / Dr input VAT / Cr trade payables)' },
-  PURCHASE_DEBIT_NOTE: { actors: ['USER'], permission: 'purchases:approve', controlAccounts: true, controlKinds: ['TRADE_PAYABLES'], subLedger: true, description: 'Approved supplier credit (debit note), linked to its bill' },
+  PURCHASE_BILL: { actors: ['USER'], permission: 'purchases:approve', controlAccounts: true, controlKinds: ['TRADE_PAYABLES'], subLedger: true, vatCodes: true, description: 'Approved supplier bill (Dr expense or asset / Dr input VAT / Cr trade payables)' },
+  PURCHASE_DEBIT_NOTE: { actors: ['USER'], permission: 'purchases:approve', controlAccounts: true, controlKinds: ['TRADE_PAYABLES'], subLedger: true, vatCodes: true, description: 'Approved supplier credit (debit note), linked to its bill' },
   PURCHASE_PAYMENT: { actors: ['USER'], permission: 'purchases:approve', controlAccounts: true, controlKinds: ['TRADE_PAYABLES', 'BANK', 'CASH'], subLedger: true, description: 'Supplier payment (Dr trade payables / Cr bank or cash)' },
   PURCHASE_PAYMENT_REVERSAL: { actors: ['USER'], permission: 'purchases:approve', controlAccounts: true, controlKinds: ['TRADE_PAYABLES', 'BANK', 'CASH'], subLedger: true, description: 'Reversal of an unallocated supplier payment (same rate)' },
   PURCHASE_ALLOCATION_FX: { actors: ['USER'], permission: 'purchases:approve', controlAccounts: true, controlKinds: ['TRADE_PAYABLES'], subLedger: true, description: 'Realised exchange difference of an allocation between purchase documents' },
   SALES_ALLOCATION_FX: { actors: ['USER'], permission: 'sales:approve', controlAccounts: true, controlKinds: ['TRADE_RECEIVABLES'], subLedger: true, description: 'Realised exchange difference of an allocation between sales documents' },
-  CASH_PAYMENT: { actors: ['USER'], permission: 'cash:record', controlAccounts: true, controlKinds: ['BANK', 'CASH'], subLedger: true, description: 'Money out without a source document (Dr expense or asset / Dr input VAT / Cr bank or cash)' },
-  CASH_RECEIPT: { actors: ['USER'], permission: 'cash:record', controlAccounts: true, controlKinds: ['BANK', 'CASH'], subLedger: true, description: 'Money in without a source document (Dr bank or cash / Cr income / Cr output VAT)' },
+  CASH_PAYMENT: { actors: ['USER'], permission: 'cash:record', controlAccounts: true, controlKinds: ['BANK', 'CASH'], subLedger: true, vatCodes: true, description: 'Money out without a source document (Dr expense or asset / Dr input VAT / Cr bank or cash)' },
+  CASH_RECEIPT: { actors: ['USER'], permission: 'cash:record', controlAccounts: true, controlKinds: ['BANK', 'CASH'], subLedger: true, vatCodes: true, description: 'Money in without a source document (Dr bank or cash / Cr income / Cr output VAT)' },
   CASH_PAYMENT_REVERSAL: { actors: ['USER'], permission: 'cash:record', controlAccounts: true, controlKinds: ['BANK', 'CASH', 'VAT_CONTROL'], subLedger: true, description: 'Mirror reversal of a cash payment (same lines, same VAT rate versions)' },
   BANK_TRANSFER: { actors: ['USER'], permission: 'bank:transfer', controlAccounts: true, controlKinds: ['BANK', 'CASH'], subLedger: true, description: 'Money moved between two bank or cash accounts (Dr receiving / Cr paying)' },
   BANK_TRANSFER_REVERSAL: { actors: ['USER'], permission: 'bank:transfer', controlAccounts: true, controlKinds: ['BANK', 'CASH'], subLedger: true, description: 'Mirror reversal of a transfer' },

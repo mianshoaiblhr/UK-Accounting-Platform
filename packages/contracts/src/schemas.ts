@@ -259,12 +259,15 @@ export const createContactRoleSchema = z.object({
   creditLimit: nonNegMoney.optional(),
   /** Suppliers only: an active, non-control account of the company. */
   defaultExpenseAccountId: z.string().uuid().optional(),
+  /** Customers only (DEC-046): a sales VAT code, copied onto invoice lines that name none. */
+  defaultTaxCodeId: z.string().uuid().optional(),
 }).strict()
   .refine((b) => b.role === 'CUSTOMER' || b.creditLimit === undefined, { message: 'A credit limit applies to customers', path: ['creditLimit'] })
-  .refine((b) => b.role === 'SUPPLIER' || b.defaultExpenseAccountId === undefined, { message: 'A default expense account applies to suppliers', path: ['defaultExpenseAccountId'] });
+  .refine((b) => b.role === 'SUPPLIER' || b.defaultExpenseAccountId === undefined, { message: 'A default expense account applies to suppliers', path: ['defaultExpenseAccountId'] })
+  .refine((b) => b.role === 'CUSTOMER' || b.defaultTaxCodeId === undefined, { message: 'A default VAT code applies to customers', path: ['defaultTaxCodeId'] });
 export const updateContactRoleSchema = z.object({
   accountCode: accountCode.nullable().optional(), paymentTermsDays: terms.optional(), defaultCurrency: ccy.nullable().optional(),
-  creditLimit: nonNegMoney.nullable().optional(), defaultExpenseAccountId: z.string().uuid().nullable().optional(),
+  creditLimit: nonNegMoney.nullable().optional(), defaultExpenseAccountId: z.string().uuid().nullable().optional(), defaultTaxCodeId: z.string().uuid().nullable().optional(),
   reason: z.string().trim().min(3).max(500).optional(),
 }).strict().refine((b) => Object.keys(b).filter((k) => k !== 'reason').length > 0, { message: 'Provide at least one field to change' });
 export const endContactRoleSchema = z.object({ reason: z.string().trim().min(3).max(500) }).strict();

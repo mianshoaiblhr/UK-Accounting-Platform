@@ -1458,6 +1458,8 @@ model CustomerProfile {
   paymentTermsDays Int      @default(30) @map("payment_terms_days")
   creditLimit      Decimal? @map("credit_limit") @db.Decimal(19, 4)
   defaultCurrency  String?  @map("default_currency") @db.Char(3)
+  /// DEC-046: copied onto invoice lines that name no VAT code when they are written.
+  defaultTaxCodeId String?  @map("default_tax_code_id") @db.Uuid
   updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@map("customer_profile")

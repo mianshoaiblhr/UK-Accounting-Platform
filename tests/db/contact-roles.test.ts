@@ -78,6 +78,17 @@ describe('profiles', () => {
     await expect(tx([`UPDATE supplier_profile SET bank_details_enc='v1:x:y:z' WHERE role_id='${r}'`])).rejects.toThrow(/start UNVERIFIED/);   // changing verified details without resetting
     await expect(tx([`DELETE FROM supplier_profile WHERE role_id='${r}'`])).rejects.toThrow(/permission denied/);
   });
+  it('a customer default VAT code is a sales code of the same organisation, never a purchase or reverse-charge one (M8h, DEC-046)', async () => {
+    const code = (c: string, dir: string, rc = false, o = org) => sql(`INSERT INTO tax_code(organisation_id, code, name, treatment, direction, reverse_charge, created_by_user_id) VALUES ('${o}','${c}','${c}','STANDARD','${dir}',${rc},'${user}') RETURNING id`).split('\n')[0]!;
+    const sale = code('DS', 'SALES'), both = code('DB', 'BOTH'), buy = code('DP', 'PURCHASES'), rc = code('DRC', 'PURCHASES', true), foreign = code('DS', 'SALES', false, org2);
+    const c3 = sql(`INSERT INTO contact(organisation_id, kind, name, created_by_user_id) VALUES ('${org}','PERSON','Default VAT','${user}') RETURNING id`).split('\n')[0]!;
+    const r = uuidv7();
+    await tx([role(r, { contact: c3 }), `INSERT INTO customer_profile(role_id, organisation_id, company_id, default_tax_code_id) VALUES ('${r}','${org}','${co}','${sale}')`]);
+    await tx([`UPDATE customer_profile SET default_tax_code_id = '${both}' WHERE role_id = '${r}'`]);
+    for (const bad of [buy, rc]) await expect(tx([`UPDATE customer_profile SET default_tax_code_id = '${bad}' WHERE role_id = '${r}'`])).rejects.toThrow(/must be a sales code/);
+    await expect(tx([`UPDATE customer_profile SET default_tax_code_id = '${foreign}' WHERE role_id = '${r}'`])).rejects.toThrow(/must be a sales code|foreign key|tax_code_fkey/); // another organisation's code is invisible here (RLS)
+    await tx([`UPDATE customer_profile SET default_tax_code_id = NULL WHERE role_id = '${r}'`]);
+  });
   it('tenant isolation: another organisation neither sees nor creates roles here', async () => {
     expect(await db.tenant({ organisationId: org2, userId: user }, (t) => t.contactRole.count())).toBe(0);
     await expect(tx([role(uuidv7(), { contact: uuidv7() })], { organisationId: org2 })).rejects.toThrow();

@@ -40,7 +40,7 @@ export class ContactRolesService {
     return {
       id: r.id, companyId: r.companyId, contactId: r.contactId, role: r.role, accountCode: r.accountCode, status: r.status, endedAt: r.endedAt, endedReason: r.endedReason, createdAt: r.createdAt,
       contact: { id: contact.id, name: contact.name, kind: contact.kind, email: contact.email, vatNumber: contact.vatNumber, companyId: contact.companyId, status: contact.status },
-      customer: customer ? { paymentTermsDays: customer.paymentTermsDays, creditLimit: customer.creditLimit?.toFixed(minor) ?? null, defaultCurrency: customer.defaultCurrency } : null,
+      customer: customer ? { paymentTermsDays: customer.paymentTermsDays, creditLimit: customer.creditLimit?.toFixed(minor) ?? null, defaultCurrency: customer.defaultCurrency, defaultTaxCodeId: customer.defaultTaxCodeId } : null,
       supplier: supplier ? {
         paymentTermsDays: supplier.paymentTermsDays, defaultCurrency: supplier.defaultCurrency, defaultExpenseAccountId: supplier.defaultExpenseAccountId,
         bankDetails: { status: supplier.bankDetailsStatus, masked: supplier.bankDetailsMasked, changedAt: supplier.bankDetailsChangedAt, changedByUserId: supplier.bankDetailsChangedByUserId,
@@ -60,6 +60,13 @@ export class ContactRolesService {
     const a = await tx.account.findFirst({ where: { id: accountId, companyId } });
     if (!a) throw unprocessable('The default expense account does not exist in this company', 'unknown_account');
     if (a.isControl || !['EXPENSE', 'ASSET'].includes(a.type) || a.activeTo) throw unprocessable(`Account ${a.code} cannot be a supplier's default: use an active expense or asset account that is not a control account`, 'invalid_account');
+  }
+  /** DEC-046: a customer's default VAT code is one a sales line may use (the database checks it too). */
+  private async checkSalesTaxCode(tx: Tx, taxCodeId: string | null | undefined) {
+    if (!taxCodeId) return;
+    const c = await tx.taxCode.findFirst({ where: { id: taxCodeId } });
+    if (!c) throw unprocessable('Unknown VAT code', 'unknown_tax_code');
+    if (c.direction === 'PURCHASES' || c.reverseCharge) throw unprocessable(`${c.code} is not a sales VAT code`, 'tax_code_direction');
   }
   /** Explicit, case-insensitive check (the unique index stays the backstop for a race). */
   private async checkAccountCode(tx: Tx, companyId: string, role: string, code: string | null | undefined, exceptId?: string) {
@@ -82,7 +89,7 @@ export class ContactRolesService {
     return e;
   }
 
-  async create(org: OrgAccess, companyId: string, input: { contactId: string; role: ContactRoleKind; accountCode?: string; paymentTermsDays: number; defaultCurrency?: string; creditLimit?: string; defaultExpenseAccountId?: string }) {
+  async create(org: OrgAccess, companyId: string, input: { contactId: string; role: ContactRoleKind; accountCode?: string; paymentTermsDays: number; defaultCurrency?: string; creditLimit?: string; defaultExpenseAccountId?: string; defaultTaxCodeId?: string }) {
     return this.t(org, async (tx) => {
       const contact = await tx.contact.findUnique({ where: { id: input.contactId } });
       if (!contact) throw unprocessable('Unknown contact', 'unknown_contact');
@@ -91,6 +98,7 @@ export class ContactRolesService {
       if (contact.companyId && contact.companyId !== companyId) throw unprocessable('This contact belongs to another company and cannot take a role here', 'contact_other_company');
       await this.checkCurrency(tx, input.defaultCurrency);
       await this.checkExpenseAccount(tx, companyId, input.defaultExpenseAccountId);
+      await this.checkSalesTaxCode(tx, input.defaultTaxCodeId);
       if (await tx.contactRole.findFirst({ where: { companyId, contactId: contact.id, role: input.role }, select: { id: true } })) throw conflict('This contact already has that role in this company', 'contact_role_exists');
       await this.checkAccountCode(tx, companyId, input.role, input.accountCode);
       let role: RoleRow;
@@ -98,12 +106,12 @@ export class ContactRolesService {
         role = await tx.contactRole.create({ data: { organisationId: org.organisationId, companyId, contactId: contact.id, role: input.role, accountCode: input.accountCode ?? null, createdByUserId: org.userId } });
       } catch (e) { throw this.unique(e); }
       if (input.role === 'CUSTOMER') {
-        await tx.customerProfile.create({ data: { roleId: role.id, organisationId: org.organisationId, companyId, paymentTermsDays: input.paymentTermsDays, creditLimit: input.creditLimit ?? null, defaultCurrency: input.defaultCurrency ?? null } });
+        await tx.customerProfile.create({ data: { roleId: role.id, organisationId: org.organisationId, companyId, paymentTermsDays: input.paymentTermsDays, creditLimit: input.creditLimit ?? null, defaultCurrency: input.defaultCurrency ?? null, defaultTaxCodeId: input.defaultTaxCodeId ?? null } });
       } else {
         await tx.supplierProfile.create({ data: { roleId: role.id, organisationId: org.organisationId, companyId, paymentTermsDays: input.paymentTermsDays, defaultCurrency: input.defaultCurrency ?? null, defaultExpenseAccountId: input.defaultExpenseAccountId ?? null } });
       }
       await this.audit.record({ action: 'contact_role.created', organisationId: org.organisationId, actorUserId: org.userId, companyId, entityType: 'contact_role', entityId: role.id,
-        after: { contactId: contact.id, role: input.role, accountCode: input.accountCode ?? null, paymentTermsDays: input.paymentTermsDays, creditLimit: input.creditLimit ?? null, defaultCurrency: input.defaultCurrency ?? null } }, tx);
+        after: { contactId: contact.id, role: input.role, accountCode: input.accountCode ?? null, paymentTermsDays: input.paymentTermsDays, creditLimit: input.creditLimit ?? null, defaultCurrency: input.defaultCurrency ?? null, ...(input.role === 'CUSTOMER' ? { defaultTaxCodeId: input.defaultTaxCodeId ?? null } : {}) } }, tx);
       const l = await this.load(tx, companyId, role.id);
       return this.view(l.r, l.contact, l.customer, l.supplier, await this.minor(tx, companyId));
     });
@@ -129,15 +137,17 @@ export class ContactRolesService {
     return this.t(org, async (tx) => { const l = await this.load(tx, companyId, id); return this.view(l.r, l.contact, l.customer, l.supplier, await this.minor(tx, companyId)); });
   }
 
-  async update(org: OrgAccess, companyId: string, id: string, input: { accountCode?: string | null; paymentTermsDays?: number; defaultCurrency?: string | null; creditLimit?: string | null; defaultExpenseAccountId?: string | null; reason?: string }) {
+  async update(org: OrgAccess, companyId: string, id: string, input: { accountCode?: string | null; paymentTermsDays?: number; defaultCurrency?: string | null; creditLimit?: string | null; defaultExpenseAccountId?: string | null; defaultTaxCodeId?: string | null; reason?: string }) {
     return this.t(org, async (tx) => {
       const l = await this.load(tx, companyId, id);
       if (l.r.status !== 'ACTIVE') throw conflict('An ended role cannot be changed; reactivate it first', 'contact_role_ended');
       if (l.r.role === 'CUSTOMER' && input.defaultExpenseAccountId !== undefined) throw unprocessable('A default expense account applies to suppliers', 'invalid_field');
       if (l.r.role === 'SUPPLIER' && input.creditLimit !== undefined) throw unprocessable('A credit limit applies to customers', 'invalid_field');
+      if (l.r.role === 'SUPPLIER' && input.defaultTaxCodeId !== undefined) throw unprocessable('A default VAT code applies to customers', 'invalid_field');
       if (input.creditLimit !== undefined && !input.reason) throw unprocessable('Changing a credit limit needs a reason', 'reason_required');
       await this.checkCurrency(tx, input.defaultCurrency);
       await this.checkExpenseAccount(tx, companyId, input.defaultExpenseAccountId);
+      await this.checkSalesTaxCode(tx, input.defaultTaxCodeId);
       await this.checkAccountCode(tx, companyId, l.r.role, input.accountCode, id);
       const minor = await this.minor(tx, companyId);
       const before = this.view(l.r, l.contact, l.customer, l.supplier, minor);
@@ -145,11 +155,11 @@ export class ContactRolesService {
         if (input.accountCode !== undefined) await tx.contactRole.update({ where: { id }, data: { accountCode: input.accountCode } });
       } catch (e) { throw this.unique(e); }
       const common = { ...(input.paymentTermsDays !== undefined ? { paymentTermsDays: input.paymentTermsDays } : {}), ...(input.defaultCurrency !== undefined ? { defaultCurrency: input.defaultCurrency } : {}) };
-      if (l.r.role === 'CUSTOMER') await tx.customerProfile.update({ where: { roleId: id }, data: { ...common, ...(input.creditLimit !== undefined ? { creditLimit: input.creditLimit } : {}) } });
+      if (l.r.role === 'CUSTOMER') await tx.customerProfile.update({ where: { roleId: id }, data: { ...common, ...(input.creditLimit !== undefined ? { creditLimit: input.creditLimit } : {}), ...(input.defaultTaxCodeId !== undefined ? { defaultTaxCodeId: input.defaultTaxCodeId } : {}) } });
       else await tx.supplierProfile.update({ where: { roleId: id }, data: { ...common, ...(input.defaultExpenseAccountId !== undefined ? { defaultExpenseAccountId: input.defaultExpenseAccountId } : {}) } });
       const a = await this.load(tx, companyId, id);
       const after = this.view(a.r, a.contact, a.customer, a.supplier, minor);
-      const pick = (v: typeof before) => ({ accountCode: v.accountCode, ...(v.customer ? { paymentTermsDays: v.customer.paymentTermsDays, creditLimit: v.customer.creditLimit, defaultCurrency: v.customer.defaultCurrency } : {}),
+      const pick = (v: typeof before) => ({ accountCode: v.accountCode, ...(v.customer ? { paymentTermsDays: v.customer.paymentTermsDays, creditLimit: v.customer.creditLimit, defaultCurrency: v.customer.defaultCurrency, defaultTaxCodeId: v.customer.defaultTaxCodeId } : {}),
         ...(v.supplier ? { paymentTermsDays: v.supplier.paymentTermsDays, defaultCurrency: v.supplier.defaultCurrency, defaultExpenseAccountId: v.supplier.defaultExpenseAccountId } : {}) });
       await this.audit.record({ action: 'contact_role.updated', organisationId: org.organisationId, actorUserId: org.userId, companyId, entityType: 'contact_role', entityId: id, before: pick(before), after: pick(after), reason: input.reason ?? null }, tx);
       return after;

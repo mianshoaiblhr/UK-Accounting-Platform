@@ -228,3 +228,45 @@ describe('cash transactions through the API (M6c)', () => {
     }
   });
 });
+
+describe('customer default VAT code (M8h, DEC-046; V1-MOD-02)', () => {
+  it('a sales code is set on the customer (audited), lines without a code take it, null keeps none, credit notes and EUR drafts are unaffected', async () => {
+    const mkCode = async (code: string, direction: string, reverseCharge = false) =>
+      (await as(owner, 'post', c('/tax-codes'), { code, name: `Synthetic ${code}`, treatment: 'STANDARD', direction, reverseCharge })).body.id as string;
+    const S = await mkCode('DEFS', 'SALES'), S2 = await mkCode('DEFS2', 'BOTH'), P = await mkCode('DEFP', 'PURCHASES');
+    const contact = (await as(owner, 'post', '/contacts', { kind: 'ORGANISATION', name: 'Default VAT Ltd' })).body;
+    expect((await as(owner, 'post', c('/contact-roles'), { contactId: contact.id, role: 'CUSTOMER', paymentTermsDays: 30, defaultTaxCodeId: P })).body.code).toBe('tax_code_direction');
+    expect((await as(owner, 'post', c('/contact-roles'), { contactId: contact.id, role: 'SUPPLIER', paymentTermsDays: 30, defaultTaxCodeId: S })).status).toBe(422);
+    const cust = await as(owner, 'post', c('/contact-roles'), { contactId: contact.id, role: 'CUSTOMER', paymentTermsDays: 30, defaultTaxCodeId: S });
+    expect(cust.status).toBe(201);
+    expect(cust.body.customer).toMatchObject({ defaultTaxCodeId: S });
+    const role = cust.body.id as string;
+
+    const d = await as(bookkeeper, 'post', c('/sales/invoices'), { customerRoleId: role, issueDate: '2026-06-01', lines: [line('100.00'), line('50.00', { taxCodeId: null }), line('20.00', { taxCodeId: S2 })] });
+    expect(d.status).toBe(201);
+    expect(d.body.lines.map((l: { taxCodeId: string | null }) => l.taxCodeId)).toEqual([S, null, S2]);
+    // replacing the lines applies the default again; an edit without lines keeps the stored codes
+    const u = await as(bookkeeper, 'patch', c(`/sales/documents/${d.body.id}`), { revision: 1, lines: [line('70.00')] });
+    expect(u.body.lines.map((l: { taxCodeId: string | null }) => l.taxCodeId)).toEqual([S]);
+    // a later change of the default is audited and never alters a document
+    const ch = await as(owner, 'patch', c(`/contact-roles/${role}`), { defaultTaxCodeId: S2, reason: 'Customer moved to the other synthetic code' });
+    expect(ch.body.customer.defaultTaxCodeId).toBe(S2);
+    const audit = (await as(owner, 'get', `/audit-events?entityType=contact_role&entityId=${role}`)).body.items.find((e: { action: string }) => e.action === 'contact_role.updated');
+    expect(audit).toMatchObject({ before: { defaultTaxCodeId: S }, after: { defaultTaxCodeId: S2 } });
+    const n = await as(bookkeeper, 'patch', c(`/sales/documents/${d.body.id}`), { revision: 2, notes: 'no line change' });
+    expect(n.body.lines.map((l: { taxCodeId: string | null }) => l.taxCodeId)).toEqual([S]);
+    expect((await as(owner, 'patch', c(`/contact-roles/${role}`), { defaultTaxCodeId: P })).body.code).toBe('tax_code_direction');
+    // VAT on foreign-currency documents is M5c: the default is not applied and the draft says so
+    const eur = await as(bookkeeper, 'post', c('/sales/invoices'), { customerRoleId: role, issueDate: '2026-06-02', currency: 'EUR', lines: [line('10.00')] });
+    expect(eur.status).toBe(201);
+    expect(eur.body.lines[0].taxCodeId).toBeNull();
+    expect(eur.body.warnings.join(' ')).toMatch(/default VAT code was not applied/);
+    // a customer without a default keeps the old behaviour: no code
+    const other = (await as(owner, 'post', '/contacts', { kind: 'ORGANISATION', name: 'No Default Ltd' })).body;
+    const plainRole = (await as(owner, 'post', c('/contact-roles'), { contactId: other.id, role: 'CUSTOMER', paymentTermsDays: 30 })).body;
+    expect(plainRole.customer.defaultTaxCodeId).toBeNull();
+    const plain = await as(bookkeeper, 'post', c('/sales/invoices'), { customerRoleId: plainRole.id, issueDate: '2026-06-03', lines: [line('10.00')] });
+    expect(plain.body.lines[0].taxCodeId).toBeNull();
+  });
+});
+

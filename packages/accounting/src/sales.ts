@@ -17,7 +17,8 @@ const toDate = (s: string) => new Date(`${s}T00:00:00.000Z`);
 const addDays = (s: string, n: number) => isoDay(new Date(toDate(s).getTime() + n * 86_400_000));
 
 export interface SalesActor extends PostingActor { userId: string }
-export interface SalesLineInput { description: string; quantity: string; unitPrice: string; accountId: string; taxCodeId?: string }
+/** `taxCodeId` absent: the customer's default VAT code applies on invoices (DEC-046); `null`: explicitly no VAT code. */
+export interface SalesLineInput { description: string; quantity: string; unitPrice: string; accountId: string; taxCodeId?: string | null }
 type DocRow = Awaited<ReturnType<Tx['salesDocument']['findUniqueOrThrow']>>;
 type LineRow = Awaited<ReturnType<Tx['salesDocumentLine']['findUniqueOrThrow']>>;
 type AllocRow = Awaited<ReturnType<Tx['salesAllocation']['findUniqueOrThrow']>>;
@@ -186,6 +187,17 @@ export class SalesService {
     return { role: r, profile };
   }
 
+  /**
+   * DEC-046: invoice lines that name no VAT code take the customer's default, resolved now and stored on the line. Not on foreign-currency
+   * invoices (VAT on them is M5c, DEC-031): the draft says so in its warnings instead of being refused.
+   */
+  private static withDefaultTaxCode(lines: SalesLineInput[], defaultTaxCodeId: string | null | undefined, currency: string, base: string) {
+    const open = lines.some((l) => l.taxCodeId === undefined);
+    if (!defaultTaxCodeId || !open) return { lines, warnings: [] as string[] };
+    if (currency !== base) return { lines, warnings: [`The customer's default VAT code was not applied: VAT on ${currency} documents comes with M5c (DEC-031)`] };
+    return { lines: lines.map((l) => (l.taxCodeId === undefined ? { ...l, taxCodeId: defaultTaxCodeId } : l)), warnings: [] as string[] };
+  }
+
   // ───── Drafts ─────
   async createInvoice(tx: Tx, a: { organisationId: string; companyId: string; actor: SalesActor; customerRoleId: string; issueDate: string; supplyDate?: string; taxPoint?: string; dueDate?: string;
     currency?: string; amountsIncludeVat: boolean; customerReference?: string; notes?: string; lines: SalesLineInput[]; aiProposalId?: string }) {
@@ -202,19 +214,20 @@ export class SalesService {
       if (p.status !== 'ACCEPTED') throw unprocessable('Only an ACCEPTED AI proposal can become a draft; a person reviews and accepts it first', 'proposal_not_accepted');
       if (p.appliedAt) throw conflict('This AI proposal was already applied', 'proposal_already_applied');
     }
-    await this.checkLines(tx, { companyId: a.companyId, issueDate: a.issueDate, currency, base: company.baseCurrency, lines: a.lines });
+    const { lines, warnings: defaults } = SalesService.withDefaultTaxCode(a.lines, profile?.defaultTaxCodeId, currency, company.baseCurrency);
+    await this.checkLines(tx, { companyId: a.companyId, issueDate: a.issueDate, currency, base: company.baseCurrency, lines });
     const minor = await this.minorOf(tx, currency);
-    const amounts = await this.compute(tx, { lines: a.lines, inclusive: a.amountsIncludeVat, taxPoint: a.taxPoint ?? a.issueDate, minor, strict: false });
+    const amounts = await this.compute(tx, { lines, inclusive: a.amountsIncludeVat, taxPoint: a.taxPoint ?? a.issueDate, minor, strict: false });
     const doc = await tx.salesDocument.create({ data: {
       organisationId: a.organisationId, companyId: a.companyId, kind: 'INVOICE', customerRoleId: role.id, contactId: role.contactId, issueDate: toDate(a.issueDate),
       supplyDate: a.supplyDate ? toDate(a.supplyDate) : null, taxPoint: a.taxPoint ? toDate(a.taxPoint) : null, dueDate: toDate(a.dueDate ?? addDays(a.issueDate, profile?.paymentTermsDays ?? 0)),
       currency, amountsIncludeVat: a.amountsIncludeVat, customerReference: a.customerReference ?? null, notes: a.notes ?? null,
       netTotal: amounts.net, vatTotal: amounts.vat, grossTotal: amounts.gross, origin: a.aiProposalId ? 'AI_PROPOSAL' : 'MANUAL', aiProposalId: a.aiProposalId ?? null, createdByUserId: a.actor.userId,
     } });
-    await this.writeLines(tx, doc, 1, a.lines, amounts.lines);
+    await this.writeLines(tx, doc, 1, lines, amounts.lines);
     await this.audit(tx, { action: 'sales_document.created', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actor.userId, entityType: 'sales_document', entityId: doc.id,
-      after: { kind: 'INVOICE', customerRoleId: role.id, currency, gross: fmt(amounts.gross, minor), lines: a.lines.length }, metadata: { origin: doc.origin, aiProposalId: a.aiProposalId ?? null } });
-    return this.get(tx, a.companyId, doc.id, amounts.warnings);
+      after: { kind: 'INVOICE', customerRoleId: role.id, currency, gross: fmt(amounts.gross, minor), lines: lines.length }, metadata: { origin: doc.origin, aiProposalId: a.aiProposalId ?? null } });
+    return this.get(tx, a.companyId, doc.id, [...defaults, ...amounts.warnings]);
   }
 
   async createCreditNote(tx: Tx, a: { organisationId: string; companyId: string; actor: SalesActor; originalInvoiceId: string; issueDate: string; supplyDate?: string; taxPoint?: string;
@@ -263,7 +276,12 @@ export class SalesService {
     const issueDate = a.issueDate ?? isoDay(d.issueDate);
     const taxPoint = a.taxPoint === undefined ? (d.taxPoint ? isoDay(d.taxPoint) : null) : a.taxPoint;
     const inclusive = a.amountsIncludeVat ?? d.amountsIncludeVat;
-    const lines = a.lines ?? (await this.currentLines(tx, d)).map(SalesService.asInput);
+    let lines = a.lines ?? (await this.currentLines(tx, d)).map(SalesService.asInput);
+    let defaults: string[] = [];
+    if (d.kind === 'INVOICE' && a.lines) {
+      const profile = await tx.customerProfile.findFirst({ where: { roleId: d.customerRoleId } });
+      ({ lines, warnings: defaults } = SalesService.withDefaultTaxCode(a.lines, profile?.defaultTaxCodeId, d.currency, company.baseCurrency));
+    }
     let pins: Map<string, { taxRateId: string; ratePoint: string }> | undefined; let allowed: Set<string> | undefined;
     if (d.kind === 'CREDIT_NOTE') {
       const inv = await tx.salesDocument.findFirstOrThrow({ where: { id: d.originalInvoiceId! } });
@@ -285,7 +303,7 @@ export class SalesService {
     await this.writeLines(tx, d, revision, lines, amounts.lines);
     await this.audit(tx, { action: 'sales_document.updated', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actor.userId, entityType: 'sales_document', entityId: d.id,
       before: { revision: d.revision, gross: fmt(d.grossTotal, minor) }, after: { revision, gross: fmt(amounts.gross, minor), lines: lines.length } });
-    return this.get(tx, a.companyId, d.id, amounts.warnings);
+    return this.get(tx, a.companyId, d.id, [...defaults, ...amounts.warnings]);
   }
 
   async discard(tx: Tx, a: { organisationId: string; companyId: string; actor: SalesActor; id: string; reason: string }) {

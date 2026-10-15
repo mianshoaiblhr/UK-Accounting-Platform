@@ -31345,7 +31345,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Draft only: VAT rates not yet usable, or a credit larger than the invoice outstanding"
+            "description": "Draft only: VAT rates not yet usable, a credit larger than the invoice outstanding, or a customer default VAT code not applied (foreign currency)"
           }
         },
         "required": [
@@ -31996,12 +31996,18 @@
               "defaultCurrency": {
                 "type": "string",
                 "nullable": true
+              },
+              "defaultTaxCodeId": {
+                "type": "string",
+                "format": "uuid",
+                "nullable": true
               }
             },
             "required": [
               "paymentTermsDays",
               "creditLimit",
-              "defaultCurrency"
+              "defaultCurrency",
+              "defaultTaxCodeId"
             ],
             "additionalProperties": false,
             "nullable": true
@@ -32208,12 +32214,18 @@
                     "defaultCurrency": {
                       "type": "string",
                       "nullable": true
+                    },
+                    "defaultTaxCodeId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
                     }
                   },
                   "required": [
                     "paymentTermsDays",
                     "creditLimit",
-                    "defaultCurrency"
+                    "defaultCurrency",
+                    "defaultTaxCodeId"
                   ],
                   "additionalProperties": false,
                   "nullable": true
@@ -37661,6 +37673,10 @@
           "defaultExpenseAccountId": {
             "type": "string",
             "format": "uuid"
+          },
+          "defaultTaxCodeId": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "required": [
@@ -37693,6 +37709,11 @@
             "nullable": true
           },
           "defaultExpenseAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "defaultTaxCodeId": {
             "type": "string",
             "format": "uuid",
             "nullable": true
@@ -38253,7 +38274,8 @@
                 },
                 "taxCodeId": {
                   "type": "string",
-                  "format": "uuid"
+                  "format": "uuid",
+                  "nullable": true
                 }
               },
               "required": [
@@ -38336,7 +38358,8 @@
                 },
                 "taxCodeId": {
                   "type": "string",
-                  "format": "uuid"
+                  "format": "uuid",
+                  "nullable": true
                 }
               },
               "required": [
@@ -38426,7 +38449,8 @@
                 },
                 "taxCodeId": {
                   "type": "string",
-                  "format": "uuid"
+                  "format": "uuid",
+                  "nullable": true
                 }
               },
               "required": [

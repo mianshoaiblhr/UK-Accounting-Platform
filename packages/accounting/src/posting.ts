@@ -291,7 +291,7 @@ export class PostingService {
       if (input.amountsIncludeVat || input.taxPoint) throw unprocessable('VAT-inclusive amounts and a tax point apply only to lines with a VAT code', 'vat_not_applicable');
       return { input };
     }
-    if (source.requiresRequest || input.reversesJournalId) throw unprocessable('VAT codes are not used on this kind of entry', 'vat_not_applicable');
+    if (!source.vatCodes || source.requiresRequest || input.reversesJournalId) throw unprocessable('VAT codes are not used on this kind of entry', 'vat_not_applicable');
     if (input.lines.some((l) => l.original)) throw unprocessable('VAT on foreign-currency journals waits for the verified rule on the currency of VAT amounts (M4b limitation)', 'vat_foreign_currency_not_supported');
     if (input.lines.some((l) => l.vat || l.generated)) throw unprocessable('VAT lines are added by the service', 'invalid_amount');
     if (input.lines.some((l) => l.vatRate && !l.taxCodeId)) throw unprocessable('A pinned VAT rate needs a VAT code', 'invalid_amount');

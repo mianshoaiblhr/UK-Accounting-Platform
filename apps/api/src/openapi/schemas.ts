@@ -151,7 +151,7 @@ const BankDetailsSummary = z.object({ status: z.enum(['NONE', 'UNVERIFIED', 'VER
 export const ContactRole = z.object({
   id: uuid, companyId: uuid, contactId: uuid, role: z.enum(['CUSTOMER', 'SUPPLIER']), accountCode: z.string().nullable(), status: z.enum(['ACTIVE', 'ENDED']), endedAt: ts.nullable(), endedReason: z.string().nullable(), createdAt: ts,
   contact: z.object({ id: uuid, name: z.string(), kind: z.enum(['PERSON', 'ORGANISATION']), email: z.string().nullable(), vatNumber: z.string().nullable(), companyId: uuid.nullable(), status: z.enum(['ACTIVE', 'ARCHIVED']) }),
-  customer: z.object({ paymentTermsDays: z.number().int(), creditLimit: z.string().nullable(), defaultCurrency: z.string().nullable() }).nullable(),
+  customer: z.object({ paymentTermsDays: z.number().int(), creditLimit: z.string().nullable(), defaultCurrency: z.string().nullable(), defaultTaxCodeId: uuid.nullable() }).nullable(),
   supplier: z.object({ paymentTermsDays: z.number().int(), defaultCurrency: z.string().nullable(), defaultExpenseAccountId: uuid.nullable(), bankDetails: BankDetailsSummary }).nullable(),
 });
 export const ContactRolePage = page(ContactRole);
@@ -200,7 +200,7 @@ const SalesDocumentBase = z.object({
 export const SalesDocument = SalesDocumentBase.extend({
   lines: z.array(z.object({ lineNo: z.number().int(), description: z.string(), quantity: z.string(), unitPrice: z.string(), accountId: uuid, taxCodeId: uuid.nullable(), net: z.string(), vat: z.string(), gross: z.string() })),
   allocations: z.array(SalesAllocation), creditNotes: z.array(z.object({ id: uuid, documentNumber: z.string().nullable(), status: z.string() })),
-  warnings: z.array(z.string()).describe('Draft only: VAT rates not yet usable, or a credit larger than the invoice outstanding'),
+  warnings: z.array(z.string()).describe('Draft only: VAT rates not yet usable, a credit larger than the invoice outstanding, or a customer default VAT code not applied (foreign currency)'),
 });
 export const SalesDocumentPage = z.object({ items: z.array(SalesDocumentBase), nextCursor: z.string().nullable() });
 export const ReceivablesReconciliation = z.object({

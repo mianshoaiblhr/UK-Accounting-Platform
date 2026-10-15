@@ -38,8 +38,8 @@ export const salesLineSchema = z.object({
   /** Price per unit in the document currency; net, or gross when the document's amounts include VAT. */
   unitPrice: moneyString,
   accountId: uuid,
-  /** A SALES (or BOTH) VAT code; the VAT is computed per line (DEC-025). */
-  taxCodeId: uuid.optional(),
+  /** A SALES (or BOTH) VAT code; the VAT is computed per line (DEC-025). Absent on an invoice: the customer's default code (DEC-046); null: no VAT code. */
+  taxCodeId: uuid.nullable().optional(),
 }).strict();
 
 const docFields = {
