@@ -253,6 +253,8 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-043 | M8 financial statements and drill-down | P&L and balance sheet built only from journal lines through the reporting mapping, with comparatives, reconciling to the trial balance to the cent; one drill-down resolver per journal source down to the document |
 | DEC-044 | Alerts and close controls | One alert list per company (suspense, negative cash and bank, old drafts, old unmatched bank lines, pending approvals, unverified VAT rates and supplier bank details, flagged payments), filtered by what the reader may see; locking with a suspense balance and closing with unmatched bank lines need an acknowledgement |
 | DEC-045 | FX reporting | Realised and unrealised exchange differences for a range with journal drill-down, and open foreign-currency balances revalued at the closing rate against their carrying amount |
+| DEC-046 | M8h: customer default VAT code (V1-MOD-02) | A customer may carry a default sales VAT code; an invoice line that does not name a VAT code takes it at the time the line is written (`taxCodeId: null` means no code); the stored line is explicit, so a later change to the default never alters a document |
+| DEC-047 | M8h: posting-rule test coverage registry (V1-TEST-01) | Every journal source lists, per category (positive, negative, reversal, VAT, period lock), the test that proves it or a stated reason why the category does not apply; a test fails when a source is missing, a category is blank, or a named test does not exist |
 | DEC-037 | How M6c is built (delegated, DEC-019) | The negative-cash rule lives in the PostingService and the database, so it covers every posting a person makes to cash in hand (not only cash transactions), checks every later day, and stores the reason on the journal. Cash transactions are in the company currency, have new `cash:*` permissions and a proven mirror reversal |
 
 ### DEC-033 - M6 scope and split
@@ -369,3 +371,15 @@ These choices refine DEC-036. None of them is a tax rule; the VAT arithmetic is 
 * **Exchange differences for a range:** realised (allocation journals) and unrealised (revaluations and their reversals) totals in the functional currency, by currency, each with its journals.
 * **Open foreign-currency balances as at a date:** for each monetary account and currency, the original-currency balance, its functional carrying amount, the closing rate (the lookup rule of M3) and the amount at that rate, and the difference that a revaluation would post. With the revaluation posted, the difference is zero.
 * Multi-currency presentation of the statements stays V2.
+
+### DEC-046 - Customer default VAT code (M8h; delegated, DEC-019; V1-MOD-02)
+* **Field:** `customer_profile.default_tax_code_id`, optional. It must be a VAT code of the organisation whose direction is SALES or BOTH and that is not reverse charge (the same rule a sales line applies). The database ties it to the organisation; the service checks the direction. Setting or changing it is audited before/after like the other profile fields.
+* **Use:** when an invoice draft is created or its lines are replaced, a line whose `taxCodeId` is **absent** takes the customer's default; `taxCodeId: null` states "no VAT code" and is kept. The resolved code is stored on the line, so the document is explicit and later changes of the default never alter it. Credit notes are unaffected (they use only their invoice's codes, DEC-029).
+* **Foreign-currency invoices:** VAT on them is M5c (DEC-031), so the default is not applied to a document in a currency other than the company's; the response says so (`defaultTaxCodeApplied: false`) rather than refusing.
+* **Not in scope:** a supplier default VAT code (V1-MOD-03 does not require one; suppliers keep the default expense account). The default is a convenience: the VAT rule itself still needs a verified rate version at approval (DEC-021).
+
+### DEC-047 - Posting-rule coverage registry (M8h; delegated, DEC-019; V1-TEST-01)
+* **Registry:** `tests/coverage/posting-rules.ts` maps every journal source of `JOURNAL_SOURCES` to five categories: positive, negative, reversal, VAT, period lock. Each entry names a test file and the exact title of a test in it, or `n/a` with a reason (for example: an FX revaluation never carries VAT).
+* **Enforcement:** `tests/unit/posting-rule-coverage.test.ts` fails when a journal source has no entry, an entry has a blank category, a named file does not exist, or the file has no test with the named title. A new journal source cannot be added without its tests being named.
+* **Gaps found while building the registry are filled with tests, not marked n/a.** An `n/a` needs a reason that follows from the design (recorded in the registry), not from a missing test.
+

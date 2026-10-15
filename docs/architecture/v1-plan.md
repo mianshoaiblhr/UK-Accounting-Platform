@@ -22,6 +22,7 @@ Tenant isolation by forced row-level security; one central authoriser for compan
 | M7a | Bank accounts, CSV statement import (asynchronous), statement lines, transfers (DEC-038..041) | **verified** (code baseline `e100429`; package `v1-m7a-acceptance.md`) | Engineering | M6c |
 | M7b | Reconciliation, charges and interest from statements, unmatched ageing (DEC-042) | **verified** (code baseline `b8c0e0a`; package `v1-m7b-acceptance.md`) | Engineering | M7a |
 | M8 | P&L, balance sheet, drill-down, controls and alerts, FX reporting (DEC-043..045) | built (section 12.1); acceptance package after CI | Engineering | M3, M5-M7 |
+| M8h | Hygiene: customer default VAT code, posting-rule coverage registry, evidence for ARC-01/POST-06/XP-07/CTL-06 (DEC-046, DEC-047) | specified (section 12a) | Engineering | M8 |
 | M9 | V1 UI slices behind feature flags (DEC-002) | planned, parallel from M2 | Engineering (front end) | the API each screen uses |
 | Privacy track | Session / challenge IP and user agent (DEC-013) | investigation in progress, **never marked resolved without review** | Engineering; DPO / legal | DEC-003 |
 
@@ -408,3 +409,11 @@ Recorded before code under the delegation (DEC-019).
 * **Presentation choices:** exact amounts; lines with no amount omitted unless `includeEmpty`; FX gains and losses sit in the accounts the company mapped them to (the defaults map to other expenses); the P&L cumulates into capital and reserves on the balance sheet (no closing journal until V2).
 * **Hand-calculated evidence:** `tests/platform/reports.test.ts` - Report Co (2025 and 2026 with comparatives), FX Co (realised 30.00, unrealised -80.00 and its reversal, P&L 850.00 - 50.00 = 800.00), Alerts Co (four alerts, two filtered out for a narrower reader; close and lock refused, then acknowledged and recorded).
 * **Correction:** V1-MOD-03 (suppliers) was delivered by M4a but its matrix row had not been updated; it is now marked implemented with that evidence (matrix v3.3 history).
+
+## 12a. M8h - Hygiene before the screens (specification; DEC-046, DEC-047)
+Recorded before code under the delegation (DEC-019). No new module; it closes rows whose gap is small and needs no human gate.
+* **V1-MOD-02 customers:** the missing piece is the default tax treatment (DEC-046). Migration: `customer_profile.default_tax_code_id` (FK to the organisation's tax code). API: `defaultTaxCodeId` on role create and update (customers only), returned in the role view. Sales: an invoice line without `taxCodeId` takes the default on create and on line replacement; `null` keeps no code.
+* **V1-TEST-01:** the coverage registry and its test (DEC-047), with any missing tests written.
+* **Evidence-only rows** (no code unless a test shows a gap): V1-ARC-01 (every source module posts through the PostingService: sales, purchases, cash, bank; architecture tests per module), V1-POST-06 (currency validation delivered by M3), XP-07 (`bank_statement.imported` published by M7a), V1-CTL-06 (every source module audits its actions). Each is re-checked against its acceptance criterion, with the tests named, before its status changes.
+* **Stays open:** V1-MOD-12 and the partial VAT rows (the tax reviewer), V1-VAT-15 (M5c), MAN-ACC-09 (report mappings are versioned in code, not effective-dated in the database: a schema decision for V2 statutory accounts), V1-PRIV-01 (DEC-013), and the screens (M9: V1-DOD-01, V1-CTL-03, V1-CTL-04, V1-BANK-05).
+* **Acceptance:** the migration with its guard-list updates; API and platform tests for the default (applied, explicit null kept, wrong direction refused, foreign currency not applied, credit note unaffected, audit before/after); the coverage test green over every journal source.
