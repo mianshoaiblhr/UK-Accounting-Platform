@@ -6,7 +6,8 @@ Prepared under the product owner's delegation (DEC-019, DEC-046, DEC-047). This 
 | Item | Result |
 |---|---|
 | Code baseline commit | `e358a26` (branch `claude/adoring-cori-mra6ze`); decisions recorded before code in the commit that precedes it (DEC-046/047, plan section 12a) |
-| CI | CI_RESULT |
+| CI | **success**: run 38822337045 on `34c2c1e` (migrations from scratch, terraform validate, S3/ClamAV, build/lint/typecheck/unit/integration/e2e, audit and secret scan, all images) |
+| CI note | The run on `e358a26` itself (38820398467) was cancelled when the next commits were pushed (the workflow cancels in-progress runs on the branch). `34c2c1e` contains `e358a26` unchanged plus M9a; its run is the CI evidence for M8h. |
 | CodeQL | **success**: run 38820398602 on `e358a26` |
 | Clean clone of `e358a26` | install, build, typecheck, lint: exit 0; **1877 tests passed**; e2e **4/4**; OpenAPI drift 0 |
 | Local full run | `pnpm test` **100 files, 1877 tests passed**, run alone (M8: 98 / 1864) |

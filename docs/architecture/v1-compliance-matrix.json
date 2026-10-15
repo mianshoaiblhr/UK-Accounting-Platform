@@ -88,7 +88,7 @@
     },
     "M8": {
       "title": "Profit and loss, balance sheet, drill-down to documents, controls and alerts, FX reporting",
-      "status": "M8 built (DEC-043..045): statements, drill-down, alerts, close controls, FX report; acceptance package after CI",
+      "status": "M8 verified (code baseline b1e69af; v1-m8-acceptance.md); M8h hygiene verified (e358a26; v1-m8h-acceptance.md)",
       "owner": "Engineering",
       "depends": [
         "M3",
@@ -101,7 +101,7 @@
     },
     "M9": {
       "title": "V1 UI slices behind feature flags (DEC-002)",
-      "status": "PLANNED - runs in parallel from M2",
+      "status": "M9a verified (34c2c1e; v1-m9a-acceptance.md): workspace screens behind bookkeeping.core; M9b sales and purchases, M9c bank, cash and reconciliation to follow",
       "owner": "Engineering (front end)",
       "depends": [
         "API of the milestone each screen uses"

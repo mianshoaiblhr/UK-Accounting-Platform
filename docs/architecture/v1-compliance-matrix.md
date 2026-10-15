@@ -2,7 +2,7 @@
 
 Source requirements: docs/specifications/V1_Core_Bookkeeping.md, 00_MASTER_IMPLEMENTATION_MANIFEST.md (non-negotiable accounting controls), 13_CROSS_PLATFORM_PRODUCT_REQUIREMENTS.md.
 
-Generated from `v1-compliance-matrix.json`. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
+Generated from `v1-compliance-matrix.json` at commit `34c2c1e`; CI: <https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/38822337045>. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
 
 ## Plan history (append-only)
 
@@ -45,8 +45,8 @@ Generated from `v1-compliance-matrix.json`. **Statuses change only with evidence
 | M5 | Sales: invoices, credit notes, receipts; duplicate-document check | M5a VERIFIED (e698562; v1-m5a-acceptance.md); M5b VERIFIED (376aec6; v1-m5b-acceptance.md); M5c (VAT on foreign-currency documents) to be specified (DEC-031) | Engineering | M2; M3; M4 | 8 | 8 |
 | M6 | Purchases: bills, debit notes, payments, cash | M6a VERIFIED (16c7f12; v1-m6a-acceptance.md); M6b VERIFIED (a753db0; v1-m6b-acceptance.md); M6c VERIFIED (7f4adad; v1-m6c-acceptance.md) | Engineering | M5 patterns; M3; M4 | 6 | 6 |
 | M7 | Bank accounts, statement import (async), transfers, charges, interest, reconciliation | M7a VERIFIED by CI (e100429; acceptance package v1-m7a-acceptance.md); M7b reconciliation built (DEC-042), acceptance package after CI | Engineering | M5; M6 | 15 | 15 |
-| M8 | Profit and loss, balance sheet, drill-down to documents, controls and alerts, FX reporting | M8 built (DEC-043..045): statements, drill-down, alerts, close controls, FX report; acceptance package after CI | Engineering | M3; M5; M6; M7 | 8 | 8 |
-| M9 | V1 UI slices behind feature flags (DEC-002) | PLANNED - runs in parallel from M2 | Engineering (front end) | API of the milestone each screen uses | 1 | 0 |
+| M8 | Profit and loss, balance sheet, drill-down to documents, controls and alerts, FX reporting | M8 verified (code baseline b1e69af; v1-m8-acceptance.md); M8h hygiene verified (e358a26; v1-m8h-acceptance.md) | Engineering | M3; M5; M6; M7 | 8 | 8 |
+| M9 | V1 UI slices behind feature flags (DEC-002) | M9a verified (34c2c1e; v1-m9a-acceptance.md): workspace screens behind bookkeeping.core; M9b sales and purchases, M9c bank, cash and reconciliation to follow | Engineering (front end) | API of the milestone each screen uses | 1 | 0 |
 | Privacy track (parallel to V1) | Privacy finding on session / challenge IP and user agent (DEC-013) | INVESTIGATION DELIVERED - finding UNRESOLVED, awaiting privacy review (never resolved without it) | Engineering (investigation); DPO / legal (decisions) | DEC-003 retention review | 1 | 0 |
 
 A milestone is accepted by the product owner on an acceptance package: commit SHA, CI run (every job), test results, migrations, security/permission checks, matrix changes, known limitations (DEC-007).
@@ -233,7 +233,7 @@ A milestone is accepted by the product owner on an acceptance package: commit SH
 
 ## M8 - Profit and loss, balance sheet, drill-down to documents, controls and alerts, FX reporting
 
-**Status:** M8 built (DEC-043..045): statements, drill-down, alerts, close controls, FX report; acceptance package after CI  
+**Status:** M8 verified (code baseline b1e69af; v1-m8-acceptance.md); M8h hygiene verified (e358a26; v1-m8h-acceptance.md)  
 **Owner:** Engineering  
 **Depends on:** M3; M5; M6; M7  
 **Acceptance:** Plan section 12: a hand-calculated year through every sub-ledger with comparatives, reconciling to the trial balance to the cent; drill-down for every journal source; alerts raised and filtered; close and lock refused and acknowledged; the FX report against the revaluation.  
@@ -252,7 +252,7 @@ A milestone is accepted by the product owner on an acceptance package: commit SH
 
 ## M9 - V1 UI slices behind feature flags (DEC-002)
 
-**Status:** PLANNED - runs in parallel from M2  
+**Status:** M9a verified (34c2c1e; v1-m9a-acceptance.md): workspace screens behind bookkeeping.core; M9b sales and purchases, M9c bank, cash and reconciliation to follow  
 **Owner:** Engineering (front end)  
 **Depends on:** API of the milestone each screen uses  
 **Acceptance:** Per screen: works against the real API, authorisation and tenant boundaries; accessibility checks  

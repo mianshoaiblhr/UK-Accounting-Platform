@@ -6,7 +6,7 @@ Prepared under the product owner's delegation (DEC-019, DEC-048..050). This is m
 | Item | Result |
 |---|---|
 | Code baseline commit | `34c2c1e` (branch `claude/adoring-cori-mra6ze`); decisions and specification recorded before code in `b428b35` |
-| CI | CI_RESULT |
+| CI | **success**: run 38822337045 on `34c2c1e` (migrations from scratch, terraform validate, S3/ClamAV, build/lint/typecheck/unit/integration/e2e, audit and secret scan, all images) |
 | CodeQL | **success**: run 38822337046 on `34c2c1e` |
 | Clean clone of `34c2c1e` | install, build, typecheck, lint: exit 0; **1881 tests passed**; e2e **11/11** (V0 journeys 4, M9a workspace 7); OpenAPI drift 0 |
 | Local runs | e2e 11/11 against a rebuilt web app; `my-access`, OpenAPI and permission API tests 487 passed. The first local browser run found two faults, both fixed before the push: the harness sent API calls to the closed ephemeral listener, and the periods screen compared calendar dates with the timestamps the period list returns |
