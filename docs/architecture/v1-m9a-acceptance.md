@@ -5,11 +5,11 @@ Prepared under the product owner's delegation (DEC-019, DEC-048..050). This is m
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | BASELINE (branch `claude/adoring-cori-mra6ze`); decisions and specification recorded before code in `b428b35` |
+| Code baseline commit | `34c2c1e` (branch `claude/adoring-cori-mra6ze`); decisions and specification recorded before code in `b428b35` |
 | CI | CI_RESULT |
-| CodeQL | CODEQL_RESULT |
-| Clean clone | CLEAN_CLONE_RESULT |
-| Local runs | LOCAL_RESULT |
+| CodeQL | **success**: run 38822337046 on `34c2c1e` |
+| Clean clone of `34c2c1e` | install, build, typecheck, lint: exit 0; **1881 tests passed**; e2e **11/11** (V0 journeys 4, M9a workspace 7); OpenAPI drift 0 |
+| Local runs | e2e 11/11 against a rebuilt web app; `my-access`, OpenAPI and permission API tests 487 passed. The first local browser run found two faults, both fixed before the push: the harness sent API calls to the closed ephemeral listener, and the periods screen compared calendar dates with the timestamps the period list returns |
 
 ## 2. What M9a delivers (plan section 13.1)
 * **API:** `GET /organisations/{org}/companies/{company}/my-access` (DEC-049) returns the caller's effective permissions on the company, resolved as the guards resolve them, and every feature flag resolved for the organisation. Read-only; a company outside the caller's reach is 404. In OpenAPI. (The path `.../access` already lists company role grants, so the new one is `my-access`; recorded in DEC-049 before code.)
@@ -47,7 +47,7 @@ Prepared under the product owner's delegation (DEC-019, DEC-048..050). This is m
 * The owner adds account 6150 modelled on 6100.
 
 ## 5. Compliance matrix
-MATRIX_RESULT
+Matrix v3.5 (113 rows: Implemented 105, Partially 6, Missing 2). **Now Implemented:** V1-CTL-03, V1-CTL-04, V1-BANK-05 (the dashboard criterion). **Missing -> Partially:** V1-DOD-01 (M9b and M9c screens remain).
 
 ## 6. Known limitations and gates
 1. M9b (sales and purchases) and M9c (bank, cash, reconciliation) screens are not built yet; V1-DOD-01 stays partial until they are.
