@@ -120,7 +120,7 @@ describe('journal requests are append-and-decide only', () => {
     await tx([mkRequest(r)]);
     await expect(tx([`DELETE FROM journal_request WHERE id='${r}'`])).rejects.toThrow(/permission denied/);
     expect(() => sql(`DELETE FROM journal_request WHERE id='${r}'`)).toThrow(/append-only/);
-    expect(() => sql(`TRUNCATE journal_request, fx_revaluation_run, journal, journal_line, sales_allocation, sales_receipt, sales_document_line, sales_document, purchase_allocation, purchase_payment, purchase_document_line, purchase_document, cash_transaction_line, cash_transaction, bank_transfer`)).toThrow(/append-only/);
+    expect(() => sql(`TRUNCATE journal_request, fx_revaluation_run, journal, journal_line, sales_allocation, sales_receipt, sales_document_line, sales_document, purchase_allocation, purchase_payment, purchase_document_line, purchase_document, cash_transaction_line, cash_transaction, bank_transfer, bank_match`)).toThrow(/append-only/);
   });
   it('tenant isolation: another organisation neither sees nor creates requests for this one', async () => {
     const r = uuidv7();
