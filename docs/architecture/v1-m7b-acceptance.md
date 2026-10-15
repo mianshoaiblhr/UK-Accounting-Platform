@@ -8,7 +8,7 @@ Prepared under the product owner's delegation (DEC-019, DEC-042). This is milest
 | Code baseline commit | `b8c0e0a` (branch `claude/adoring-cori-mra6ze`): the reconciliation code in `cca6855` plus the test-list fix below; DEC-042 recorded before code in `11a5e9f` |
 | CI | <https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/38811610801> - **success** (all jobs) |
 | CodeQL | <https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/38811610867> - **success** |
-| Clean clone of `b8c0e0a` | CLEAN_CLONE_RESULT |
+| Clean clone of `b8c0e0a` | install, build, typecheck and lint exit 0; `pnpm test` **95 files, 1853 tests passed, 0 failed, 0 skipped**; end-to-end 4/4; no OpenAPI drift |
 | Local full run | `pnpm test` **95 files, 1853 tests passed, 0 failed, 0 skipped** (M7a: 93 / 1825), run alone |
 | CI on `cca6855` | **failed** (run 38810219217): three older database tests check that the journal tables cannot be truncated, and `bank_match` now references `journal`, so PostgreSQL refused the TRUNCATE for the foreign key before the append-only trigger could. Reproduced locally on `cca6855`, fixed in `b8c0e0a` by adding `bank_match` to those lists, and shown passing. CodeQL on `cca6855` passed |
 

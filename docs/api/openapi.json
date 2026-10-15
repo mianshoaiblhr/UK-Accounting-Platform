@@ -18493,6 +18493,437 @@
         ]
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reports/profit-and-loss": {
+      "get": {
+        "operationId": "Reports_profitAndLoss",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "compareFrom",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "compareTo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "includeEmpty",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfitAndLoss"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Reports"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "Profit and loss for a range (optional comparative range) from the ledger only, through the reporting mapping; reconciles to the trial balance to the cent; every line drills to accounts and their ledger",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reports/balance-sheet": {
+      "get": {
+        "operationId": "Reports_balanceSheet",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "asOf",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "compareAsOf",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "includeEmpty",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceSheet"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Reports"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "Balance sheet as at a date (optional comparative date) with the P&L cumulated into capital and reserves; proves net assets = capital and reserves",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reports/fx": {
+      "get": {
+        "operationId": "Reports_fx",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "FX report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FxReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Reports"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "Realised and unrealised exchange differences for a range with their journals, and open foreign-currency balances against the closing rate",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/journals/{journalId}/source": {
+      "get": {
+        "operationId": "Reports_source",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "journalId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Drill-down",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalSource"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Reports"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "Universal drill-down: a journal, its lines, the transaction that posted it, the attached documents and the bank statement lines it is matched to",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/alerts": {
+      "get": {
+        "operationId": "Reports_list",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "asOf",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "draftDays",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365
+            }
+          },
+          {
+            "name": "unmatchedDays",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alerts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Reports"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "What needs attention as at a date: suspense balance, negative cash, overdrawn bank, old drafts, old unmatched bank lines, pending approvals, unverified VAT rates and supplier bank details, flagged payments (each shown only to readers of its module)",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -19466,6 +19897,9 @@
     },
     {
       "name": "Purchases"
+    },
+    {
+      "name": "Reports"
     },
     {
       "name": "Bank"
@@ -25815,6 +26249,928 @@
         "required": [
           "items",
           "nextCursor"
+        ],
+        "additionalProperties": false
+      },
+      "ProfitAndLoss": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyName": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "from": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "to": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "comparative": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "to": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "from",
+              "to"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "mappingVersion": {
+            "type": "integer"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "string"
+                },
+                "comparative": {
+                  "type": "string"
+                },
+                "total": {
+                  "type": "boolean"
+                },
+                "accounts": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "accountId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "amount": {
+                        "type": "string"
+                      },
+                      "drilldown": {
+                        "type": "object",
+                        "properties": {
+                          "accountId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "from": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                            "nullable": true
+                          },
+                          "to": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                          }
+                        },
+                        "required": [
+                          "accountId",
+                          "from",
+                          "to"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Opens the general ledger of the account for the range"
+                      }
+                    },
+                    "required": [
+                      "accountId",
+                      "code",
+                      "name",
+                      "amount",
+                      "drilldown"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "drilldown": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              },
+              "required": [
+                "key",
+                "name",
+                "amount"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "profitForPeriod": {
+            "type": "string"
+          },
+          "reconciliation": {
+            "type": "object",
+            "properties": {
+              "incomeLessExpensesFromLedger": {
+                "type": "string"
+              },
+              "difference": {
+                "type": "string"
+              },
+              "reconciled": {
+                "type": "boolean"
+              },
+              "comparative": {
+                "type": "object",
+                "properties": {
+                  "incomeLessExpensesFromLedger": {
+                    "type": "string"
+                  },
+                  "reconciled": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "incomeLessExpensesFromLedger",
+                  "reconciled"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "incomeLessExpensesFromLedger",
+              "difference",
+              "reconciled"
+            ],
+            "additionalProperties": false,
+            "description": "The P&L against the net of every income and expense account: must reconcile to the cent"
+          },
+          "notice": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "companyId",
+          "companyName",
+          "currency",
+          "from",
+          "to",
+          "comparative",
+          "mappingVersion",
+          "lines",
+          "profitForPeriod",
+          "reconciliation",
+          "notice"
+        ],
+        "additionalProperties": false
+      },
+      "BalanceSheet": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyName": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "asOf": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "compareAsOf": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "financialYearStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "mappingVersion": {
+            "type": "integer"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "string"
+                },
+                "comparative": {
+                  "type": "string"
+                },
+                "total": {
+                  "type": "boolean"
+                },
+                "accounts": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "accountId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "amount": {
+                        "type": "string"
+                      },
+                      "drilldown": {
+                        "type": "object",
+                        "properties": {
+                          "accountId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "from": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                            "nullable": true
+                          },
+                          "to": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                          }
+                        },
+                        "required": [
+                          "accountId",
+                          "from",
+                          "to"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Opens the general ledger of the account for the range"
+                      }
+                    },
+                    "required": [
+                      "accountId",
+                      "code",
+                      "name",
+                      "amount",
+                      "drilldown"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "drilldown": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              },
+              "required": [
+                "key",
+                "name",
+                "amount"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "netAssets": {
+            "type": "string"
+          },
+          "reconciliation": {
+            "type": "object",
+            "properties": {
+              "netAssets": {
+                "type": "string"
+              },
+              "capitalAndReserves": {
+                "type": "string"
+              },
+              "difference": {
+                "type": "string"
+              },
+              "balanced": {
+                "type": "boolean"
+              },
+              "trialBalance": {
+                "type": "object",
+                "properties": {
+                  "debit": {
+                    "type": "string"
+                  },
+                  "credit": {
+                    "type": "string"
+                  },
+                  "balanced": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "debit",
+                  "credit",
+                  "balanced"
+                ],
+                "additionalProperties": false
+              },
+              "comparative": {
+                "type": "object",
+                "properties": {
+                  "netAssets": {
+                    "type": "string"
+                  },
+                  "capitalAndReserves": {
+                    "type": "string"
+                  },
+                  "difference": {
+                    "type": "string"
+                  },
+                  "balanced": {
+                    "type": "boolean"
+                  },
+                  "trialBalance": {
+                    "type": "object",
+                    "properties": {
+                      "debit": {
+                        "type": "string"
+                      },
+                      "credit": {
+                        "type": "string"
+                      },
+                      "balanced": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "debit",
+                      "credit",
+                      "balanced"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "netAssets",
+                  "capitalAndReserves",
+                  "difference",
+                  "balanced",
+                  "trialBalance"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "netAssets",
+              "capitalAndReserves",
+              "difference",
+              "balanced",
+              "trialBalance"
+            ],
+            "additionalProperties": false
+          },
+          "notice": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "companyId",
+          "companyName",
+          "currency",
+          "asOf",
+          "compareAsOf",
+          "financialYearStart",
+          "mappingVersion",
+          "lines",
+          "netAssets",
+          "reconciliation",
+          "notice"
+        ],
+        "additionalProperties": false
+      },
+      "FxReport": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "from": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "to": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "realised": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "string"
+              },
+              "byCurrency": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "currency": {
+                      "type": "string"
+                    },
+                    "gain": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "currency",
+                    "gain"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "journals": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "journalId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "journalNumber": {
+                      "type": "integer"
+                    },
+                    "journalDate": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "sourceType": {
+                      "type": "string"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "gain": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "journalId",
+                    "journalNumber",
+                    "journalDate",
+                    "sourceType",
+                    "currency",
+                    "gain"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "total",
+              "byCurrency",
+              "journals"
+            ],
+            "additionalProperties": false
+          },
+          "unrealised": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "string"
+              },
+              "byCurrency": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "currency": {
+                      "type": "string"
+                    },
+                    "gain": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "currency",
+                    "gain"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "journals": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "journalId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "journalNumber": {
+                      "type": "integer"
+                    },
+                    "journalDate": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "sourceType": {
+                      "type": "string"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "gain": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "journalId",
+                    "journalNumber",
+                    "journalDate",
+                    "sourceType",
+                    "currency",
+                    "gain"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "total",
+              "byCurrency",
+              "journals"
+            ],
+            "additionalProperties": false
+          },
+          "revaluedAtClosingRate": {
+            "type": "boolean"
+          },
+          "notice": {
+            "type": "string"
+          },
+          "openBalances": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "accountCode": {
+                  "type": "string"
+                },
+                "accountName": {
+                  "type": "string"
+                },
+                "currency": {
+                  "type": "string"
+                },
+                "originalBalance": {
+                  "type": "string"
+                },
+                "carryingAmount": {
+                  "type": "string"
+                },
+                "closingRate": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "rateId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "atClosingRate": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "unrevaluedDifference": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "rateError": {
+                  "type": "string",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "accountId",
+                "accountCode",
+                "accountName",
+                "currency",
+                "originalBalance",
+                "carryingAmount",
+                "closingRate",
+                "rateId",
+                "atClosingRate",
+                "unrevaluedDifference",
+                "rateError"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "companyId",
+          "currency",
+          "from",
+          "to",
+          "realised",
+          "unrealised",
+          "revaluedAtClosingRate",
+          "notice",
+          "openBalances"
+        ],
+        "additionalProperties": false
+      },
+      "JournalSource": {
+        "type": "object",
+        "properties": {
+          "journal": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "journalNumber": {
+                "type": "integer"
+              },
+              "journalDate": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "sourceType": {
+                "type": "string"
+              },
+              "sourceId": {
+                "type": "string",
+                "nullable": true
+              },
+              "sourceReference": {
+                "type": "string",
+                "nullable": true
+              },
+              "description": {
+                "type": "string"
+              },
+              "total": {
+                "type": "string"
+              },
+              "postedByUserId": {
+                "type": "string",
+                "format": "uuid",
+                "nullable": true
+              },
+              "reversesJournalId": {
+                "type": "string",
+                "format": "uuid",
+                "nullable": true
+              }
+            },
+            "required": [
+              "id",
+              "journalNumber",
+              "journalDate",
+              "sourceType",
+              "sourceId",
+              "sourceReference",
+              "description",
+              "total",
+              "postedByUserId",
+              "reversesJournalId"
+            ],
+            "additionalProperties": false
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "lineNo": {
+                  "type": "integer"
+                },
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "accountCode": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "accountName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "debit": {
+                  "type": "string"
+                },
+                "credit": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "drilldown": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              },
+              "required": [
+                "lineNo",
+                "accountId",
+                "accountCode",
+                "accountName",
+                "debit",
+                "credit",
+                "description",
+                "drilldown"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "source": {
+            "type": "object",
+            "additionalProperties": {},
+            "nullable": true,
+            "description": "The transaction that posted the journal (document, receipt, payment, cash transaction, transfer, request, revaluation, reversed journal) with its attachments; restricted when the reader may not see that module"
+          },
+          "sourceResolver": {
+            "type": "string"
+          },
+          "journalAttachments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "bankMatches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "statementLineId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "journalLineId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "amount": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "statementLineId",
+                "journalLineId",
+                "amount"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "journal",
+          "lines",
+          "source",
+          "sourceResolver",
+          "journalAttachments",
+          "bankMatches"
+        ],
+        "additionalProperties": false
+      },
+      "AlertList": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "asOf": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "thresholds": {
+            "type": "object",
+            "properties": {
+              "draftDays": {
+                "type": "integer"
+              },
+              "unmatchedDays": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "draftDays",
+              "unmatchedDays"
+            ],
+            "additionalProperties": false
+          },
+          "count": {
+            "type": "integer"
+          },
+          "high": {
+            "type": "integer"
+          },
+          "alerts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "HIGH",
+                    "MEDIUM",
+                    "LOW"
+                  ]
+                },
+                "title": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer"
+                },
+                "total": {
+                  "type": "string"
+                },
+                "oldestDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  }
+                }
+              },
+              "required": [
+                "code",
+                "severity",
+                "title",
+                "count",
+                "items"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "companyId",
+          "asOf",
+          "thresholds",
+          "count",
+          "high",
+          "alerts"
         ],
         "additionalProperties": false
       },
@@ -36256,6 +37612,14 @@
             "default": false
           },
           "acknowledgeDraftDocuments": {
+            "type": "boolean",
+            "default": false
+          },
+          "acknowledgeUnreconciledBank": {
+            "type": "boolean",
+            "default": false
+          },
+          "acknowledgeSuspenseBalance": {
             "type": "boolean",
             "default": false
           }

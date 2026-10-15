@@ -20,8 +20,8 @@ Tenant isolation by forced row-level security; one central authoriser for compan
 | M6b | Supplier payments, allocation, realised FX, aged payables (DEC-035) | **verified** (code baseline `a753db0`; package `v1-m6b-acceptance.md`) | Engineering | M6a, M5b |
 | M6c | Cash transactions without documents and the negative-cash control (DEC-036, DEC-037) | **verified** (code baseline `7f4adad`; package `v1-m6c-acceptance.md`) | Engineering | M6b |
 | M7a | Bank accounts, CSV statement import (asynchronous), statement lines, transfers (DEC-038..041) | **verified** (code baseline `e100429`; package `v1-m7a-acceptance.md`) | Engineering | M6c |
-| M7b | Reconciliation, charges and interest from statements, unmatched ageing (DEC-042) | built (section 11.2a); acceptance package after CI | Engineering | M7a |
-| M8 | P&L, balance sheet, drill-down, controls and alerts, FX reporting (DEC-043..045) | specified (section 12) | Engineering | M3, M5-M7 |
+| M7b | Reconciliation, charges and interest from statements, unmatched ageing (DEC-042) | **verified** (code baseline `b8c0e0a`; package `v1-m7b-acceptance.md`) | Engineering | M7a |
+| M8 | P&L, balance sheet, drill-down, controls and alerts, FX reporting (DEC-043..045) | built (section 12.1); acceptance package after CI | Engineering | M3, M5-M7 |
 | M9 | V1 UI slices behind feature flags (DEC-002) | planned, parallel from M2 | Engineering (front end) | the API each screen uses |
 | Privacy track | Session / challenge IP and user agent (DEC-013) | investigation in progress, **never marked resolved without review** | Engineering; DPO / legal | DEC-003 |
 
@@ -402,3 +402,9 @@ Recorded before code under the delegation (DEC-019).
 * **Code:** `ReportService` (statements and the FX report; reads journal lines, accounts, periods and rates only), `DrillDownService` (one resolver per journal source), `AlertService`; the period service gains the two new controls.
 * **API:** `GET reports/profit-and-loss`, `GET reports/balance-sheet`, `GET reports/fx`, `GET journals/{id}/source`, `GET alerts`; the period close and lock bodies gain the two acknowledgements.
 * **Acceptance:** a hand-calculated company year through sales, purchases, cash, bank, VAT and FX: P&L and balance sheet figures, both reconciling to the trial balance to the cent, with comparatives; drill-down from a statement line to the document for every journal source; every alert raised and cleared; close and lock refused and acknowledged; the FX report matching the revaluation.
+
+### 12.1 As built (M8)
+* **No migration.** `ReportService` (`packages/accounting/src/reports.ts`) reads journal lines, accounts, periods, rates and the FX settings only (architecture-tested); `DrillDownService` (`drilldown.ts`) holds one resolver per journal source (unit-tested against the source list); `AlertService` (`alerts.ts`) filters each alert by the reader's module permission. `PeriodService` gains the unreconciled-bank close control and the suspense lock control. The API adds `ReportsController` (5 routes); the period close and lock bodies accept the two acknowledgements.
+* **Presentation choices:** exact amounts; lines with no amount omitted unless `includeEmpty`; FX gains and losses sit in the accounts the company mapped them to (the defaults map to other expenses); the P&L cumulates into capital and reserves on the balance sheet (no closing journal until V2).
+* **Hand-calculated evidence:** `tests/platform/reports.test.ts` - Report Co (2025 and 2026 with comparatives), FX Co (realised 30.00, unrealised -80.00 and its reversal, P&L 850.00 - 50.00 = 800.00), Alerts Co (four alerts, two filtered out for a narrower reader; close and lock refused, then acknowledged and recorded).
+* **Correction:** V1-MOD-03 (suppliers) was delivered by M4a but its matrix row had not been updated; it is now marked implemented with that evidence (matrix v3.3 history).
