@@ -69,7 +69,7 @@ describe('statement rows (all or nothing)', () => {
     const r = run('Date,Description,Amount\n32/01/2026,A,1\n01/12/2026,B,1\n01/01/2025,C,1\n02/03/2026,,1\n02/03/2026,D,0\n02/03/2026,E,1.001', {}, { openingDate: '2026-01-01' });
     expect(r.lines).toEqual([]);
     expect(r.errors.map((e) => e.row)).toEqual([2, 3, 4, 5, 6, 7]);
-    expect(r.errors.map((e) => e.message)).toEqual([expect.stringMatching(/not a date/), expect.stringMatching(/future/), expect.stringMatching(/before the account's statement opening date/),
+    expect(r.errors.map((e) => e.message)).toEqual([expect.stringMatching(/not a date/), expect.stringMatching(/future/), expect.stringMatching(/on or before the account's statement opening date/),
       'The description is empty', 'The amount is zero', expect.stringMatching(/at most 2 decimal places/)]);
     const both = parseStatement(parseCsv('Date,Description,In,Out\n01/03/2026,X,1.00,2.00'), map({ amountColumn: undefined, moneyInColumn: 'In', moneyOutColumn: 'Out' }), { minor: 2, today: '2026-10-15' });
     expect(both.errors).toEqual([{ row: 2, message: 'Both money in and money out are filled in' }]);

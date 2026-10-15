@@ -107,3 +107,46 @@ describe('bank through the API (M7a)', () => {
     expect((await as(accountant, 'post', c('/bank-transfers'), { fromAccountId: acc['1200'], toAccountId: acc['1200'], transferDate: '2026-04-06', amount: '1.00', description: 'x' })).status).toBe(422);
   });
 });
+
+describe('reconciliation through the API (M7b)', () => {
+  it('suggest, accept, post a fee from the statement, prove and sign off; who may do what', async () => {
+    const bankId = (await as(reviewer, 'get', c('/bank-accounts'))).body.items[0].id;
+    const r = await as(accountant, 'post', c('/cash-transactions'), { direction: 'RECEIPT', transactionDate: '2026-04-09', bankAccountId: acc['1200'], reference: 'R-77', description: 'Customer paid by BACS', lines: [{ description: 'Sale', accountId: acc['4000'], amount: '300.00' }] });
+    expect(r.status).toBe(201);
+    const d = await statement('Date,Description,Paid in,Paid out,Balance\n10/04/2026,CUSTOMER BACS R-77,300.00,,300.00\n11/04/2026,MONTHLY FEE,,4.00,296.00\n');
+    const imp = await as(bookkeeper, 'post', c(`/bank-accounts/${bankId}/statement-imports`), { ...d, mapping: MAPPING });
+    await waitForJob(s, owner, imp.body.jobId, ['COMPLETED', 'FAILED', 'DEAD']);
+    const sug = (await as(reviewer, 'get', `${c(`/bank-accounts/${bankId}/suggestions`)}?from=2026-04-10`)).body;
+    expect(sug.items).toHaveLength(2);
+    const [bacs, fee] = sug.items;
+    expect(bacs.candidates[0]).toMatchObject({ sourceType: 'CASH_RECEIPT', reference: 'R-77', amount: '300.00' });
+    expect(fee.proposal).toEqual({ kind: 'CHARGE', accountId: null });
+    // reviewers read, bookkeepers reconcile
+    expect((await as(reviewer, 'post', c('/bank-matches'), { statementLineId: bacs.statementLineId, journalLineId: bacs.candidates[0].journalLineId })).status).toBe(403);
+    const m = await as(bookkeeper, 'post', c('/bank-matches'), { statementLineId: bacs.statementLineId, journalLineId: bacs.candidates[0].journalLineId, fromSuggestion: true });
+    expect(m.status).toBe(201);
+    expect(m.body).toMatchObject({ status: 'MATCHED', matches: [{ kind: 'SUGGESTION', amount: '300.00' }] });
+    // posting the fee needs an account, and cash:record (a bookkeeper reconciles but does not post money)
+    expect((await as(bookkeeper, 'post', c(`/statement-lines/${fee.statementLineId}/post`), { kind: 'CHARGE' })).body.code).toBe('account_required');
+    expect((await as(bookkeeper, 'post', c(`/statement-lines/${fee.statementLineId}/post`), { kind: 'CHARGE', accountId: acc['6800'] })).status).toBe(403);
+    const posted = await as(accountant, 'post', c(`/statement-lines/${fee.statementLineId}/post`), { kind: 'CHARGE', accountId: acc['6800'] });
+    expect(posted.status).toBe(201);
+    expect(posted.body).toMatchObject({ cashTransaction: { direction: 'PAYMENT', gross: '4.00', transactionDate: '2026-04-11' }, line: { status: 'MATCHED' } });
+    // the reversed float is in the books twice (out and back), so it stays as two unmatched ledger items that net to zero
+    const un = (await as(reviewer, 'get', `${c(`/bank-accounts/${bankId}/unmatched`)}?asOf=2026-04-30`)).body;
+    expect(un.statement).toMatchObject({ count: 0, total: '0.00' });
+    expect(un.ledger).toMatchObject({ count: 2, total: '0.00', buckets: { '8-30': { count: 2 } } });
+    const proof = (await as(reviewer, 'get', `${c(`/bank-accounts/${bankId}/reconciliation`)}?asOf=2026-04-30`)).body;
+    expect(proof).toMatchObject({ statementBalance: '296.00', ledgerBalance: '296.00', difference: '0.00', reconciled: true });
+    expect((await as(reviewer, 'post', c(`/bank-accounts/${bankId}/reconciliations`), { asOf: '2026-04-30', bankClosingBalance: '296.00' })).status).toBe(403);
+    expect((await as(bookkeeper, 'post', c(`/bank-accounts/${bankId}/reconciliations`), { asOf: '2026-04-30', bankClosingBalance: '296.50' })).body.code).toBe('statement_incomplete');
+    const signed = await as(bookkeeper, 'post', c(`/bank-accounts/${bankId}/reconciliations`), { asOf: '2026-04-30', bankClosingBalance: '296.00', notes: 'April' });
+    expect(signed.status).toBe(201);
+    expect((await as(reviewer, 'get', c(`/bank-accounts/${bankId}/reconciliations`))).body.items).toMatchObject([{ asAt: '2026-04-30', statementBalance: '296.00' }]);
+    // undoing a match then needs a reason and is flagged
+    const line = (await as(reviewer, 'get', c(`/statement-lines/${bacs.statementLineId}`))).body;
+    expect((await as(bookkeeper, 'post', c(`/bank-matches/${line.matches[0].id}/unmatch`), { reason: 'short' })).status).toBe(422);
+    const undone = await as(bookkeeper, 'post', c(`/bank-matches/${line.matches[0].id}/unmatch`), { reason: 'Matched to the wrong receipt' });
+    expect(undone.body).toMatchObject({ status: 'UNMATCHED', matches: [{ status: 'UNMATCHED', afterSignOff: true }] });
+  });
+});

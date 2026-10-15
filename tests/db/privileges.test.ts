@@ -55,6 +55,8 @@ const FORBIDDEN: Record<string, string[]> = {
   bank_statement_import: ['DELETE', 'TRUNCATE'],   // QUEUED -> COMPLETED | FAILED, COMPLETED -> VOID (trigger)
   bank_statement_line: ['DELETE', 'TRUNCATE'],     // facts from the bank: only voided / matched_amount move (trigger)
   bank_transfer: ['DELETE', 'TRUNCATE'],           // POSTED -> REVERSED once by a proven mirror
+  bank_match: ['DELETE', 'TRUNCATE'],              // ACTIVE -> UNMATCHED once with a reason (trigger)
+  bank_reconciliation: ['UPDATE', 'DELETE', 'TRUNCATE'], // a sign-off is recorded once
   notification_preference: ['DELETE', 'TRUNCATE'], // toggled, never removed
   notification_delivery: ['DELETE', 'TRUNCATE'],   // planned deliveries are final once handled
   outbox_event: ['TRUNCATE'],                    // DELETE is system-context only (RLS) and trigger-guarded

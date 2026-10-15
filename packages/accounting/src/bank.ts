@@ -114,6 +114,8 @@ export class BankService {
     if (!b) throw notFound('Bank account not found');
     if (b.status === 'CLOSED') throw conflict('This bank account is already closed', 'bank_account_closed');
     if (await tx.bankStatementImport.findFirst({ where: { bankAccountId: b.id, status: 'QUEUED' } })) throw conflict('A statement import is still running for this account', 'bank_import_running');
+    const [open] = await tx.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n FROM bank_statement_line WHERE bank_account_id = ${b.id}::uuid AND NOT voided AND matched_amount <> amount`;
+    if ((open?.n ?? 0) > 0) throw conflict(`${open!.n} statement line(s) are not fully matched; reconcile them before closing the account`, 'bank_has_unmatched_lines', { lines: open!.n });
     await tx.bankAccount.update({ where: { id: b.id }, data: { status: 'CLOSED', closedAt: new Date(), closedByUserId: a.actor.userId, closedReason: a.reason.trim() } });
     await this.audit(tx, { action: 'bank_account.closed', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actor.userId, entityType: 'bank_account', entityId: b.id,
       before: { status: 'ACTIVE' }, after: { status: 'CLOSED' }, reason: a.reason });

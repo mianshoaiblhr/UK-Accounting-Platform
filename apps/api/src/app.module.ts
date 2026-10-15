@@ -43,7 +43,7 @@ import { OrganisationsController } from './organisations/organisations.controlle
 import { OrganisationsService } from './organisations/organisations.service';
 import { LedgerController } from './ledger/ledger.controller';
 import { LedgerApiService } from './ledger/ledger.service';
-import { BankService, CashService, PurchasesService, SalesService, VatService, AccountService, FxSettingsService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, RateService, RevaluationService } from '@uk/accounting';
+import { BankService, CashService, ReconciliationService, PurchasesService, SalesService, VatService, AccountService, FxSettingsService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, RateService, RevaluationService } from '@uk/accounting';
 
 @Module({})
 export class AppModule {
@@ -61,6 +61,7 @@ export class AppModule {
         { provide: PurchasesService, useFactory: () => new PurchasesService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: CashService, useFactory: () => new CashService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: BankService, useFactory: () => new BankService({ crypto: new FieldEncryption(config.FIELD_ENCRYPTION_KEY), captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
+        { provide: ReconciliationService, useFactory: () => new ReconciliationService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: BankStatementService, useFactory: () => new BankStatementService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: RateService, useFactory: () => new RateService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: FxSettingsService, useFactory: () => new FxSettingsService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },

@@ -177,6 +177,11 @@ describe('database access paths that carry security meaning', () => {
     expect(SRC.filter((f) => /accountDetailsEnc|account_details_enc/.test(read(f))).map(rel)).toEqual(['packages/accounting/src/bank.ts']);
     expect(read(`${ROOT}/packages/accounting/src/bank.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany)|INSERT INTO\s+"?journal/);
   });
+  it('reconciliation has one writer (M7b), which posts only through CashService and the PostingService and never writes statement lines', () => {
+    const WRITE = /\.(bankMatch|bankReconciliation)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(bank_match|bank_reconciliation)"?\b/i;
+    expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/reconciliation.ts']);
+    expect(read(`${ROOT}/packages/accounting/src/reconciliation.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany)|INSERT INTO\s+"?journal|\.bankStatementLine\.(update|create)|app\.bank_match/);
+  });
   it('bank statements are staged by one writer in the platform package, which never posts (ADR-61)', () => {
     const WRITE = /\.(bankStatementImport|bankStatementLine)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(bank_statement_import|bank_statement_line)"?\b/i;
     expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/platform/src/bank-statements.ts']);

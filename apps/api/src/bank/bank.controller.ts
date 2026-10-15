@@ -3,11 +3,11 @@ import type { z } from 'zod';
 import { z as zod } from 'zod';
 import {
   JobTypes, bankTransferListQuerySchema, closeBankAccountSchema, createBankAccountSchema, createBankTransferSchema, requestStatementImportSchema, reverseBankTransferSchema,
-  statementImportListQuerySchema, statementLineListQuerySchema, updateBankAccountSchema, voidStatementImportSchema, type Permission,
+  statementImportListQuerySchema, statementLineListQuerySchema, updateBankAccountSchema, voidStatementImportSchema, bankAsOfQuerySchema, createBankMatchSchema, postFromStatementSchema, signOffSchema, suggestionQuerySchema, unmatchSchema, type Permission,
 } from '@uk/contracts';
 import type { Database, Tx } from '@uk/db';
 import type { JobProducer } from '@uk/jobs';
-import { BankService, type BankActor } from '@uk/accounting';
+import { BankService, ReconciliationService, type BankActor } from '@uk/accounting';
 import { BankStatementService } from '@uk/platform';
 import { Idempotent, Org, RequireFeature, RequirePermissions } from '../common/decorators';
 import { DB, JOBS } from '../common/tokens';
@@ -38,7 +38,7 @@ export class BankApiService {
 @Controller('organisations/:organisationId/companies/:companyId')
 @RequireFeature('bookkeeping.core')
 export class BankController {
-  constructor(private readonly api: BankApiService, private readonly bank: BankService, private readonly statements: BankStatementService) {}
+  constructor(private readonly api: BankApiService, private readonly bank: BankService, private readonly statements: BankStatementService, private readonly rec: ReconciliationService) {}
 
   @Post('bank-accounts') @RequirePermissions('bank:manage') @Idempotent()
   create(@Org() org: OrgAccess, @ID('companyId') c: string, @Body(new ZodPipe(createBankAccountSchema)) b: z.output<typeof createBankAccountSchema>) {
@@ -90,4 +90,34 @@ export class BankController {
   reverseTransfer(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('transferId') id: string, @Body(new ZodPipe(reverseBankTransferSchema)) b: z.output<typeof reverseBankTransferSchema>) {
     return this.api.run(org, (tx, actor) => this.bank.reverseTransfer(tx, { organisationId: org.organisationId, companyId: c, actor, id, ...b }));
   }
+
+  // ───── Reconciliation (M7b, DEC-042) ─────
+  @Get('statement-lines/:lineId') @RequirePermissions('bank:read')
+  line(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('lineId') id: string) { return this.api.run(org, (tx) => this.rec.lineDetail(tx, c, id)); }
+  @Get('bank-accounts/:bankAccountId/suggestions') @RequirePermissions('bank:read')
+  suggestions(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('bankAccountId') id: string, @Query(new ZodPipe(suggestionQuerySchema)) q: z.output<typeof suggestionQuerySchema>) {
+    return this.api.run(org, (tx) => this.rec.suggestions(tx, c, id, q));
+  }
+  @Post('bank-matches') @RequirePermissions('bank:reconcile') @Idempotent()
+  match(@Org() org: OrgAccess, @ID('companyId') c: string, @Body(new ZodPipe(createBankMatchSchema)) b: z.output<typeof createBankMatchSchema>) {
+    return this.api.run(org, (tx, actor) => this.rec.match(tx, { organisationId: org.organisationId, companyId: c, actor, ...b }));
+  }
+  @Post('bank-matches/:matchId/unmatch') @HttpCode(200) @RequirePermissions('bank:reconcile')
+  unmatch(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('matchId') id: string, @Body(new ZodPipe(unmatchSchema)) b: z.output<typeof unmatchSchema>) {
+    return this.api.run(org, (tx, actor) => this.rec.unmatch(tx, { organisationId: org.organisationId, companyId: c, actor, matchId: id, reason: b.reason }));
+  }
+  @Post('statement-lines/:lineId/post') @RequirePermissions('bank:reconcile') @Idempotent()
+  postFromStatement(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('lineId') id: string, @Body(new ZodPipe(postFromStatementSchema)) b: z.output<typeof postFromStatementSchema>) {
+    return this.api.run(org, (tx, actor) => this.rec.postFromStatement(tx, { organisationId: org.organisationId, companyId: c, actor, statementLineId: id, ...b }));
+  }
+  @Get('bank-accounts/:bankAccountId/unmatched') @RequirePermissions('bank:read')
+  unmatched(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('bankAccountId') id: string, @Query(new ZodPipe(bankAsOfQuerySchema)) q: z.output<typeof bankAsOfQuerySchema>) { return this.api.run(org, (tx) => this.rec.unmatched(tx, c, id, q)); }
+  @Get('bank-accounts/:bankAccountId/reconciliation') @RequirePermissions('bank:read')
+  report(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('bankAccountId') id: string, @Query(new ZodPipe(bankAsOfQuerySchema)) q: z.output<typeof bankAsOfQuerySchema>) { return this.api.run(org, (tx) => this.rec.report(tx, c, id, q)); }
+  @Post('bank-accounts/:bankAccountId/reconciliations') @RequirePermissions('bank:reconcile') @Idempotent()
+  signOff(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('bankAccountId') id: string, @Body(new ZodPipe(signOffSchema)) b: z.output<typeof signOffSchema>) {
+    return this.api.run(org, (tx, actor) => this.rec.signOff(tx, { organisationId: org.organisationId, companyId: c, actor, bankAccountId: id, ...b }));
+  }
+  @Get('bank-accounts/:bankAccountId/reconciliations') @RequirePermissions('bank:read')
+  signOffs(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('bankAccountId') id: string) { return this.api.run(org, (tx) => this.rec.listSignOffs(tx, c, id)); }
 }

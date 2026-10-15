@@ -82,6 +82,8 @@ export const TABLE_PROTECTION: Record<string, { protection: Protection; why: str
   bank_statement_import: { protection: 'RLS+APP', why: 'CSV statement imports (M7a); staged by the worker (ADR-61); QUEUED -> COMPLETED | FAILED, COMPLETED -> VOID (trigger).' },
   bank_statement_line: { protection: 'RLS+APP', why: 'Statement lines - facts from the bank; inserted by their import only; never edited (trigger); voided only with their import.' },
   bank_transfer: { protection: 'RLS+APP', why: 'Transfers between bank and cash accounts (M7a); bank:transfer; posted when recorded; reversed once by a proven mirror journal.' },
+  bank_match: { protection: 'RLS+APP', why: 'Reconciliation matches (M7b); bank:reconcile; both sides and totals proved by trigger; never edited, undone with a reason.' },
+  bank_reconciliation: { protection: 'RLS+APP', why: 'Signed-off reconciliations (M7b): the proved figures as at a date; immutable (no UPDATE privilege, trigger).' },
   cash_transaction: { protection: 'RLS+APP', why: 'Money in and out without a source document (M6c); cash:record; posted when recorded; immutable; reversed once by a proven mirror journal (trigger).' },
   cash_transaction_line: { protection: 'RLS+APP', why: 'Lines of a cash transaction; written once with it (trigger); no UPDATE/DELETE privilege.' },
   purchase_payment: { protection: 'RLS+APP', why: 'Supplier payments; posted when recorded; unallocated amount moves only through allocations; reversed only while unallocated (trigger); flags unverified bank details.' },

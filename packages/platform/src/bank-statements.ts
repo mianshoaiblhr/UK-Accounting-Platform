@@ -116,7 +116,7 @@ export function parseStatement(rows: string[][], mapping: StatementMapping, o: {
     const date = parseStatementDate(cell(r, cols.date), mapping.dateFormat);
     if (!date) err(n, `"${cell(r, cols.date)}" is not a date in the format ${mapping.dateFormat}`);
     else if (date > o.today) err(n, `${date} is in the future`);
-    else if (o.openingDate && date < o.openingDate) err(n, `${date} is before the account's statement opening date ${o.openingDate}`);
+    else if (o.openingDate && date <= o.openingDate) err(n, `${date} is on or before the account's statement opening date ${o.openingDate} (its balance is the opening balance)`);
     const description = cell(r, cols.description).replace(/\s+/g, ' ');
     if (!description) err(n, 'The description is empty');
     let amount: string | null | undefined;

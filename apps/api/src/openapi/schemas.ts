@@ -282,6 +282,29 @@ export const BankTransferBase = z.object({
 });
 export const BankTransferPage = z.object({ items: z.array(BankTransferBase), nextCursor: z.string().nullable() });
 
+export const StatementLineDetail = z.object({
+  id: uuid, bankAccountId: uuid, importId: uuid, lineNo: z.number().int(), sourceRow: z.number().int(), date: day, description: z.string(), reference: z.string().nullable(),
+  amount: z.string(), balance: z.string().nullable(), matched: z.string(), unmatched: z.string(), status: z.enum(['UNMATCHED', 'PARTIAL', 'MATCHED', 'VOID']),
+  matches: z.array(z.object({ id: uuid, journalLineId: uuid, journalId: uuid, journalNumber: z.number().int().nullable(), journalDate: day.nullable(), sourceType: z.string().nullable(), amount: z.string(),
+    kind: z.enum(['MANUAL', 'SUGGESTION', 'POSTED_FROM_STATEMENT']), overrideReason: z.string().nullable(), status: z.enum(['ACTIVE', 'UNMATCHED']), unmatchReason: z.string().nullable(),
+    afterSignOff: z.boolean().describe('Undone although a signed-off reconciliation covered it'), createdByUserId: uuid, createdAt: ts, unmatchedAt: ts.nullable() })),
+});
+export const MatchSuggestions = z.object({ bankAccountId: uuid, currency: z.string().length(3), notice: z.string(), items: z.array(z.object({
+  statementLineId: uuid, date: day, description: z.string(), reference: z.string().nullable(), unmatched: z.string(), ambiguous: z.boolean(),
+  candidates: z.array(z.object({ journalLineId: uuid, journalId: uuid, journalNumber: z.number().int(), date: day, sourceType: z.string(), reference: z.string().nullable(), description: z.string().nullable(), amount: z.string(), score: z.number(), reasons: z.array(z.string()) })),
+  proposal: z.object({ kind: z.enum(['CHARGE', 'INTEREST']), accountId: uuid.nullable() }).nullable() })) });
+const AgedItems = z.object({ count: z.number().int(), total: z.string(), buckets: z.record(z.object({ count: z.number().int(), total: z.string() })), items: z.array(z.record(z.unknown())) });
+export const UnmatchedItems = z.object({ bankAccountId: uuid, currency: z.string().length(3), asOf: day, statement: AgedItems, ledger: AgedItems });
+export const ReconciliationReport = z.object({
+  bankAccountId: uuid, currency: z.string().length(3), asOf: day, statementBalance: z.string(), unmatchedStatement: z.string(), adjustedStatement: z.string(), ledgerBalance: z.string(), unmatchedLedger: z.string(),
+  adjustedLedger: z.string(), difference: z.string(), opening: z.object({ date: day, statement: z.string(), ledger: z.string() }), reconciled: z.boolean(), unmatchedStatementLines: z.number().int(), unmatchedLedgerLines: z.number().int(),
+  lastSignOff: z.object({ id: uuid, asAt: day, signedByUserId: uuid, signedAt: ts }).nullable(), explanation: z.string(),
+  signOff: z.object({ id: uuid, asAt: day, signedByUserId: uuid }).optional(),
+});
+export const SignOffList = z.object({ items: z.array(z.object({ id: uuid, asAt: day, bankClosingBalance: z.string(), statementBalance: z.string(), ledgerBalance: z.string(), unmatchedStatement: z.string(), unmatchedLedger: z.string(),
+  unmatchedStatementLines: z.number().int(), unmatchedLedgerLines: z.number().int(), notes: z.string().nullable(), signedByUserId: uuid, signedAt: ts })) });
+export const PostedFromStatement = z.object({ cashTransaction: z.record(z.unknown()), line: StatementLineDetail });
+
 // ───────────── Cash transactions (M6c) ─────────────
 export const BalanceWarning = z.object({ accountId: uuid, accountCode: z.string(), kind: z.enum(['BANK', 'CASH']), lowestBalance: z.string(), onDate: day,
   overridden: z.boolean().describe('Cash in hand: true when the person gave a negativeCashReason (otherwise the posting is refused)') })

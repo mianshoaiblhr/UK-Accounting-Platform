@@ -103,3 +103,32 @@ export const bankTransferListQuerySchema = z.object({
   accountId: uuid.optional(), status: z.enum(['POSTED', 'REVERSED']).optional(), from: isoDate.optional(), to: isoDate.optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50), cursor: uuid.optional(),
 }).strict();
+
+// ───────────── Reconciliation (M7b, DEC-042) ─────────────
+export const createBankMatchSchema = z.object({
+  statementLineId: uuid, journalLineId: uuid,
+  /** Unsigned; defaults to what is left on the smaller side. Partial matches leave the rest visible. */
+  amount: positive.optional(),
+  /** Needed when the bank date and the ledger date are more than 14 days apart. */
+  overrideReason: reason.optional(),
+  /** The match was accepted from a suggestion (recorded as such). */
+  fromSuggestion: z.boolean().default(false),
+}).strict();
+export const unmatchSchema = z.object({ reason }).strict();
+export const postFromStatementSchema = z.object({
+  kind: z.enum(['CHARGE', 'INTEREST', 'OTHER']),
+  /** Defaults to the bank account's charges or interest account; required for OTHER. */
+  accountId: uuid.optional(),
+  taxCodeId: uuid.optional(),
+  description: z.string().trim().min(1).max(300).optional(),
+  duplicateOverrideReason: reason.optional(),
+  negativeCashReason: negativeCashReason.optional(),
+}).strict();
+export const suggestionQuerySchema = z.object({ from: isoDate.optional(), to: isoDate.optional(), limit: z.coerce.number().int().min(1).max(200).default(100) }).strict();
+export const bankAsOfQuerySchema = z.object({ asOf: isoDate.optional() }).strict();
+export const signOffSchema = z.object({
+  asOf: isoDate,
+  /** The closing balance printed on the bank's statement for that date: it must equal the imported statement (completeness). */
+  bankClosingBalance: signedMoney,
+  notes: z.string().trim().max(2000).optional(),
+}).strict();

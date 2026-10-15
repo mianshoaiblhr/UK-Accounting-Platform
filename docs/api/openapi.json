@@ -6161,15 +6161,6 @@
               "type": "string",
               "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
             }
-          },
-          {
-            "name": "countryCode",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "pattern": "^[A-Z]{2}$"
-            }
           }
         ],
         "responses": {
@@ -17772,6 +17763,736 @@
         }
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/statement-lines/{lineId}": {
+      "get": {
+        "operationId": "Bank_line",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "lineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Line",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatementLineDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:read"
+        ],
+        "summary": "One statement line with its matches (live and undone)",
+        "description": "**Requires permission:** `bank:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/bank-accounts/{bankAccountId}/suggestions": {
+      "get": {
+        "operationId": "Bank_suggestions",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "bankAccountId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Suggestions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchSuggestions"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:read"
+        ],
+        "summary": "Deterministic match suggestions (same amount, within 7 days, reference in the narrative; ties flagged) and charge/interest proposals. Nothing is matched or posted",
+        "description": "**Requires permission:** `bank:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/bank-matches": {
+      "post": {
+        "operationId": "Bank_match",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Matched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatementLineDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:reconcile"
+        ],
+        "summary": "Match a statement line to a ledger entry on the bank account, in full or in part; dates more than 14 days apart need an overrideReason",
+        "description": "**Requires permission:** `bank:reconcile`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBankMatchRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/bank-matches/{matchId}/unmatch": {
+      "post": {
+        "operationId": "Bank_unmatch",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "matchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Undone",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatementLineDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:reconcile"
+        ],
+        "summary": "Undo a match (reason required; flagged when a signed-off reconciliation covered it)",
+        "description": "**Requires permission:** `bank:reconcile`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnmatchRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/statement-lines/{lineId}/post": {
+      "post": {
+        "operationId": "Bank_postFromStatement",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "lineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Posted and matched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostedFromStatement"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:reconcile"
+        ],
+        "summary": "Post what is left of a statement line as a cash transaction (bank charge, interest, or any account and VAT code) dated on the line, and match it (needs cash:record too)",
+        "description": "**Requires permission:** `bank:reconcile`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostFromStatementRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/bank-accounts/{bankAccountId}/unmatched": {
+      "get": {
+        "operationId": "Bank_unmatched",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "bankAccountId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "asOf",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unmatched items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnmatchedItems"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:read"
+        ],
+        "summary": "Unmatched statement lines and ledger entries as at a date, with age buckets (0-7, 8-30, 31-60, 61+ days)",
+        "description": "**Requires permission:** `bank:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/bank-accounts/{bankAccountId}/reconciliation": {
+      "get": {
+        "operationId": "Bank_report",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "bankAccountId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "asOf",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Proof",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReconciliationReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:read"
+        ],
+        "summary": "The reconciliation proof as at a date: statement and ledger balances, each adjusted by its unmatched items; the difference must be zero",
+        "description": "**Requires permission:** `bank:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/bank-accounts/{bankAccountId}/reconciliations": {
+      "post": {
+        "operationId": "Bank_signOff",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "bankAccountId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Signed off",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReconciliationReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:reconcile"
+        ],
+        "summary": "Sign off a reconciliation: the bank's printed closing balance must equal the imported statement and the proof must have no difference; the figures are recorded once",
+        "description": "**Requires permission:** `bank:reconcile`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignOffRequest"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "Bank_signOffs",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "bankAccountId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sign-offs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignOffList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:read"
+        ],
+        "summary": "Signed-off reconciliations, latest first",
+        "description": "**Requires permission:** `bank:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -26116,6 +26837,830 @@
         ],
         "additionalProperties": false
       },
+      "StatementLineDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bankAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "importId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lineNo": {
+            "type": "integer"
+          },
+          "sourceRow": {
+            "type": "integer"
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "description": {
+            "type": "string"
+          },
+          "reference": {
+            "type": "string",
+            "nullable": true
+          },
+          "amount": {
+            "type": "string"
+          },
+          "balance": {
+            "type": "string",
+            "nullable": true
+          },
+          "matched": {
+            "type": "string"
+          },
+          "unmatched": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "UNMATCHED",
+              "PARTIAL",
+              "MATCHED",
+              "VOID"
+            ]
+          },
+          "matches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "journalLineId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "journalId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "journalNumber": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "journalDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "sourceType": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "amount": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "MANUAL",
+                    "SUGGESTION",
+                    "POSTED_FROM_STATEMENT"
+                  ]
+                },
+                "overrideReason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "ACTIVE",
+                    "UNMATCHED"
+                  ]
+                },
+                "unmatchReason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "afterSignOff": {
+                  "type": "boolean",
+                  "description": "Undone although a signed-off reconciliation covered it"
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "unmatchedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "journalLineId",
+                "journalId",
+                "journalNumber",
+                "journalDate",
+                "sourceType",
+                "amount",
+                "kind",
+                "overrideReason",
+                "status",
+                "unmatchReason",
+                "afterSignOff",
+                "createdByUserId",
+                "createdAt",
+                "unmatchedAt"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "bankAccountId",
+          "importId",
+          "lineNo",
+          "sourceRow",
+          "date",
+          "description",
+          "reference",
+          "amount",
+          "balance",
+          "matched",
+          "unmatched",
+          "status",
+          "matches"
+        ],
+        "additionalProperties": false
+      },
+      "MatchSuggestions": {
+        "type": "object",
+        "properties": {
+          "bankAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "notice": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "statementLineId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "date": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "reference": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "unmatched": {
+                  "type": "string"
+                },
+                "ambiguous": {
+                  "type": "boolean"
+                },
+                "candidates": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "journalLineId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "journalId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "journalNumber": {
+                        "type": "integer"
+                      },
+                      "date": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "sourceType": {
+                        "type": "string"
+                      },
+                      "reference": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "description": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "amount": {
+                        "type": "string"
+                      },
+                      "score": {
+                        "type": "number"
+                      },
+                      "reasons": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "journalLineId",
+                      "journalId",
+                      "journalNumber",
+                      "date",
+                      "sourceType",
+                      "reference",
+                      "description",
+                      "amount",
+                      "score",
+                      "reasons"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "proposal": {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "CHARGE",
+                        "INTEREST"
+                      ]
+                    },
+                    "accountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "accountId"
+                  ],
+                  "additionalProperties": false,
+                  "nullable": true
+                }
+              },
+              "required": [
+                "statementLineId",
+                "date",
+                "description",
+                "reference",
+                "unmatched",
+                "ambiguous",
+                "candidates",
+                "proposal"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "bankAccountId",
+          "currency",
+          "notice",
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "UnmatchedItems": {
+        "type": "object",
+        "properties": {
+          "bankAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "asOf": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "statement": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "string"
+              },
+              "buckets": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "integer"
+                    },
+                    "total": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "count",
+                    "total"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "required": [
+              "count",
+              "total",
+              "buckets",
+              "items"
+            ],
+            "additionalProperties": false
+          },
+          "ledger": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "string"
+              },
+              "buckets": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "integer"
+                    },
+                    "total": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "count",
+                    "total"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "required": [
+              "count",
+              "total",
+              "buckets",
+              "items"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "bankAccountId",
+          "currency",
+          "asOf",
+          "statement",
+          "ledger"
+        ],
+        "additionalProperties": false
+      },
+      "ReconciliationReport": {
+        "type": "object",
+        "properties": {
+          "bankAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "asOf": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "statementBalance": {
+            "type": "string"
+          },
+          "unmatchedStatement": {
+            "type": "string"
+          },
+          "adjustedStatement": {
+            "type": "string"
+          },
+          "ledgerBalance": {
+            "type": "string"
+          },
+          "unmatchedLedger": {
+            "type": "string"
+          },
+          "adjustedLedger": {
+            "type": "string"
+          },
+          "difference": {
+            "type": "string"
+          },
+          "opening": {
+            "type": "object",
+            "properties": {
+              "date": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "statement": {
+                "type": "string"
+              },
+              "ledger": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "date",
+              "statement",
+              "ledger"
+            ],
+            "additionalProperties": false
+          },
+          "reconciled": {
+            "type": "boolean"
+          },
+          "unmatchedStatementLines": {
+            "type": "integer"
+          },
+          "unmatchedLedgerLines": {
+            "type": "integer"
+          },
+          "lastSignOff": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "asAt": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "signedByUserId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "signedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "id",
+              "asAt",
+              "signedByUserId",
+              "signedAt"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "signOff": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "asAt": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "signedByUserId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "id",
+              "asAt",
+              "signedByUserId"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "bankAccountId",
+          "currency",
+          "asOf",
+          "statementBalance",
+          "unmatchedStatement",
+          "adjustedStatement",
+          "ledgerBalance",
+          "unmatchedLedger",
+          "adjustedLedger",
+          "difference",
+          "opening",
+          "reconciled",
+          "unmatchedStatementLines",
+          "unmatchedLedgerLines",
+          "lastSignOff",
+          "explanation"
+        ],
+        "additionalProperties": false
+      },
+      "SignOffList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "asAt": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "bankClosingBalance": {
+                  "type": "string"
+                },
+                "statementBalance": {
+                  "type": "string"
+                },
+                "ledgerBalance": {
+                  "type": "string"
+                },
+                "unmatchedStatement": {
+                  "type": "string"
+                },
+                "unmatchedLedger": {
+                  "type": "string"
+                },
+                "unmatchedStatementLines": {
+                  "type": "integer"
+                },
+                "unmatchedLedgerLines": {
+                  "type": "integer"
+                },
+                "notes": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "signedByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "signedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "asAt",
+                "bankClosingBalance",
+                "statementBalance",
+                "ledgerBalance",
+                "unmatchedStatement",
+                "unmatchedLedger",
+                "unmatchedStatementLines",
+                "unmatchedLedgerLines",
+                "notes",
+                "signedByUserId",
+                "signedAt"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "PostedFromStatement": {
+        "type": "object",
+        "properties": {
+          "cashTransaction": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "line": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "bankAccountId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "importId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "lineNo": {
+                "type": "integer"
+              },
+              "sourceRow": {
+                "type": "integer"
+              },
+              "date": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "description": {
+                "type": "string"
+              },
+              "reference": {
+                "type": "string",
+                "nullable": true
+              },
+              "amount": {
+                "type": "string"
+              },
+              "balance": {
+                "type": "string",
+                "nullable": true
+              },
+              "matched": {
+                "type": "string"
+              },
+              "unmatched": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "UNMATCHED",
+                  "PARTIAL",
+                  "MATCHED",
+                  "VOID"
+                ]
+              },
+              "matches": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "journalLineId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "journalId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "journalNumber": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "journalDate": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                      "nullable": true
+                    },
+                    "sourceType": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "amount": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "MANUAL",
+                        "SUGGESTION",
+                        "POSTED_FROM_STATEMENT"
+                      ]
+                    },
+                    "overrideReason": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ACTIVE",
+                        "UNMATCHED"
+                      ]
+                    },
+                    "unmatchReason": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "afterSignOff": {
+                      "type": "boolean",
+                      "description": "Undone although a signed-off reconciliation covered it"
+                    },
+                    "createdByUserId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "unmatchedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "journalLineId",
+                    "journalId",
+                    "journalNumber",
+                    "journalDate",
+                    "sourceType",
+                    "amount",
+                    "kind",
+                    "overrideReason",
+                    "status",
+                    "unmatchReason",
+                    "afterSignOff",
+                    "createdByUserId",
+                    "createdAt",
+                    "unmatchedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "id",
+              "bankAccountId",
+              "importId",
+              "lineNo",
+              "sourceRow",
+              "date",
+              "description",
+              "reference",
+              "amount",
+              "balance",
+              "matched",
+              "unmatched",
+              "status",
+              "matches"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "cashTransaction",
+          "line"
+        ],
+        "additionalProperties": false
+      },
       "PurchasePayment": {
         "type": "object",
         "properties": {
@@ -32739,7 +34284,8 @@
                 "cash:record",
                 "bank:read",
                 "bank:manage",
-                "bank:transfer"
+                "bank:transfer",
+                "bank:reconcile"
               ]
             },
             "minItems": 1
@@ -36734,6 +38280,113 @@
         },
         "required": [
           "reason"
+        ],
+        "additionalProperties": false
+      },
+      "CreateBankMatchRequest": {
+        "type": "object",
+        "properties": {
+          "statementLineId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "journalLineId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^\\d{1,15}(\\.\\d{1,4})?$"
+          },
+          "overrideReason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          },
+          "fromSuggestion": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "statementLineId",
+          "journalLineId"
+        ],
+        "additionalProperties": false
+      },
+      "UnmatchRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "PostFromStatementRequest": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "CHARGE",
+              "INTEREST",
+              "OTHER"
+            ]
+          },
+          "accountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "taxCodeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "duplicateOverrideReason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          },
+          "negativeCashReason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      "SignOffRequest": {
+        "type": "object",
+        "properties": {
+          "asOf": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "bankClosingBalance": {
+            "type": "string",
+            "pattern": "^-?\\d{1,15}(\\.\\d{1,4})?$"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "asOf",
+          "bankClosingBalance"
         ],
         "additionalProperties": false
       },

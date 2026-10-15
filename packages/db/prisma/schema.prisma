@@ -2045,3 +2045,54 @@ model BankTransfer {
   @@index([organisationId, companyId, transferDate], map: "bank_transfer_date_idx")
   @@map("bank_transfer")
 }
+
+/// M7b (DEC-042): a statement line matched to a ledger entry on the bank account. Never edited; undone with a reason. Written only by ReconciliationService.
+model BankMatch {
+  id                String    @id @db.Uuid
+  organisationId    String    @map("organisation_id") @db.Uuid
+  companyId         String    @map("company_id") @db.Uuid
+  bankAccountId     String    @map("bank_account_id") @db.Uuid
+  statementLineId   String    @map("statement_line_id") @db.Uuid
+  journalLineId     String    @map("journal_line_id") @db.Uuid
+  journalId         String    @map("journal_id") @db.Uuid
+  amount            Decimal   @db.Decimal(19, 4)
+  kind              String
+  overrideReason    String?   @map("override_reason")
+  status            String    @default("ACTIVE")
+  unmatchedByUserId String?   @map("unmatched_by_user_id") @db.Uuid
+  unmatchedAt       DateTime? @map("unmatched_at") @db.Timestamptz(3)
+  unmatchReason     String?   @map("unmatch_reason")
+  afterSignOff      Boolean   @default(false) @map("after_sign_off")
+  createdByUserId   String    @map("created_by_user_id") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@index([organisationId, statementLineId], map: "bank_match_line_idx")
+  @@index([organisationId, journalLineId], map: "bank_match_journal_line_idx")
+  @@index([organisationId, bankAccountId, status], map: "bank_match_account_idx")
+  @@map("bank_match")
+}
+
+/// M7b (DEC-042): a signed-off bank reconciliation - the proved figures as at a date, recorded once.
+model BankReconciliation {
+  id                      String   @id @db.Uuid
+  organisationId          String   @map("organisation_id") @db.Uuid
+  companyId               String   @map("company_id") @db.Uuid
+  bankAccountId           String   @map("bank_account_id") @db.Uuid
+  asAt                    DateTime @map("as_at") @db.Date
+  bankClosingBalance      Decimal  @map("bank_closing_balance") @db.Decimal(19, 4)
+  statementBalance        Decimal  @map("statement_balance") @db.Decimal(19, 4)
+  ledgerBalance           Decimal  @map("ledger_balance") @db.Decimal(19, 4)
+  unmatchedStatement      Decimal  @map("unmatched_statement") @db.Decimal(19, 4)
+  unmatchedLedger         Decimal  @map("unmatched_ledger") @db.Decimal(19, 4)
+  difference              Decimal  @db.Decimal(19, 4)
+  unmatchedStatementLines Int      @map("unmatched_statement_lines")
+  unmatchedLedgerLines    Int      @map("unmatched_ledger_lines")
+  notes                   String?
+  signedByUserId          String   @map("signed_by_user_id") @db.Uuid
+  signedAt                DateTime @default(now()) @map("signed_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@index([organisationId, bankAccountId, asAt], map: "bank_reconciliation_account_idx")
+  @@map("bank_reconciliation")
+}
