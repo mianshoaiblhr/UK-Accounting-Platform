@@ -6,6 +6,7 @@ import { parseFeatureDefaults } from '@uk/contracts';
 import { AiGateway, AiProposalService, EventBus, FeatureFlagService, IntegrationService, NotificationDeliverySweeper, NotificationService, OutboxRelay, TaskReminderSweeper, WorkflowEngine, WorkflowOverdueSweeper, collectPlatformMetrics, WorkflowRegistry, createAiProviders, createIntegrationRegistry, createNotificationChannels, createOcrProvider, dispatchViaJobs, type AiProvider, type OcrProvider } from '@uk/platform';
 import { registerAi, registerConsumers, registerEventDispatch, registerIntegrations } from './handlers/platform';
 import { registerDocument } from './handlers/document';
+import { registerBankImport } from './handlers/bank';
 import { registerEcho } from './handlers/echo';
 import { registerEmail } from './handlers/email';
 
@@ -30,7 +31,9 @@ export function startWorker(config: AppConfig, logger: Logger = createLogger(con
   const aiProviders = createAiProviders(config);
   const features = new FeatureFlagService(db, parseFeatureDefaults(config.FEATURE_FLAG_DEFAULTS), { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA, ttlMs: config.FEATURE_FLAG_CACHE_MS });
   const ocr = createOcrProvider(config);
-  registerDocument(runtime, { db, storage: createStorage(config), av: createAntivirus(config), features, jobs: producer, ocr });
+  const storage = createStorage(config);
+  registerDocument(runtime, { db, storage, av: createAntivirus(config), features, jobs: producer, ocr });
+  registerBankImport(runtime, { db, storage, captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA });
   registerAi(runtime, { features, db, gateway: new AiGateway(aiProviders, logger, db), proposals: new AiProposalService(new WorkflowEngine(new WorkflowRegistry(), { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA })) });
   registerIntegrations(runtime, { db, service: new IntegrationService(createIntegrationRegistry(config), crypto) });
   runtime.start();

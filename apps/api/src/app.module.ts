@@ -1,6 +1,7 @@
 import { Module, type DynamicModule } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
-import type { AppConfig } from '@uk/core';
+import { FieldEncryption, type AppConfig } from '@uk/core';
+import { BankStatementService } from '@uk/platform';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { AuthGuard } from './common/auth.guard';
@@ -16,6 +17,7 @@ import { VatApiService, VatController } from './ledger/vat.controller';
 import { SalesApiService, SalesController } from './sales/sales.controller';
 import { PurchasesApiService, PurchasesController } from './purchases/purchases.controller';
 import { CashApiService, CashController } from './cash/cash.controller';
+import { BankApiService, BankController } from './bank/bank.controller';
 import { ReferenceController } from './master-data/reference.controller';
 import { FeatureFlagsController } from './features/features.controller';
 import { ProblemFilter } from './common/problem.filter';
@@ -41,7 +43,7 @@ import { OrganisationsController } from './organisations/organisations.controlle
 import { OrganisationsService } from './organisations/organisations.service';
 import { LedgerController } from './ledger/ledger.controller';
 import { LedgerApiService } from './ledger/ledger.service';
-import { CashService, PurchasesService, SalesService, VatService, AccountService, FxSettingsService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, RateService, RevaluationService } from '@uk/accounting';
+import { BankService, CashService, PurchasesService, SalesService, VatService, AccountService, FxSettingsService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, RateService, RevaluationService } from '@uk/accounting';
 
 @Module({})
 export class AppModule {
@@ -50,7 +52,7 @@ export class AppModule {
       module: AppModule,
       imports: [InfraModule.forRoot(config), AuditModule, AuthModule],
       controllers: [HealthController, OrganisationsController, CompaniesController, DocumentsController, FoldersController, EvidenceController, JobsController,
-        TasksController, PracticesController, FeatureFlagsController, MasterDataController, ReferenceController, WorkflowsController, NotificationsController, IntegrationsController, AiController, LedgerController, ContactRolesController, VatController, SalesController, PurchasesController, CashController],
+        TasksController, PracticesController, FeatureFlagsController, MasterDataController, ReferenceController, WorkflowsController, NotificationsController, IntegrationsController, AiController, LedgerController, ContactRolesController, VatController, SalesController, PurchasesController, CashController, BankController],
       providers: [
         { provide: PostingService, useFactory: () => new PostingService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: AccountService, useFactory: () => new AccountService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
@@ -58,6 +60,8 @@ export class AppModule {
         { provide: SalesService, useFactory: () => new SalesService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: PurchasesService, useFactory: () => new PurchasesService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: CashService, useFactory: () => new CashService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
+        { provide: BankService, useFactory: () => new BankService({ crypto: new FieldEncryption(config.FIELD_ENCRYPTION_KEY), captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
+        { provide: BankStatementService, useFactory: () => new BankStatementService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: RateService, useFactory: () => new RateService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: FxSettingsService, useFactory: () => new FxSettingsService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: RevaluationService, inject: [RateService, PostingService], useFactory: (rates: RateService, posting: PostingService) => new RevaluationService(rates, posting, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
@@ -66,7 +70,7 @@ export class AppModule {
         { provide: LedgerPolicyService, useFactory: () => new LedgerPolicyService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: JournalRequestService, inject: [PostingService, LedgerPolicyService], useFactory: (posting: PostingService, policies: LedgerPolicyService) => new JournalRequestService(posting, policies, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         LedgerApiService,
-        OrganisationsService, PracticesService, MasterDataService, ContactRolesService, VatApiService, SalesApiService, PurchasesApiService, CashApiService, CompaniesService, DocumentsService, FoldersService, EvidenceService, TasksService,
+        OrganisationsService, PracticesService, MasterDataService, ContactRolesService, VatApiService, SalesApiService, PurchasesApiService, CashApiService, BankApiService, CompaniesService, DocumentsService, FoldersService, EvidenceService, TasksService,
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_GUARD, useClass: OrgGuard },
         { provide: APP_GUARD, useClass: FeatureGuard },

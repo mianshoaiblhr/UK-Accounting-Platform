@@ -88,6 +88,8 @@ export const JOURNAL_SOURCES: Record<string, JournalSourceDef> = {
   CASH_PAYMENT: { actors: ['USER'], permission: 'cash:record', controlAccounts: true, controlKinds: ['BANK', 'CASH'], subLedger: true, description: 'Money out without a source document (Dr expense or asset / Dr input VAT / Cr bank or cash)' },
   CASH_RECEIPT: { actors: ['USER'], permission: 'cash:record', controlAccounts: true, controlKinds: ['BANK', 'CASH'], subLedger: true, description: 'Money in without a source document (Dr bank or cash / Cr income / Cr output VAT)' },
   CASH_PAYMENT_REVERSAL: { actors: ['USER'], permission: 'cash:record', controlAccounts: true, controlKinds: ['BANK', 'CASH', 'VAT_CONTROL'], subLedger: true, description: 'Mirror reversal of a cash payment (same lines, same VAT rate versions)' },
+  BANK_TRANSFER: { actors: ['USER'], permission: 'bank:transfer', controlAccounts: true, controlKinds: ['BANK', 'CASH'], subLedger: true, description: 'Money moved between two bank or cash accounts (Dr receiving / Cr paying)' },
+  BANK_TRANSFER_REVERSAL: { actors: ['USER'], permission: 'bank:transfer', controlAccounts: true, controlKinds: ['BANK', 'CASH'], subLedger: true, description: 'Mirror reversal of a transfer' },
   CASH_RECEIPT_REVERSAL: { actors: ['USER'], permission: 'cash:record', controlAccounts: true, controlKinds: ['BANK', 'CASH', 'VAT_CONTROL'], subLedger: true, description: 'Mirror reversal of a cash receipt (same lines, same VAT rate versions)' },
 };
 export const isJournalSource = (s: string) => Object.prototype.hasOwnProperty.call(JOURNAL_SOURCES, s);

@@ -171,6 +171,17 @@ describe('database access paths that carry security meaning', () => {
     expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/cash.ts']);
     expect(read(`${ROOT}/packages/accounting/src/cash.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany)|INSERT INTO\s+"?journal/);
   });
+  it('bank accounts and transfers have one writer (M7a), the only code that sees bank-account details in clear, posting only through the PostingService', () => {
+    const WRITE = /\.(bankAccount|bankTransfer)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(bank_account|bank_transfer)"?\b/i;
+    expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/bank.ts']);
+    expect(SRC.filter((f) => /accountDetailsEnc|account_details_enc/.test(read(f))).map(rel)).toEqual(['packages/accounting/src/bank.ts']);
+    expect(read(`${ROOT}/packages/accounting/src/bank.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany)|INSERT INTO\s+"?journal/);
+  });
+  it('bank statements are staged by one writer in the platform package, which never posts (ADR-61)', () => {
+    const WRITE = /\.(bankStatementImport|bankStatementLine)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(bank_statement_import|bank_statement_line)"?\b/i;
+    expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/platform/src/bank-statements.ts']);
+    expect(read(`${ROOT}/packages/platform/src/bank-statements.ts`)).not.toMatch(/PostingService|\.journal(Line)?\.(create|createMany)|app\.posting/);
+  });
   it('customer and supplier roles have one writer (M4a), and only it touches supplier bank-detail ciphertext', () => {
     const WRITE = /\.(contactRole|customerProfile|supplierProfile)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(contact_role|customer_profile|supplier_profile)"?\b/i;
     expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['apps/api/src/master-data/contact-roles.service.ts']);

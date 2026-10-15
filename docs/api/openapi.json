@@ -16514,6 +16514,1264 @@
         }
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/bank-accounts": {
+      "post": {
+        "operationId": "Bank_create",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankAccount"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:manage"
+        ],
+        "summary": "Create a bank account over a CURRENT_ASSET_BANK ledger account: currency, encrypted account details, the bank statement opening point",
+        "description": "**Requires permission:** `bank:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBankAccountRequest"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "Bank_list",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "CLOSED"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankAccountList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:read"
+        ],
+        "summary": "Bank accounts with ledger and statement balances and unmatched-line counts",
+        "description": "**Requires permission:** `bank:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/bank-accounts/{bankAccountId}": {
+      "get": {
+        "operationId": "Bank_get",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "bankAccountId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankAccount"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:read"
+        ],
+        "summary": "One bank account",
+        "description": "**Requires permission:** `bank:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "Bank_update",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "bankAccountId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankAccount"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:manage"
+        ],
+        "summary": "Edit a bank account (reason required; the statement opening point is fixed once lines exist)",
+        "description": "**Requires permission:** `bank:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBankAccountRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/bank-accounts/{bankAccountId}/close": {
+      "post": {
+        "operationId": "Bank_close",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "bankAccountId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Closed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankAccount"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:manage"
+        ],
+        "summary": "Close a bank account (reason required)",
+        "description": "**Requires permission:** `bank:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseBankAccountRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/bank-accounts/{bankAccountId}/details": {
+      "get": {
+        "operationId": "Bank_details",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "bankAccountId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankAccountDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:manage"
+        ],
+        "summary": "The full account details (bank:manage; every read is audited)",
+        "description": "**Requires permission:** `bank:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/bank-accounts/{bankAccountId}/statement-imports": {
+      "post": {
+        "operationId": "Bank_requestImport",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "bankAccountId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatementImport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:manage"
+        ],
+        "summary": "Import a CSV statement (an uploaded, scanned company document) with a column mapping. Runs as a background job: all or nothing, row errors reported, lines already present skipped. The same file again needs a reason",
+        "description": "**Requires permission:** `bank:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestStatementImportRequest"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "Bank_imports",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "bankAccountId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatementImportPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:read"
+        ],
+        "summary": "Statement imports of an account, newest first",
+        "description": "**Requires permission:** `bank:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/statement-imports/{importId}": {
+      "get": {
+        "operationId": "Bank_getImport",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "importId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Import",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatementImport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:read"
+        ],
+        "summary": "One statement import with its outcome (counts, row errors)",
+        "description": "**Requires permission:** `bank:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/statement-imports/{importId}/void": {
+      "post": {
+        "operationId": "Bank_voidImport",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "importId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Voided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatementImport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:manage"
+        ],
+        "summary": "Void a completed import while none of its lines is matched (reason required); its lines stay visible as void and can be imported again",
+        "description": "**Requires permission:** `bank:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoidStatementImportRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/bank-accounts/{bankAccountId}/statement-lines": {
+      "get": {
+        "operationId": "Bank_lines",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "bankAccountId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "UNMATCHED",
+                "PARTIAL",
+                "MATCHED",
+                "VOID"
+              ]
+            }
+          },
+          {
+            "name": "importId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatementLinePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:read"
+        ],
+        "summary": "Statement lines in date order (filter by status, import or dates)",
+        "description": "**Requires permission:** `bank:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/bank-transfers": {
+      "post": {
+        "operationId": "Bank_transfer",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Recorded and posted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankTransfer"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:transfer"
+        ],
+        "summary": "Move money between two bank or cash accounts of the same currency (one journal; cash in hand below zero needs a reason)",
+        "description": "**Requires permission:** `bank:transfer`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBankTransferRequest"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "Bank_transfers",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "accountId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "POSTED",
+                "REVERSED"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankTransferPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:read"
+        ],
+        "summary": "Transfers (filter by account, status or dates)",
+        "description": "**Requires permission:** `bank:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/bank-transfers/{transferId}": {
+      "get": {
+        "operationId": "Bank_getTransfer",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "transferId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transfer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankTransfer"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:read"
+        ],
+        "summary": "One transfer",
+        "description": "**Requires permission:** `bank:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/bank-transfers/{transferId}/reverse": {
+      "post": {
+        "operationId": "Bank_reverseTransfer",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "transferId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reversed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankTransfer"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Bank"
+        ],
+        "x-required-feature": "bookkeeping.core",
+        "x-required-permissions": [
+          "bank:transfer"
+        ],
+        "summary": "Reverse a transfer by its exact mirror journal (reason required)",
+        "description": "**Requires permission:** `bank:transfer`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReverseBankTransferRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -17487,6 +18745,9 @@
     },
     {
       "name": "Purchases"
+    },
+    {
+      "name": "Bank"
     },
     {
       "name": "Cash"
@@ -23812,6 +25073,1025 @@
                 "net",
                 "vat",
                 "gross",
+                "journalId",
+                "duplicateOverrideReason",
+                "status",
+                "reversalJournalId",
+                "reversedByUserId",
+                "reversedAt",
+                "reversedReason",
+                "createdByUserId",
+                "createdAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false
+      },
+      "BankAccount": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "accountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "accountCode": {
+            "type": "string"
+          },
+          "accountName": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "bankName": {
+            "type": "string",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "detailsMasked": {
+            "type": "string",
+            "nullable": true,
+            "description": "Sort code, account number, IBAN and BIC are stored encrypted; only this masked form is listed"
+          },
+          "statementOpeningDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "statementOpeningBalance": {
+            "type": "string"
+          },
+          "chargesAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "interestReceivedAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "interestPaidAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "ledgerBalance": {
+            "type": "string",
+            "description": "Balance of the ledger account in the account currency"
+          },
+          "statement": {
+            "type": "object",
+            "properties": {
+              "lines": {
+                "type": "integer"
+              },
+              "balance": {
+                "type": "string",
+                "description": "Statement opening balance plus every imported line"
+              },
+              "lastDate": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "nullable": true
+              },
+              "unmatchedLines": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "lines",
+              "balance",
+              "lastDate",
+              "unmatchedLines"
+            ],
+            "additionalProperties": false
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "CLOSED"
+            ]
+          },
+          "closedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "closedReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "accountId",
+          "accountCode",
+          "accountName",
+          "name",
+          "bankName",
+          "currency",
+          "detailsMasked",
+          "statementOpeningDate",
+          "statementOpeningBalance",
+          "chargesAccountId",
+          "interestReceivedAccountId",
+          "interestPaidAccountId",
+          "ledgerBalance",
+          "statement",
+          "status",
+          "closedAt",
+          "closedReason",
+          "createdByUserId",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "BankAccountList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "accountCode": {
+                  "type": "string"
+                },
+                "accountName": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "bankName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "currency": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 3
+                },
+                "detailsMasked": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Sort code, account number, IBAN and BIC are stored encrypted; only this masked form is listed"
+                },
+                "statementOpeningDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "statementOpeningBalance": {
+                  "type": "string"
+                },
+                "chargesAccountId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "interestReceivedAccountId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "interestPaidAccountId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "ledgerBalance": {
+                  "type": "string",
+                  "description": "Balance of the ledger account in the account currency"
+                },
+                "statement": {
+                  "type": "object",
+                  "properties": {
+                    "lines": {
+                      "type": "integer"
+                    },
+                    "balance": {
+                      "type": "string",
+                      "description": "Statement opening balance plus every imported line"
+                    },
+                    "lastDate": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                      "nullable": true
+                    },
+                    "unmatchedLines": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "lines",
+                    "balance",
+                    "lastDate",
+                    "unmatchedLines"
+                  ],
+                  "additionalProperties": false
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "ACTIVE",
+                    "CLOSED"
+                  ]
+                },
+                "closedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "closedReason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "accountId",
+                "accountCode",
+                "accountName",
+                "name",
+                "bankName",
+                "currency",
+                "detailsMasked",
+                "statementOpeningDate",
+                "statementOpeningBalance",
+                "chargesAccountId",
+                "interestReceivedAccountId",
+                "interestPaidAccountId",
+                "ledgerBalance",
+                "statement",
+                "status",
+                "closedAt",
+                "closedReason",
+                "createdByUserId",
+                "createdAt"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "BankAccountDetails": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "details": {
+            "type": "object",
+            "properties": {
+              "sortCode": {
+                "type": "string"
+              },
+              "accountNumber": {
+                "type": "string"
+              },
+              "iban": {
+                "type": "string"
+              },
+              "bic": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false,
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "details"
+        ],
+        "additionalProperties": false
+      },
+      "StatementImport": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bankAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "documentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "documentVersionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fileSha256": {
+            "type": "string"
+          },
+          "mapping": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "COMPLETED",
+              "FAILED",
+              "VOID"
+            ]
+          },
+          "jobId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "The job record (GET /jobs/{jobId}) with progress, attempts and failures"
+          },
+          "rowsRead": {
+            "type": "integer",
+            "nullable": true
+          },
+          "rowsImported": {
+            "type": "integer",
+            "nullable": true
+          },
+          "rowsDuplicate": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Lines already present (overlapping statements), skipped"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "row": {
+                  "type": "integer"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "row",
+                "message"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Why a FAILED import stored nothing (at most 100)"
+          },
+          "firstDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "lastDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "openingBalance": {
+            "type": "string",
+            "nullable": true
+          },
+          "closingBalance": {
+            "type": "string",
+            "nullable": true
+          },
+          "duplicateOverrideReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "requestedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "voidedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "voidedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "voidReason": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "bankAccountId",
+          "documentId",
+          "documentVersionId",
+          "fileSha256",
+          "mapping",
+          "status",
+          "jobId",
+          "rowsRead",
+          "rowsImported",
+          "rowsDuplicate",
+          "errors",
+          "firstDate",
+          "lastDate",
+          "openingBalance",
+          "closingBalance",
+          "duplicateOverrideReason",
+          "requestedByUserId",
+          "requestedAt",
+          "completedAt",
+          "voidedByUserId",
+          "voidedAt",
+          "voidReason"
+        ],
+        "additionalProperties": false
+      },
+      "StatementImportPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "bankAccountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "documentId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "documentVersionId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "fileSha256": {
+                  "type": "string"
+                },
+                "mapping": {
+                  "type": "object",
+                  "additionalProperties": {}
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "QUEUED",
+                    "COMPLETED",
+                    "FAILED",
+                    "VOID"
+                  ]
+                },
+                "jobId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true,
+                  "description": "The job record (GET /jobs/{jobId}) with progress, attempts and failures"
+                },
+                "rowsRead": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "rowsImported": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "rowsDuplicate": {
+                  "type": "integer",
+                  "nullable": true,
+                  "description": "Lines already present (overlapping statements), skipped"
+                },
+                "errors": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "row": {
+                        "type": "integer"
+                      },
+                      "message": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "row",
+                      "message"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "description": "Why a FAILED import stored nothing (at most 100)"
+                },
+                "firstDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "lastDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "openingBalance": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "closingBalance": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "duplicateOverrideReason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "requestedByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "requestedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "completedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "voidedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "voidedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "voidReason": {
+                  "type": "string",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "bankAccountId",
+                "documentId",
+                "documentVersionId",
+                "fileSha256",
+                "mapping",
+                "status",
+                "jobId",
+                "rowsRead",
+                "rowsImported",
+                "rowsDuplicate",
+                "errors",
+                "firstDate",
+                "lastDate",
+                "openingBalance",
+                "closingBalance",
+                "duplicateOverrideReason",
+                "requestedByUserId",
+                "requestedAt",
+                "completedAt",
+                "voidedByUserId",
+                "voidedAt",
+                "voidReason"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false
+      },
+      "StatementLinePage": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "bankAccountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "importId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "lineNo": {
+                  "type": "integer"
+                },
+                "sourceRow": {
+                  "type": "integer"
+                },
+                "date": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "reference": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "amount": {
+                  "type": "string",
+                  "description": "Signed: positive = money in"
+                },
+                "balance": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "matched": {
+                  "type": "string"
+                },
+                "unmatched": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "UNMATCHED",
+                    "PARTIAL",
+                    "MATCHED",
+                    "VOID"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "bankAccountId",
+                "importId",
+                "lineNo",
+                "sourceRow",
+                "date",
+                "description",
+                "reference",
+                "amount",
+                "balance",
+                "matched",
+                "unmatched",
+                "status"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "currency",
+          "nextCursor",
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "BankTransfer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fromAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "toAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "transferDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "amount": {
+            "type": "string"
+          },
+          "reference": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string"
+          },
+          "journalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "duplicateOverrideReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "POSTED",
+              "REVERSED"
+            ]
+          },
+          "reversalJournalId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "reversedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "reversedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "reversedReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "balanceWarnings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "accountCode": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "BANK",
+                    "CASH"
+                  ]
+                },
+                "lowestBalance": {
+                  "type": "string"
+                },
+                "onDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "overridden": {
+                  "type": "boolean",
+                  "description": "Cash in hand: true when the person gave a negativeCashReason (otherwise the posting is refused)"
+                }
+              },
+              "required": [
+                "accountId",
+                "accountCode",
+                "kind",
+                "lowestBalance",
+                "onDate",
+                "overridden"
+              ],
+              "additionalProperties": false,
+              "description": "DEC-036/037: an account this posting lowers that is below zero on its date or a later date. A bank account is a warning (overdraft); cash in hand needs a reason"
+            },
+            "description": "Returned when recording or reversing"
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "fromAccountId",
+          "toAccountId",
+          "transferDate",
+          "currency",
+          "amount",
+          "reference",
+          "description",
+          "journalId",
+          "duplicateOverrideReason",
+          "status",
+          "reversalJournalId",
+          "reversedByUserId",
+          "reversedAt",
+          "reversedReason",
+          "createdByUserId",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "BankTransferPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "fromAccountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "toAccountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "transferDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "currency": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 3
+                },
+                "amount": {
+                  "type": "string"
+                },
+                "reference": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "description": {
+                  "type": "string"
+                },
+                "journalId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "duplicateOverrideReason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "POSTED",
+                    "REVERSED"
+                  ]
+                },
+                "reversalJournalId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "reversedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "reversedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "reversedReason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "fromAccountId",
+                "toAccountId",
+                "transferDate",
+                "currency",
+                "amount",
+                "reference",
+                "description",
                 "journalId",
                 "duplicateOverrideReason",
                 "status",
@@ -30456,7 +32736,10 @@
                 "purchases:manage",
                 "purchases:approve",
                 "cash:read",
-                "cash:record"
+                "cash:record",
+                "bank:read",
+                "bank:manage",
+                "bank:transfer"
               ]
             },
             "minItems": 1
@@ -34040,6 +36323,417 @@
         },
         "required": [
           "documentId"
+        ],
+        "additionalProperties": false
+      },
+      "CreateBankAccountRequest": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "bankName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "details": {
+            "type": "object",
+            "properties": {
+              "sortCode": {
+                "type": "string",
+                "pattern": "^\\d{2}-?\\d{2}-?\\d{2}$"
+              },
+              "accountNumber": {
+                "type": "string",
+                "pattern": "^\\d{8}$"
+              },
+              "iban": {
+                "type": "string"
+              },
+              "bic": {
+                "type": "string",
+                "pattern": "^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$"
+              }
+            },
+            "additionalProperties": false
+          },
+          "statementOpeningDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "statementOpeningBalance": {
+            "type": "string",
+            "pattern": "^-?\\d{1,15}(\\.\\d{1,4})?$",
+            "default": "0"
+          },
+          "chargesAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "interestReceivedAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "interestPaidAccountId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "accountId",
+          "name",
+          "statementOpeningDate"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateBankAccountRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "bankName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "nullable": true
+          },
+          "details": {
+            "type": "object",
+            "properties": {
+              "sortCode": {
+                "type": "string",
+                "pattern": "^\\d{2}-?\\d{2}-?\\d{2}$"
+              },
+              "accountNumber": {
+                "type": "string",
+                "pattern": "^\\d{8}$"
+              },
+              "iban": {
+                "type": "string"
+              },
+              "bic": {
+                "type": "string",
+                "pattern": "^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$"
+              }
+            },
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "statementOpeningDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "statementOpeningBalance": {
+            "type": "string",
+            "pattern": "^-?\\d{1,15}(\\.\\d{1,4})?$"
+          },
+          "chargesAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "interestReceivedAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "interestPaidAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "CloseBankAccountRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "RequestStatementImportRequest": {
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mapping": {
+            "type": "object",
+            "properties": {
+              "hasHeader": {
+                "type": "boolean",
+                "default": true
+              },
+              "delimiter": {
+                "type": "string",
+                "enum": [
+                  ",",
+                  ";",
+                  "\t",
+                  "|"
+                ],
+                "default": ","
+              },
+              "dateColumn": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 200
+                  }
+                ]
+              },
+              "dateFormat": {
+                "type": "string",
+                "enum": [
+                  "DD/MM/YYYY",
+                  "YYYY-MM-DD",
+                  "DD-MM-YYYY",
+                  "MM/DD/YYYY",
+                  "DD MMM YYYY",
+                  "DD/MM/YY"
+                ]
+              },
+              "descriptionColumn": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 200
+                  }
+                ]
+              },
+              "referenceColumn": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 200
+                  }
+                ]
+              },
+              "amountColumn": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 200
+                  }
+                ]
+              },
+              "moneyInColumn": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 200
+                  }
+                ]
+              },
+              "moneyOutColumn": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 200
+                  }
+                ]
+              },
+              "invertSign": {
+                "type": "boolean",
+                "default": false
+              },
+              "balanceColumn": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 200
+                  }
+                ]
+              }
+            },
+            "required": [
+              "dateColumn",
+              "dateFormat",
+              "descriptionColumn"
+            ],
+            "additionalProperties": false
+          },
+          "duplicateOverrideReason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "documentId",
+          "versionId",
+          "mapping"
+        ],
+        "additionalProperties": false
+      },
+      "VoidStatementImportRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "CreateBankTransferRequest": {
+        "type": "object",
+        "properties": {
+          "fromAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "toAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "transferDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^\\d{1,15}(\\.\\d{1,4})?$"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "rateId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "duplicateOverrideReason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          },
+          "negativeCashReason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "fromAccountId",
+          "toAccountId",
+          "transferDate",
+          "amount",
+          "description"
+        ],
+        "additionalProperties": false
+      },
+      "ReverseBankTransferRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 1000
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "negativeCashReason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "reason"
         ],
         "additionalProperties": false
       },

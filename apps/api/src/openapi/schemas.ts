@@ -252,6 +252,36 @@ export const PayablesReconciliation = z.object({
     difference: z.string(), differenceFunctional: z.string(), otherPostings: z.array(z.object({ sourceType: z.string(), original: z.string(), functional: z.string() })) })),
 });
 
+// ───────────── Bank (M7a) ─────────────
+export const BankAccountView = z.object({
+  id: uuid, companyId: uuid, accountId: uuid, accountCode: z.string(), accountName: z.string(), name: z.string(), bankName: z.string().nullable(), currency: z.string().length(3),
+  detailsMasked: z.string().nullable().describe('Sort code, account number, IBAN and BIC are stored encrypted; only this masked form is listed'),
+  statementOpeningDate: day, statementOpeningBalance: z.string(), chargesAccountId: uuid.nullable(), interestReceivedAccountId: uuid.nullable(), interestPaidAccountId: uuid.nullable(),
+  ledgerBalance: z.string().describe('Balance of the ledger account in the account currency'),
+  statement: z.object({ lines: z.number().int(), balance: z.string().describe('Statement opening balance plus every imported line'), lastDate: day.nullable(), unmatchedLines: z.number().int() }),
+  status: z.enum(['ACTIVE', 'CLOSED']), closedAt: ts.nullable(), closedReason: z.string().nullable(), createdByUserId: uuid, createdAt: ts,
+});
+export const BankAccountList = z.object({ items: z.array(BankAccountView) });
+export const BankAccountDetails = z.object({ id: uuid, details: z.object({ sortCode: z.string().optional(), accountNumber: z.string().optional(), iban: z.string().optional(), bic: z.string().optional() }).nullable() });
+export const StatementImport = z.object({
+  id: uuid, companyId: uuid, bankAccountId: uuid, documentId: uuid, documentVersionId: uuid, fileSha256: z.string(), mapping: z.record(z.unknown()),
+  status: z.enum(['QUEUED', 'COMPLETED', 'FAILED', 'VOID']), jobId: uuid.nullable().describe('The job record (GET /jobs/{jobId}) with progress, attempts and failures'),
+  rowsRead: z.number().int().nullable(), rowsImported: z.number().int().nullable(), rowsDuplicate: z.number().int().nullable().describe('Lines already present (overlapping statements), skipped'),
+  errors: z.array(z.object({ row: z.number().int(), message: z.string() })).describe('Why a FAILED import stored nothing (at most 100)'),
+  firstDate: day.nullable(), lastDate: day.nullable(), openingBalance: z.string().nullable(), closingBalance: z.string().nullable(), duplicateOverrideReason: z.string().nullable(),
+  requestedByUserId: uuid, requestedAt: ts, completedAt: ts.nullable(), voidedByUserId: uuid.nullable(), voidedAt: ts.nullable(), voidReason: z.string().nullable(),
+});
+export const StatementImportPage = z.object({ items: z.array(StatementImport), nextCursor: z.string().nullable() });
+export const StatementLinePage = z.object({ currency: z.string().length(3), nextCursor: z.string().nullable(), items: z.array(z.object({
+  id: uuid, bankAccountId: uuid, importId: uuid, lineNo: z.number().int(), sourceRow: z.number().int(), date: day, description: z.string(), reference: z.string().nullable(),
+  amount: z.string().describe('Signed: positive = money in'), balance: z.string().nullable(), matched: z.string(), unmatched: z.string(), status: z.enum(['UNMATCHED', 'PARTIAL', 'MATCHED', 'VOID']) })) });
+export const BankTransferBase = z.object({
+  id: uuid, companyId: uuid, fromAccountId: uuid, toAccountId: uuid, transferDate: day, currency: z.string().length(3), amount: z.string(), reference: z.string().nullable(), description: z.string(), journalId: uuid,
+  duplicateOverrideReason: z.string().nullable(), status: z.enum(['POSTED', 'REVERSED']), reversalJournalId: uuid.nullable(), reversedByUserId: uuid.nullable(), reversedAt: ts.nullable(), reversedReason: z.string().nullable(),
+  createdByUserId: uuid, createdAt: ts,
+});
+export const BankTransferPage = z.object({ items: z.array(BankTransferBase), nextCursor: z.string().nullable() });
+
 // ───────────── Cash transactions (M6c) ─────────────
 export const BalanceWarning = z.object({ accountId: uuid, accountCode: z.string(), kind: z.enum(['BANK', 'CASH']), lowestBalance: z.string(), onDate: day,
   overridden: z.boolean().describe('Cash in hand: true when the person gave a negativeCashReason (otherwise the posting is refused)') })
@@ -267,6 +297,7 @@ export const CashTransaction = CashTransactionBase.extend({
   balanceWarnings: z.array(BalanceWarning).optional().describe('Returned when recording or reversing'),
 });
 export const CashTransactionPage = z.object({ items: z.array(CashTransactionBase), nextCursor: z.string().nullable() });
+export const BankTransfer = BankTransferBase.extend({ balanceWarnings: z.array(BalanceWarning).optional().describe('Returned when recording or reversing') });
 
 // ───────────── Supplier payments, statement, aged payables (M6b) ─────────────
 export const PurchasePaymentBase = z.object({

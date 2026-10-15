@@ -59,6 +59,12 @@ export const JobTypes = {
     retry: { attempts: 3, backoffMs: 5_000 },
     schema: z.object({ purpose: z.string().max(100), input: z.string().max(20_000), companyId: z.string().uuid().optional() }),
   }),
+  /** M7a (DEC-040, ADR-61): parse and stage a CSV bank statement; never posts. */
+  bankStatementImport: defineJob({
+    type: 'bank.statement.import', queue: 'imports',
+    retry: { attempts: 3, backoffMs: 5_000 },
+    schema: z.object({ importId: z.string().uuid() }),
+  }),
   systemEcho: defineJob({
     type: 'system.echo', queue: 'scheduled',
     retry: { attempts: 3, backoffMs: 100 },

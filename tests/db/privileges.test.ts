@@ -51,6 +51,10 @@ const FORBIDDEN: Record<string, string[]> = {
   purchase_payment: ['DELETE', 'TRUNCATE'],        // POSTED -> REVERSED once, never removed; immutable by trigger
   cash_transaction: ['DELETE', 'TRUNCATE'],        // POSTED -> REVERSED once by a proven mirror; immutable by trigger
   cash_transaction_line: ['UPDATE', 'DELETE', 'TRUNCATE'], // written once with its transaction
+  bank_account: ['DELETE', 'TRUNCATE'],            // closed, never deleted
+  bank_statement_import: ['DELETE', 'TRUNCATE'],   // QUEUED -> COMPLETED | FAILED, COMPLETED -> VOID (trigger)
+  bank_statement_line: ['DELETE', 'TRUNCATE'],     // facts from the bank: only voided / matched_amount move (trigger)
+  bank_transfer: ['DELETE', 'TRUNCATE'],           // POSTED -> REVERSED once by a proven mirror
   notification_preference: ['DELETE', 'TRUNCATE'], // toggled, never removed
   notification_delivery: ['DELETE', 'TRUNCATE'],   // planned deliveries are final once handled
   outbox_event: ['TRUNCATE'],                    // DELETE is system-context only (RLS) and trigger-guarded

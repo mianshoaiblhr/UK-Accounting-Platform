@@ -1927,3 +1927,121 @@ model CashTransactionLine {
   @@index([organisationId, companyId, transactionId], map: "cash_transaction_line_org_idx")
   @@map("cash_transaction_line")
 }
+
+/// M7a (DEC-039): what the bank knows about a CURRENT_ASSET_BANK ledger account. Written only by BankService (accounting).
+model BankAccount {
+  id                        String    @id @db.Uuid
+  organisationId            String    @map("organisation_id") @db.Uuid
+  companyId                 String    @map("company_id") @db.Uuid
+  accountId                 String    @unique(map: "bank_account_ledger_account_key") @map("account_id") @db.Uuid
+  name                      String
+  bankName                  String?   @map("bank_name")
+  currency                  String    @db.Char(3)
+  accountDetailsEnc         String?   @map("account_details_enc")
+  accountDetailsMasked      String?   @map("account_details_masked")
+  statementOpeningDate      DateTime  @map("statement_opening_date") @db.Date
+  statementOpeningBalance   Decimal   @default(0) @map("statement_opening_balance") @db.Decimal(19, 4)
+  chargesAccountId          String?   @map("charges_account_id") @db.Uuid
+  interestReceivedAccountId String?   @map("interest_received_account_id") @db.Uuid
+  interestPaidAccountId     String?   @map("interest_paid_account_id") @db.Uuid
+  status                    String    @default("ACTIVE")
+  closedAt                  DateTime? @map("closed_at") @db.Timestamptz(3)
+  closedByUserId            String?   @map("closed_by_user_id") @db.Uuid
+  closedReason              String?   @map("closed_reason")
+  createdByUserId           String    @map("created_by_user_id") @db.Uuid
+  createdAt                 DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                 DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@unique([organisationId, companyId, id], map: "bank_account_company_id_id_key")
+  @@index([organisationId, companyId, status], map: "bank_account_company_idx")
+  @@map("bank_account")
+}
+
+/// M7a (DEC-040, ADR-61): one CSV statement imported into one bank account. Written only by the statement importer (platform).
+model BankStatementImport {
+  id                      String    @id @db.Uuid
+  organisationId          String    @map("organisation_id") @db.Uuid
+  companyId               String    @map("company_id") @db.Uuid
+  bankAccountId           String    @map("bank_account_id") @db.Uuid
+  documentId              String    @map("document_id") @db.Uuid
+  documentVersionId       String    @map("document_version_id") @db.Uuid
+  fileSha256              String    @map("file_sha256") @db.Char(64)
+  mapping                 Json
+  status                  String    @default("QUEUED")
+  jobId                   String?   @map("job_id") @db.Uuid
+  rowsRead                Int?      @map("rows_read")
+  rowsImported            Int?      @map("rows_imported")
+  rowsDuplicate           Int?      @map("rows_duplicate")
+  errors                  Json?
+  firstDate               DateTime? @map("first_date") @db.Date
+  lastDate                DateTime? @map("last_date") @db.Date
+  openingBalance          Decimal?  @map("opening_balance") @db.Decimal(19, 4)
+  closingBalance          Decimal?  @map("closing_balance") @db.Decimal(19, 4)
+  duplicateOverrideReason String?   @map("duplicate_override_reason")
+  requestedByUserId       String    @map("requested_by_user_id") @db.Uuid
+  requestedAt             DateTime  @default(now()) @map("requested_at") @db.Timestamptz(3)
+  completedAt             DateTime? @map("completed_at") @db.Timestamptz(3)
+  voidedByUserId          String?   @map("voided_by_user_id") @db.Uuid
+  voidedAt                DateTime? @map("voided_at") @db.Timestamptz(3)
+  voidReason              String?   @map("void_reason")
+  updatedAt               DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@index([organisationId, bankAccountId, requestedAt], map: "bank_statement_import_account_idx")
+  @@index([organisationId, bankAccountId, fileSha256], map: "bank_statement_import_sha_idx")
+  @@map("bank_statement_import")
+}
+
+/// M7a (DEC-040): a line of a bank statement - a fact from the bank, never edited. Signed amount in the account currency (+ money in).
+model BankStatementLine {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId  String   @map("organisation_id") @db.Uuid
+  companyId       String   @map("company_id") @db.Uuid
+  bankAccountId   String   @map("bank_account_id") @db.Uuid
+  importId        String   @map("import_id") @db.Uuid
+  lineNo          Int      @map("line_no")
+  sourceRow       Int      @map("source_row")
+  transactionDate DateTime @map("transaction_date") @db.Date
+  description     String
+  reference       String?
+  amount          Decimal  @db.Decimal(19, 4)
+  balance         Decimal? @db.Decimal(19, 4)
+  fingerprint     String   @db.Char(64)
+  matchedAmount   Decimal  @default(0) @map("matched_amount") @db.Decimal(19, 4)
+  voided          Boolean  @default(false)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@unique([importId, lineNo], map: "bank_statement_line_no_key")
+  @@index([organisationId, bankAccountId, transactionDate], map: "bank_statement_line_account_idx")
+  @@map("bank_statement_line")
+}
+
+/// M7a (DEC-041): money moved between two bank or cash accounts of the company, one balanced journal. Written only by BankService.
+model BankTransfer {
+  id                      String    @id @db.Uuid
+  organisationId          String    @map("organisation_id") @db.Uuid
+  companyId               String    @map("company_id") @db.Uuid
+  fromAccountId           String    @map("from_account_id") @db.Uuid
+  toAccountId             String    @map("to_account_id") @db.Uuid
+  transferDate            DateTime  @map("transfer_date") @db.Date
+  currency                String    @db.Char(3)
+  amount                  Decimal   @db.Decimal(19, 4)
+  reference               String?
+  description             String
+  journalId               String    @map("journal_id") @db.Uuid
+  duplicateOverrideReason String?   @map("duplicate_override_reason")
+  status                  String    @default("POSTED")
+  reversalJournalId       String?   @map("reversal_journal_id") @db.Uuid
+  reversedByUserId        String?   @map("reversed_by_user_id") @db.Uuid
+  reversedAt              DateTime? @map("reversed_at") @db.Timestamptz(3)
+  reversedReason          String?   @map("reversed_reason")
+  createdByUserId         String    @map("created_by_user_id") @db.Uuid
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@index([organisationId, companyId, transferDate], map: "bank_transfer_date_idx")
+  @@map("bank_transfer")
+}

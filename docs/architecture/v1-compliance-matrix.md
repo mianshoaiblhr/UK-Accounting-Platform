@@ -2,7 +2,7 @@
 
 Source requirements: docs/specifications/V1_Core_Bookkeeping.md, 00_MASTER_IMPLEMENTATION_MANIFEST.md (non-negotiable accounting controls), 13_CROSS_PLATFORM_PRODUCT_REQUIREMENTS.md.
 
-Generated from `v1-compliance-matrix.json` at commit `7f4adad`; CI: <https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/38798396155>. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
+Generated from `v1-compliance-matrix.json`. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
 
 ## Plan history (append-only)
 
@@ -18,14 +18,15 @@ Generated from `v1-compliance-matrix.json` at commit `7f4adad`; CI: <https://git
 * v2.8 (2026-10-13, DEC-033/034): M6a purchase documents implemented. V1-MOD-07, V1-EX-02, V1-EX-05, V1-CTL-02 -> Implemented; V1-MOD-05 -> Partially implemented (payments M6b); evidence extended on V1-VAT-04/05/08, V1-CON-02, MAN-ACC-08, including two VAT direction fixes for credits. No rows added or removed.
 * v2.9 (2026-10-13, DEC-035): M6b supplier payments implemented. V1-MOD-09, V1-EX-04, V1-MOD-05, V1-FX-07, V1-CON-02 -> Implemented; evidence extended on XP-07. No rows added or removed.
 * v3.0 (2026-10-15, DEC-036/037): M6c cash transactions and the negative-cash control implemented. V1-MOD-11 -> Implemented; V1-CTL-04 -> Partially implemented (at posting; dashboard M8). No rows added or removed.
+* v3.1 (2026-10-15, DEC-038..041): M7a bank accounts, CSV statement import (asynchronous, staged by the worker), statement lines and transfers implemented. V1-MOD-10, V1-BANK-01, V1-BANK-02, V1-BANK-03, V1-BANK-06 -> Implemented. No rows added or removed.
 
 ## Summary
 
 | Status | Rows |
 |---|---|
-| IMPLEMENTED | 70 (61% of applicable) |
+| IMPLEMENTED | 75 (66% of applicable) |
 | PARTIALLY IMPLEMENTED | 18 (15% of applicable) |
-| MISSING | 25 (22% of applicable) |
+| MISSING | 20 (17% of applicable) |
 | NOT APPLICABLE | 0 |
 | **Total** | **113** |
 
@@ -39,7 +40,7 @@ Generated from `v1-compliance-matrix.json` at commit `7f4adad`; CI: <https://git
 | M4 | M4a contact roles (customer/supplier, DEC-011, DEC-023) and M4b VAT foundation - standard VAT accounting (DEC-010, DEC-021) | M4a VERIFIED (206b14d; v1-m4a-acceptance.md); M4b VERIFIED (6fb1938; v1-m4b-acceptance.md). VAT rules usable only after verification by the firm's holder of tax:rule-verify | Engineering (build); product owner + qualified tax reviewer (rule verification) | M1-M3 accepted (DEC-008, DEC-015, DEC-019); M4b: verification of each VAT rule by a holder of tax:rule-verify (DEC-021); primary sources not readable in this sandbox (DEC-022) | 25 | 17 |
 | M5 | Sales: invoices, credit notes, receipts; duplicate-document check | M5a VERIFIED (e698562; v1-m5a-acceptance.md); M5b VERIFIED (376aec6; v1-m5b-acceptance.md); M5c (VAT on foreign-currency documents) to be specified (DEC-031) | Engineering | M2; M3; M4 | 8 | 7 |
 | M6 | Purchases: bills, debit notes, payments, cash | M6a VERIFIED (16c7f12; v1-m6a-acceptance.md); M6b VERIFIED (a753db0; v1-m6b-acceptance.md); M6c VERIFIED (7f4adad; v1-m6c-acceptance.md) | Engineering | M5 patterns; M3; M4 | 6 | 6 |
-| M7 | Bank accounts, statement import (async), transfers, charges, interest, reconciliation | PLANNED | Engineering | M5; M6 | 15 | 0 |
+| M7 | Bank accounts, statement import (async), transfers, charges, interest, reconciliation | M7a bank accounts, CSV statement import, statement lines, transfers built (DEC-038..041), acceptance package after CI; M7b reconciliation specified (DEC-042) | Engineering | M5; M6 | 15 | 5 |
 | M8 | Profit and loss, balance sheet, drill-down to documents, controls and alerts, FX reporting | PLANNED | Engineering | M3; M5; M6; M7 | 8 | 0 |
 | M9 | V1 UI slices behind feature flags (DEC-002) | PLANNED - runs in parallel from M2 | Engineering (front end) | API of the milestone each screen uses | 1 | 0 |
 | Privacy track (parallel to V1) | Privacy finding on session / challenge IP and user agent (DEC-013) | INVESTIGATION DELIVERED - finding UNRESOLVED, awaiting privacy review (never resolved without it) | Engineering (investigation); DPO / legal (decisions) | DEC-003 retention review | 1 | 0 |
@@ -202,22 +203,22 @@ A milestone is accepted by the product owner on an acceptance package: commit SH
 
 ## M7 - Bank accounts, statement import (async), transfers, charges, interest, reconciliation
 
-**Status:** PLANNED  
+**Status:** M7a bank accounts, CSV statement import, statement lines, transfers built (DEC-038..041), acceptance package after CI; M7b reconciliation specified (DEC-042)  
 **Owner:** Engineering  
 **Depends on:** M5; M6  
-**Acceptance:** To be written when the milestone is specified  
+**Acceptance:** Plan section 11: M7a imports (header, running balance, in/out columns, date formats, all-or-nothing row errors, duplicate file, overlap, identical genuine lines, void and re-import), transfers with the negative-cash rule, database guards, permissions and isolation; M7b as DEC-042.  
 **Deferred scope:** Open Banking and bank feeds (V11), AI match suggestions (V6)
 
 | ID | Reference | Requirement | Status | Owner | Dependencies | Acceptance criteria | Deferred scope | Evidence | Notes |
 |---|---|---|---|---|---|---|---|---|---|
-| **V1-MOD-10** | V1 Modules | Bank Accounts | **MISSING** | Engineering | M1 | Bank accounts as ledger accounts with bank details (field-encrypted), account currency, opening balance via M2 controls. | Open Banking feeds (V11) |  |  |
+| **V1-MOD-10** | V1 Modules | Bank Accounts | **IMPLEMENTED** | Engineering | M1 | Bank accounts as ledger accounts with bank details (field-encrypted), account currency, opening balance via M2 controls. | Open Banking feeds (V11) | Bank accounts (bank_account) sit on exactly one CURRENT_ASSET_BANK ledger account of the company (database-proven), with currency, bank name, sort code / account number / IBAN (mod-97 checked) / BIC encrypted with the platform field key and shown only masked (full details through an audited read by bank:manage), the bank's statement opening date and balance (fixed once lines exist), charges and interest accounts for M7b, close with reason. The ledger opening balance still goes through the M2 request. Tests: tests/platform/bank.test.ts, tests/db/bank.test.ts, tests/api/bank.test.ts | M7a delivered (DEC-039). |
 | **V1-MOD-18** | V1 Modules | Reconciliation | **MISSING** | Engineering | M7 | Bank reconciliation states matched / partial / unmatched / suggested / manual override with audit; reconciled balance proves to the statement. | AI suggestions (V6) |  |  |
-| **V1-BANK-01** | V1 Bank | Bank accounts | **MISSING** | Engineering | M7 | Bank accounts created and linked to ledger accounts. | - |  |  |
-| **V1-BANK-02** | V1 Bank | Statement imports | **MISSING** | Engineering | M7 | CSV statement import as an asynchronous job with progress, retry and duplicate detection (job_record); other formats are decisions. | OFX/MT940/Open Banking |  | Asynchronous job with progress; file formats to be decided in the M4 design |
-| **V1-BANK-03** | V1 Bank | Transactions | **MISSING** | Engineering | M7 | Imported transactions stored immutably with their import batch; never edited. | - |  |  |
+| **V1-BANK-01** | V1 Bank | Bank accounts | **IMPLEMENTED** | Engineering | M7 | Bank accounts created and linked to ledger accounts. | - | Bank accounts are created over ledger accounts (one each, CURRENT_ASSET_BANK only, never deleted) and listed with ledger balance, statement balance and unmatched-line count. Tests: tests/platform/bank.test.ts, tests/db/bank.test.ts, tests/api/bank.test.ts |  |
+| **V1-BANK-02** | V1 Bank | Statement imports | **IMPLEMENTED** | Engineering | M7 | CSV statement import as an asynchronous job with progress, retry and duplicate detection (job_record); other formats are decisions. | OFX/MT940/Open Banking | CSV statements uploaded as scanned company documents are imported by the bank.statement.import job on the imports queue (progress, retries, failures and result on the job record; the worker never posts, ADR-61): column mapping by header or position, six date formats, signed or in/out amounts, optional running balance proved row by row in either file order, all or nothing with up to 100 row errors, the same file refused without a reason, overlapping lines skipped by fingerprint while genuine identical lines are kept, a wrong import voided while unmatched and re-imported. OFX/MT940/Open Banking deferred (DEC-038). Tests: tests/unit/bank-statements.test.ts, tests/platform/bank.test.ts, tests/db/bank.test.ts, tests/api/bank.test.ts (real worker) | M7a delivered (DEC-040). |
+| **V1-BANK-03** | V1 Bank | Transactions | **IMPLEMENTED** | Engineering | M7 | Imported transactions stored immutably with their import batch; never edited. | - | Statement lines are stored only by their own import while it runs, linked to it, and never edited or deleted (database triggers and privileges); only `voided` (with the import) and the matched part (M7b, under its own flag) can move. Tests: tests/db/bank.test.ts |  |
 | **V1-BANK-04** | V1 Bank | Reconciliation | **MISSING** | Engineering | M7 | Reconciliation workflow on transactions. | - |  |  |
 | **V1-BANK-05** | V1 Bank | Unmatched items | **MISSING** | Engineering | M7 | Unmatched list with ageing and a count visible on the dashboard. | - |  |  |
-| **V1-BANK-06** | V1 Bank | Transfers | **MISSING** | Engineering | M7 | Transfers between bank accounts post one balanced journal; both statements match it. | - |  |  |
+| **V1-BANK-06** | V1 Bank | Transfers | **IMPLEMENTED** | Engineering | M7 | Transfers between bank accounts post one balanced journal; both statements match it. | - | A transfer between two bank or cash accounts of the same currency posts one BANK_TRANSFER journal (Dr receiving / Cr paying) through the PostingService: the negative-cash rule applies to the paying side, an overdrawn bank warns; same foreign currency at one rate with no exchange difference; cross-currency refused (deferred, DEC-041); duplicate check with reason; mirror reversal proven by the database; never reversed in the ledger. Matching both statements to it is M7b. Tests: tests/platform/bank.test.ts, tests/db/bank.test.ts, tests/api/bank.test.ts | Statement matching of transfers comes with M7b reconciliation. |
 | **V1-BANK-07** | V1 Bank | Bank charges | **MISSING** | Engineering | M7 | Bank charges recognised from statements and posted to the charges account. | - |  |  |
 | **V1-BANK-08** | V1 Bank | Interest | **MISSING** | Engineering | M7 | Interest recognised from statements and posted to interest income/expense. | - |  |  |
 | **V1-REC-01** | V1 Reconciliation | Matched | **MISSING** | Engineering | M7 | Matched pairs link a statement line to ledger entries and cannot be changed without an audited un-match. | - |  |  |

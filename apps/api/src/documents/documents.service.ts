@@ -114,6 +114,9 @@ export class DocumentsService {
     return d;
   }
 
+  /** For other modules that consume a stored file (bank statement import): the caller must be able to read the document (ADR-32 visibility included). */
+  async readableVersion(org: OrgAccess, documentId: string, versionId: string) { return this.getVersion(org, documentId, versionId, 'document:read'); }
+
   private async getVersion(org: OrgAccess, documentId: string, versionId: string, perm: Permission) {
     await this.getDocument(org, documentId, perm);
     const v = await this.t(org, (tx) => tx.documentVersion.findFirst({ where: { id: versionId, documentId } }));
