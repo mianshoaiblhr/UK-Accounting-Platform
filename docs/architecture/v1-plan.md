@@ -21,7 +21,7 @@ Tenant isolation by forced row-level security; one central authoriser for compan
 | M6c | Cash transactions without documents and the negative-cash control (DEC-036, DEC-037) | **verified** (code baseline `7f4adad`; package `v1-m6c-acceptance.md`) | Engineering | M6b |
 | M7a | Bank accounts, CSV statement import (asynchronous), statement lines, transfers (DEC-038..041) | **verified** (code baseline `e100429`; package `v1-m7a-acceptance.md`) | Engineering | M6c |
 | M7b | Reconciliation, charges and interest from statements, unmatched ageing (DEC-042) | built (section 11.2a); acceptance package after CI | Engineering | M7a |
-| M8 | P&L, balance sheet, drill-down, controls and alerts, FX reporting | planned | Engineering | M3, M5-M7 |
+| M8 | P&L, balance sheet, drill-down, controls and alerts, FX reporting (DEC-043..045) | specified (section 12) | Engineering | M3, M5-M7 |
 | M9 | V1 UI slices behind feature flags (DEC-002) | planned, parallel from M2 | Engineering (front end) | the API each screen uses |
 | Privacy track | Session / challenge IP and user agent (DEC-013) | investigation in progress, **never marked resolved without review** | Engineering; DPO / legal | DEC-003 |
 
@@ -396,3 +396,9 @@ As DEC-042: matching (one-to-many both ways), unmatch, override reason, suggesti
 * **Code:** `ReconciliationService` (`packages/accounting/src/reconciliation.ts`) is the only writer of both tables; posting from a statement line goes through `CashService`. A bank account with unmatched lines cannot close. Statement lines must be dated after the statement opening date (its balance is the opening balance), so nothing is counted twice in the proof. The API adds 9 routes.
 * **Proof:** as at D, (opening statement balance + lines to D - unmatched statement) - (ledger to D - unmatched ledger after the opening date). Unmatched parts are measured as at D (a match counts only when both sides are dated on or before D), so the difference is exactly the disagreement of the opening points.
 * **Hand-calculated evidence:** the month in `tests/platform/reconciliation.test.ts` (statement 514.75; ledger 474.75; one unpresented cheque of 40.00, 26 days old; a 200.00 counter credit matched to two lodgements of 120.00 and 80.00; a 6.50 charge and 1.25 interest posted from the statement; suggestion score 145 = 100 - 5 for one day + 50 for the reference).
+
+## 12. M8 - Reports, drill-down, alerts (specification; DEC-043..045)
+Recorded before code under the delegation (DEC-019).
+* **Code:** `ReportService` (statements and the FX report; reads journal lines, accounts, periods and rates only), `DrillDownService` (one resolver per journal source), `AlertService`; the period service gains the two new controls.
+* **API:** `GET reports/profit-and-loss`, `GET reports/balance-sheet`, `GET reports/fx`, `GET journals/{id}/source`, `GET alerts`; the period close and lock bodies gain the two acknowledgements.
+* **Acceptance:** a hand-calculated company year through sales, purchases, cash, bank, VAT and FX: P&L and balance sheet figures, both reconciling to the trial balance to the cent, with comparatives; drill-down from a statement line to the document for every journal source; every alert raised and cleared; close and lock refused and acknowledged; the FX report matching the revaluation.
