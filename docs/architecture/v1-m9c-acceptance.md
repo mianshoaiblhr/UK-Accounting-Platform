@@ -7,8 +7,8 @@ Prepared under the product owner's delegation (DEC-019, DEC-048..050). This is m
 |---|---|
 | Code baseline commit | `c0cad12` (branch `claude/adoring-cori-mra6ze`); specification recorded before code in `45b2289` (plan section 13.3) |
 | CI | CI_RESULT |
-| CodeQL | CODEQL_RESULT |
-| Clean clone of `c0cad12` | CLEAN_CLONE_RESULT |
+| CodeQL | **success**: run 38973214250 on `c0cad12` |
+| Clean clone of `c0cad12` | install, build, typecheck, lint: exit 0; **1881 tests passed**; e2e **21/21**; OpenAPI drift 0 |
 | Local runs | e2e **21/21** (V0 journeys 4, M9a 7, M9b 6, M9c 4) with the real worker; unit 248; typecheck and lint clean. No API change. The first local runs found one product fault, fixed before the push: the matched-lines list on the reconcile screen did not refresh after an action. The other failures were test-side (a wait for the VAT codes to load; two status messages on one screen) |
 
 ## 2. What M9c delivers (plan section 13.3)
