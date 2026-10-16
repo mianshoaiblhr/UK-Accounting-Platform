@@ -1116,7 +1116,7 @@
       "req": "UI workflows are usable (V1 screens)",
       "m": "M9",
       "s": "P",
-      "ev": "M9a: workspace screens usable in a real browser behind bookkeeping.core (dashboard, accounts, journals with drill-down, trial balance, general ledger, P&L, balance sheet, periods with the close and lock controls); a my-access endpoint hides what the person may not do while the API still enforces. Tests: tests/e2e/workspace.test.ts, tests/api/my-access.test.ts. Sales, purchases (M9b), bank, cash and reconciliation (M9c) screens remain.",
+      "ev": "M9a: workspace screens usable in a real browser behind bookkeeping.core (dashboard, accounts, journals with drill-down, trial balance, general ledger, P&L, balance sheet, periods with the close and lock controls); a my-access endpoint hides what the person may not do while the API still enforces. Tests: tests/e2e/workspace.test.ts, tests/api/my-access.test.ts. Sales, purchases (M9b), bank, cash and reconciliation (M9c) screens remain. M9b: sales and purchases screens (documents, new invoice and bill, approve, discard, full credit and debit notes, receipts and payments with allocation and reversal, ageing, statements) with the API's override prompts; tests/e2e/subledger.test.ts.",
       "note": "DEC-002: parallel behind feature flags",
       "owner": "Engineering (front end)",
       "deps": "M9",
@@ -1610,6 +1610,7 @@
     "v3.2 (2026-10-15, DEC-042): M7b reconciliation implemented. V1-MOD-18, V1-BANK-04, V1-BANK-07, V1-BANK-08, V1-REC-01..05 -> Implemented; V1-BANK-05 -> Partially implemented (API; the dashboard screen is M9). No rows added or removed.",
     "v3.3 (2026-10-15, DEC-043..045): M8 reports implemented. V1-MOD-16, V1-MOD-17, V1-ARC-02, V1-RPT-01, V1-RPT-02, MAN-ACC-06, MAN-ACC-07, XP-01, V1-CTL-05, MAN-ACC-08, V1-FX-09 -> Implemented; V1-CTL-03 -> Partially implemented (dashboard screen M9); evidence extended on V1-CTL-04 and V1-BANK-05. Correction: V1-MOD-03 -> Implemented (delivered by M4a, row not updated then). No rows added or removed.",
     "v3.4 (2026-10-15, DEC-046/047, M8h): V1-MOD-02 -> Implemented (customer default VAT code); V1-TEST-01 -> Implemented (posting-rule coverage registry and its gap tests); V1-ARC-01, V1-POST-06, XP-07, V1-CTL-06 -> Implemented on evidence re-checked against their acceptance criteria (no code change except the audit-trail test). No rows added or removed.",
-    "v3.5 (2026-10-15, DEC-048..050, M9a): V1-CTL-03, V1-CTL-04, V1-BANK-05 -> Implemented (the dashboard criterion met by the M9a workspace, real-browser tested); V1-DOD-01 Missing -> Partially implemented (M9a screens; M9b and M9c remain). No rows added or removed."
+    "v3.5 (2026-10-15, DEC-048..050, M9a): V1-CTL-03, V1-CTL-04, V1-BANK-05 -> Implemented (the dashboard criterion met by the M9a workspace, real-browser tested); V1-DOD-01 Missing -> Partially implemented (M9a screens; M9b and M9c remain). No rows added or removed.",
+    "v3.6 (2026-10-16, M9b): evidence added to V1-DOD-01 (sales and purchases screens); no status changes. No rows added or removed."
   ]
 }

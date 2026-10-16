@@ -2,7 +2,7 @@
 
 Source requirements: docs/specifications/V1_Core_Bookkeeping.md, 00_MASTER_IMPLEMENTATION_MANIFEST.md (non-negotiable accounting controls), 13_CROSS_PLATFORM_PRODUCT_REQUIREMENTS.md.
 
-Generated from `v1-compliance-matrix.json` at commit `34c2c1e`; CI: <https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/38822337045>. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
+Generated from `v1-compliance-matrix.json`. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
 
 ## Plan history (append-only)
 
@@ -23,6 +23,7 @@ Generated from `v1-compliance-matrix.json` at commit `34c2c1e`; CI: <https://git
 * v3.3 (2026-10-15, DEC-043..045): M8 reports implemented. V1-MOD-16, V1-MOD-17, V1-ARC-02, V1-RPT-01, V1-RPT-02, MAN-ACC-06, MAN-ACC-07, XP-01, V1-CTL-05, MAN-ACC-08, V1-FX-09 -> Implemented; V1-CTL-03 -> Partially implemented (dashboard screen M9); evidence extended on V1-CTL-04 and V1-BANK-05. Correction: V1-MOD-03 -> Implemented (delivered by M4a, row not updated then). No rows added or removed.
 * v3.4 (2026-10-15, DEC-046/047, M8h): V1-MOD-02 -> Implemented (customer default VAT code); V1-TEST-01 -> Implemented (posting-rule coverage registry and its gap tests); V1-ARC-01, V1-POST-06, XP-07, V1-CTL-06 -> Implemented on evidence re-checked against their acceptance criteria (no code change except the audit-trail test). No rows added or removed.
 * v3.5 (2026-10-15, DEC-048..050, M9a): V1-CTL-03, V1-CTL-04, V1-BANK-05 -> Implemented (the dashboard criterion met by the M9a workspace, real-browser tested); V1-DOD-01 Missing -> Partially implemented (M9a screens; M9b and M9c remain). No rows added or removed.
+* v3.6 (2026-10-16, M9b): evidence added to V1-DOD-01 (sales and purchases screens); no status changes. No rows added or removed.
 
 ## Summary
 
@@ -260,7 +261,7 @@ A milestone is accepted by the product owner on an acceptance package: commit SH
 
 | ID | Reference | Requirement | Status | Owner | Dependencies | Acceptance criteria | Deferred scope | Evidence | Notes |
 |---|---|---|---|---|---|---|---|---|---|
-| **V1-DOD-01** | Manifest definition of done | UI workflows are usable (V1 screens) | **PARTIALLY IMPLEMENTED** | Engineering (front end) | M9 | Usable end-to-end bookkeeping screens behind flags, tested against the real API, authorisation and tenant boundaries, with accessibility checks. | Mobile portal | M9a: workspace screens usable in a real browser behind bookkeeping.core (dashboard, accounts, journals with drill-down, trial balance, general ledger, P&L, balance sheet, periods with the close and lock controls); a my-access endpoint hides what the person may not do while the API still enforces. Tests: tests/e2e/workspace.test.ts, tests/api/my-access.test.ts. Sales, purchases (M9b), bank, cash and reconciliation (M9c) screens remain. | DEC-002: parallel behind feature flags |
+| **V1-DOD-01** | Manifest definition of done | UI workflows are usable (V1 screens) | **PARTIALLY IMPLEMENTED** | Engineering (front end) | M9 | Usable end-to-end bookkeeping screens behind flags, tested against the real API, authorisation and tenant boundaries, with accessibility checks. | Mobile portal | M9a: workspace screens usable in a real browser behind bookkeeping.core (dashboard, accounts, journals with drill-down, trial balance, general ledger, P&L, balance sheet, periods with the close and lock controls); a my-access endpoint hides what the person may not do while the API still enforces. Tests: tests/e2e/workspace.test.ts, tests/api/my-access.test.ts. Sales, purchases (M9b), bank, cash and reconciliation (M9c) screens remain. M9b: sales and purchases screens (documents, new invoice and bill, approve, discard, full credit and debit notes, receipts and payments with allocation and reversal, ageing, statements) with the API's override prompts; tests/e2e/subledger.test.ts. | DEC-002: parallel behind feature flags |
 
 ## Privacy track (parallel to V1) - Privacy finding on session / challenge IP and user agent (DEC-013)
 
