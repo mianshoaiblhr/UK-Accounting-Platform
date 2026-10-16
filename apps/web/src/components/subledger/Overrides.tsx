@@ -3,10 +3,15 @@ import { useState } from 'react';
 import { ApiError } from '@/lib/api';
 
 /**
- * The three refusals the API lets a person override with a reason (M9b): possible duplicate, credit limit, cash in hand below zero. The screen shows
+ * The refusals the API lets a person override with a reason (M9b, M9c): possible duplicate, credit limit, cash in hand below zero, a far-apart match, a
+ * statement file imported before. The screen shows
  * the API's message and a reason box; the request is repeated with the reason in the field the API names. Any other refusal is not handled here.
  */
-export const OVERRIDE_FIELDS: Record<string, string> = { possible_duplicate: 'duplicateOverrideReason', credit_limit_exceeded: 'creditLimitOverrideReason', negative_cash: 'negativeCashReason' };
+export const OVERRIDE_FIELDS: Record<string, string> = {
+  possible_duplicate: 'duplicateOverrideReason', credit_limit_exceeded: 'creditLimitOverrideReason', negative_cash: 'negativeCashReason',
+  // M9c: a match whose bank and ledger dates are far apart, and a statement file already imported
+  override_reason_required: 'overrideReason', statement_already_imported: 'duplicateOverrideReason',
+};
 
 export function useOverrides(fields: Record<string, string> = OVERRIDE_FIELDS) {
   const [pending, setPending] = useState<{ code: string; field: string; message: string }[]>([]);

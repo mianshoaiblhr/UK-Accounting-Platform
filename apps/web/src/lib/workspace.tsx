@@ -27,6 +27,8 @@ const SECTIONS: { href: string; label: string; permission: string }[] = [
   { href: '/periods', label: 'Periods', permission: 'period:read' },
   { href: '/sales', label: 'Sales', permission: 'sales:read' },
   { href: '/purchases', label: 'Purchases', permission: 'purchases:read' },
+  { href: '/bank', label: 'Bank', permission: 'bank:read' },
+  { href: '/cash', label: 'Cash', permission: 'cash:read' },
 ];
 
 export function WorkspaceShell({ children, need }: { children: ReactNode; need?: string }) {
