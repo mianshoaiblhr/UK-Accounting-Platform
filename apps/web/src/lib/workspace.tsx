@@ -25,6 +25,8 @@ const SECTIONS: { href: string; label: string; permission: string }[] = [
   { href: '/reports/profit-and-loss', label: 'Profit and loss', permission: 'ledger:read' },
   { href: '/reports/balance-sheet', label: 'Balance sheet', permission: 'ledger:read' },
   { href: '/periods', label: 'Periods', permission: 'period:read' },
+  { href: '/sales', label: 'Sales', permission: 'sales:read' },
+  { href: '/purchases', label: 'Purchases', permission: 'purchases:read' },
 ];
 
 export function WorkspaceShell({ children, need }: { children: ReactNode; need?: string }) {
