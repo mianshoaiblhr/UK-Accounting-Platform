@@ -6,10 +6,10 @@ Prepared under the product owner's delegation (DEC-019, DEC-048..050). This is m
 | Item | Result |
 |---|---|
 | Code baseline commit | `5854a0d` (branch `claude/adoring-cori-mra6ze`); specification recorded before code in `3248338` (plan section 13.2) |
-| CI | CI_RESULT |
-| CodeQL | CODEQL_RESULT |
-| Clean clone of `5854a0d` | CLEAN_CLONE_RESULT |
-| Local runs | e2e **17/17** (V0 journeys 4, M9a workspace 7, M9b sales and purchases 6); unit 248; typecheck and lint clean. No API change, so the API suite and OpenAPI are unchanged from M9a |
+| CI | **success**: run 38970752111 on `5854a0d` (migrations from scratch, terraform validate, S3/ClamAV, build/lint/typecheck/unit/integration/e2e, audit and secret scan, all images) |
+| CodeQL | **success**: run 38970752141 on `5854a0d` |
+| Clean clone of `5854a0d` | install, build, typecheck, lint: exit 0; **1881 tests passed**; e2e **17/17**; OpenAPI drift 0 |
+| Local runs | e2e **17/17** (V0 journeys 4, M9a workspace 7, M9b sales and purchases 6); unit 248; typecheck and lint clean. The first local browser run found three faults, all fixed before the push: draft warnings exist only in the create response (now carried to the document page), bills cannot send `taxCodeId: null` (the field is left out), and two test-side waits. No API change, so the API suite and OpenAPI are unchanged from M9a |
 
 ## 2. What M9b delivers (plan section 13.2)
 One set of components (`apps/web/src/components/subledger`) configured per side, because the sales and purchases APIs mirror each other (DEC-033).
