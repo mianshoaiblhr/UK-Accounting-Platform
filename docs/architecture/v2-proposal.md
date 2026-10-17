@@ -1,6 +1,6 @@
 # V2 proposal - Accounts Production (FRS 102 / FRS 105)
 
-**Status: PROPOSAL, not started.** Nothing in V2 is built or decided until the product owner approves this proposal (or amends it) and the V2-M0 decisions are recorded before code, as for V1. Source requirement: `docs/specifications/V2_Accounts_Production_FRS102_FRS105.md`.
+**Status: APPROVED by the product owner on 2026-10-17 as written (DEC-051).** The plan is `v2-plan.md`; the decisions are DEC-051..054. This proposal is kept unchanged as the approved text. Source requirement: `docs/specifications/V2_Accounts_Production_FRS102_FRS105.md`.
 
 ## 1. Objective
 Turn the V1 bookkeeping engine into a statutory accounts production system: year-end adjustments, a fixed-asset register, a guided year-end, statutory statements with notes and policies under FRS 105 and FRS 102, review controls, partner review and client approval, ending in a filing-ready package. Filing to Companies House (iXBRL) is V3, corporation tax is V4.

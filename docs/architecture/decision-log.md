@@ -258,6 +258,10 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-048 | M9 scope and split: V1 screens behind `bookkeeping.core` | M9a workspace (company home with the alert dashboard, chart of accounts, journals with drill-down, trial balance, P&L, balance sheet, periods with close and lock controls); M9b sales and purchases; M9c bank, cash and reconciliation. Every screen shows what the API returns and computes no accounting figure |
 | DEC-049 | M9: what the screen may show and do | A new read-only endpoint returns the caller's effective permissions in a company and the resolved feature flags; screens hide what the caller may not do, the API stays the only enforcement. With the flag off the bookkeeping screens are not reachable |
 | DEC-050 | M9: how screens are proven | Each slice is accepted on a real-browser test against the real stack (the V0 Playwright harness): the main path, a refusal shown to the person, and a reader who sees no action buttons; plus the web typecheck and production build in CI |
+| DEC-051 | V2 approved: Accounts Production (2026-10-17) | The product owner approved `v2-proposal.md` as written: milestones V2-M0..M7 in that order, FRS 105 before FRS 102, reporting maps into the database in V2-M1 (MAN-ACC-09), V2 under the DEC-019 delegation, development on synthetic data without waiting for V1's production gates. The qualified accountant is not yet named |
+| DEC-052 | V2: accounting-standard rules are verified by a second person | Every standard version, reporting map, disclosure rule, validation rule and size threshold is created UNVERIFIED with its source; a holder of `accounts:rule-verify` other than its author verifies it; changes create a new UNVERIFIED version. Unverified rules produce only previews marked as such; nothing filing-ready is produced from them (V2-M6). Nothing is seeded from memory |
+| DEC-053 | V2-M1 scope: the reporting framework as data | Standards and effective-dated versions; per-version statement lines with totals as data; a map from V1 reporting lines (and account subtypes) to statutory lines with per-account overrides; disclosure and validation rules as a closed expression language (no code evaluation); the framework a company reports under per financial year; statutory statements computed from the ledger through it |
+| DEC-054 | V2: golden trial balances | Each statement, note and size test is proven on a hand-calculated synthetic trial balance with its expected output written first; the expected figures are reviewed by the named accountant before a rule version is verified |
 | DEC-037 | How M6c is built (delegated, DEC-019) | The negative-cash rule lives in the PostingService and the database, so it covers every posting a person makes to cash in hand (not only cash transactions), checks every later day, and stores the reason on the journal. Cash transactions are in the company currency, have new `cash:*` permissions and a proven mirror reversal |
 
 ### DEC-033 - M6 scope and split
@@ -404,3 +408,29 @@ These choices refine DEC-036. None of them is a tax rule; the VAT arithmetic is 
 * **Real browser, real stack:** each slice adds Playwright tests to the existing e2e harness (Next.js production build behind the same-origin proxy, NestJS, Postgres, Redis, the worker): the main path end to end with synthetic data, one refusal shown to the person, and a reader without the permission who sees no action button.
 * **CI:** the web typecheck and production build already run; the e2e job runs the new tests.
 * **Acceptance per slice:** the e2e tests, the access endpoint's API tests, and a list of the screens with the API routes each uses, so it is visible that no screen computes a figure.
+
+### DEC-051 - V2 approved (product owner, 2026-10-17)
+* Approved as written in `v2-proposal.md`: V2-M0 (decisions, plan, matrix), V2-M1 reporting framework, V2-M2 fixed assets, V2-M3 year-end adjustments and the closing journal, V2-M4 director balances and related parties, V2-M5 statements and notes (FRS 105 micro-entity first, then FRS 102 Section 1A, then full FRS 102), V2-M6 year-end workflow to the filing-ready package, V2-M7 screens behind `accounts.production`.
+* MAN-ACC-09 is decided: reporting maps move into the database, effective-dated and verified, in V2-M1. V1's management statements keep the code registry (ADR-48) unchanged.
+* V2 runs under the DEC-019 delegation: engineering records each decision before code and stops at the human gates.
+* V1's production gates (DEC-006) are not a precondition for building V2 on synthetic data; they remain a precondition for production.
+* **Still open:** naming the qualified accountant (the firm grants `accounts:rule-verify`). Until then every V2 rule is UNVERIFIED and V2 produces previews only.
+* Not recorded as approved here: acceptance of V1 as a whole (readiness report 5.6, item 1) stays with the product owner.
+
+### DEC-052 - Standard-rule verification (V2)
+* New permission `accounts:rule-verify` (COMPANY scope like `tax:rule-verify`; held by owner and admin by default, granted by the firm to its named accountant).
+* Every rule record (standard version, statement line set, map version, disclosure rule, validation rule, size threshold) carries: source URL, instrument and paragraph (for example "FRS 105, Section 4", "SI 2008/409, Sch 1"), retrieval date, effective-from and effective-to, author, verifier, verification time, notes. Verification is by a different person from the author; a verified record is immutable; a change supersedes it with a new UNVERIFIED version (DEC-021 pattern, service and database).
+* Unverified records may be used for previews only; every preview says so on its face. Filing-ready output (V2-M6) refuses any unverified rule.
+
+### DEC-053 - V2-M1 reporting framework
+* **Standard** (organisation-scoped code such as FRS105, FRS102-1A, FRS102; name) with **versions** (effective dates, source, verification). Nothing is seeded.
+* **Statement lines** per version: key, statement (P&L, balance sheet, cash flow later), parent, order, kind (lines from accounts, or a total over other lines with signs), display name; the totals are data, never code.
+* **Map** per version: which V1 reporting lines (optionally narrowed by account subtype) feed which statutory line; a company may override an account's statutory line with a reason (audited). Every account in the trial balance must land on exactly one line, otherwise the preview lists the unmapped accounts.
+* **Disclosure and validation rules** as data in a closed JSON expression language (line references, constants, +, -, comparison, tolerance, applicability by entity size); evaluated by a small interpreter, never by code evaluation.
+* **Company framework per financial year:** standard version and entity size chosen for a financial year (audited; locked once the year's accounts are approved in V2-M6).
+* **Computation:** from journal lines through the map (the M8 rule: no source-document tables), with comparatives, each line drilling to its accounts; validations evaluated and listed with pass or fail.
+
+### DEC-054 - Golden trial balances
+* A synthetic trial balance per scenario (micro-entity, small FRS 102 1A, a year with fixed assets and accruals) with its expected statements and notes written by hand first, kept in `tests/golden/` as data; tests compute and compare to the cent.
+* The named accountant reviews the expected outputs before verifying the rule versions they exercise; until then the goldens prove the engine, not the standard.
+
