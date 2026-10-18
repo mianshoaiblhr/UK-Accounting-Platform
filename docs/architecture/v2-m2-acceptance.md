@@ -5,11 +5,11 @@ Prepared under the product owner's delegation (DEC-019, DEC-051), with the desig
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | @@SHA@@ (branch `claude/adoring-cori-mra6ze`); specification recorded before code in v2-plan section 4 and DEC-058 |
-| CI | @@CI@@ |
-| CodeQL | @@CODEQL@@ |
-| Clean clone | @@CLEAN@@ |
-| Local runs | @@LOCAL@@ |
+| Code baseline commit | `a9bfccf` (code), `da32ffc` (drill-down resolvers for the six sources, a lint fix) on branch `claude/adoring-cori-mra6ze`; specification recorded before code in v2-plan section 4 and DEC-058 |
+| CI | **success**: run 39159238749 on `da32ffc` (migrations from scratch, terraform validate, S3/ClamAV, build/lint/typecheck/unit/integration/e2e, audit and secret scan, all images) |
+| CodeQL | **success**: run 39159238888 on `da32ffc` |
+| Clean clone of `da32ffc` | install, build, typecheck, lint: exit 0; **2047 tests passed** (108 files); e2e **21/21**; OpenAPI drift 0 |
+| Local runs | 2047 passed; typecheck and lint clean. `a9bfccf` was committed but not pushed. Before any push, the full local run found two faults, both fixed in `da32ffc`: the drill-down registry did not yet resolve the six new sources (the drill-down coverage test caught it), and lint found an unused variable |
 
 ## 2. What V2-M2 delivers (v2-plan section 4)
 | Part | What it is | Where |
