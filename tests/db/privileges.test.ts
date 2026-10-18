@@ -57,6 +57,14 @@ const FORBIDDEN: Record<string, string[]> = {
   bank_transfer: ['DELETE', 'TRUNCATE'],           // POSTED -> REVERSED once by a proven mirror
   bank_match: ['DELETE', 'TRUNCATE'],              // ACTIVE -> UNMATCHED once with a reason (trigger)
   bank_reconciliation: ['UPDATE', 'DELETE', 'TRUNCATE'], // a sign-off is recorded once
+  reporting_standard: ['UPDATE', 'DELETE', 'TRUNCATE'],         // written once (V2-M1)
+  reporting_standard_version: ['DELETE', 'TRUNCATE'],           // verified once, superseded once; immutable once verified (trigger)
+  statutory_line: ['DELETE', 'TRUNCATE'],                       // removed by a flag while unverified (trigger)
+  statutory_map_entry: ['DELETE', 'TRUNCATE'],
+  validation_rule: ['DELETE', 'TRUNCATE'],
+  disclosure_rule: ['DELETE', 'TRUNCATE'],
+  statutory_account_override: ['DELETE', 'TRUNCATE'],           // ended once, never edited (trigger)
+  company_reporting_framework: ['DELETE', 'TRUNCATE'],          // changed with a reason while unlocked (trigger)
   notification_preference: ['DELETE', 'TRUNCATE'], // toggled, never removed
   notification_delivery: ['DELETE', 'TRUNCATE'],   // planned deliveries are final once handled
   outbox_event: ['TRUNCATE'],                    // DELETE is system-context only (RLS) and trigger-guarded

@@ -9,7 +9,7 @@ Everything in V1 plan section 1, plus: only the PostingService writes the ledger
 | Milestone | Scope | Status | Owner | Depends on |
 |---|---|---|---|---|
 | V2-M0 | Decisions DEC-051..054, ADR-62..64, this plan, the V2 matrix | **recorded** (2026-10-17) | Engineering | V2 approval |
-| V2-M1 | Reporting framework as data (section 3) | specified (section 3) | Engineering; the named accountant verifies | V2-M0 |
+| V2-M1 | Reporting framework as data (section 3) | **built** (2026-10-18; `v2-m1-acceptance.md`); rules unverified until the named accountant | Engineering; the named accountant verifies | V2-M0 |
 | V2-M2 | Fixed assets: classes, register, additions, disposals, depreciation methods, useful lives, residual values, tax vs accounting treatment, reconciliation to the ledger, depreciation runs | planned | Engineering | V2-M1 |
 | V2-M3 | Year-end adjustments: accruals, prepayments, deferred income, provisions with reversal; the year-end closing journal to retained earnings | planned | Engineering | V2-M2 |
 | V2-M4 | Director and shareholder balances (director loan movements flagged), related parties | planned | Engineering | V2-M3 |
@@ -43,6 +43,9 @@ All tables: forced row-level security by organisation; the runtime role has no D
 
 ### 3.3 Expression grammar (validation rules)
 JSON only: `{"line":"<key>"}`, `{"const":"<decimal>"}`, `{"add":[e,...]}`, `{"sub":[a,b]}`, `{"neg":e}`, and the comparisons `{"eq"|"ge"|"le"|"gt"|"lt":[a,b], "tolerance":"<decimal>"?}`, combined with `{"and":[...]}` / `{"or":[...]}`. Exact decimals, no floating point; an unknown key, a reference to a line outside the version, or a non-boolean top level is refused when the rule is written. No other construct exists.
+
+### 3.3a How it is built (DEC-055, recorded before code)
+Totals are lists of signed line references; values follow each line's natural side, P&L over the year and balance sheet at its end; retained profit is the P&L of every year to the year end until V2-M3; an account lands on exactly one line (override, else the most specific map entry) and the preview proves it; only a verified version is superseded, by a copy; content is removed by a flag while unverified; rule constants keep the ledger's scale (4 decimals); the routes are behind `accounts.production`.
 
 ### 3.4 Not in V2-M1
 Rendering notes and policies (V2-M5); the size test from turnover, balance-sheet total and employees (V2-M5); cash flow statements (V2-M5, full FRS 102 only); screens (V2-M7); seeding any real standard content (never: DEC-052).

@@ -15,3 +15,5 @@ export * from './reconciliation';
 export * from './reports';
 export * from './drilldown';
 export * from './alerts';
+export * from './statutory';
+export * from './statutory-report';

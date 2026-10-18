@@ -1,4 +1,4 @@
-# V2 Accounts Production - compliance matrix (plan version 1)
+# V2 Accounts Production - compliance matrix (plan version 2)
 
 Source requirements: docs/specifications/V2_Accounts_Production_FRS102_FRS105.md, 00_MASTER_IMPLEMENTATION_MANIFEST.md, decision-log.md DEC-051..054.
 
@@ -7,14 +7,15 @@ Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence
 ## Plan history (append-only)
 
 * v1.0 (2026-10-17, DEC-051..054): matrix created from the V2 specification at V2-M0; 60 rows, all MISSING; MAN-ACC-09 carried from the V1 matrix (decided in DEC-051, built in V2-M1).
+* v1.1 (2026-10-18, V2-M1, DEC-055): reporting framework built. Missing -> Implemented: V2-ARC-01, V2-ARC-02, V2-ARC-03, MAN-ACC-09, V2-MOD-02, V2-MOD-11, V2-OUT-06. Missing -> Partially: V2-ARC-04 (filing-ready refusal in V2-M6), V2-TEST-01 (further scenarios; review by the named accountant). No real standard content entered or verified.
 
 ## Summary
 
 | Status | Rows |
 |---|---|
-| IMPLEMENTED | 0 (0% of applicable) |
-| PARTIALLY IMPLEMENTED | 0 (0% of applicable) |
-| MISSING | 60 (100% of applicable) |
+| IMPLEMENTED | 7 (11% of applicable) |
+| PARTIALLY IMPLEMENTED | 2 (3% of applicable) |
+| MISSING | 51 (85% of applicable) |
 | NOT APPLICABLE | 0 |
 | **Total** | **60** |
 
@@ -23,7 +24,7 @@ Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence
 | Milestone | Scope | Status | Owner | Depends on | Rows | Implemented |
 |---|---|---|---|---|---|---|
 | V2-M0 | Decisions, plan, matrix, ADRs | RECORDED 2026-10-17 (DEC-051..054, ADR-62..64) | Engineering | V2 approval (DEC-051) | 0 | 0 |
-| V2-M1 | Reporting framework as data | specified (v2-plan.md section 3) | Engineering (build); qualified accountant (rules) | V2-M0 | 9 | 0 |
+| V2-M1 | Reporting framework as data | BUILT 2026-10-18 (acceptance package v2-m1-acceptance.md); rules unverified until the named accountant | Engineering (build); qualified accountant (rules) | V2-M0 | 9 | 7 |
 | V2-M2 | Fixed assets and depreciation | planned | Engineering | V2-M1 | 10 | 0 |
 | V2-M3 | Year-end adjustments and the closing journal | planned | Engineering | V2-M2 | 4 | 0 |
 | V2-M4 | Director balances and related parties | planned | Engineering | V2-M3 | 2 | 0 |
@@ -46,23 +47,23 @@ A milestone is accepted on an acceptance package: commit SHA, CI run (every job)
 
 ## V2-M1 - Reporting framework as data
 
-**Status:** specified (v2-plan.md section 3)  
+**Status:** BUILT 2026-10-18 (acceptance package v2-m1-acceptance.md); rules unverified until the named accountant  
 **Owner:** Engineering (build); qualified accountant (rules)  
 **Depends on:** V2-M0  
-**Acceptance:** v2-plan.md section 3.5  
+**Acceptance:** v2-plan.md section 3.5; v2-m1-acceptance.md  
 **Deferred scope:** Notes rendering, size test, cash flow (V2-M5); screens (V2-M7)
 
 | ID | Reference | Requirement | Status | Owner | Dependencies | Acceptance criteria | Deferred scope | Evidence | Notes |
 |---|---|---|---|---|---|---|---|---|---|
-| **V2-ARC-01** | V2 FRS Architecture | Reporting rules never hard-coded in transaction logic | **MISSING** | Engineering | ADR-62 | Statements, notes and validations come only from framework tables; an architecture test fails if transaction modules read them or if the report service reads source documents (ADR-63). | - |  |  |
-| **V2-ARC-02** | V2 FRS Architecture | Standard -> effective date -> reporting map -> disclosure rules -> validation rules | **MISSING** | Engineering (build); qualified accountant (rules) | DEC-053 | Each layer is a table keyed to an effective-dated standard version; a company's financial year selects one version; changing the version changes the output without code. | - |  |  |
-| **V2-ARC-03** | V2 FRS Architecture | Support FRS 102, FRS 105 and future standards without redesign | **MISSING** | Engineering (build); qualified accountant (rules) | V2-ARC-02 | Two synthetic standards with different layouts produce their own statements from the same ledger in tests; a third is added as data only. | - |  |  |
-| **V2-ARC-04** | DEC-052 | Every standard rule sourced and verified by a second person; unverified rules give previews only | **MISSING** | Engineering (build); qualified accountant (rules) | DEC-052 | Author cannot verify (service and database); verified records immutable; a change supersedes; previews carry verified=false and a notice; filing-ready output refuses unverified rules (V2-M6). | - |  |  |
-| **MAN-ACC-09** | Manifest accounting controls (carried from V1) | Tax and reporting rules are effective-dated/versioned | **MISSING** | Engineering (build); qualified accountant (rules) | V2-ARC-02 | Reporting maps effective-dated in the database with source and verification status (decided in DEC-051); a test proves a later version does not alter an earlier year's output. | - |  | Carried from the V1 matrix (VAT rates already effective-dated there) |
-| **V2-MOD-02** | V2 Modules | Trial balance mapping | **MISSING** | Engineering (build); qualified accountant (rules) | V2-M1 | Every account of the trial balance lands on exactly one statutory line through the map or an override; unmapped and doubly mapped accounts are listed. | - |  |  |
-| **V2-MOD-11** | V2 Modules | Comparative periods | **MISSING** | Engineering (build); qualified accountant (rules) | V2-M1 | Statements show the prior financial year on the same standard version, from the ledger. | - |  |  |
-| **V2-OUT-06** | V2 Accounts Output | Comparatives | **MISSING** | Engineering (build); qualified accountant (rules) | V2-M1 | Produced from the ledger through the verified framework and matched to the golden output to the cent. | - |  |  |
-| **V2-TEST-01** | V2 Tests | Golden trial balances and expected statutory outputs | **MISSING** | Engineering (build); qualified accountant (rules) | DEC-054 | Each scenario's expected statements and notes are hand-written data in tests/golden/ and matched to the cent; the named accountant reviews them before verifying the rules they exercise. | - |  |  |
+| **V2-ARC-01** | V2 FRS Architecture | Reporting rules never hard-coded in transaction logic | **IMPLEMENTED** | Engineering | ADR-62 | Statements, notes and validations come only from framework tables; an architecture test fails if transaction modules read them or if the report service reads source documents (ADR-63). | - | packages/accounting/src/statutory.ts, statutory-report.ts; tests/unit/architecture.test.ts ('no transaction module reads the reporting framework', 'statutory statements read the ledger and the reporting framework only', 'one writer per side'); tests/api/statutory.test.ts | Statements and validations come only from the framework tables; disclosure rules are stored as data and rendered in V2-M5 from the same tables. The expression interpreter has no code evaluation (architecture-tested). |
+| **V2-ARC-02** | V2 FRS Architecture | Standard -> effective date -> reporting map -> disclosure rules -> validation rules | **IMPLEMENTED** | Engineering (build); qualified accountant (rules) | DEC-053 | Each layer is a table keyed to an effective-dated standard version; a company's financial year selects one version; changing the version changes the output without code. | - | migration 20260119000000_v2_reporting_framework; tests/api/statutory.test.ts ('a second standard with another layout ... when the year switches to it') | Standard, effective-dated version, statement lines, map, disclosure rules and validation rules are tables keyed to the version; company_reporting_framework selects one per financial year; switching the year's version changed the output with no code change. |
+| **V2-ARC-03** | V2 FRS Architecture | Support FRS 102, FRS 105 and future standards without redesign | **IMPLEMENTED** | Engineering (build); qualified accountant (rules) | V2-ARC-02 | Two synthetic standards with different layouts produce their own statements from the same ledger in tests; a third is added as data only. | - | tests/golden/v2-m1-micro-synthetic.json (version and alternative); tests/api/statutory.test.ts | Two synthetic standards with different layouts produce their own hand-calculated statements from one ledger. A third standard is a further set of API calls (no code path names a standard). No real FRS 102 or FRS 105 content is entered (DEC-052). |
+| **V2-ARC-04** | DEC-052 | Every standard rule sourced and verified by a second person; unverified rules give previews only | **PARTIALLY IMPLEMENTED** | Engineering (build); qualified accountant (rules) | DEC-052 | Author cannot verify (service and database); verified records immutable; a change supersedes; previews carry verified=false and a notice; filing-ready output refuses unverified rules (V2-M6). | - | tests/api/statutory.test.ts ('verification by a second person'); tests/db/reporting-framework.test.ts ('verification: once, by a person other than the author ...') | Built and tested: author cannot verify (service 403 and database CHECK), verified version and its content immutable (service 409 and database trigger), changes supersede, unverified previews carry verified=false and a PREVIEW ONLY notice. Remaining: the filing-ready refusal of unverified rules lands with V2-M6. No real rule is verified until the firm names its qualified accountant. |
+| **MAN-ACC-09** | Manifest accounting controls (carried from V1) | Tax and reporting rules are effective-dated/versioned | **IMPLEMENTED** | Engineering (build); qualified accountant (rules) | V2-ARC-02 | Reporting maps effective-dated in the database with source and verification status (decided in DEC-051); a test proves a later version does not alter an earlier year's output. | - | migration 20260119000000_v2_reporting_framework; tests/api/statutory.test.ts ('a change supersedes ... the earlier year keeps the version it was prepared under, and its figures') | Mechanism only: reporting maps are in the database per effective-dated, sourced version with verification status; after a later version replaced it, the 2025 preview still came from the version 2025 chose, with the same figures. V1 management statements keep the code registry (ADR-48). The rules the firm enters remain its own and unverified until its accountant verifies them (DEC-052). |
+| **V2-MOD-02** | V2 Modules | Trial balance mapping | **IMPLEMENTED** | Engineering (build); qualified accountant (rules) | V2-M1 | Every account of the trial balance lands on exactly one statutory line through the map or an override; unmapped and doubly mapped accounts are listed. | - | tests/api/statutory.test.ts (golden: unplacedAccounts empty; broken map lists the bank loan); tests/db/reporting-framework.test.ts (unique map entry and active override) | An override wins, else the most specific map entry, else the generic one (DEC-055). Double mapping cannot occur: the database allows one live entry per (version, V1 line, subtype) and one active override per account; the preview lists unmapped and misplaced accounts and proves the P&L against the ledger and the balance sheet to zero. |
+| **V2-MOD-11** | V2 Modules | Comparative periods | **IMPLEMENTED** | Engineering (build); qualified accountant (rules) | V2-M1 | Statements show the prior financial year on the same standard version, from the ledger. | - | tests/api/statutory.test.ts (golden comparative 2025 on the 2026 version) | The prior framework year (else the twelve months before) on the current year's version, from journal lines. |
+| **V2-OUT-06** | V2 Accounts Output | Comparatives | **IMPLEMENTED** | Engineering (build); qualified accountant (rules) | V2-M1 | Produced from the ledger through the verified framework and matched to the golden output to the cent. | - | tests/golden/v2-m1-micro-synthetic.json; tests/api/statutory.test.ts ('reproduces the hand-written P&L and balance sheet to the cent, with the comparative') | Matched to the cent through a verified synthetic version (synthetic layout, not a real standard). |
+| **V2-TEST-01** | V2 Tests | Golden trial balances and expected statutory outputs | **PARTIALLY IMPLEMENTED** | Engineering (build); qualified accountant (rules) | DEC-054 | Each scenario's expected statements and notes are hand-written data in tests/golden/ and matched to the cent; the named accountant reviews them before verifying the rules they exercise. | - | tests/golden/v2-m1-micro-synthetic.json; tests/api/statutory.test.ts | One micro-entity scenario with two layouts, written by hand first and matched to the cent. One hand figure (the broken-map net assets) was wrong on first run and recalculated by hand (recorded in the golden file). Remaining: scenarios for FRS 102 Section 1A and years with fixed assets and accruals (V2-M2..M5); review of the expected outputs by the named accountant before any real rule is verified. |
 
 ## V2-M2 - Fixed assets and depreciation
 

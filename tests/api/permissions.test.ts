@@ -85,6 +85,9 @@ probes.push(
   { name: 'create bank account', perm: 'bank:manage', run: (u) => call('post', `/companies/${company.id}/bank-accounts`, {})(u) },
   { name: 'record transfer', perm: 'bank:transfer', run: (u) => call('post', `/companies/${company.id}/bank-transfers`, {})(u) },
   { name: 'match statement line', perm: 'bank:reconcile', run: (u) => call('post', `/companies/${company.id}/bank-matches`, {})(u) },
+  { name: 'author accounting standard', perm: 'accounts:rules-manage', run: (u) => call('post', `/companies/${company.id}/reporting-standards`, {})(u) },
+  { name: 'verify accounting-standard rule', perm: 'accounts:rule-verify', run: (u) => call('post', `/companies/${company.id}/reporting-standard-versions/${GHOST}/verify`, {})(u) },
+  { name: 'choose reporting framework', perm: 'accounts:prepare', run: (u) => call('put', `/companies/${company.id}/reporting-frameworks`, {})(u) },
 );
 probes.find((p) => p.name === 'create company')!.run = (u) => call('post', '/companies', { name: `Perm ${Math.random()}` })(u);
 probes.push({ name: 'create period', perm: 'period:manage', run: (u) => call('post', `/companies/${company.id}/periods`, { startDate: `${2000 + Math.floor(Math.random() * 90)}-01-01`, endDate: `${2000 + Math.floor(Math.random() * 90)}-12-31` })(u) });

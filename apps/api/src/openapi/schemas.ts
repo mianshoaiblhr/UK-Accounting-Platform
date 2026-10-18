@@ -368,3 +368,58 @@ export const SupplierStatement = z.object({ companyId: uuid, supplierRoleId: uui
 const AgedPRow = z.object({ notDue: z.string(), days1to30: z.string(), days31to60: z.string(), days61to90: z.string(), over90: z.string(), unallocatedDebits: z.string(), total: z.string(), currency: z.string().length(3) });
 export const AgedPayables = z.object({ companyId: uuid, asOf: day, suppliers: z.array(AgedPRow.extend({ supplierRoleId: uuid, accountCode: z.string().nullable(), name: z.string().nullable() })), totals: z.array(AgedPRow) });
 
+
+// ───────────── V2-M1 reporting framework (DEC-052, DEC-053, DEC-055) ─────────────
+const source = z.object({ url: z.string(), provision: z.string(), retrievedOn: day });
+const versionStatus = z.enum(['UNVERIFIED', 'VERIFIED', 'SUPERSEDED']).describe('UNVERIFIED content gives previews only; VERIFIED is immutable; SUPERSEDED was replaced by a new version');
+const sizes = z.array(z.enum(['MICRO', 'SMALL', 'MEDIUM', 'LARGE']));
+export const StandardVersion = z.object({
+  id: uuid, standardId: uuid, label: z.string(), effectiveFrom: day, effectiveTo: day.nullable(), source, notes: z.string().nullable(), status: versionStatus, copiedFromId: uuid.nullable(),
+  createdByUserId: uuid, createdAt: ts, verifiedByUserId: uuid.nullable(), verifiedAt: ts.nullable(), verificationNotes: z.string().nullable(), supersededById: uuid.nullable(),
+});
+export const StatutoryLine = z.object({
+  id: uuid, key: z.string(), statement: z.enum(['PL', 'BS']), parentKey: z.string().nullable(), sort: z.number().int(), name: z.string(), kind: z.enum(['ACCOUNTS', 'TOTAL', 'RETAINED_PROFIT']),
+  naturalSide: z.enum(['DEBIT', 'CREDIT']).nullable(), formula: z.array(z.object({ line: z.string(), sign: z.number().int() })).nullable().describe('A TOTAL: the signed lines it adds up'),
+});
+export const StatutoryMapEntry = z.object({ id: uuid, sourceLine: z.string().describe('V1 reporting line'), accountSubtype: z.string().nullable(), targetKey: z.string() });
+export const ValidationRuleView = z.object({ id: uuid, key: z.string(), description: z.string(), severity: z.enum(['ERROR', 'WARNING']), appliesTo: sizes, expression: z.record(z.unknown()).describe('Closed grammar (v2-plan 3.3)') });
+export const DisclosureRuleView = z.object({ id: uuid, key: z.string(), title: z.string(), appliesTo: sizes, requires: z.object({ lines: z.array(z.string()).optional(), facts: z.array(z.string()).optional() }) });
+export const ReportingStandard = z.object({ id: uuid, code: z.string(), name: z.string(), createdByUserId: uuid, createdAt: ts,
+  versions: z.array(z.object({ id: uuid, label: z.string(), effectiveFrom: day, effectiveTo: day.nullable(), status: versionStatus })) });
+export const StandardVersionDetail = StandardVersion.extend({
+  standard: z.object({ id: uuid, code: z.string(), name: z.string() }), lines: z.array(StatutoryLine), mapEntries: z.array(StatutoryMapEntry), validationRules: z.array(ValidationRuleView), disclosureRules: z.array(DisclosureRuleView),
+  problems: z.array(z.string()).describe('What stops the version from being verified (empty when consistent)'),
+});
+export const ContentRemoved = z.object({ id: uuid, removed: z.literal(true) });
+export const ReportingFramework = z.object({
+  id: uuid, companyId: uuid, yearStart: day, yearEnd: day, versionId: uuid, entitySize: z.enum(['MICRO', 'SMALL', 'MEDIUM', 'LARGE']), reason: z.string(), chosenByUserId: uuid, chosenAt: ts, lockedAt: ts.nullable(),
+  version: z.object({ label: z.string(), status: versionStatus, standardId: uuid }).optional(),
+});
+export const StatutoryOverride = z.object({ id: uuid, companyId: uuid, versionId: uuid, accountId: uuid, targetKey: z.string(), reason: z.string(), createdByUserId: uuid, createdAt: ts,
+  endedAt: ts.nullable(), endedByUserId: uuid.nullable(), endedReason: z.string().nullable() });
+const amount = z.string().nullable().describe('Exact decimal; null when a total cannot be computed (see problems)');
+const statutoryLineOut = z.object({
+  key: z.string(), name: z.string(), statement: z.enum(['PL', 'BS']), kind: z.enum(['ACCOUNTS', 'TOTAL', 'RETAINED_PROFIT']), parentKey: z.string().nullable(), depth: z.number().int(), amount, comparative: amount.optional(),
+  accounts: z.array(z.object({ accountId: uuid, code: z.string(), name: z.string(), amount: z.string(), drilldown: z.object({ accountId: uuid, from: day.nullable(), to: day }) })).optional(),
+});
+const unplaced = z.object({ accountId: uuid, code: z.string(), name: z.string(), type: z.string(), reportingLine: z.string(), subtype: z.string(), reason: z.enum(['unmapped', 'statement_mismatch']), targetKey: z.string().nullable(),
+  net: z.string().describe('Debits less credits'), drilldown: z.object({ accountId: uuid, from: day.nullable(), to: day }) });
+const statutoryProof = z.object({
+  profitAndLoss: z.object({ profitFromLedger: z.string(), profitFromLines: z.string(), difference: z.string(), reconciled: z.boolean() }),
+  balanceSheet: z.object({ difference: z.string(), balanced: z.boolean() }),
+  trialBalance: z.object({ debit: z.string(), credit: z.string(), balanced: z.boolean() }),
+});
+export const StatutoryPreview = z.object({
+  companyId: uuid, companyName: z.string(), currency: z.string(),
+  year: z.object({ start: day, end: day, entitySize: z.enum(['MICRO', 'SMALL', 'MEDIUM', 'LARGE']), frameworkId: uuid }),
+  comparative: z.object({ start: day, end: day, fromFramework: z.boolean() }).nullable(),
+  standard: z.object({ id: uuid, code: z.string(), name: z.string() }),
+  version: z.object({ id: uuid, label: z.string(), status: versionStatus, effectiveFrom: day, effectiveTo: day.nullable(), source }),
+  verified: z.boolean().describe('false: a preview from unverified rules (DEC-052)'),
+  statements: z.object({ profitAndLoss: z.array(statutoryLineOut), balanceSheet: z.array(statutoryLineOut) }),
+  unplacedAccounts: z.array(unplaced), comparativeUnplacedAccounts: z.array(unplaced).optional(), overridesApplied: z.number().int(),
+  validations: z.array(z.object({ key: z.string(), description: z.string(), severity: z.enum(['ERROR', 'WARNING']), passed: z.boolean(), error: z.string().nullable() })),
+  validationSummary: z.object({ errors: z.number().int(), warnings: z.number().int() }),
+  reconciliation: statutoryProof.extend({ comparative: statutoryProof.optional() }),
+  problems: z.array(z.string()), notices: z.array(z.string()),
+});

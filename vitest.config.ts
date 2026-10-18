@@ -27,7 +27,7 @@ const testEnv = {
   STORAGE_LOCAL_DIR: '.tmp/test-storage',
   WORKER_CONCURRENCY: '4',
   FEATURE_FLAG_CACHE_MS: '0', TASK_REMINDER_POLL_MS: '300', WORKFLOW_OVERDUE_POLL_MS: '300', NOTIFICATION_DELIVERY_POLL_MS: '300', OCR_PROVIDER: 'fake', METRICS_SNAPSHOT_TTL_MS: '0', // deterministic tests; the TTL cache itself is covered in tests/platform/feature-flag-service.test.ts
-  FEATURE_FLAG_DEFAULTS: 'ai.beta=true,bookkeeping.core=true', // existing AI tests exercise the feature; flag behaviour is covered in tests/api/feature-flags.test.ts
+  FEATURE_FLAG_DEFAULTS: 'ai.beta=true,bookkeeping.core=true,accounts.production=true', // the AI, V1 and V2 tests exercise these features; flag behaviour is covered in tests/api/feature-flags.test.ts
   LOGIN_DELAY_BASE_SECONDS: '0', // progressive delay is exercised explicitly in login-throttle.test.ts
 };
 

@@ -18980,6 +18980,2116 @@
         ]
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reporting-standards": {
+      "get": {
+        "operationId": "Standards_list",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Standards",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportingStandardList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The organisation's reporting standards and their versions",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "Standards_create",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportingStandard"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Create a standard (a code such as FRS105 and a name); its content lives in versions. Nothing is seeded (DEC-052)",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStandardRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reporting-standards/{standardId}/versions": {
+      "get": {
+        "operationId": "Standards_versions",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "standardId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Versions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardVersionList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "Versions of a standard",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "Standards_createVersion",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "standardId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created (unverified)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardVersionDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Add an effective-dated, sourced version (UNVERIFIED), optionally copying the lines, map and rules of another version",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStandardVersionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reporting-standard-versions/{versionId}": {
+      "get": {
+        "operationId": "Standards_version",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardVersionDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "A version with its lines, map, validation and disclosure rules, and what stops it from being verified",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "Standards_updateVersion",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardVersionDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Change an unverified version's label, dates, source or notes",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStandardVersionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reporting-standard-versions/{versionId}/verify": {
+      "post": {
+        "operationId": "Standards_verify",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardVersionDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rule-verify"
+        ],
+        "summary": "Verify a consistent version against its source (accounts:rule-verify; never its author). It becomes immutable",
+        "description": "**Requires permission:** `accounts:rule-verify`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyStandardVersionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reporting-standard-versions/{versionId}/supersede": {
+      "post": {
+        "operationId": "Standards_supersede",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "New version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardVersionDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Change a verified version: a new UNVERIFIED version with the same content replaces it",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupersedeStandardVersionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reporting-standard-versions/{versionId}/lines": {
+      "post": {
+        "operationId": "Standards_addLine",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatutoryLine"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Add a statement line (fed by accounts, a signed total of other lines, or the retained profit) while the version is unverified",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStatutoryLineRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reporting-standard-versions/{versionId}/lines/{lineId}": {
+      "patch": {
+        "operationId": "Standards_updateLine",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "lineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatutoryLine"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Change a line of an unverified version",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStatutoryLineRequest"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "Standards_removeLine",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "lineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentRemoved"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Remove a line nothing refers to from an unverified version",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reporting-standard-versions/{versionId}/map-entries": {
+      "post": {
+        "operationId": "Standards_addMap",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatutoryMapEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Map a V1 reporting line (optionally one account subtype) to an accounts line; the most specific entry wins",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMapEntryRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reporting-standard-versions/{versionId}/map-entries/{entryId}": {
+      "patch": {
+        "operationId": "Standards_updateMap",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "entryId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatutoryMapEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Point a map entry at another accounts line",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMapEntryRequest"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "Standards_removeMap",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "entryId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentRemoved"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Remove a map entry from an unverified version",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reporting-standard-versions/{versionId}/validation-rules": {
+      "post": {
+        "operationId": "Standards_addRule",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Add a validation rule in the closed expression grammar; refused unless every construct and line reference is valid",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateValidationRuleRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reporting-standard-versions/{versionId}/validation-rules/{ruleId}": {
+      "patch": {
+        "operationId": "Standards_updateRule",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ruleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Change a validation rule of an unverified version",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateValidationRuleRequest"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "Standards_removeRule",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ruleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentRemoved"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Remove a validation rule from an unverified version",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reporting-standard-versions/{versionId}/disclosure-rules": {
+      "post": {
+        "operationId": "Standards_addNote",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisclosureRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Add a disclosure (note) rule: the lines and facts it needs (stored and shape-checked; rendered in V2-M5)",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDisclosureRuleRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reporting-standard-versions/{versionId}/disclosure-rules/{ruleId}": {
+      "patch": {
+        "operationId": "Standards_updateNote",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ruleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisclosureRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Change a disclosure rule of an unverified version",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDisclosureRuleRequest"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "Standards_removeNote",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ruleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentRemoved"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Remove a disclosure rule from an unverified version",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reporting-frameworks": {
+      "get": {
+        "operationId": "Standards_frameworksList",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Framework years",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportingFrameworkList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The standard version and entity size of each financial year of the company",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "Standards_setFramework",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chosen",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportingFramework"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:prepare"
+        ],
+        "summary": "Choose (or change, with a reason) the standard version and entity size of a financial year; the version must be in effect on the year start",
+        "description": "**Requires permission:** `accounts:prepare`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetReportingFrameworkRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/statutory-overrides": {
+      "get": {
+        "operationId": "Standards_overrides",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "includeEnded",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Overrides",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatutoryOverrideList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The company's account overrides (active, or all with includeEnded)",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "Standards_setOverride",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatutoryOverride"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:prepare"
+        ],
+        "summary": "Place one account on an accounts line of a version for this company, with a reason (replaces its active override)",
+        "description": "**Requires permission:** `accounts:prepare`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetStatutoryOverrideRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/statutory-overrides/{overrideId}/end": {
+      "post": {
+        "operationId": "Standards_endOverride",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "overrideId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatutoryOverride"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:prepare"
+        ],
+        "summary": "End an override with a reason (never deleted)",
+        "description": "**Requires permission:** `accounts:prepare`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EndStatutoryOverrideRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/statutory-preview": {
+      "get": {
+        "operationId": "Standards_preview",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "yearStart",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "compare",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Preview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatutoryPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "Statutory P&L and balance sheet of a financial year from the ledger through its framework, with the prior year, unplaced accounts, validations and proofs; marked as a preview unless the version is verified",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -19956,6 +22066,9 @@
     },
     {
       "name": "Reports"
+    },
+    {
+      "name": "Accounts production"
     },
     {
       "name": "Bank"
@@ -26334,6 +28447,1972 @@
         "required": [
           "items",
           "nextCursor"
+        ],
+        "additionalProperties": false
+      },
+      "ReportingStandard": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "effectiveFrom": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "effectiveTo": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "UNVERIFIED",
+                    "VERIFIED",
+                    "SUPERSEDED"
+                  ],
+                  "description": "UNVERIFIED content gives previews only; VERIFIED is immutable; SUPERSEDED was replaced by a new version"
+                }
+              },
+              "required": [
+                "id",
+                "label",
+                "effectiveFrom",
+                "effectiveTo",
+                "status"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "createdByUserId",
+          "createdAt",
+          "versions"
+        ],
+        "additionalProperties": false
+      },
+      "ReportingStandardList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "versions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "label": {
+                        "type": "string"
+                      },
+                      "effectiveFrom": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "effectiveTo": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                        "nullable": true
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "UNVERIFIED",
+                          "VERIFIED",
+                          "SUPERSEDED"
+                        ],
+                        "description": "UNVERIFIED content gives previews only; VERIFIED is immutable; SUPERSEDED was replaced by a new version"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "label",
+                      "effectiveFrom",
+                      "effectiveTo",
+                      "status"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "code",
+                "name",
+                "createdByUserId",
+                "createdAt",
+                "versions"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "StandardVersionList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "standardId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "effectiveFrom": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "effectiveTo": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "provision": {
+                      "type": "string"
+                    },
+                    "retrievedOn": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    }
+                  },
+                  "required": [
+                    "url",
+                    "provision",
+                    "retrievedOn"
+                  ],
+                  "additionalProperties": false
+                },
+                "notes": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "UNVERIFIED",
+                    "VERIFIED",
+                    "SUPERSEDED"
+                  ],
+                  "description": "UNVERIFIED content gives previews only; VERIFIED is immutable; SUPERSEDED was replaced by a new version"
+                },
+                "copiedFromId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "verifiedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "verifiedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "verificationNotes": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "supersededById": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "standardId",
+                "label",
+                "effectiveFrom",
+                "effectiveTo",
+                "source",
+                "notes",
+                "status",
+                "copiedFromId",
+                "createdByUserId",
+                "createdAt",
+                "verifiedByUserId",
+                "verifiedAt",
+                "verificationNotes",
+                "supersededById"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "StandardVersionDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "standardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string"
+              },
+              "provision": {
+                "type": "string"
+              },
+              "retrievedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url",
+              "provision",
+              "retrievedOn"
+            ],
+            "additionalProperties": false
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "UNVERIFIED",
+              "VERIFIED",
+              "SUPERSEDED"
+            ],
+            "description": "UNVERIFIED content gives previews only; VERIFIED is immutable; SUPERSEDED was replaced by a new version"
+          },
+          "copiedFromId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "verifiedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "verifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "verificationNotes": {
+            "type": "string",
+            "nullable": true
+          },
+          "supersededById": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "standard": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "code": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "code",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "key": {
+                  "type": "string"
+                },
+                "statement": {
+                  "type": "string",
+                  "enum": [
+                    "PL",
+                    "BS"
+                  ]
+                },
+                "parentKey": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "sort": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "ACCOUNTS",
+                    "TOTAL",
+                    "RETAINED_PROFIT"
+                  ]
+                },
+                "naturalSide": {
+                  "type": "string",
+                  "enum": [
+                    "DEBIT",
+                    "CREDIT"
+                  ],
+                  "nullable": true
+                },
+                "formula": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "line": {
+                        "type": "string"
+                      },
+                      "sign": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "line",
+                      "sign"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "nullable": true,
+                  "description": "A TOTAL: the signed lines it adds up"
+                }
+              },
+              "required": [
+                "id",
+                "key",
+                "statement",
+                "parentKey",
+                "sort",
+                "name",
+                "kind",
+                "naturalSide",
+                "formula"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "mapEntries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "sourceLine": {
+                  "type": "string",
+                  "description": "V1 reporting line"
+                },
+                "accountSubtype": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "targetKey": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "sourceLine",
+                "accountSubtype",
+                "targetKey"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "validationRules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "key": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "ERROR",
+                    "WARNING"
+                  ]
+                },
+                "appliesTo": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "MICRO",
+                      "SMALL",
+                      "MEDIUM",
+                      "LARGE"
+                    ]
+                  }
+                },
+                "expression": {
+                  "type": "object",
+                  "additionalProperties": {},
+                  "description": "Closed grammar (v2-plan 3.3)"
+                }
+              },
+              "required": [
+                "id",
+                "key",
+                "description",
+                "severity",
+                "appliesTo",
+                "expression"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "disclosureRules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "key": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "appliesTo": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "MICRO",
+                      "SMALL",
+                      "MEDIUM",
+                      "LARGE"
+                    ]
+                  }
+                },
+                "requires": {
+                  "type": "object",
+                  "properties": {
+                    "lines": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "facts": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "id",
+                "key",
+                "title",
+                "appliesTo",
+                "requires"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What stops the version from being verified (empty when consistent)"
+          }
+        },
+        "required": [
+          "id",
+          "standardId",
+          "label",
+          "effectiveFrom",
+          "effectiveTo",
+          "source",
+          "notes",
+          "status",
+          "copiedFromId",
+          "createdByUserId",
+          "createdAt",
+          "verifiedByUserId",
+          "verifiedAt",
+          "verificationNotes",
+          "supersededById",
+          "standard",
+          "lines",
+          "mapEntries",
+          "validationRules",
+          "disclosureRules",
+          "problems"
+        ],
+        "additionalProperties": false
+      },
+      "StatutoryLine": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "key": {
+            "type": "string"
+          },
+          "statement": {
+            "type": "string",
+            "enum": [
+              "PL",
+              "BS"
+            ]
+          },
+          "parentKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "sort": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ACCOUNTS",
+              "TOTAL",
+              "RETAINED_PROFIT"
+            ]
+          },
+          "naturalSide": {
+            "type": "string",
+            "enum": [
+              "DEBIT",
+              "CREDIT"
+            ],
+            "nullable": true
+          },
+          "formula": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "string"
+                },
+                "sign": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "line",
+                "sign"
+              ],
+              "additionalProperties": false
+            },
+            "nullable": true,
+            "description": "A TOTAL: the signed lines it adds up"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "statement",
+          "parentKey",
+          "sort",
+          "name",
+          "kind",
+          "naturalSide",
+          "formula"
+        ],
+        "additionalProperties": false
+      },
+      "StatutoryMapEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceLine": {
+            "type": "string",
+            "description": "V1 reporting line"
+          },
+          "accountSubtype": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetKey": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "sourceLine",
+          "accountSubtype",
+          "targetKey"
+        ],
+        "additionalProperties": false
+      },
+      "ValidationRule": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "key": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "ERROR",
+              "WARNING"
+            ]
+          },
+          "appliesTo": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "MICRO",
+                "SMALL",
+                "MEDIUM",
+                "LARGE"
+              ]
+            }
+          },
+          "expression": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Closed grammar (v2-plan 3.3)"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "description",
+          "severity",
+          "appliesTo",
+          "expression"
+        ],
+        "additionalProperties": false
+      },
+      "DisclosureRule": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "key": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "appliesTo": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "MICRO",
+                "SMALL",
+                "MEDIUM",
+                "LARGE"
+              ]
+            }
+          },
+          "requires": {
+            "type": "object",
+            "properties": {
+              "lines": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "facts": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "title",
+          "appliesTo",
+          "requires"
+        ],
+        "additionalProperties": false
+      },
+      "ContentRemoved": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "removed": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "removed"
+        ],
+        "additionalProperties": false
+      },
+      "ReportingFramework": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "yearStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "yearEnd": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "versionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "entitySize": {
+            "type": "string",
+            "enum": [
+              "MICRO",
+              "SMALL",
+              "MEDIUM",
+              "LARGE"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "chosenByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "chosenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lockedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "version": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "UNVERIFIED",
+                  "VERIFIED",
+                  "SUPERSEDED"
+                ],
+                "description": "UNVERIFIED content gives previews only; VERIFIED is immutable; SUPERSEDED was replaced by a new version"
+              },
+              "standardId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "label",
+              "status",
+              "standardId"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "yearStart",
+          "yearEnd",
+          "versionId",
+          "entitySize",
+          "reason",
+          "chosenByUserId",
+          "chosenAt",
+          "lockedAt"
+        ],
+        "additionalProperties": false
+      },
+      "ReportingFrameworkList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "yearStart": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "yearEnd": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "versionId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "entitySize": {
+                  "type": "string",
+                  "enum": [
+                    "MICRO",
+                    "SMALL",
+                    "MEDIUM",
+                    "LARGE"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "chosenByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "chosenAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "lockedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "version": {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "UNVERIFIED",
+                        "VERIFIED",
+                        "SUPERSEDED"
+                      ],
+                      "description": "UNVERIFIED content gives previews only; VERIFIED is immutable; SUPERSEDED was replaced by a new version"
+                    },
+                    "standardId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "status",
+                    "standardId"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "yearStart",
+                "yearEnd",
+                "versionId",
+                "entitySize",
+                "reason",
+                "chosenByUserId",
+                "chosenAt",
+                "lockedAt"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "StatutoryOverride": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "accountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetKey": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "endedReason": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "versionId",
+          "accountId",
+          "targetKey",
+          "reason",
+          "createdByUserId",
+          "createdAt",
+          "endedAt",
+          "endedByUserId",
+          "endedReason"
+        ],
+        "additionalProperties": false
+      },
+      "StatutoryOverrideList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "versionId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "targetKey": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "endedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "endedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "endedReason": {
+                  "type": "string",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "versionId",
+                "accountId",
+                "targetKey",
+                "reason",
+                "createdByUserId",
+                "createdAt",
+                "endedAt",
+                "endedByUserId",
+                "endedReason"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "StatutoryPreview": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyName": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "year": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "end": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "entitySize": {
+                "type": "string",
+                "enum": [
+                  "MICRO",
+                  "SMALL",
+                  "MEDIUM",
+                  "LARGE"
+                ]
+              },
+              "frameworkId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "start",
+              "end",
+              "entitySize",
+              "frameworkId"
+            ],
+            "additionalProperties": false
+          },
+          "comparative": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "end": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "fromFramework": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "start",
+              "end",
+              "fromFramework"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "standard": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "code": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "code",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "version": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "label": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "UNVERIFIED",
+                  "VERIFIED",
+                  "SUPERSEDED"
+                ],
+                "description": "UNVERIFIED content gives previews only; VERIFIED is immutable; SUPERSEDED was replaced by a new version"
+              },
+              "effectiveFrom": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "effectiveTo": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "nullable": true
+              },
+              "source": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string"
+                  },
+                  "provision": {
+                    "type": "string"
+                  },
+                  "retrievedOn": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  }
+                },
+                "required": [
+                  "url",
+                  "provision",
+                  "retrievedOn"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "status",
+              "effectiveFrom",
+              "effectiveTo",
+              "source"
+            ],
+            "additionalProperties": false
+          },
+          "verified": {
+            "type": "boolean",
+            "description": "false: a preview from unverified rules (DEC-052)"
+          },
+          "statements": {
+            "type": "object",
+            "properties": {
+              "profitAndLoss": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "statement": {
+                      "type": "string",
+                      "enum": [
+                        "PL",
+                        "BS"
+                      ]
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "ACCOUNTS",
+                        "TOTAL",
+                        "RETAINED_PROFIT"
+                      ]
+                    },
+                    "parentKey": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "depth": {
+                      "type": "integer"
+                    },
+                    "amount": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Exact decimal; null when a total cannot be computed (see problems)"
+                    },
+                    "comparative": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Exact decimal; null when a total cannot be computed (see problems)"
+                    },
+                    "accounts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "accountId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "amount": {
+                            "type": "string"
+                          },
+                          "drilldown": {
+                            "type": "object",
+                            "properties": {
+                              "accountId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "from": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                "nullable": true
+                              },
+                              "to": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                              }
+                            },
+                            "required": [
+                              "accountId",
+                              "from",
+                              "to"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "accountId",
+                          "code",
+                          "name",
+                          "amount",
+                          "drilldown"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "key",
+                    "name",
+                    "statement",
+                    "kind",
+                    "parentKey",
+                    "depth",
+                    "amount"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "balanceSheet": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "statement": {
+                      "type": "string",
+                      "enum": [
+                        "PL",
+                        "BS"
+                      ]
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "ACCOUNTS",
+                        "TOTAL",
+                        "RETAINED_PROFIT"
+                      ]
+                    },
+                    "parentKey": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "depth": {
+                      "type": "integer"
+                    },
+                    "amount": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Exact decimal; null when a total cannot be computed (see problems)"
+                    },
+                    "comparative": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Exact decimal; null when a total cannot be computed (see problems)"
+                    },
+                    "accounts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "accountId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "amount": {
+                            "type": "string"
+                          },
+                          "drilldown": {
+                            "type": "object",
+                            "properties": {
+                              "accountId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "from": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                "nullable": true
+                              },
+                              "to": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                              }
+                            },
+                            "required": [
+                              "accountId",
+                              "from",
+                              "to"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "accountId",
+                          "code",
+                          "name",
+                          "amount",
+                          "drilldown"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "key",
+                    "name",
+                    "statement",
+                    "kind",
+                    "parentKey",
+                    "depth",
+                    "amount"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "profitAndLoss",
+              "balanceSheet"
+            ],
+            "additionalProperties": false
+          },
+          "unplacedAccounts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "reportingLine": {
+                  "type": "string"
+                },
+                "subtype": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "unmapped",
+                    "statement_mismatch"
+                  ]
+                },
+                "targetKey": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "net": {
+                  "type": "string",
+                  "description": "Debits less credits"
+                },
+                "drilldown": {
+                  "type": "object",
+                  "properties": {
+                    "accountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "from": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                      "nullable": true
+                    },
+                    "to": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    }
+                  },
+                  "required": [
+                    "accountId",
+                    "from",
+                    "to"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "accountId",
+                "code",
+                "name",
+                "type",
+                "reportingLine",
+                "subtype",
+                "reason",
+                "targetKey",
+                "net",
+                "drilldown"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "comparativeUnplacedAccounts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "reportingLine": {
+                  "type": "string"
+                },
+                "subtype": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "unmapped",
+                    "statement_mismatch"
+                  ]
+                },
+                "targetKey": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "net": {
+                  "type": "string",
+                  "description": "Debits less credits"
+                },
+                "drilldown": {
+                  "type": "object",
+                  "properties": {
+                    "accountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "from": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                      "nullable": true
+                    },
+                    "to": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    }
+                  },
+                  "required": [
+                    "accountId",
+                    "from",
+                    "to"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "accountId",
+                "code",
+                "name",
+                "type",
+                "reportingLine",
+                "subtype",
+                "reason",
+                "targetKey",
+                "net",
+                "drilldown"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "overridesApplied": {
+            "type": "integer"
+          },
+          "validations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "ERROR",
+                    "WARNING"
+                  ]
+                },
+                "passed": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "type": "string",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "key",
+                "description",
+                "severity",
+                "passed",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "validationSummary": {
+            "type": "object",
+            "properties": {
+              "errors": {
+                "type": "integer"
+              },
+              "warnings": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "errors",
+              "warnings"
+            ],
+            "additionalProperties": false
+          },
+          "reconciliation": {
+            "type": "object",
+            "properties": {
+              "profitAndLoss": {
+                "type": "object",
+                "properties": {
+                  "profitFromLedger": {
+                    "type": "string"
+                  },
+                  "profitFromLines": {
+                    "type": "string"
+                  },
+                  "difference": {
+                    "type": "string"
+                  },
+                  "reconciled": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "profitFromLedger",
+                  "profitFromLines",
+                  "difference",
+                  "reconciled"
+                ],
+                "additionalProperties": false
+              },
+              "balanceSheet": {
+                "type": "object",
+                "properties": {
+                  "difference": {
+                    "type": "string"
+                  },
+                  "balanced": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "difference",
+                  "balanced"
+                ],
+                "additionalProperties": false
+              },
+              "trialBalance": {
+                "type": "object",
+                "properties": {
+                  "debit": {
+                    "type": "string"
+                  },
+                  "credit": {
+                    "type": "string"
+                  },
+                  "balanced": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "debit",
+                  "credit",
+                  "balanced"
+                ],
+                "additionalProperties": false
+              },
+              "comparative": {
+                "type": "object",
+                "properties": {
+                  "profitAndLoss": {
+                    "type": "object",
+                    "properties": {
+                      "profitFromLedger": {
+                        "type": "string"
+                      },
+                      "profitFromLines": {
+                        "type": "string"
+                      },
+                      "difference": {
+                        "type": "string"
+                      },
+                      "reconciled": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "profitFromLedger",
+                      "profitFromLines",
+                      "difference",
+                      "reconciled"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "balanceSheet": {
+                    "type": "object",
+                    "properties": {
+                      "difference": {
+                        "type": "string"
+                      },
+                      "balanced": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "difference",
+                      "balanced"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "trialBalance": {
+                    "type": "object",
+                    "properties": {
+                      "debit": {
+                        "type": "string"
+                      },
+                      "credit": {
+                        "type": "string"
+                      },
+                      "balanced": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "debit",
+                      "credit",
+                      "balanced"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "profitAndLoss",
+                  "balanceSheet",
+                  "trialBalance"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "profitAndLoss",
+              "balanceSheet",
+              "trialBalance"
+            ],
+            "additionalProperties": false
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "companyId",
+          "companyName",
+          "currency",
+          "year",
+          "comparative",
+          "standard",
+          "version",
+          "verified",
+          "statements",
+          "unplacedAccounts",
+          "overridesApplied",
+          "validations",
+          "validationSummary",
+          "reconciliation",
+          "problems",
+          "notices"
         ],
         "additionalProperties": false
       },
@@ -35738,7 +39817,10 @@
                 "bank:read",
                 "bank:manage",
                 "bank:transfer",
-                "bank:reconcile"
+                "bank:reconcile",
+                "accounts:rules-manage",
+                "accounts:rule-verify",
+                "accounts:prepare"
               ]
             },
             "minItems": 1
@@ -39860,6 +43942,689 @@
         "required": [
           "asOf",
           "bankClosingBalance"
+        ],
+        "additionalProperties": false
+      },
+      "CreateStandardRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Z0-9][A-Z0-9_-]{1,23}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "CreateStandardVersionRequest": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 500
+              },
+              "provision": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 300
+              },
+              "retrievedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url",
+              "provision",
+              "retrievedOn"
+            ],
+            "additionalProperties": false
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "copyFromVersionId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "label",
+          "effectiveFrom",
+          "source"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateStandardVersionRequest": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 500
+              },
+              "provision": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 300
+              },
+              "retrievedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url",
+              "provision",
+              "retrievedOn"
+            ],
+            "additionalProperties": false
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000,
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "VerifyStandardVersionRequest": {
+        "type": "object",
+        "properties": {
+          "notes": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "notes"
+        ],
+        "additionalProperties": false
+      },
+      "SupersedeStandardVersionRequest": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 500
+              },
+              "provision": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 300
+              },
+              "retrievedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url",
+              "provision",
+              "retrievedOn"
+            ],
+            "additionalProperties": false
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "label",
+          "effectiveFrom",
+          "source",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "CreateStatutoryLineRequest": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[A-Z0-9][A-Z0-9_.-]{0,79}$"
+          },
+          "statement": {
+            "type": "string",
+            "enum": [
+              "PL",
+              "BS"
+            ]
+          },
+          "parentKey": {
+            "type": "string",
+            "pattern": "^[A-Z0-9][A-Z0-9_.-]{0,79}$",
+            "nullable": true
+          },
+          "sort": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000,
+            "default": 0
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ACCOUNTS",
+              "TOTAL",
+              "RETAINED_PROFIT"
+            ]
+          },
+          "naturalSide": {
+            "type": "string",
+            "enum": [
+              "DEBIT",
+              "CREDIT"
+            ],
+            "nullable": true
+          },
+          "formula": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "string",
+                  "pattern": "^[A-Z0-9][A-Z0-9_.-]{0,79}$"
+                },
+                "sign": {
+                  "anyOf": [
+                    {
+                      "type": "number",
+                      "enum": [
+                        1
+                      ]
+                    },
+                    {
+                      "type": "number",
+                      "enum": [
+                        -1
+                      ]
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "sign"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 200,
+            "nullable": true
+          }
+        },
+        "required": [
+          "key",
+          "statement",
+          "name",
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateStatutoryLineRequest": {
+        "type": "object",
+        "properties": {
+          "statement": {
+            "type": "string",
+            "enum": [
+              "PL",
+              "BS"
+            ]
+          },
+          "parentKey": {
+            "type": "string",
+            "pattern": "^[A-Z0-9][A-Z0-9_.-]{0,79}$",
+            "nullable": true
+          },
+          "sort": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ACCOUNTS",
+              "TOTAL",
+              "RETAINED_PROFIT"
+            ]
+          },
+          "naturalSide": {
+            "type": "string",
+            "enum": [
+              "DEBIT",
+              "CREDIT"
+            ],
+            "nullable": true
+          },
+          "formula": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "string",
+                  "pattern": "^[A-Z0-9][A-Z0-9_.-]{0,79}$"
+                },
+                "sign": {
+                  "anyOf": [
+                    {
+                      "type": "number",
+                      "enum": [
+                        1
+                      ]
+                    },
+                    {
+                      "type": "number",
+                      "enum": [
+                        -1
+                      ]
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "sign"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 200,
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateMapEntryRequest": {
+        "type": "object",
+        "properties": {
+          "sourceLine": {
+            "type": "string"
+          },
+          "accountSubtype": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetKey": {
+            "type": "string",
+            "pattern": "^[A-Z0-9][A-Z0-9_.-]{0,79}$"
+          }
+        },
+        "required": [
+          "sourceLine",
+          "targetKey"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateMapEntryRequest": {
+        "type": "object",
+        "properties": {
+          "targetKey": {
+            "type": "string",
+            "pattern": "^[A-Z0-9][A-Z0-9_.-]{0,79}$"
+          }
+        },
+        "required": [
+          "targetKey"
+        ],
+        "additionalProperties": false
+      },
+      "CreateValidationRuleRequest": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[A-Z0-9][A-Z0-9_.-]{0,79}$"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "ERROR",
+              "WARNING"
+            ],
+            "default": "ERROR"
+          },
+          "appliesTo": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "MICRO",
+                "SMALL",
+                "MEDIUM",
+                "LARGE"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 4,
+            "default": [
+              "MICRO",
+              "SMALL",
+              "MEDIUM",
+              "LARGE"
+            ]
+          },
+          "expression": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "key",
+          "description",
+          "expression"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateValidationRuleRequest": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "ERROR",
+              "WARNING"
+            ]
+          },
+          "appliesTo": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "MICRO",
+                "SMALL",
+                "MEDIUM",
+                "LARGE"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 4
+          },
+          "expression": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateDisclosureRuleRequest": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[A-Z0-9][A-Z0-9_.-]{0,79}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 300
+          },
+          "appliesTo": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "MICRO",
+                "SMALL",
+                "MEDIUM",
+                "LARGE"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 4,
+            "default": [
+              "MICRO",
+              "SMALL",
+              "MEDIUM",
+              "LARGE"
+            ]
+          },
+          "requires": {
+            "type": "object",
+            "properties": {
+              "lines": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Z0-9][A-Z0-9_.-]{0,79}$"
+                },
+                "maxItems": 100
+              },
+              "facts": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-zA-Z0-9_.]{0,79}$"
+                },
+                "maxItems": 100
+              }
+            },
+            "additionalProperties": false,
+            "default": {}
+          }
+        },
+        "required": [
+          "key",
+          "title"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateDisclosureRuleRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 300
+          },
+          "appliesTo": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "MICRO",
+                "SMALL",
+                "MEDIUM",
+                "LARGE"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 4
+          },
+          "requires": {
+            "type": "object",
+            "properties": {
+              "lines": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Z0-9][A-Z0-9_.-]{0,79}$"
+                },
+                "maxItems": 100
+              },
+              "facts": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-zA-Z0-9_.]{0,79}$"
+                },
+                "maxItems": 100
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "SetReportingFrameworkRequest": {
+        "type": "object",
+        "properties": {
+          "yearStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "yearEnd": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "versionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "entitySize": {
+            "type": "string",
+            "enum": [
+              "MICRO",
+              "SMALL",
+              "MEDIUM",
+              "LARGE"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "yearStart",
+          "yearEnd",
+          "versionId",
+          "entitySize",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "SetStatutoryOverrideRequest": {
+        "type": "object",
+        "properties": {
+          "versionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "accountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetKey": {
+            "type": "string",
+            "pattern": "^[A-Z0-9][A-Z0-9_.-]{0,79}$"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "versionId",
+          "accountId",
+          "targetKey",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "EndStatutoryOverrideRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "reason"
         ],
         "additionalProperties": false
       },

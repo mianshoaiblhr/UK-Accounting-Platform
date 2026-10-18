@@ -93,7 +93,9 @@ export const RETENTION_RULES: readonly RetentionRule[] = [
     'account', 'journal', 'journal_line', 'ledger_sequence', 'journal_request', 'ledger_policy', 'exchange_rate', 'company_fx_setting', 'fx_revaluation_run', 'tax_code', 'tax_rate', 'company_vat_setting',
     'sales_setting', 'sales_sequence', 'sales_document', 'sales_document_line', 'sales_allocation', 'sales_receipt',
     'purchase_setting', 'purchase_sequence', 'purchase_document', 'purchase_document_line', 'purchase_allocation', 'purchase_payment',
-    'cash_transaction', 'cash_transaction_line', 'bank_account', 'bank_statement_import', 'bank_statement_line', 'bank_transfer', 'bank_match', 'bank_reconciliation']),
+    'cash_transaction', 'cash_transaction_line', 'bank_account', 'bank_statement_import', 'bank_statement_line', 'bank_transfer', 'bank_match', 'bank_reconciliation',
+    // V2 accounts production: the framework the accounts were prepared under
+    'reporting_standard', 'reporting_standard_version', 'statutory_line', 'statutory_map_entry', 'validation_rule', 'disclosure_rule', 'statutory_account_override', 'company_reporting_framework']),
   ...tableRules('WHILE_ACTIVE', [
     'user', 'user_identity', 'mfa_factor', 'mfa_recovery_code', 'organisation', 'role', 'organisation_membership', 'practice', 'practice_membership', 'company_membership', 'invitation',
     'company', 'company_officer', 'contact', 'contact_role', 'customer_profile', 'supplier_profile', 'address', 'feature_flag_override', 'task', 'task_attachment', 'task_comment', 'workflow_instance', 'workflow_transition',

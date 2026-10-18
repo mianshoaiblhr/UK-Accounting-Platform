@@ -2098,3 +2098,149 @@ model BankReconciliation {
   @@index([organisationId, bankAccountId, asAt], map: "bank_reconciliation_account_idx")
   @@map("bank_reconciliation")
 }
+
+/// V2-M1 (DEC-053): an accounting standard a firm reports under (FRS105, FRS102-1A, ...). Content lives in its versions; nothing is seeded (DEC-052).
+model ReportingStandard {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId  String   @map("organisation_id") @db.Uuid
+  code            String
+  name            String
+  createdByUserId String   @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@unique([organisationId, code])
+  @@map("reporting_standard")
+}
+
+/// V2-M1 (DEC-052): an effective-dated, sourced version of a standard, verified by a second person; immutable once verified, superseded by a new version.
+model ReportingStandardVersion {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId    String    @map("organisation_id") @db.Uuid
+  standardId        String    @map("standard_id") @db.Uuid
+  label             String
+  effectiveFrom     DateTime  @map("effective_from") @db.Date
+  effectiveTo       DateTime? @map("effective_to") @db.Date
+  sourceUrl         String    @map("source_url")
+  sourceReference   String    @map("source_reference")
+  sourceRetrievedOn DateTime  @map("source_retrieved_on") @db.Date
+  notes             String?
+  status            String    @default("UNVERIFIED")
+  copiedFromId      String?   @map("copied_from_id") @db.Uuid
+  createdByUserId   String    @map("created_by_user_id") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  verifiedByUserId  String?   @map("verified_by_user_id") @db.Uuid
+  verifiedAt        DateTime? @map("verified_at") @db.Timestamptz(3)
+  verificationNotes String?   @map("verification_notes")
+  supersededById    String?   @map("superseded_by_id") @db.Uuid
+
+  @@unique([organisationId, id], map: "rsv_organisation_id_id_key")
+  @@index([organisationId, standardId, effectiveFrom], map: "rsv_standard_idx")
+  @@map("reporting_standard_version")
+}
+
+/// V2-M1: a line of a statutory statement in one version: fed by accounts through the map, a signed total of other lines, or the retained profit.
+model StatutoryLine {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  versionId      String   @map("version_id") @db.Uuid
+  key            String
+  statement      String
+  parentKey      String?  @map("parent_key")
+  sort           Int      @default(0)
+  name           String
+  kind           String
+  naturalSide    String?  @map("natural_side")
+  formula        Json?
+  removed        Boolean  @default(false)
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@map("statutory_line")
+}
+
+/// V2-M1: which V1 reporting line (optionally narrowed by account subtype) feeds which statutory line in one version; the most specific entry wins.
+model StatutoryMapEntry {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  versionId      String   @map("version_id") @db.Uuid
+  sourceLine     String   @map("source_line")
+  accountSubtype String?  @map("account_subtype")
+  targetKey      String   @map("target_key")
+  removed        Boolean  @default(false)
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@map("statutory_map_entry")
+}
+
+/// V2-M1: a validation rule of one version, an expression in the closed grammar (v2-plan 3.3).
+model ValidationRule {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  versionId      String   @map("version_id") @db.Uuid
+  key            String
+  description    String
+  severity       String   @default("ERROR")
+  appliesTo      String[] @default(["MICRO", "SMALL", "MEDIUM", "LARGE"]) @map("applies_to")
+  expression     Json
+  removed        Boolean  @default(false)
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@map("validation_rule")
+}
+
+/// V2-M1: a disclosure (note) a version requires: the lines and facts it needs. Stored and shape-checked here; rendered in V2-M5.
+model DisclosureRule {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  versionId      String   @map("version_id") @db.Uuid
+  key            String
+  title          String
+  appliesTo      String[] @default(["MICRO", "SMALL", "MEDIUM", "LARGE"]) @map("applies_to")
+  requires       Json     @default("{}")
+  removed        Boolean  @default(false)
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@map("disclosure_rule")
+}
+
+/// V2-M1: a company's own placement of one account on a statutory line of a version, with a reason; ended, never edited or deleted.
+model StatutoryAccountOverride {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId  String    @map("organisation_id") @db.Uuid
+  companyId       String    @map("company_id") @db.Uuid
+  versionId       String    @map("version_id") @db.Uuid
+  accountId       String    @map("account_id") @db.Uuid
+  targetKey       String    @map("target_key")
+  reason          String
+  createdByUserId String    @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  endedAt         DateTime? @map("ended_at") @db.Timestamptz(3)
+  endedByUserId   String?   @map("ended_by_user_id") @db.Uuid
+  endedReason     String?   @map("ended_reason")
+
+  @@unique([organisationId, id], map: "sao_organisation_id_id_key")
+  @@map("statutory_account_override")
+}
+
+/// V2-M1: the standard version and entity size a company reports under for one financial year (audited; locked once approved, V2-M6).
+model CompanyReportingFramework {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String    @map("organisation_id") @db.Uuid
+  companyId      String    @map("company_id") @db.Uuid
+  yearStart      DateTime  @map("year_start") @db.Date
+  yearEnd        DateTime  @map("year_end") @db.Date
+  versionId      String    @map("version_id") @db.Uuid
+  entitySize     String    @map("entity_size")
+  reason         String
+  chosenByUserId String    @map("chosen_by_user_id") @db.Uuid
+  chosenAt       DateTime  @default(now()) @map("chosen_at") @db.Timestamptz(3)
+  lockedAt       DateTime? @map("locked_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id], map: "crf_organisation_id_id_key")
+  @@unique([organisationId, companyId, yearStart], map: "crf_company_year_key")
+  @@map("company_reporting_framework")
+}

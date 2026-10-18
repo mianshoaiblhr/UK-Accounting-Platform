@@ -1,0 +1,1465 @@
+{
+  "id": "V2-M1-GOLDEN-01",
+  "purpose": "DEC-054 golden trial balance for V2-M1: a synthetic micro-entity with two financial years, a synthetic standard version shaped like a micro-entity layout, and the statements expected from it, written and added up by hand before the code that must reproduce them.",
+  "disclaimer": "SYNTHETIC. The version below is NOT FRS 105 and must never be entered as a real standard: its line names only resemble a micro-entity layout so that the engine is exercised on a realistic shape. It proves the engine, not the standard (DEC-052, DEC-054). Review by the named accountant is still required before any real version is verified.",
+  "company": {
+    "currency": "GBP",
+    "periods": [
+      [
+        "2025-01-01",
+        "2025-12-31"
+      ],
+      [
+        "2026-01-01",
+        "2026-12-31"
+      ]
+    ]
+  },
+  "postings": [
+    {
+      "kind": "cash",
+      "date": "2025-01-02",
+      "direction": "RECEIPT",
+      "bank": "1200",
+      "lines": [
+        [
+          "3000",
+          "100.00"
+        ]
+      ],
+      "description": "Shares issued for cash"
+    },
+    {
+      "kind": "cash",
+      "date": "2025-01-05",
+      "direction": "RECEIPT",
+      "bank": "1200",
+      "lines": [
+        [
+          "2300",
+          "10000.00"
+        ]
+      ],
+      "description": "Bank loan drawn (5 years)"
+    },
+    {
+      "kind": "cash",
+      "date": "2025-03-31",
+      "direction": "RECEIPT",
+      "bank": "1200",
+      "lines": [
+        [
+          "4000",
+          "24000.00"
+        ]
+      ],
+      "description": "Sales receipts"
+    },
+    {
+      "kind": "cash",
+      "date": "2025-06-30",
+      "direction": "PAYMENT",
+      "bank": "1200",
+      "lines": [
+        [
+          "5000",
+          "9000.00"
+        ]
+      ],
+      "description": "Purchases of goods"
+    },
+    {
+      "kind": "journal",
+      "date": "2025-07-01",
+      "description": "Office equipment paid by a director",
+      "lines": [
+        [
+          "0030",
+          "6000.00",
+          "0"
+        ],
+        [
+          "2230",
+          "0",
+          "6000.00"
+        ]
+      ]
+    },
+    {
+      "kind": "cash",
+      "date": "2025-09-30",
+      "direction": "PAYMENT",
+      "bank": "1200",
+      "lines": [
+        [
+          "6100",
+          "4800.00"
+        ]
+      ],
+      "description": "Rent for 12 months"
+    },
+    {
+      "kind": "journal",
+      "date": "2025-12-31",
+      "description": "Depreciation",
+      "lines": [
+        [
+          "6900",
+          "1000.00",
+          "0"
+        ],
+        [
+          "0031",
+          "0",
+          "1000.00"
+        ]
+      ]
+    },
+    {
+      "kind": "journal",
+      "date": "2025-12-31",
+      "description": "Corporation tax provision",
+      "lines": [
+        [
+          "7100",
+          "1500.00",
+          "0"
+        ],
+        [
+          "2220",
+          "0",
+          "1500.00"
+        ]
+      ]
+    },
+    {
+      "kind": "journal",
+      "date": "2025-12-31",
+      "description": "Accrued loan interest",
+      "lines": [
+        [
+          "7000",
+          "300.00",
+          "0"
+        ],
+        [
+          "2110",
+          "0",
+          "300.00"
+        ]
+      ]
+    },
+    {
+      "kind": "journal",
+      "date": "2025-12-31",
+      "description": "Rent paid in advance",
+      "lines": [
+        [
+          "1120",
+          "400.00",
+          "0"
+        ],
+        [
+          "6100",
+          "0",
+          "400.00"
+        ]
+      ]
+    },
+    {
+      "kind": "journal",
+      "date": "2026-01-01",
+      "description": "Reverse the prepayment and the accrual",
+      "lines": [
+        [
+          "6100",
+          "400.00",
+          "0"
+        ],
+        [
+          "1120",
+          "0",
+          "400.00"
+        ],
+        [
+          "2110",
+          "300.00",
+          "0"
+        ],
+        [
+          "7000",
+          "0",
+          "300.00"
+        ]
+      ]
+    },
+    {
+      "kind": "cash",
+      "date": "2026-01-15",
+      "direction": "PAYMENT",
+      "bank": "1200",
+      "lines": [
+        [
+          "7000",
+          "300.00"
+        ]
+      ],
+      "description": "Loan interest paid"
+    },
+    {
+      "kind": "cash",
+      "date": "2026-02-28",
+      "direction": "RECEIPT",
+      "bank": "1200",
+      "lines": [
+        [
+          "4000",
+          "30000.00"
+        ]
+      ],
+      "description": "Sales receipts"
+    },
+    {
+      "kind": "cash",
+      "date": "2026-02-28",
+      "direction": "RECEIPT",
+      "bank": "1200",
+      "lines": [
+        [
+          "4900",
+          "50.00"
+        ]
+      ],
+      "description": "Bank interest"
+    },
+    {
+      "kind": "cash",
+      "date": "2026-03-15",
+      "direction": "RECEIPT",
+      "bank": "1200",
+      "lines": [
+        [
+          "4100",
+          "1200.00"
+        ]
+      ],
+      "description": "Grant income"
+    },
+    {
+      "kind": "cash",
+      "date": "2026-05-31",
+      "direction": "PAYMENT",
+      "bank": "1200",
+      "lines": [
+        [
+          "5000",
+          "11000.00"
+        ]
+      ],
+      "description": "Purchases of goods"
+    },
+    {
+      "kind": "cash",
+      "date": "2026-06-30",
+      "direction": "PAYMENT",
+      "bank": "1200",
+      "lines": [
+        [
+          "6100",
+          "4800.00"
+        ]
+      ],
+      "description": "Rent for 12 months"
+    },
+    {
+      "kind": "cash",
+      "date": "2026-07-31",
+      "direction": "PAYMENT",
+      "bank": "1200",
+      "lines": [
+        [
+          "2220",
+          "1500.00"
+        ]
+      ],
+      "description": "Corporation tax paid"
+    },
+    {
+      "kind": "cash",
+      "date": "2026-08-31",
+      "direction": "PAYMENT",
+      "bank": "1200",
+      "lines": [
+        [
+          "2300",
+          "2000.00"
+        ]
+      ],
+      "description": "Loan repayment"
+    },
+    {
+      "kind": "journal",
+      "date": "2026-11-30",
+      "description": "Closing stock",
+      "lines": [
+        [
+          "1000",
+          "1500.00",
+          "0"
+        ],
+        [
+          "5000",
+          "0",
+          "1500.00"
+        ]
+      ]
+    },
+    {
+      "kind": "journal",
+      "date": "2026-12-31",
+      "description": "Depreciation",
+      "lines": [
+        [
+          "6900",
+          "1000.00",
+          "0"
+        ],
+        [
+          "0031",
+          "0",
+          "1000.00"
+        ]
+      ]
+    },
+    {
+      "kind": "journal",
+      "date": "2026-12-31",
+      "description": "Corporation tax provision",
+      "lines": [
+        [
+          "7100",
+          "2000.00",
+          "0"
+        ],
+        [
+          "2220",
+          "0",
+          "2000.00"
+        ]
+      ]
+    },
+    {
+      "kind": "journal",
+      "date": "2026-12-31",
+      "description": "Accrued loan interest",
+      "lines": [
+        [
+          "7000",
+          "250.00",
+          "0"
+        ],
+        [
+          "2110",
+          "0",
+          "250.00"
+        ]
+      ]
+    },
+    {
+      "kind": "journal",
+      "date": "2026-12-31",
+      "description": "Sundry costs paid by a director",
+      "lines": [
+        [
+          "8000",
+          "120.00",
+          "0"
+        ],
+        [
+          "2230",
+          "0",
+          "120.00"
+        ]
+      ]
+    }
+  ],
+  "standard": {
+    "code": "SYNTH-MICRO",
+    "name": "Synthetic micro-entity layout (test only)"
+  },
+  "version": {
+    "label": "Synthetic v1",
+    "effectiveFrom": "2025-01-01",
+    "source": {
+      "url": "https://example.test/synthetic-micro-layout",
+      "provision": "Synthetic test layout, not a real standard",
+      "retrievedOn": "2026-10-17"
+    },
+    "lines": [
+      {
+        "key": "P.T",
+        "statement": "PL",
+        "sort": 10,
+        "name": "Turnover",
+        "kind": "ACCOUNTS",
+        "naturalSide": "CREDIT"
+      },
+      {
+        "key": "P.OI",
+        "statement": "PL",
+        "sort": 20,
+        "name": "Other income",
+        "kind": "ACCOUNTS",
+        "naturalSide": "CREDIT"
+      },
+      {
+        "key": "P.RM",
+        "statement": "PL",
+        "sort": 30,
+        "name": "Cost of raw materials and consumables",
+        "kind": "ACCOUNTS",
+        "naturalSide": "DEBIT"
+      },
+      {
+        "key": "P.DEP",
+        "statement": "PL",
+        "sort": 40,
+        "name": "Depreciation and other amounts written off assets",
+        "kind": "ACCOUNTS",
+        "naturalSide": "DEBIT"
+      },
+      {
+        "key": "P.OC",
+        "statement": "PL",
+        "sort": 50,
+        "name": "Other charges",
+        "kind": "ACCOUNTS",
+        "naturalSide": "DEBIT"
+      },
+      {
+        "key": "P.TAX",
+        "statement": "PL",
+        "sort": 60,
+        "name": "Tax",
+        "kind": "ACCOUNTS",
+        "naturalSide": "DEBIT"
+      },
+      {
+        "key": "P.PROFIT",
+        "statement": "PL",
+        "sort": 70,
+        "name": "Profit or loss",
+        "kind": "TOTAL",
+        "formula": [
+          {
+            "line": "P.T",
+            "sign": 1
+          },
+          {
+            "line": "P.OI",
+            "sign": 1
+          },
+          {
+            "line": "P.RM",
+            "sign": -1
+          },
+          {
+            "line": "P.DEP",
+            "sign": -1
+          },
+          {
+            "line": "P.OC",
+            "sign": -1
+          },
+          {
+            "line": "P.TAX",
+            "sign": -1
+          }
+        ]
+      },
+      {
+        "key": "B.FA",
+        "statement": "BS",
+        "sort": 10,
+        "name": "Fixed assets",
+        "kind": "ACCOUNTS",
+        "naturalSide": "DEBIT"
+      },
+      {
+        "key": "B.CA",
+        "statement": "BS",
+        "sort": 20,
+        "name": "Current assets",
+        "kind": "ACCOUNTS",
+        "naturalSide": "DEBIT"
+      },
+      {
+        "key": "B.PREPAY",
+        "statement": "BS",
+        "sort": 30,
+        "name": "Prepayments and accrued income",
+        "kind": "ACCOUNTS",
+        "naturalSide": "DEBIT"
+      },
+      {
+        "key": "B.CW",
+        "statement": "BS",
+        "sort": 40,
+        "name": "Creditors: amounts falling due within one year",
+        "kind": "ACCOUNTS",
+        "naturalSide": "CREDIT"
+      },
+      {
+        "key": "B.NCA",
+        "statement": "BS",
+        "sort": 50,
+        "name": "Net current assets (liabilities)",
+        "kind": "TOTAL",
+        "formula": [
+          {
+            "line": "B.CA",
+            "sign": 1
+          },
+          {
+            "line": "B.PREPAY",
+            "sign": 1
+          },
+          {
+            "line": "B.CW",
+            "sign": -1
+          }
+        ]
+      },
+      {
+        "key": "B.TALCL",
+        "statement": "BS",
+        "sort": 60,
+        "name": "Total assets less current liabilities",
+        "kind": "TOTAL",
+        "formula": [
+          {
+            "line": "B.FA",
+            "sign": 1
+          },
+          {
+            "line": "B.NCA",
+            "sign": 1
+          }
+        ]
+      },
+      {
+        "key": "B.CA1",
+        "statement": "BS",
+        "sort": 70,
+        "name": "Creditors: amounts falling due after more than one year",
+        "kind": "ACCOUNTS",
+        "naturalSide": "CREDIT"
+      },
+      {
+        "key": "B.ACCR",
+        "statement": "BS",
+        "sort": 80,
+        "name": "Accruals and deferred income",
+        "kind": "ACCOUNTS",
+        "naturalSide": "CREDIT"
+      },
+      {
+        "key": "B.NA",
+        "statement": "BS",
+        "sort": 90,
+        "name": "Net assets (liabilities)",
+        "kind": "TOTAL",
+        "formula": [
+          {
+            "line": "B.TALCL",
+            "sign": 1
+          },
+          {
+            "line": "B.CA1",
+            "sign": -1
+          },
+          {
+            "line": "B.ACCR",
+            "sign": -1
+          }
+        ]
+      },
+      {
+        "key": "B.SC",
+        "statement": "BS",
+        "parentKey": "B.CR",
+        "sort": 10,
+        "name": "Called up share capital",
+        "kind": "ACCOUNTS",
+        "naturalSide": "CREDIT"
+      },
+      {
+        "key": "B.RES",
+        "statement": "BS",
+        "parentKey": "B.CR",
+        "sort": 20,
+        "name": "Other reserves",
+        "kind": "ACCOUNTS",
+        "naturalSide": "CREDIT"
+      },
+      {
+        "key": "B.PLR",
+        "statement": "BS",
+        "parentKey": "B.CR",
+        "sort": 30,
+        "name": "Profit and loss account",
+        "kind": "RETAINED_PROFIT",
+        "naturalSide": "CREDIT"
+      },
+      {
+        "key": "B.CR",
+        "statement": "BS",
+        "sort": 100,
+        "name": "Capital and reserves",
+        "kind": "TOTAL",
+        "formula": [
+          {
+            "line": "B.SC",
+            "sign": 1
+          },
+          {
+            "line": "B.RES",
+            "sign": 1
+          },
+          {
+            "line": "B.PLR",
+            "sign": 1
+          }
+        ]
+      }
+    ],
+    "mapEntries": [
+      [
+        "PL.TURNOVER",
+        null,
+        "P.T"
+      ],
+      [
+        "PL.OTHER_INCOME",
+        null,
+        "P.OI"
+      ],
+      [
+        "PL.INTEREST_RECEIVABLE",
+        null,
+        "P.OI"
+      ],
+      [
+        "PL.COST_OF_SALES",
+        null,
+        "P.RM"
+      ],
+      [
+        "PL.DEPRECIATION",
+        null,
+        "P.DEP"
+      ],
+      [
+        "PL.ADMIN_EXPENSES",
+        null,
+        "P.OC"
+      ],
+      [
+        "PL.OTHER_EXPENSES",
+        null,
+        "P.OC"
+      ],
+      [
+        "PL.INTEREST_PAYABLE",
+        null,
+        "P.OC"
+      ],
+      [
+        "PL.TAXATION",
+        null,
+        "P.TAX"
+      ],
+      [
+        "BS.FIXED_ASSETS.TANGIBLE",
+        null,
+        "B.FA"
+      ],
+      [
+        "BS.FIXED_ASSETS.INTANGIBLE",
+        null,
+        "B.FA"
+      ],
+      [
+        "BS.CURRENT_ASSETS.STOCK",
+        null,
+        "B.CA"
+      ],
+      [
+        "BS.CURRENT_ASSETS.DEBTORS",
+        null,
+        "B.CA"
+      ],
+      [
+        "BS.CURRENT_ASSETS.DEBTORS",
+        "CURRENT_ASSET_PREPAYMENT",
+        "B.PREPAY"
+      ],
+      [
+        "BS.CURRENT_ASSETS.CASH",
+        null,
+        "B.CA"
+      ],
+      [
+        "BS.CREDITORS_WITHIN_ONE_YEAR",
+        null,
+        "B.CW"
+      ],
+      [
+        "BS.CREDITORS_WITHIN_ONE_YEAR",
+        "CURRENT_LIABILITY_ACCRUAL",
+        "B.ACCR"
+      ],
+      [
+        "BS.CREDITORS_AFTER_ONE_YEAR",
+        null,
+        "B.CA1"
+      ],
+      [
+        "BS.CAPITAL.SHARE_CAPITAL",
+        null,
+        "B.SC"
+      ],
+      [
+        "BS.CAPITAL.RESERVES",
+        null,
+        "B.RES"
+      ]
+    ],
+    "validationRules": [
+      {
+        "key": "NA_EQ_CR",
+        "description": "Net assets equal capital and reserves",
+        "severity": "ERROR",
+        "appliesTo": [
+          "MICRO",
+          "SMALL"
+        ],
+        "expression": {
+          "eq": [
+            {
+              "line": "B.NA"
+            },
+            {
+              "line": "B.CR"
+            }
+          ]
+        }
+      },
+      {
+        "key": "TURNOVER_POSITIVE",
+        "description": "Turnover is positive",
+        "severity": "WARNING",
+        "appliesTo": [
+          "MICRO"
+        ],
+        "expression": {
+          "gt": [
+            {
+              "line": "P.T"
+            },
+            {
+              "const": "0"
+            }
+          ]
+        }
+      },
+      {
+        "key": "INCOME_WITHIN_TOLERANCE",
+        "description": "Turnover and other income are 31,250 within a penny (exercises add and tolerance)",
+        "severity": "WARNING",
+        "appliesTo": [
+          "MICRO"
+        ],
+        "expression": {
+          "eq": [
+            {
+              "add": [
+                {
+                  "line": "P.T"
+                },
+                {
+                  "line": "P.OI"
+                }
+              ]
+            },
+            {
+              "const": "31250.004"
+            }
+          ],
+          "tolerance": "0.01"
+        }
+      },
+      {
+        "key": "SMALL_ONLY",
+        "description": "Applies to small entities only (not evaluated for a micro-entity)",
+        "severity": "ERROR",
+        "appliesTo": [
+          "SMALL"
+        ],
+        "expression": {
+          "lt": [
+            {
+              "line": "P.T"
+            },
+            {
+              "const": "0"
+            }
+          ]
+        }
+      }
+    ],
+    "disclosureRules": [
+      {
+        "key": "DIRECTOR_ADVANCES",
+        "title": "Advances, credits and guarantees granted to directors",
+        "appliesTo": [
+          "MICRO"
+        ],
+        "requires": {
+          "lines": [
+            "B.CW"
+          ],
+          "facts": [
+            "directors.advances"
+          ]
+        }
+      }
+    ]
+  },
+  "frameworks": [
+    {
+      "yearStart": "2025-01-01",
+      "yearEnd": "2025-12-31",
+      "entitySize": "MICRO",
+      "reason": "First year: micro-entity (synthetic)"
+    },
+    {
+      "yearStart": "2026-01-01",
+      "yearEnd": "2026-12-31",
+      "entitySize": "MICRO",
+      "reason": "Second year: micro-entity (synthetic)"
+    }
+  ],
+  "expected": {
+    "comment": "Hand calculation. 2025 P&L: turnover 24,000; raw materials 9,000; depreciation 1,000; other charges = rent 4,800 - 400 prepaid + interest 300 = 4,700; tax 1,500; profit 7,800. 2026 P&L: turnover 30,000; other income = interest 50 + grant 1,200 = 1,250; raw materials 11,000 - closing stock 1,500 = 9,500; depreciation 1,000; other charges = rent 400 + 4,800, interest -300 + 300 + 250, sundry 120 = 5,570; tax 2,000; profit 13,180. Bank at 31.12.2025: 100 + 10,000 + 24,000 - 9,000 - 4,800 = 20,300; at 31.12.2026: 20,300 + 30,000 + 50 + 1,200 - 11,000 - 4,800 - 1,500 - 2,000 - 300 = 31,950.",
+    "yearStart": "2026-01-01",
+    "profitAndLoss": {
+      "P.T": [
+        "30000.00",
+        "24000.00"
+      ],
+      "P.OI": [
+        "1250.00",
+        "0.00"
+      ],
+      "P.RM": [
+        "9500.00",
+        "9000.00"
+      ],
+      "P.DEP": [
+        "1000.00",
+        "1000.00"
+      ],
+      "P.OC": [
+        "5570.00",
+        "4700.00"
+      ],
+      "P.TAX": [
+        "2000.00",
+        "1500.00"
+      ],
+      "P.PROFIT": [
+        "13180.00",
+        "7800.00"
+      ]
+    },
+    "balanceSheet": {
+      "B.FA": [
+        "4000.00",
+        "5000.00"
+      ],
+      "B.CA": [
+        "33450.00",
+        "20300.00"
+      ],
+      "B.PREPAY": [
+        "0.00",
+        "400.00"
+      ],
+      "B.CW": [
+        "8120.00",
+        "7500.00"
+      ],
+      "B.NCA": [
+        "25330.00",
+        "13200.00"
+      ],
+      "B.TALCL": [
+        "29330.00",
+        "18200.00"
+      ],
+      "B.CA1": [
+        "8000.00",
+        "10000.00"
+      ],
+      "B.ACCR": [
+        "250.00",
+        "300.00"
+      ],
+      "B.NA": [
+        "21080.00",
+        "7900.00"
+      ],
+      "B.CR": [
+        "21080.00",
+        "7900.00"
+      ],
+      "B.SC": [
+        "100.00",
+        "100.00"
+      ],
+      "B.RES": [
+        "0.00",
+        "0.00"
+      ],
+      "B.PLR": [
+        "20980.00",
+        "7800.00"
+      ]
+    },
+    "accountsOnLines": {
+      "P.OI": [
+        [
+          "4100",
+          "1200.00"
+        ],
+        [
+          "4900",
+          "50.00"
+        ]
+      ],
+      "B.CW": [
+        [
+          "2220",
+          "2000.00"
+        ],
+        [
+          "2230",
+          "6120.00"
+        ]
+      ],
+      "B.PREPAY": [],
+      "B.ACCR": [
+        [
+          "2110",
+          "250.00"
+        ]
+      ]
+    },
+    "validations": {
+      "NA_EQ_CR": true,
+      "TURNOVER_POSITIVE": true,
+      "INCOME_WITHIN_TOLERANCE": true
+    },
+    "override": {
+      "account": "4100",
+      "to": "P.T",
+      "P.T": "31200.00",
+      "P.OI": "50.00",
+      "P.PROFIT": "13180.00"
+    },
+    "brokenMap": {
+      "comment": "The map entry for BS.CREDITORS_AFTER_ONE_YEAR removed in a superseding (unverified) version: the bank loan of 8,000 lands nowhere, so net assets = 29,330 - 0 - accruals 250 = 29,080 (8,000 more than before) and no longer equal capital and reserves of 21,080. Correction recorded 2026-10-18: the first hand figure (29,330) omitted the accruals line; it was recalculated by hand after the first run disagreed, not copied from the output.",
+      "remove": [
+        "BS.CREDITORS_AFTER_ONE_YEAR",
+        null
+      ],
+      "unplaced": [
+        [
+          "2300",
+          "-8000.00"
+        ]
+      ],
+      "comparativeUnplaced": [
+        [
+          "2300",
+          "-10000.00"
+        ]
+      ],
+      "B.CA1": "0.00",
+      "B.NA": "29080.00",
+      "B.CR": "21080.00",
+      "balanceSheetDifference": "8000.00"
+    },
+    "earlierYear": {
+      "comment": "MAN-ACC-09: after a later version replaces the one 2025 was prepared under, the 2025 preview still comes from the version 2025 chose (now SUPERSEDED, still verified) and still shows the hand figures above.",
+      "yearStart": "2025-01-01",
+      "B.NA": "7900.00",
+      "P.PROFIT": "7800.00"
+    }
+  },
+  "alternative": {
+    "purpose": "V2-ARC-02/03: a second synthetic standard with a different layout (gross profit and operating profit subtotals, net interest, debtors including prepayments, creditors including accruals) on the same ledger; switching the year's version changes the output without code. Expected figures by hand from the same postings.",
+    "standard": {
+      "code": "SYNTH-ALT",
+      "name": "Synthetic alternative layout (test only)"
+    },
+    "version": {
+      "label": "Alt v1",
+      "effectiveFrom": "2025-01-01",
+      "source": {
+        "url": "https://example.test/synthetic-alt-layout",
+        "provision": "Synthetic test layout, not a real standard",
+        "retrievedOn": "2026-10-18"
+      },
+      "lines": [
+        {
+          "key": "A.TURN",
+          "statement": "PL",
+          "sort": 10,
+          "name": "Turnover",
+          "kind": "ACCOUNTS",
+          "naturalSide": "CREDIT"
+        },
+        {
+          "key": "A.COS",
+          "statement": "PL",
+          "sort": 20,
+          "name": "Cost of sales",
+          "kind": "ACCOUNTS",
+          "naturalSide": "DEBIT"
+        },
+        {
+          "key": "A.GP",
+          "statement": "PL",
+          "sort": 30,
+          "name": "Gross profit",
+          "kind": "TOTAL",
+          "formula": [
+            {
+              "line": "A.TURN",
+              "sign": 1
+            },
+            {
+              "line": "A.COS",
+              "sign": -1
+            }
+          ]
+        },
+        {
+          "key": "A.ADMIN",
+          "statement": "PL",
+          "sort": 40,
+          "name": "Administrative expenses",
+          "kind": "ACCOUNTS",
+          "naturalSide": "DEBIT"
+        },
+        {
+          "key": "A.OOI",
+          "statement": "PL",
+          "sort": 50,
+          "name": "Other operating income",
+          "kind": "ACCOUNTS",
+          "naturalSide": "CREDIT"
+        },
+        {
+          "key": "A.OP",
+          "statement": "PL",
+          "sort": 60,
+          "name": "Operating profit",
+          "kind": "TOTAL",
+          "formula": [
+            {
+              "line": "A.GP",
+              "sign": 1
+            },
+            {
+              "line": "A.ADMIN",
+              "sign": -1
+            },
+            {
+              "line": "A.OOI",
+              "sign": 1
+            }
+          ]
+        },
+        {
+          "key": "A.INT",
+          "statement": "PL",
+          "sort": 70,
+          "name": "Net interest",
+          "kind": "ACCOUNTS",
+          "naturalSide": "CREDIT"
+        },
+        {
+          "key": "A.PBT",
+          "statement": "PL",
+          "sort": 80,
+          "name": "Profit before taxation",
+          "kind": "TOTAL",
+          "formula": [
+            {
+              "line": "A.OP",
+              "sign": 1
+            },
+            {
+              "line": "A.INT",
+              "sign": 1
+            }
+          ]
+        },
+        {
+          "key": "A.TAX",
+          "statement": "PL",
+          "sort": 90,
+          "name": "Tax on profit",
+          "kind": "ACCOUNTS",
+          "naturalSide": "DEBIT"
+        },
+        {
+          "key": "A.PAT",
+          "statement": "PL",
+          "sort": 100,
+          "name": "Profit for the financial year",
+          "kind": "TOTAL",
+          "formula": [
+            {
+              "line": "A.PBT",
+              "sign": 1
+            },
+            {
+              "line": "A.TAX",
+              "sign": -1
+            }
+          ]
+        },
+        {
+          "key": "A.TFA",
+          "statement": "BS",
+          "sort": 10,
+          "name": "Tangible and intangible fixed assets",
+          "kind": "ACCOUNTS",
+          "naturalSide": "DEBIT"
+        },
+        {
+          "key": "A.STOCK",
+          "statement": "BS",
+          "sort": 20,
+          "name": "Stocks",
+          "kind": "ACCOUNTS",
+          "naturalSide": "DEBIT"
+        },
+        {
+          "key": "A.DEBT",
+          "statement": "BS",
+          "sort": 30,
+          "name": "Debtors",
+          "kind": "ACCOUNTS",
+          "naturalSide": "DEBIT"
+        },
+        {
+          "key": "A.CASH",
+          "statement": "BS",
+          "sort": 40,
+          "name": "Cash at bank and in hand",
+          "kind": "ACCOUNTS",
+          "naturalSide": "DEBIT"
+        },
+        {
+          "key": "A.CRED1",
+          "statement": "BS",
+          "sort": 50,
+          "name": "Creditors due within one year",
+          "kind": "ACCOUNTS",
+          "naturalSide": "CREDIT"
+        },
+        {
+          "key": "A.CRED2",
+          "statement": "BS",
+          "sort": 60,
+          "name": "Creditors due after one year",
+          "kind": "ACCOUNTS",
+          "naturalSide": "CREDIT"
+        },
+        {
+          "key": "A.NA",
+          "statement": "BS",
+          "sort": 70,
+          "name": "Net assets",
+          "kind": "TOTAL",
+          "formula": [
+            {
+              "line": "A.TFA",
+              "sign": 1
+            },
+            {
+              "line": "A.STOCK",
+              "sign": 1
+            },
+            {
+              "line": "A.DEBT",
+              "sign": 1
+            },
+            {
+              "line": "A.CASH",
+              "sign": 1
+            },
+            {
+              "line": "A.CRED1",
+              "sign": -1
+            },
+            {
+              "line": "A.CRED2",
+              "sign": -1
+            }
+          ]
+        },
+        {
+          "key": "A.EQ",
+          "statement": "BS",
+          "sort": 80,
+          "name": "Share capital and other reserves",
+          "kind": "ACCOUNTS",
+          "naturalSide": "CREDIT"
+        },
+        {
+          "key": "A.RP",
+          "statement": "BS",
+          "sort": 90,
+          "name": "Profit and loss account",
+          "kind": "RETAINED_PROFIT",
+          "naturalSide": "CREDIT"
+        },
+        {
+          "key": "A.TE",
+          "statement": "BS",
+          "sort": 100,
+          "name": "Total equity",
+          "kind": "TOTAL",
+          "formula": [
+            {
+              "line": "A.EQ",
+              "sign": 1
+            },
+            {
+              "line": "A.RP",
+              "sign": 1
+            }
+          ]
+        }
+      ],
+      "mapEntries": [
+        [
+          "PL.TURNOVER",
+          null,
+          "A.TURN"
+        ],
+        [
+          "PL.COST_OF_SALES",
+          null,
+          "A.COS"
+        ],
+        [
+          "PL.ADMIN_EXPENSES",
+          null,
+          "A.ADMIN"
+        ],
+        [
+          "PL.DEPRECIATION",
+          null,
+          "A.ADMIN"
+        ],
+        [
+          "PL.OTHER_EXPENSES",
+          null,
+          "A.ADMIN"
+        ],
+        [
+          "PL.OTHER_INCOME",
+          null,
+          "A.OOI"
+        ],
+        [
+          "PL.INTEREST_RECEIVABLE",
+          null,
+          "A.INT"
+        ],
+        [
+          "PL.INTEREST_PAYABLE",
+          null,
+          "A.INT"
+        ],
+        [
+          "PL.TAXATION",
+          null,
+          "A.TAX"
+        ],
+        [
+          "BS.FIXED_ASSETS.TANGIBLE",
+          null,
+          "A.TFA"
+        ],
+        [
+          "BS.FIXED_ASSETS.INTANGIBLE",
+          null,
+          "A.TFA"
+        ],
+        [
+          "BS.CURRENT_ASSETS.STOCK",
+          null,
+          "A.STOCK"
+        ],
+        [
+          "BS.CURRENT_ASSETS.DEBTORS",
+          null,
+          "A.DEBT"
+        ],
+        [
+          "BS.CURRENT_ASSETS.CASH",
+          null,
+          "A.CASH"
+        ],
+        [
+          "BS.CREDITORS_WITHIN_ONE_YEAR",
+          null,
+          "A.CRED1"
+        ],
+        [
+          "BS.CREDITORS_AFTER_ONE_YEAR",
+          null,
+          "A.CRED2"
+        ],
+        [
+          "BS.CAPITAL.SHARE_CAPITAL",
+          null,
+          "A.EQ"
+        ],
+        [
+          "BS.CAPITAL.RESERVES",
+          null,
+          "A.EQ"
+        ]
+      ],
+      "validationRules": [
+        {
+          "key": "NA_EQ_TE",
+          "description": "Net assets equal total equity",
+          "severity": "ERROR",
+          "appliesTo": [
+            "MICRO",
+            "SMALL",
+            "MEDIUM",
+            "LARGE"
+          ],
+          "expression": {
+            "eq": [
+              {
+                "line": "A.NA"
+              },
+              {
+                "line": "A.TE"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "expected": {
+      "comment": "2026: gross profit 30,000 - 9,500 = 20,500; administrative = rent 5,200 + depreciation 1,000 + sundry 120 = 6,320; other operating income = grant 1,200; operating profit 15,380; net interest = 50 received - 250 payable = -200; profit before tax 15,180; tax 2,000; profit 13,180. 2025: 24,000 - 9,000 = 15,000; administrative 4,400 + 1,000 = 5,400; operating profit 9,600; net interest -300; 9,300; tax 1,500; 7,800. Balance sheet 2026: creditors within one year = tax 2,000 + director 6,120 + accruals 250 = 8,370; net assets 4,000 + 1,500 + 0 + 31,950 - 8,370 - 8,000 = 21,080. 2025: 7,800 within one year; 5,000 + 0 + 400 + 20,300 - 7,800 - 10,000 = 7,900.",
+      "profitAndLoss": {
+        "A.TURN": [
+          "30000.00",
+          "24000.00"
+        ],
+        "A.COS": [
+          "9500.00",
+          "9000.00"
+        ],
+        "A.GP": [
+          "20500.00",
+          "15000.00"
+        ],
+        "A.ADMIN": [
+          "6320.00",
+          "5400.00"
+        ],
+        "A.OOI": [
+          "1200.00",
+          "0.00"
+        ],
+        "A.OP": [
+          "15380.00",
+          "9600.00"
+        ],
+        "A.INT": [
+          "-200.00",
+          "-300.00"
+        ],
+        "A.PBT": [
+          "15180.00",
+          "9300.00"
+        ],
+        "A.TAX": [
+          "2000.00",
+          "1500.00"
+        ],
+        "A.PAT": [
+          "13180.00",
+          "7800.00"
+        ]
+      },
+      "balanceSheet": {
+        "A.TFA": [
+          "4000.00",
+          "5000.00"
+        ],
+        "A.STOCK": [
+          "1500.00",
+          "0.00"
+        ],
+        "A.DEBT": [
+          "0.00",
+          "400.00"
+        ],
+        "A.CASH": [
+          "31950.00",
+          "20300.00"
+        ],
+        "A.CRED1": [
+          "8370.00",
+          "7800.00"
+        ],
+        "A.CRED2": [
+          "8000.00",
+          "10000.00"
+        ],
+        "A.NA": [
+          "21080.00",
+          "7900.00"
+        ],
+        "A.EQ": [
+          "100.00",
+          "100.00"
+        ],
+        "A.RP": [
+          "20980.00",
+          "7800.00"
+        ],
+        "A.TE": [
+          "21080.00",
+          "7900.00"
+        ]
+      }
+    }
+  }
+}
