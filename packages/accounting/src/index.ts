@@ -19,3 +19,4 @@ export * from './statutory';
 export * from './statutory-report';
 export * from './depreciation-math';
 export * from './fixed-assets';
+export * from './year-end';

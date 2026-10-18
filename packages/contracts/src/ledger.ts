@@ -100,6 +100,16 @@ export const JOURNAL_SOURCES: Record<string, JournalSourceDef> = {
   FIXED_ASSET_DEPRECIATION_REVERSAL: { actors: ['USER'], permission: 'assets:manage', controlAccounts: false, subLedger: true, description: 'Mirror of the latest live depreciation run' },
   FIXED_ASSET_DISPOSAL: { actors: ['USER'], permission: 'assets:manage', controlAccounts: false, subLedger: true, description: 'Disposal: depreciation catch-up, cost and accumulated depreciation removed, carrying amount and proceeds on the disposal account' },
   FIXED_ASSET_DISPOSAL_REVERSAL: { actors: ['USER'], permission: 'assets:manage', controlAccounts: false, subLedger: true, description: 'Mirror of a disposal while no later run is live (the asset is ACTIVE again)' },
+  // V2-M3a year-end adjustments (DEC-059): corrected by their own mirrors; never on a control account, never with VAT
+  ACCRUAL: { actors: ['USER'], permission: 'accounts:prepare', controlAccounts: false, subLedger: true, description: 'Accrual or accrued income at a period end (Dr expense / Cr accruals, or Dr accrued income / Cr income)' },
+  ACCRUAL_AUTO_REVERSAL: { actors: ['USER'], permission: 'accounts:prepare', controlAccounts: false, subLedger: true, description: 'The accrual reversed on the first day of the next period' },
+  ACCRUAL_CANCELLATION: { actors: ['USER'], permission: 'accounts:prepare', controlAccounts: false, subLedger: true, description: 'Mirrors of a wrong accrual and of its auto-reversal, at their own dates' },
+  ADJUSTMENT_SETUP: { actors: ['USER'], permission: 'accounts:prepare', controlAccounts: false, subLedger: true, description: 'Prepayment or deferred income set up from the P&L account (Dr prepayment / Cr expense, or Dr income / Cr deferred income)' },
+  ADJUSTMENT_SETUP_REVERSAL: { actors: ['USER'], permission: 'accounts:prepare', controlAccounts: false, subLedger: true, description: 'Mirror of a set-up cancelled before anything was released' },
+  ADJUSTMENT_RELEASE: { actors: ['USER'], permission: 'accounts:prepare', controlAccounts: false, subLedger: true, description: 'Release run of prepayments and deferred income as at a date' },
+  ADJUSTMENT_RELEASE_REVERSAL: { actors: ['USER'], permission: 'accounts:prepare', controlAccounts: false, subLedger: true, description: 'Mirror of the latest live release run' },
+  PROVISION_MOVEMENT: { actors: ['USER'], permission: 'accounts:prepare', controlAccounts: false, subLedger: true, description: 'Provision made (Dr expense / Cr provision), used (Dr provision / Cr cost account) or released (Dr provision / Cr expense)' },
+  PROVISION_MOVEMENT_REVERSAL: { actors: ['USER'], permission: 'accounts:prepare', controlAccounts: false, subLedger: true, description: 'Mirror of the latest live movement of a provision' },
 };
 export const isJournalSource = (s: string) => Object.prototype.hasOwnProperty.call(JOURNAL_SOURCES, s);
 /** Sources a client may name on POST /journals. Opening balances and control adjustments go through journal requests (DEC-012). */

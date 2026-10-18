@@ -2364,3 +2364,113 @@ model DepreciationRunLine {
   @@index([organisationId, assetId], map: "drl_asset_idx")
   @@map("depreciation_run_line")
 }
+
+/// V2-M3a (DEC-059): an accrual, accrued income, prepayment or deferred income; cancelled once by its mirrors, never edited.
+model YearEndItem {
+  id                     String    @id @db.Uuid
+  organisationId         String    @map("organisation_id") @db.Uuid
+  companyId              String    @map("company_id") @db.Uuid
+  kind                   String
+  description            String
+  amount                 Decimal   @db.Decimal(19, 4)
+  plAccountId            String    @map("pl_account_id") @db.Uuid
+  balanceAccountId       String    @map("balance_account_id") @db.Uuid
+  itemDate               DateTime  @map("item_date") @db.Date
+  periodStart            DateTime? @map("period_start") @db.Date
+  periodEnd              DateTime? @map("period_end") @db.Date
+  convention             String?
+  setupKind              String?   @map("setup_kind")
+  setupJournalId         String?   @map("setup_journal_id") @db.Uuid
+  accrualJournalId       String?   @map("accrual_journal_id") @db.Uuid
+  autoReversalJournalId  String?   @map("auto_reversal_journal_id") @db.Uuid
+  status                 String    @default("ACTIVE")
+  cancellationJournalIds String[]  @default([]) @map("cancellation_journal_ids") @db.Uuid
+  cancelledByUserId      String?   @map("cancelled_by_user_id") @db.Uuid
+  cancelledAt            DateTime? @map("cancelled_at") @db.Timestamptz(3)
+  cancelledReason        String?   @map("cancelled_reason")
+  basis                  String?
+  evidenceDocumentIds    String[]  @default([]) @map("evidence_document_ids") @db.Uuid
+  createdByUserId        String    @map("created_by_user_id") @db.Uuid
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id], map: "yei_organisation_id_id_key")
+  @@index([organisationId, companyId, kind, itemDate], map: "yei_company_idx")
+  @@map("year_end_item")
+}
+
+/// V2-M3a: a release run of prepayments and deferred income as at a date; reversed only by its mirror while it is the latest live run.
+model ReleaseRun {
+  id                String    @id @db.Uuid
+  organisationId    String    @map("organisation_id") @db.Uuid
+  companyId         String    @map("company_id") @db.Uuid
+  asAt              DateTime  @map("as_at") @db.Date
+  status            String    @default("POSTED")
+  journalId         String    @map("journal_id") @db.Uuid
+  reversalJournalId String?   @map("reversal_journal_id") @db.Uuid
+  total             Decimal   @db.Decimal(19, 4)
+  createdByUserId   String    @map("created_by_user_id") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  reversedByUserId  String?   @map("reversed_by_user_id") @db.Uuid
+  reversedAt        DateTime? @map("reversed_at") @db.Timestamptz(3)
+  reversedReason    String?   @map("reversed_reason")
+
+  @@unique([organisationId, id], map: "rr_organisation_id_id_key")
+  @@map("release_run")
+}
+
+/// V2-M3a: what one release run released from one schedule (written once).
+model ReleaseRunLine {
+  id             String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String  @map("organisation_id") @db.Uuid
+  runId          String  @map("run_id") @db.Uuid
+  itemId         String  @map("item_id") @db.Uuid
+  amount         Decimal @db.Decimal(19, 4)
+  releasedAfter  Decimal @map("released_after") @db.Decimal(19, 4)
+
+  @@unique([organisationId, id], map: "rrl_organisation_id_id_key")
+  @@unique([organisationId, runId, itemId], map: "rrl_run_item_key")
+  @@index([organisationId, itemId], map: "rrl_item_idx")
+  @@map("release_run_line")
+}
+
+/// V2-M3a: a provision (FRS 102 s.21): its liability and expense accounts and its basis; written once.
+model Provision {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId      String   @map("organisation_id") @db.Uuid
+  companyId           String   @map("company_id") @db.Uuid
+  name                String
+  accountId           String   @map("account_id") @db.Uuid
+  expenseAccountId    String   @map("expense_account_id") @db.Uuid
+  basis               String
+  evidenceDocumentIds String[] @default([]) @map("evidence_document_ids") @db.Uuid
+  createdByUserId     String   @map("created_by_user_id") @db.Uuid
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id], map: "prov_organisation_id_id_key")
+  @@map("provision")
+}
+
+/// V2-M3a: a provision made, used or released; dated in order, never below zero, the latest reversed by its mirror.
+model ProvisionMovement {
+  id                String    @id @db.Uuid
+  organisationId    String    @map("organisation_id") @db.Uuid
+  companyId         String    @map("company_id") @db.Uuid
+  provisionId       String    @map("provision_id") @db.Uuid
+  kind              String
+  movementDate      DateTime  @map("movement_date") @db.Date
+  amount            Decimal   @db.Decimal(19, 4)
+  offsetAccountId   String?   @map("offset_account_id") @db.Uuid
+  reason            String
+  journalId         String    @map("journal_id") @db.Uuid
+  status            String    @default("POSTED")
+  reversalJournalId String?   @map("reversal_journal_id") @db.Uuid
+  reversedByUserId  String?   @map("reversed_by_user_id") @db.Uuid
+  reversedAt        DateTime? @map("reversed_at") @db.Timestamptz(3)
+  reversedReason    String?   @map("reversed_reason")
+  createdByUserId   String    @map("created_by_user_id") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id], map: "pm_organisation_id_id_key")
+  @@index([organisationId, provisionId, movementDate], map: "pm_provision_idx")
+  @@map("provision_movement")
+}

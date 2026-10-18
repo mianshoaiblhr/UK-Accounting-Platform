@@ -11,7 +11,7 @@ Everything in V1 plan section 1, plus: only the PostingService writes the ledger
 | V2-M0 | Decisions DEC-051..054, ADR-62..64, this plan, the V2 matrix | **recorded** (2026-10-17) | Engineering | V2 approval |
 | V2-M1 | Reporting framework as data (section 3) | **built** (2026-10-18; `v2-m1-acceptance.md`); rules unverified until the named accountant | Engineering; the named accountant verifies | V2-M0 |
 | V2-M2 | Fixed assets: classes, register, additions, disposals, depreciation methods, useful lives, residual values, tax vs accounting treatment, reconciliation to the ledger, depreciation runs | **built** (2026-10-18; `v2-m2-acceptance.md`) | Engineering | V2-M1 |
-| V2-M3 | Year-end adjustments: accruals, prepayments, deferred income, provisions with reversal; the year-end closing journal to retained earnings | planned | Engineering | V2-M2 |
+| V2-M3 | Year-end adjustments: accruals, prepayments, deferred income, provisions with reversal; the year-end closing journal to retained earnings | split (DEC-059): **V2-M3a built** (2026-10-18; `v2-m3a-acceptance.md`); V2-M3b closing journal next | Engineering | V2-M2 |
 | V2-M4 | Director and shareholder balances (director loan movements flagged), related parties | planned | Engineering | V2-M3 |
 | V2-M5 | Statements and notes: FRS 105 micro-entity, then FRS 102 Section 1A, then full FRS 102; policies, comparatives, directors' sections; the size test | planned | Engineering; the named accountant | V2-M1, V2-M3, V2-M4 |
 | V2-M6 | Year-end workflow (the specification's 14 steps), review checklist and flags, partner review, client approval, filing-ready package | planned | Engineering | V2-M5 |
@@ -107,5 +107,36 @@ All tables: forced row-level security, no DELETE or TRUNCATE for the runtime rol
 * Architecture: depreciation never reads the tax fields; only the asset services write the asset tables and post the asset sources.
 * CI green, clean clone, OpenAPI regenerated, matrix rows V2-MOD-03, V2-MOD-04 and V2-FA-01..08 moved with evidence.
 
-## 5. Legal and standards context
+## 5. V2-M3a - Year-end adjustments (specification; DEC-059)
+Recorded before code.
+
+### 5.1 Data (one migration, additive)
+| Table | Holds | Rules |
+|---|---|---|
+| `year_end_item` | Per company: kind (ACCRUAL, ACCRUED_INCOME, PREPAYMENT, DEFERRED_INCOME), description, amount, P&L account, balance account, date, service period and convention (schedules), set-up kind (POSTED or LINKED) and journal, accrual and auto-reversal journals, status (ACTIVE, CANCELLED), evidence documents, basis, author | Accounts of the kind's types, non-control; amount > 0; a schedule's end not before its start; facts immutable; ACTIVE -> CANCELLED once |
+| `release_run` / `release_run_line` | As at date, status, journal, reversal journal, total; per schedule amount and released after | As for depreciation runs (DEC-058): one live run per date, later than every live run, only the latest reversed; lines written once |
+| `provision` / `provision_movement` | Provision: name, liability and expense accounts, basis, evidence. Movement: kind (MADE, USED, RELEASED), date, amount, offset account (USED), reason, journal, status (POSTED, REVERSED) | Balance never below zero (database); only the latest live movement reversed; movements never edited |
+
+### 5.2 API (behind `accounts.production`; writes `accounts:prepare`, reads `ledger:read`)
+* `year-end-items`: list; create an accrual, accrued income, prepayment or deferred income; get; cancel.
+* `release-runs`: list; preview; post; get; reverse.
+* `provisions`: list; create; get, with its movements.
+* `provisions/{id}/movements`: create (made, used or released).
+* `provision-movements/{id}/reverse`.
+* `provisions/report?from&to`: the movement report.
+* `year-end-register?asAt`: every item and provision, and the reconciliation by balance account.
+
+All are in OpenAPI.
+
+### 5.3 Acceptance
+* **Golden (DEC-054):** `tests/golden/v2-m3a-adjustments.json`, written by hand before the code and recomputed independently in a workbook:
+  * an accrual and accrued income at 31.12.2026, each reversed on 1.1.2027;
+  * a posted monthly prepayment and a linked daily prepayment;
+  * monthly deferred income;
+  * two release runs;
+  * a provision made, used and released;
+  * the reconciliation at both dates, and the P&L effect per account.
+* **Tests:** the five categories for each of the nine sources; database guards; permissions and tenancy; an architecture test (only the year-end service writes its tables and posts its sources); CI green; clean clone; matrix rows V2-MOD-05..08 moved with evidence.
+
+## 6. Legal and standards context
 See `v2-proposal.md` section 6. The rules entered into the framework are the firm's, from the current text of FRS 102 and FRS 105 and the Companies Act 2006 accounts regulations, verified by its named accountant; engineering builds the mechanism and tests it on synthetic data.

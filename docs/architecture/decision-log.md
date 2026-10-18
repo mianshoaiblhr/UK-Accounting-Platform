@@ -263,6 +263,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-053 | V2-M1 scope: the reporting framework as data | Standards and effective-dated versions; per-version statement lines with totals as data; a map from V1 reporting lines (and account subtypes) to statutory lines with per-account overrides; disclosure and validation rules as a closed expression language (no code evaluation); the framework a company reports under per financial year; statutory statements computed from the ledger through it |
 | DEC-054 | V2: golden trial balances | Each statement, note and size test is proven on a hand-calculated synthetic trial balance with its expected output written first; the expected figures are reviewed by the named accountant before a rule version is verified |
 | DEC-057 | V2-M1 golden outputs reviewed | Shoaib, the named accountant, reviewed the V2-M1 golden workings (`v2-m1-golden-workings.xlsx`) on 2026-10-18. This review covers the synthetic expected figures only; it verifies no standard version |
+| DEC-059 | V2-M3 split and V2-M3a design (delegated, DEC-019; recorded before code) | V2-M3a covers accruals and accrued income (auto-reversed on the first day of the next period), prepayments and deferred income (released by schedule) and provisions (made, used, released). V2-M3b covers the closing journal to retained earnings, which every P&L figure excludes. Every posting goes through the PostingService under its own source with a mirror; each balance account reconciles to the ledger |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -483,4 +484,28 @@ These choices refine DEC-036. None of them is a tax rule; the VAT arithmetic is 
 * **Reconciliation:** per cost and accumulated-depreciation account, at a date, the register's amount against the ledger balance. Every journal on those accounts that is neither from the register nor linked to an asset is listed as a reconciling item.
 * **Permissions:** new `assets:read` and `assets:manage`, both company-scoped. Owner, admin, partner, manager and accountant hold both; bookkeeper and reviewer hold `assets:read`. The routes sit behind `accounts.production`.
 * **Not in V2-M2:** partial disposals, revaluation and impairment (FRS 102 options, never FRS 105), componentisation, capital allowances (V4), screens (V2-M7), and asset transfers between classes.
+
+### DEC-059 - V2-M3 split; how V2-M3a is built (delegated, DEC-019; recorded before code)
+* **Split:** V2-M3a covers the year-end adjustments. V2-M3b covers the year-end closing journal, because it touches V1's statements: every P&L figure (management P&L, statutory preview, FX report) must exclude closing journals, and balance sheets include them. Each half has its own acceptance package. The closing journal is in the approved plan (v2-proposal section 4) but had no matrix row; V2-YEC-01 is added to the matrix with a history entry.
+* **Accruals and accrued income (ACCRUAL, ACCRUED_INCOME):** an amount at a date, normally a period end.
+  * ACCRUAL posts Dr expense / Cr a non-control liability. ACCRUED_INCOME posts Dr a non-control asset / Cr income (source ACCRUAL).
+  * The reversal dated the next day is posted at the same time (ACCRUAL_AUTO_REVERSAL), so the next day must fall in an existing open period.
+  * A wrong accrual is cancelled by mirrors of both journals at their own dates (ACCRUAL_CANCELLATION).
+  * Evidence documents are linked to the item.
+* **Prepayments and deferred income (PREPAYMENT, DEFERRED_INCOME):** an amount released over a service period [start, end], straight line, DAILY (days in the period) or MONTHLY (months from the start month to the end month; a month counts once its last day is reached).
+  * Set-up is either POSTED or LINKED:
+    * POSTED reclassifies from the P&L account (ADJUSTMENT_SETUP): Dr prepayment / Cr expense, or Dr income / Cr deferred income.
+    * LINKED names the journal that already put the amount on the balance account; it is never over-linked.
+  * Releases are posted by release runs (ADJUSTMENT_RELEASE). Like depreciation runs, each run is later than every live run, only the latest is reversed by its mirror (ADJUSTMENT_RELEASE_REVERSAL), and each charge is the cumulative amount due less what was released, rounded half-up once.
+  * A schedule nothing has been released from can be cancelled by the mirror of its set-up (ADJUSTMENT_SETUP_REVERSAL).
+* **Provisions (FRS 102 s.21):** a provision names its liability account and its expense account (both non-control) and records its basis. Each movement is posted under PROVISION_MOVEMENT, with a reason:
+  * MADE: Dr expense / Cr provision.
+  * USED: Dr provision / Cr a non-control account (the expense the actual cost went to).
+  * RELEASED: Dr provision / Cr expense.
+  The balance never goes below zero. Only the latest live movement is reversed, by its mirror (PROVISION_MOVEMENT_REVERSAL). A movement report gives opening, made, used, released and closing for a date range.
+* **Accounts:** the P&L side must be EXPENSE or INCOME as the kind requires; the balance side must be ASSET or LIABILITY as the kind requires. Never a control account, and never bank or cash.
+* **Reconciliation:** per balance account at a date, the register (live items in effect at the date) is set against the ledger. Postings neither made nor linked by the register are listed as reconciling items.
+* **Permissions:** writes need `accounts:prepare`, reads need `ledger:read`. No new permission. The routes sit behind `accounts.production`.
+* **Sources:** all nine are `subLedger` (corrected only by their own mirrors), never touch a control account and carry no VAT. Each has its five posting-rule categories.
+* **Not in V2-M3a:** accruals that do not auto-reverse; release by anything other than time (usage, milestones); discounting of provisions (FRS 102 s.21.7); contingent liabilities, which are a disclosure in V2-M5.
 

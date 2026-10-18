@@ -70,6 +70,11 @@ const FORBIDDEN: Record<string, string[]> = {
   fixed_asset_basis: ['UPDATE', 'DELETE', 'TRUNCATE'],          // append-only
   depreciation_run: ['DELETE', 'TRUNCATE'],                     // POSTED -> REVERSED once (trigger)
   depreciation_run_line: ['UPDATE', 'DELETE', 'TRUNCATE'],      // written once with its run
+  year_end_item: ['DELETE', 'TRUNCATE'],                        // ACTIVE -> CANCELLED once by mirrors (V2-M3a)
+  release_run: ['DELETE', 'TRUNCATE'],                          // POSTED -> REVERSED once (trigger)
+  release_run_line: ['UPDATE', 'DELETE', 'TRUNCATE'],           // written once with its run
+  provision: ['UPDATE', 'DELETE', 'TRUNCATE'],                  // written once
+  provision_movement: ['DELETE', 'TRUNCATE'],                   // POSTED -> REVERSED once (trigger)
   notification_preference: ['DELETE', 'TRUNCATE'], // toggled, never removed
   notification_delivery: ['DELETE', 'TRUNCATE'],   // planned deliveries are final once handled
   outbox_event: ['TRUNCATE'],                    // DELETE is system-context only (RLS) and trigger-guarded

@@ -221,6 +221,12 @@ describe('database access paths that carry security meaning', () => {
     expect(SRC.filter((f) => /sourceType: '(FIXED_ASSET_\w+)'/.test(read(f))).map(rel)).toEqual(['packages/accounting/src/fixed-assets.ts']);
     expect(read(`${ROOT}/packages/accounting/src/fixed-assets.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany|update)|INSERT INTO\s+"?journal/);
   });
+  it('the year-end adjustments have one writer, which alone posts their sources, through the PostingService only (V2-M3a)', () => {
+    const WRITE = /\.(yearEndItem|releaseRun|releaseRunLine|provision|provisionMovement)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(year_end_item|release_run\w*|provision\w*)"?\b/i;
+    expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/year-end.ts']);
+    expect(SRC.filter((f) => /source: '(ACCRUAL|ACCRUAL_AUTO_REVERSAL|ACCRUAL_CANCELLATION|ADJUSTMENT_\w+|PROVISION_\w+)'/.test(read(f))).map(rel)).toEqual(['packages/accounting/src/year-end.ts']);
+    expect(read(`${ROOT}/packages/accounting/src/year-end.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany|update)|INSERT INTO\s+"?journal/);
+  });
   it('the reporting framework has one writer per side (V2-M1): standard content in StandardsService, company choices in FrameworkService, both in statutory.ts', () => {
     const WRITE = /\.(reportingStandard|reportingStandardVersion|statutoryLine|statutoryMapEntry|validationRule|disclosureRule|statutoryAccountOverride|companyReportingFramework)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(reporting_standard\w*|statutory_\w+|validation_rule|disclosure_rule|company_reporting_framework)"?\b/i;
     expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/statutory.ts']);

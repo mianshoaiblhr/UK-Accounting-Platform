@@ -1,0 +1,57 @@
+{
+  "id": "V2-M3A-GOLDEN-01",
+  "purpose": "DEC-054 golden for V2-M3a: an accrual and accrued income at the year end (reversed the next day), a posted monthly prepayment, a linked daily prepayment, monthly deferred income, two release runs and a provision made, used and released; every journal, release, balance and reconciliation written and added up by hand before the code.",
+  "disclaimer": "SYNTHETIC. Amounts, service periods and the provision's basis are test choices, not estimates for any real business (FRS 102 s.21 requires the best estimate of the obligation).",
+  "periods": [["2026-01-01", "2026-12-31"], ["2027-01-01", "2027-12-31"]],
+  "accounts": [
+    { "code": "2150", "name": "Deferred income", "type": "LIABILITY", "subtype": "CURRENT_LIABILITY_ACCRUAL", "reportingMapping": "BS.CREDITORS_WITHIN_ONE_YEAR" },
+    { "code": "2160", "name": "Provisions", "type": "LIABILITY", "subtype": "CURRENT_LIABILITY_OTHER", "reportingMapping": "BS.CREDITORS_WITHIN_ONE_YEAR" }
+  ],
+  "seed": [
+    { "ref": "SHARES", "date": "2026-01-01", "direction": "RECEIPT", "lines": [["3000", "10000.00"]], "description": "Shares issued" },
+    { "ref": "SUPPORT", "date": "2026-07-01", "direction": "RECEIPT", "lines": [["4000", "2400.00"]], "description": "Annual support contract received in advance" },
+    { "ref": "INSURANCE", "date": "2026-10-01", "direction": "PAYMENT", "lines": [["6200", "1200.00"]], "description": "Insurance for 1.10.2026-30.9.2027" },
+    { "ref": "SOFTWARE", "date": "2026-11-01", "direction": "PAYMENT", "lines": [["1120", "730.00"]], "description": "Software subscription paid in advance" },
+    { "ref": "REPAIR", "date": "2027-02-10", "direction": "PAYMENT", "lines": [["6700", "300.00"]], "description": "Repair under warranty" }
+  ],
+  "items": [
+    { "key": "ACC1", "kind": "ACCRUAL", "description": "Electricity Q4 2026 (estimate from meter readings)", "amount": "450.00", "plAccount": "6110", "balanceAccount": "2110", "date": "2026-12-31",
+      "expect": { "journal": [["6110", "450.00", "0.00"], ["2110", "0.00", "450.00"]], "reversal": { "date": "2027-01-01", "journal": [["2110", "450.00", "0.00"], ["6110", "0.00", "450.00"]] } } },
+    { "key": "ACC2", "kind": "ACCRUED_INCOME", "description": "Bank interest earned, not yet received", "amount": "120.00", "plAccount": "4900", "balanceAccount": "1110", "date": "2026-12-31",
+      "expect": { "journal": [["1110", "120.00", "0.00"], ["4900", "0.00", "120.00"]], "reversal": { "date": "2027-01-01", "journal": [["4900", "120.00", "0.00"], ["1110", "0.00", "120.00"]] } } },
+    { "key": "PRE1", "kind": "PREPAYMENT", "description": "Insurance 1.10.2026-30.9.2027", "amount": "1200.00", "plAccount": "6200", "balanceAccount": "1120", "date": "2026-10-01",
+      "periodStart": "2026-10-01", "periodEnd": "2027-09-30", "convention": "MONTHLY", "setup": "POSTED", "expect": { "journal": [["1120", "1200.00", "0.00"], ["6200", "0.00", "1200.00"]] } },
+    { "key": "PRE2", "kind": "PREPAYMENT", "description": "Software subscription 1.11.2026-31.10.2027", "amount": "730.00", "plAccount": "6320", "balanceAccount": "1120", "date": "2026-11-01",
+      "periodStart": "2026-11-01", "periodEnd": "2027-10-31", "convention": "DAILY", "setup": "LINKED", "journalRef": "SOFTWARE" },
+    { "key": "DEF1", "kind": "DEFERRED_INCOME", "description": "Support contract 1.7.2026-30.6.2027", "amount": "2400.00", "plAccount": "4000", "balanceAccount": "2150", "date": "2026-07-01",
+      "periodStart": "2026-07-01", "periodEnd": "2027-06-30", "convention": "MONTHLY", "setup": "POSTED", "expect": { "journal": [["4000", "2400.00", "0.00"], ["2150", "0.00", "2400.00"]] } }
+  ],
+  "provision": { "name": "Warranty claims on 2026 sales", "account": "2160", "expenseAccount": "6700", "basis": "Estimated from the claims history: 2% of warranty sales (synthetic)",
+    "movements": [
+      { "kind": "MADE", "date": "2026-12-31", "amount": "800.00", "reason": "Year-end estimate", "journal": [["6700", "800.00", "0.00"], ["2160", "0.00", "800.00"]] },
+      { "kind": "USED", "date": "2027-02-15", "amount": "300.00", "offsetAccount": "6700", "reason": "Repair paid on 10.2.2027 met from the provision", "journal": [["2160", "300.00", "0.00"], ["6700", "0.00", "300.00"]] },
+      { "kind": "RELEASED", "date": "2027-03-31", "amount": "100.00", "reason": "Fewer claims expected", "journal": [["2160", "100.00", "0.00"], ["6700", "0.00", "100.00"]] }
+    ],
+    "reports": [
+      { "from": "2026-01-01", "to": "2026-12-31", "opening": "0.00", "made": "800.00", "used": "0.00", "released": "0.00", "closing": "800.00" },
+      { "from": "2027-01-01", "to": "2027-03-31", "opening": "800.00", "made": "0.00", "used": "300.00", "released": "100.00", "closing": "400.00" }
+    ] },
+  "runs": [
+    { "asAt": "2026-12-31", "lines": { "PRE1": "300.00", "PRE2": "122.00", "DEF1": "1200.00" }, "total": "1622.00",
+      "journal": [["6200", "300.00", "0.00"], ["1120", "0.00", "300.00"], ["6320", "122.00", "0.00"], ["1120", "0.00", "122.00"], ["2150", "1200.00", "0.00"], ["4000", "0.00", "1200.00"]],
+      "why": "PRE1 monthly: Oct-Dec = 3 of 12 months x 1,200 = 300.00. PRE2 daily: 61 days (1.11-31.12.2026) of 365 (1.11.2026-31.10.2027) x 730 = 122.00. DEF1 monthly: Jul-Dec = 6 of 12 x 2,400 = 1,200.00." },
+    { "asAt": "2027-03-31", "lines": { "PRE1": "300.00", "PRE2": "180.00", "DEF1": "600.00" }, "total": "1080.00",
+      "journal": [["6200", "300.00", "0.00"], ["1120", "0.00", "300.00"], ["6320", "180.00", "0.00"], ["1120", "0.00", "180.00"], ["2150", "600.00", "0.00"], ["4000", "0.00", "600.00"]],
+      "why": "PRE1: 6 months = 600 - 300 = 300.00. PRE2: 151 days (61 + 31 + 28 + 31) x 730 / 365 = 302.00 - 122 = 180.00. DEF1: 9 months = 1,800 - 1,200 = 600.00." }
+  ],
+  "reconciliation": {
+    "2026-12-31": { "1110": "120.00", "1120": "1508.00", "2110": "450.00", "2150": "1200.00", "2160": "800.00" },
+    "2027-03-31": { "1110": "0.00", "1120": "1028.00", "2110": "0.00", "2150": "600.00", "2160": "400.00" },
+    "why": "1120 at 31.12.2026: PRE1 1,200 - 300 + PRE2 730 - 122 = 1,508; at 31.3.2027: 600 + 428 = 1,028. Liabilities shown credit-positive. Accruals stand only on their date (reversed the next day)."
+  },
+  "pl": {
+    "2026": { "6110": "450.00", "4900": "-120.00", "6200": "300.00", "6320": "122.00", "4000": "-1200.00", "6700": "800.00" },
+    "2027Q1": { "6110": "-450.00", "4900": "120.00", "6200": "300.00", "6320": "180.00", "4000": "-600.00", "6700": "-100.00" },
+    "why": "Debit-positive. 6200 in 2026: 1,200 paid - 1,200 set up as prepaid + 300 released. 4000 in 2026: 2,400 received - 2,400 deferred + 1,200 released (credit). 6700 in 2027 Q1: 300 repair - 300 used - 100 released."
+  }
+}

@@ -455,3 +455,28 @@ export const FixedAssetRegister = z.object({ companyId: uuid, currency: z.string
   reconciliation: z.array(z.object({ accountId: uuid, code: z.string(), kind: z.enum(['COST', 'DEPRECIATION']), register: money2, ledger: money2, difference: money2.describe('Register less ledger'), reconciled: z.boolean(),
     items: z.array(z.object({ journalId: uuid, journalNumber: z.number().int(), journalDate: day, sourceType: z.string(), description: z.string(), amount: money2, registered: money2, unregistered: money2 })).describe('Postings on the account not made or linked by the register') })),
   reconciled: z.boolean() });
+
+// ───────────── V2-M3a year-end adjustments (DEC-059) ─────────────
+const amt = z.string().describe('Exact decimal');
+export const YearEndItem = z.object({
+  id: uuid, companyId: uuid, kind: z.enum(['ACCRUAL', 'ACCRUED_INCOME', 'PREPAYMENT', 'DEFERRED_INCOME']), description: z.string(), amount: amt, plAccountId: uuid, balanceAccountId: uuid, date: day,
+  periodStart: day.nullable(), periodEnd: day.nullable(), convention: z.enum(['DAILY', 'MONTHLY']).nullable(), setupKind: z.enum(['POSTED', 'LINKED']).nullable(), setupJournalId: uuid.nullable(),
+  accrualJournalId: uuid.nullable(), autoReversalJournalId: uuid.nullable(), status: z.enum(['ACTIVE', 'CANCELLED']), cancellationJournalIds: z.array(uuid), cancelledByUserId: uuid.nullable(), cancelledAt: ts.nullable(),
+  cancelledReason: z.string().nullable(), basis: z.string().nullable(), evidenceDocumentIds: z.array(uuid), createdByUserId: uuid, createdAt: ts, released: amt.optional(), unreleased: amt.optional(),
+});
+const rrBase = { id: uuid, companyId: uuid, asAt: day, status: z.enum(['POSTED', 'REVERSED']), journalId: uuid, reversalJournalId: uuid.nullable(), total: amt, createdByUserId: uuid, createdAt: ts,
+  reversedByUserId: uuid.nullable(), reversedAt: ts.nullable(), reversedReason: z.string().nullable() };
+export const ReleaseRunSummary = z.object(rrBase);
+export const ReleaseRunDetail = z.object({ ...rrBase, lines: z.array(z.object({ itemId: uuid, kind: z.string(), description: z.string(), amount: amt, releasedAfter: amt })) });
+export const ReleasePreview = z.object({ companyId: uuid, asAt: day, total: amt, lines: z.array(z.object({ itemId: uuid, kind: z.string(), description: z.string(), amount: amt, releasedAfter: amt, unreleasedAfter: amt })) });
+export const ProvisionView = z.object({ id: uuid, companyId: uuid, name: z.string(), accountId: uuid, expenseAccountId: uuid, basis: z.string(), evidenceDocumentIds: z.array(uuid), createdByUserId: uuid, createdAt: ts,
+  balance: amt, movements: z.array(z.object({ id: uuid, provisionId: uuid, kind: z.enum(['MADE', 'USED', 'RELEASED']), date: day, amount: amt, offsetAccountId: uuid.nullable(), reason: z.string(), journalId: uuid,
+    status: z.enum(['POSTED', 'REVERSED']), reversalJournalId: uuid.nullable(), reversedByUserId: uuid.nullable(), reversedAt: ts.nullable(), reversedReason: z.string().nullable(), createdByUserId: uuid, createdAt: ts })) });
+export const ProvisionReport = z.object({ companyId: uuid, from: day, to: day,
+  provisions: z.array(z.object({ provisionId: uuid, name: z.string(), basis: z.string(), opening: amt, made: amt, used: amt, released: amt, closing: amt })) });
+export const YearEndRegister = z.object({ companyId: uuid, asAt: day,
+  items: z.array(z.object({ id: uuid, kind: z.string(), description: z.string(), amount: amt, balanceAccountId: uuid, balance: amt })),
+  provisions: z.array(z.object({ id: uuid, name: z.string(), accountId: uuid, balance: amt })),
+  reconciliation: z.array(z.object({ accountId: uuid, code: z.string(), register: amt, ledger: amt.describe('Assets debit-positive, liabilities credit-positive'), difference: amt, reconciled: z.boolean(),
+    items: z.array(z.object({ journalId: uuid, journalNumber: z.number().int(), journalDate: day, sourceType: z.string(), description: z.string(), amount: amt, registered: amt, unregistered: amt })) })),
+  reconciled: z.boolean() });

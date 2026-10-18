@@ -40,12 +40,12 @@
     },
     "V2-M3": {
       "title": "Year-end adjustments and the closing journal",
-      "status": "planned",
+      "status": "SPLIT (DEC-059): V2-M3a adjustments BUILT 2026-10-18 (v2-m3a-acceptance.md); V2-M3b closing journal next",
       "owner": "Engineering",
       "depends": [
         "V2-M2"
       ],
-      "acceptance": "to be specified before code",
+      "acceptance": "v2-plan.md section 5.3; v2-m3a-acceptance.md (V2-M3a)",
       "deferred": "-"
     },
     "V2-M4": {
@@ -215,9 +215,9 @@
       "ref": "V2 Modules",
       "req": "Accruals",
       "m": "V2-M3",
-      "s": "M",
-      "ev": "",
-      "note": "",
+      "s": "I",
+      "ev": "tests/golden/v2-m3a-adjustments.json (docs/architecture/v2-m3a-golden-workings.xlsx recomputes all 51 figures independently: 0 differences); tests/api/year-end.test.ts; tests/platform/year-end.test.ts; tests/db/year-end.test.ts",
+      "note": "Accruals and accrued income post at the date with their reversal on the next day (ACCRUAL, ACCRUAL_AUTO_REVERSAL), which must fall in an open period. Evidence documents are linked to the item; a wrong accrual is cancelled by mirrors of both journals. Listed in the year-end register and reconciled to the ledger.",
       "owner": "Engineering",
       "deps": "V2-M1",
       "accept": "Accruals post at period end and reverse on the first day of the next period (M3 pattern); listed with their evidence.",
@@ -228,9 +228,9 @@
       "ref": "V2 Modules",
       "req": "Prepayments",
       "m": "V2-M3",
-      "s": "M",
-      "ev": "",
-      "note": "",
+      "s": "I",
+      "ev": "tests/golden/v2-m3a-adjustments.json (docs/architecture/v2-m3a-golden-workings.xlsx recomputes all 51 figures independently: 0 differences); tests/api/year-end.test.ts; tests/platform/year-end.test.ts; tests/db/year-end.test.ts",
+      "note": "Prepayments are set up from the expense account (posted) or linked to the payment that carries them, and released by release runs, straight line by day or by month. The balance reconciles to the ledger by account; unregistered postings are listed.",
       "owner": "Engineering",
       "deps": "V2-M1",
       "accept": "Prepayments released over their period by schedule; balance reconciles to the ledger.",
@@ -241,9 +241,9 @@
       "ref": "V2 Modules",
       "req": "Provisions",
       "m": "V2-M3",
-      "s": "M",
-      "ev": "",
-      "note": "",
+      "s": "I",
+      "ev": "tests/golden/v2-m3a-adjustments.json (docs/architecture/v2-m3a-golden-workings.xlsx recomputes all 51 figures independently: 0 differences); tests/api/year-end.test.ts; tests/platform/year-end.test.ts; tests/db/year-end.test.ts",
+      "note": "A provision records its accounts and basis. Movements are made, used and released in date order and never take the balance below zero (service and database). The movement report gives opening, made, used, released and closing; the balance reconciles to the ledger. Discounting is not covered (DEC-059).",
       "owner": "Engineering",
       "deps": "V2-M1",
       "accept": "Provisions recorded with basis and movement (made, used, released) and reconciled to the ledger.",
@@ -254,12 +254,25 @@
       "ref": "V2 Modules",
       "req": "Deferred income",
       "m": "V2-M3",
-      "s": "M",
-      "ev": "",
-      "note": "",
+      "s": "I",
+      "ev": "tests/golden/v2-m3a-adjustments.json (docs/architecture/v2-m3a-golden-workings.xlsx recomputes all 51 figures independently: 0 differences); tests/api/year-end.test.ts; tests/platform/year-end.test.ts; tests/db/year-end.test.ts",
+      "note": "Deferred income is set up from the income account or linked, and released by release runs. The balance reconciles to the ledger.",
       "owner": "Engineering",
       "deps": "V2-M1",
       "accept": "Deferred income released by schedule; balance reconciles to the ledger.",
+      "deferred": "-"
+    },
+    {
+      "id": "V2-YEC-01",
+      "ref": "v2-proposal section 4 (V2-M3)",
+      "req": "Year-end closing journal to retained earnings",
+      "m": "V2-M3",
+      "s": "M",
+      "ev": "",
+      "note": "Added 2026-10-18 from the approved plan (DEC-059): the closing journal was in V2-M3's approved scope but had no matrix row. Built in V2-M3b.",
+      "owner": "Engineering",
+      "deps": "DEC-059",
+      "accept": "The year's income and expense balances are closed to the retained-earnings account by one journal at the year end, reversible only by its mirror; every P&L figure (management P&L, statutory preview, FX report) excludes closing journals, and balance sheets include them, so statements reconcile before and after the close.",
       "deferred": "-"
     },
     {
@@ -874,12 +887,13 @@
       "deferred": "-"
     }
   ],
-  "version": 3,
+  "version": 4,
   "history": [
     "v1.0 (2026-10-17, DEC-051..054): matrix created from the V2 specification at V2-M0; 60 rows, all MISSING; MAN-ACC-09 carried from the V1 matrix (decided in DEC-051, built in V2-M1).",
     "v1.1 (2026-10-18, V2-M1, DEC-055): reporting framework built. Missing -> Implemented: V2-ARC-01, V2-ARC-02, V2-ARC-03, MAN-ACC-09, V2-MOD-02, V2-MOD-11, V2-OUT-06. Missing -> Partially: V2-ARC-04 (filing-ready refusal in V2-M6), V2-TEST-01 (further scenarios; review by the named accountant). No real standard content entered or verified.",
     "v1.2 (2026-10-18, DEC-056): V2-M1 evidence recorded (CI 39083312122 and CodeQL green on fd0f556; clean clone 1977 tests, e2e 21/21). Qualified accountant named: Shoaib; no row changes status from the naming alone.",
     "v1.3 (2026-10-18, V2-M2, DEC-057/058): fixed assets built. Missing -> Implemented: V2-MOD-03, V2-MOD-04, V2-FA-01..08. Golden review of V2-M1 by Shoaib recorded (DEC-057); V2-TEST-01 stays Partially.",
-    "v1.3a (2026-10-18): V2-M2 evidence recorded (CI 39159238749 and CodeQL 39159238888 green on da32ffc; clean clone 2047 tests, e2e 21/21, OpenAPI drift 0)."
+    "v1.3a (2026-10-18): V2-M2 evidence recorded (CI 39159238749 and CodeQL 39159238888 green on da32ffc; clean clone 2047 tests, e2e 21/21, OpenAPI drift 0).",
+    "v1.4 (2026-10-18, V2-M3a, DEC-059): year-end adjustments built. Missing -> Implemented: V2-MOD-05..08. Row added: V2-YEC-01, the year-end closing journal, which was in the approved V2-M3 scope but missing from the matrix (61 rows)."
   ]
 }

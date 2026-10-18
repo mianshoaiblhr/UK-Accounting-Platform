@@ -65,6 +65,18 @@ const depreciationRun: Resolver = async (tx, id) => {
   const r = await tx.depreciationRun.findFirst({ where: { id } });
   return r && { entityType: 'depreciation_run', id: r.id, permission: 'assets:read', summary: { asAt: isoDay(r.asAt), status: r.status, total: r.total.toFixed(2), journalId: r.journalId, reversalJournalId: r.reversalJournalId } };
 };
+const yearEndItem: Resolver = async (tx, id) => {
+  const i = await tx.yearEndItem.findFirst({ where: { id } });
+  return i && { entityType: 'year_end_item', id: i.id, permission: 'ledger:read', summary: { kind: i.kind, description: i.description, amount: i.amount.toFixed(2), date: isoDay(i.itemDate), status: i.status, evidenceDocumentIds: i.evidenceDocumentIds } };
+};
+const releaseRun: Resolver = async (tx, id) => {
+  const r = await tx.releaseRun.findFirst({ where: { id } });
+  return r && { entityType: 'release_run', id: r.id, permission: 'ledger:read', summary: { asAt: isoDay(r.asAt), status: r.status, total: r.total.toFixed(2), journalId: r.journalId, reversalJournalId: r.reversalJournalId } };
+};
+const provisionMovement: Resolver = async (tx, id) => {
+  const m = await tx.provisionMovement.findFirst({ where: { id } });
+  return m && { entityType: 'provision_movement', id: m.id, permission: 'ledger:read', summary: { provisionId: m.provisionId, kind: m.kind, date: isoDay(m.movementDate), amount: m.amount.toFixed(2), reason: m.reason, status: m.status } };
+};
 
 /** One resolver per journal source (DEC-043). MANUAL journals have no source transaction: their evidence hangs on the journal itself. */
 export const DRILL_RESOLVERS: Record<string, Resolver | null> = {
@@ -77,6 +89,8 @@ export const DRILL_RESOLVERS: Record<string, Resolver | null> = {
   BANK_TRANSFER: transfer, BANK_TRANSFER_REVERSAL: transfer,
   FIXED_ASSET_ADDITION: fixedAsset, FIXED_ASSET_ADDITION_REVERSAL: fixedAsset, FIXED_ASSET_DISPOSAL: fixedAsset, FIXED_ASSET_DISPOSAL_REVERSAL: fixedAsset,
   FIXED_ASSET_DEPRECIATION: depreciationRun, FIXED_ASSET_DEPRECIATION_REVERSAL: depreciationRun,
+  ACCRUAL: yearEndItem, ACCRUAL_AUTO_REVERSAL: yearEndItem, ACCRUAL_CANCELLATION: yearEndItem, ADJUSTMENT_SETUP: yearEndItem, ADJUSTMENT_SETUP_REVERSAL: yearEndItem,
+  ADJUSTMENT_RELEASE: releaseRun, ADJUSTMENT_RELEASE_REVERSAL: releaseRun, PROVISION_MOVEMENT: provisionMovement, PROVISION_MOVEMENT_REVERSAL: provisionMovement,
 };
 /** Evidence-graph entity types that can carry attached documents. */
 const EVIDENCE_TYPES = new Set(['sales_document', 'purchase_document', 'cash_transaction', 'journal']);

@@ -17,6 +17,9 @@ const CONTROL_KINDS = T(RULES, 'every sub-ledger source reaches only its own con
 const FX_ALLOC = T(RULES, 'FX Lock Co: an allocation dated in a closed period would post its realised difference there, so it is refused (sales and purchases)');
 const FA_NO_VAT = T(P('fixed-assets'), 'a register source refuses a VAT code (none of them carries VAT)');
 const FA_LOCK = T(P('fixed-assets'), 'after 2026 is closed, every register posting dated in it is refused: additions, runs, disposals and the reversals of each; nothing is written');
+const YE_NO_VAT = T(P('year-end'), 'a year-end source refuses a VAT code (none of them carries VAT)');
+const YE_LOCK = T(P('year-end'), 'after 2026 is closed, every year-end posting dated in it is refused: accruals and their reversals and cancellations, set-ups and their cancellations, provision movements and their reversals; nothing is written');
+const YE_RUN_LOCK = T(P('year-end'), 'a release run and its reversal dated in a closed period are refused (a company with no later runs)');
 const MIRROR_FINAL = NA('A mirror is final: reversing a reversal is refused (tested in the negative cell)');
 
 export const POSTING_RULE_COVERAGE: Record<string, Record<Category, Cell>> = {
@@ -209,5 +212,69 @@ export const POSTING_RULE_COVERAGE: Record<string, Record<Category, Cell>> = {
     reversal: MIRROR_FINAL,
     vat: FA_NO_VAT,
     periodLock: FA_LOCK,
+  },
+  // V2-M3a year-end adjustments (DEC-059): each corrected only by its own mirror
+  ACCRUAL: {
+    positive: T(P('year-end'), 'an accrual posts Dr expense / Cr accruals and its reversal on the next day; accrued income the other way round'),
+    negative: T(P('year-end'), 'refuses accounts of the wrong type, control accounts, a missing next period, a person without accounts:prepare and an AI actor; nothing is written'),
+    reversal: T(P('year-end'), 'ACCRUAL_CANCELLATION mirrors the accrual and its reversal at their own dates; a second cancellation is refused'),
+    vat: YE_NO_VAT,
+    periodLock: YE_LOCK,
+  },
+  ACCRUAL_AUTO_REVERSAL: {
+    positive: T(P('year-end'), 'an accrual posts Dr expense / Cr accruals and its reversal on the next day; accrued income the other way round'),
+    negative: T(P('year-end'), 'refuses accounts of the wrong type, control accounts, a missing next period, a person without accounts:prepare and an AI actor; nothing is written'),
+    reversal: T(P('year-end'), 'ACCRUAL_CANCELLATION mirrors the accrual and its reversal at their own dates; a second cancellation is refused'),
+    vat: YE_NO_VAT,
+    periodLock: YE_LOCK,
+  },
+  ACCRUAL_CANCELLATION: {
+    positive: T(P('year-end'), 'ACCRUAL_CANCELLATION mirrors the accrual and its reversal at their own dates; a second cancellation is refused'),
+    negative: T(P('year-end'), 'ACCRUAL_CANCELLATION mirrors the accrual and its reversal at their own dates; a second cancellation is refused'),
+    reversal: MIRROR_FINAL,
+    vat: YE_NO_VAT,
+    periodLock: YE_LOCK,
+  },
+  ADJUSTMENT_SETUP: {
+    positive: T(P('year-end'), 'a posted set-up reclassifies from the P&L account; a release run releases by schedule; nothing to release is refused'),
+    negative: T(A('year-end'), 'wrong accounts, control accounts, over-linking and a reversal day with no period are refused; nothing is written'),
+    reversal: T(P('year-end'), 'ADJUSTMENT_SETUP_REVERSAL mirrors a set-up nothing was released from; a released schedule and a second cancellation are refused'),
+    vat: YE_NO_VAT,
+    periodLock: YE_LOCK,
+  },
+  ADJUSTMENT_SETUP_REVERSAL: {
+    positive: T(P('year-end'), 'ADJUSTMENT_SETUP_REVERSAL mirrors a set-up nothing was released from; a released schedule and a second cancellation are refused'),
+    negative: T(P('year-end'), 'ADJUSTMENT_SETUP_REVERSAL mirrors a set-up nothing was released from; a released schedule and a second cancellation are refused'),
+    reversal: MIRROR_FINAL,
+    vat: YE_NO_VAT,
+    periodLock: YE_LOCK,
+  },
+  ADJUSTMENT_RELEASE: {
+    positive: T(P('year-end'), 'a posted set-up reclassifies from the P&L account; a release run releases by schedule; nothing to release is refused'),
+    negative: T(P('year-end'), 'a posted set-up reclassifies from the P&L account; a release run releases by schedule; nothing to release is refused'),
+    reversal: T(P('year-end'), 'ADJUSTMENT_RELEASE_REVERSAL mirrors the latest live run only, once; the ledger cannot reverse it directly'),
+    vat: YE_NO_VAT,
+    periodLock: YE_RUN_LOCK,
+  },
+  ADJUSTMENT_RELEASE_REVERSAL: {
+    positive: T(P('year-end'), 'ADJUSTMENT_RELEASE_REVERSAL mirrors the latest live run only, once; the ledger cannot reverse it directly'),
+    negative: T(P('year-end'), 'ADJUSTMENT_RELEASE_REVERSAL mirrors the latest live run only, once; the ledger cannot reverse it directly'),
+    reversal: MIRROR_FINAL,
+    vat: YE_NO_VAT,
+    periodLock: YE_RUN_LOCK,
+  },
+  PROVISION_MOVEMENT: {
+    positive: T(P('year-end'), 'made, used and released post their pairs; never below zero, in date order, never against a control account'),
+    negative: T(P('year-end'), 'made, used and released post their pairs; never below zero, in date order, never against a control account'),
+    reversal: T(P('year-end'), 'PROVISION_MOVEMENT_REVERSAL mirrors the latest live movement only, once'),
+    vat: YE_NO_VAT,
+    periodLock: YE_LOCK,
+  },
+  PROVISION_MOVEMENT_REVERSAL: {
+    positive: T(P('year-end'), 'PROVISION_MOVEMENT_REVERSAL mirrors the latest live movement only, once'),
+    negative: T(P('year-end'), 'PROVISION_MOVEMENT_REVERSAL mirrors the latest live movement only, once'),
+    reversal: MIRROR_FINAL,
+    vat: YE_NO_VAT,
+    periodLock: YE_LOCK,
   },
 };
