@@ -5,11 +5,11 @@ Prepared under the product owner's delegation (DEC-019, DEC-051; decisions DEC-0
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | `@@SHA@@` (branch `claude/adoring-cori-mra6ze`); specification recorded before code in `7718669` (v2-plan section 3) and DEC-055 in this commit |
-| CI | @@CI@@ |
-| CodeQL | @@CODEQL@@ |
-| Clean clone | @@CLEAN@@ |
-| Local runs | @@LOCAL@@ |
+| Code baseline commit | `ae8e667` (code), `fd0f556` (CI fix to two tests, workings workbook) on branch `claude/adoring-cori-mra6ze`; specification recorded before code in `7718669` (v2-plan section 3) and DEC-055 in this commit |
+| CI | **success**: run 39083312122 on `fd0f556` (migrations from scratch, terraform validate, S3/ClamAV, build/lint/typecheck/unit/integration/e2e, audit and secret scan, all images). The first run (39082469673 on `ae8e667`) failed two tests that sorted role permissions in SQL: CI's glibc collation orders `accounts:rule-verify` after `accounts:rules-manage`. The roles were correct; the tests now sort with the C collation |
+| CodeQL | **success**: run 39083312143 on `fd0f556` |
+| Clean clone of `fd0f556` | install, build, typecheck, lint: exit 0; **1977 tests passed** (104 files); e2e **21/21**; OpenAPI drift 0 |
+| Local runs | unit + integration 1977 passed; the V2-M1 files (statutory API, framework DB, grammar unit, architecture, permissions) 574 passed after the last edits; typecheck and lint clean. Golden workings recomputed independently in `docs/architecture/v2-m1-golden-workings.xlsx` (generator `scripts/docs/gen_v2_golden_workbook.py`): 0 differences |
 
 ## 2. What V2-M1 delivers (v2-plan section 3)
 | Part | What it is | Where |
@@ -63,4 +63,5 @@ V2 matrix v1.1 (60 rows: Implemented 7, Partially 2, Missing 51).
 5. Two people changing the dates of versions of the same standard at the same instant could both pass the overlap check (the same trigger pattern as VAT rates). This is acceptable at the expected volume, and it is listed for the security review.
 6. Values are exact to 20 significant digits: rule constants are limited to the ledger's scale (15 integer digits, 4 decimals).
 7. No screens yet (V2-M7).
-8. **Production gates unchanged:** qualified accountant (new for V2), qualified tax reviewer, privacy and retention review (DEC-013), security review, AWS apply and verification, real-volume performance.
+8. **Named accountant:** Shoaib (DEC-056, recorded 2026-10-18). Naming verifies nothing: each real standard version stays UNVERIFIED until Shoaib reviews the golden outputs and verifies it in the platform, under an account that holds `accounts:rule-verify`, and must not be the version's author.
+9. **Production gates unchanged:** qualified tax reviewer, privacy and retention review (DEC-013), security review, AWS apply and verification, real-volume performance.

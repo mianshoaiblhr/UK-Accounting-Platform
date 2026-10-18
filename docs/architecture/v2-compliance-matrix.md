@@ -2,12 +2,13 @@
 
 Source requirements: docs/specifications/V2_Accounts_Production_FRS102_FRS105.md, 00_MASTER_IMPLEMENTATION_MANIFEST.md, decision-log.md DEC-051..054.
 
-Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
+Generated from `v2-compliance-matrix.json` at commit `fd0f556`; CI: <https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39083312122>. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
 
 ## Plan history (append-only)
 
 * v1.0 (2026-10-17, DEC-051..054): matrix created from the V2 specification at V2-M0; 60 rows, all MISSING; MAN-ACC-09 carried from the V1 matrix (decided in DEC-051, built in V2-M1).
 * v1.1 (2026-10-18, V2-M1, DEC-055): reporting framework built. Missing -> Implemented: V2-ARC-01, V2-ARC-02, V2-ARC-03, MAN-ACC-09, V2-MOD-02, V2-MOD-11, V2-OUT-06. Missing -> Partially: V2-ARC-04 (filing-ready refusal in V2-M6), V2-TEST-01 (further scenarios; review by the named accountant). No real standard content entered or verified.
+* v1.2 (2026-10-18, DEC-056): V2-M1 evidence recorded (CI 39083312122 and CodeQL green on fd0f556; clean clone 1977 tests, e2e 21/21). Qualified accountant named: Shoaib; no row changes status from the naming alone.
 
 ## Summary
 
@@ -23,8 +24,8 @@ Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence
 
 | Milestone | Scope | Status | Owner | Depends on | Rows | Implemented |
 |---|---|---|---|---|---|---|
-| V2-M0 | Decisions, plan, matrix, ADRs | RECORDED 2026-10-17 (DEC-051..054, ADR-62..64) | Engineering | V2 approval (DEC-051) | 0 | 0 |
-| V2-M1 | Reporting framework as data | BUILT 2026-10-18 (acceptance package v2-m1-acceptance.md); rules unverified until the named accountant | Engineering (build); qualified accountant (rules) | V2-M0 | 9 | 7 |
+| V2-M0 | Decisions, plan, matrix, ADRs | RECORDED 2026-10-17 (DEC-051..054, ADR-62..64); qualified accountant named 2026-10-18: Shoaib (DEC-056) | Engineering | V2 approval (DEC-051) | 0 | 0 |
+| V2-M1 | Reporting framework as data | ACCEPTED under the delegation 2026-10-18 (v2-m1-acceptance.md; CI 39083312122 on fd0f556); rules unverified until Shoaib verifies them (DEC-056) | Engineering (build); qualified accountant (rules) | V2-M0 | 9 | 7 |
 | V2-M2 | Fixed assets and depreciation | planned | Engineering | V2-M1 | 10 | 0 |
 | V2-M3 | Year-end adjustments and the closing journal | planned | Engineering | V2-M2 | 4 | 0 |
 | V2-M4 | Director balances and related parties | planned | Engineering | V2-M3 | 2 | 0 |
@@ -36,7 +37,7 @@ A milestone is accepted on an acceptance package: commit SHA, CI run (every job)
 
 ## V2-M0 - Decisions, plan, matrix, ADRs
 
-**Status:** RECORDED 2026-10-17 (DEC-051..054, ADR-62..64)  
+**Status:** RECORDED 2026-10-17 (DEC-051..054, ADR-62..64); qualified accountant named 2026-10-18: Shoaib (DEC-056)  
 **Owner:** Engineering  
 **Depends on:** V2 approval (DEC-051)  
 **Acceptance:** v2-plan.md section 2  
@@ -47,7 +48,7 @@ A milestone is accepted on an acceptance package: commit SHA, CI run (every job)
 
 ## V2-M1 - Reporting framework as data
 
-**Status:** BUILT 2026-10-18 (acceptance package v2-m1-acceptance.md); rules unverified until the named accountant  
+**Status:** ACCEPTED under the delegation 2026-10-18 (v2-m1-acceptance.md; CI 39083312122 on fd0f556); rules unverified until Shoaib verifies them (DEC-056)  
 **Owner:** Engineering (build); qualified accountant (rules)  
 **Depends on:** V2-M0  
 **Acceptance:** v2-plan.md section 3.5; v2-m1-acceptance.md  

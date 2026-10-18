@@ -10,7 +10,7 @@
   "milestones": {
     "V2-M0": {
       "title": "Decisions, plan, matrix, ADRs",
-      "status": "RECORDED 2026-10-17 (DEC-051..054, ADR-62..64)",
+      "status": "RECORDED 2026-10-17 (DEC-051..054, ADR-62..64); qualified accountant named 2026-10-18: Shoaib (DEC-056)",
       "owner": "Engineering",
       "depends": [
         "V2 approval (DEC-051)"
@@ -20,7 +20,7 @@
     },
     "V2-M1": {
       "title": "Reporting framework as data",
-      "status": "BUILT 2026-10-18 (acceptance package v2-m1-acceptance.md); rules unverified until the named accountant",
+      "status": "ACCEPTED under the delegation 2026-10-18 (v2-m1-acceptance.md; CI 39083312122 on fd0f556); rules unverified until Shoaib verifies them (DEC-056)",
       "owner": "Engineering (build); qualified accountant (rules)",
       "depends": [
         "V2-M0"
@@ -877,6 +877,7 @@
   "version": 2,
   "history": [
     "v1.0 (2026-10-17, DEC-051..054): matrix created from the V2 specification at V2-M0; 60 rows, all MISSING; MAN-ACC-09 carried from the V1 matrix (decided in DEC-051, built in V2-M1).",
-    "v1.1 (2026-10-18, V2-M1, DEC-055): reporting framework built. Missing -> Implemented: V2-ARC-01, V2-ARC-02, V2-ARC-03, MAN-ACC-09, V2-MOD-02, V2-MOD-11, V2-OUT-06. Missing -> Partially: V2-ARC-04 (filing-ready refusal in V2-M6), V2-TEST-01 (further scenarios; review by the named accountant). No real standard content entered or verified."
+    "v1.1 (2026-10-18, V2-M1, DEC-055): reporting framework built. Missing -> Implemented: V2-ARC-01, V2-ARC-02, V2-ARC-03, MAN-ACC-09, V2-MOD-02, V2-MOD-11, V2-OUT-06. Missing -> Partially: V2-ARC-04 (filing-ready refusal in V2-M6), V2-TEST-01 (further scenarios; review by the named accountant). No real standard content entered or verified.",
+    "v1.2 (2026-10-18, DEC-056): V2-M1 evidence recorded (CI 39083312122 and CodeQL green on fd0f556; clean clone 1977 tests, e2e 21/21). Qualified accountant named: Shoaib; no row changes status from the naming alone."
   ]
 }

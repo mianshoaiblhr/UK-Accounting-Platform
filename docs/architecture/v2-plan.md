@@ -1,6 +1,6 @@
 # V2 Accounts Production (FRS 102 / FRS 105) - plan and design
 
-Status: V2 approved 2026-10-17 (DEC-051). Authority: `docs/specifications/V2_Accounts_Production_FRS102_FRS105.md`, the master manifest, `decision-log.md` (DEC-051..054), ADR-62..64. Requirement matrix: `v2-compliance-matrix.md|json|xlsx`. Nothing here is production-approved (DEC-006); development data is synthetic (DEC-003). **No accounting-standard rule is verified until the firm names its qualified accountant (DEC-052): until then V2 produces previews only.**
+Status: V2 approved 2026-10-17 (DEC-051). Authority: `docs/specifications/V2_Accounts_Production_FRS102_FRS105.md`, the master manifest, `decision-log.md` (DEC-051..054), ADR-62..64. Requirement matrix: `v2-compliance-matrix.md|json|xlsx`. Nothing here is production-approved (DEC-006); development data is synthetic (DEC-003). **The qualified accountant is named: Shoaib (DEC-056). No accounting-standard rule is verified until Shoaib verifies it in the platform (DEC-052): until then V2 produces previews only.**
 
 ## 1. Principles carried from V0 and V1 (not re-decided)
 Everything in V1 plan section 1, plus: only the PostingService writes the ledger (every new V2 posting is a journal source with its five test categories in the posting-rule registry, DEC-047); statements are computed from journal lines only (ADR-63); rules that come from law or standards are data with a source and a second-person verification (DEC-021, DEC-052); screens show what the API computes (DEC-048).
