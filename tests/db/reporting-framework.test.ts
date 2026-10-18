@@ -120,7 +120,7 @@ describe('per company', () => {
 
 describe('system roles carry the new permissions as the contracts say (DEC-052)', () => {
   it('owner and admin hold all three; partner may author and prepare but not verify; accountant prepares only', () => {
-    const perms = (key: string) => sql(`SELECT array_to_string(ARRAY(SELECT p FROM unnest(permissions) p WHERE p LIKE 'accounts:%' ORDER BY 1), ',') FROM role WHERE organisation_id IS NULL AND key='${key}'`);
+    const perms = (key: string) => sql(`SELECT array_to_string(ARRAY(SELECT p FROM unnest(permissions) p WHERE p LIKE 'accounts:%' ORDER BY p COLLATE "C"), ',') FROM role WHERE organisation_id IS NULL AND key='${key}'`);
     expect(perms('owner')).toBe('accounts:prepare,accounts:rule-verify,accounts:rules-manage');
     expect(perms('admin')).toBe('accounts:prepare,accounts:rule-verify,accounts:rules-manage');
     expect(perms('partner')).toBe('accounts:prepare,accounts:rules-manage');

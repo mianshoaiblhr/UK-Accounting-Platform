@@ -51,7 +51,7 @@ function stage(name: string, migrations: string[]) {
 describe('migrations as a non-superuser owner (production model)', () => {
   it('apply from scratch and leave the system roles exactly as @uk/contracts defines them', () => {
     deploy(stage('nonsu', all), 'postgresql://uk_migrator_t:m@' + HOST + '/uk_upgrade_nonsu');
-    const rows = psql(adminUrl('uk_upgrade_nonsu'), `SELECT key||'='||array_to_string(ARRAY(SELECT unnest(permissions) ORDER BY 1), ',') FROM role WHERE organisation_id IS NULL ORDER BY key`).split('\n');
+    const rows = psql(adminUrl('uk_upgrade_nonsu'), `SELECT key||'='||array_to_string(ARRAY(SELECT p FROM unnest(permissions) p ORDER BY p COLLATE "C"), ',') FROM role WHERE organisation_id IS NULL ORDER BY key`).split('\n');
     const expected = SYSTEM_ROLES.map((r) => `${r.key}=${[...r.permissions].sort().join(',')}`).sort();
     expect(rows.sort()).toEqual(expected);
     // FORCE ROW LEVEL SECURITY is back on every tenant table after the migrations that temporarily lifted it
@@ -174,7 +174,7 @@ describe('the architecture change set is reversible (documented rollback script)
       UNION ALL SELECT 'fn '||proname FROM pg_proc WHERE pronamespace='public'::regnamespace
       UNION ALL SELECT 'enum '||t.typname||' '||string_agg(e.enumlabel, ',' ORDER BY e.enumsortorder) FROM pg_type t JOIN pg_enum e ON e.enumtypid=t.oid GROUP BY t.typname
       UNION ALL SELECT 'force '||relname||' '||relforcerowsecurity FROM pg_class WHERE relnamespace='public'::regnamespace AND relkind='r' AND relname <> '_prisma_migrations'
-      UNION ALL SELECT 'role '||key||' '||array_to_string(ARRAY(SELECT unnest(permissions) ORDER BY 1), ',')||' '||description FROM "role" WHERE organisation_id IS NULL
+      UNION ALL SELECT 'role '||key||' '||array_to_string(ARRAY(SELECT p FROM unnest(permissions) p ORDER BY p COLLATE "C"), ',')||' '||description FROM "role" WHERE organisation_id IS NULL
     ) q ORDER BY x`);
   it('rolling back restores the previous schema exactly (tables, columns, constraints, policies, triggers, enums, system roles)', () => {
     for (const d of ['uk_rollback_old', 'uk_rollback_new']) { psql(adminUrl('postgres'), `DROP DATABASE IF EXISTS ${d} WITH (FORCE)`); psql(adminUrl('postgres'), `CREATE DATABASE ${d}`); }
