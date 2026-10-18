@@ -25,6 +25,7 @@ export const PERMISSIONS = [
   'cash:read', 'cash:record',
   'bank:read', 'bank:manage', 'bank:transfer', 'bank:reconcile',
   'accounts:rules-manage', 'accounts:rule-verify', 'accounts:prepare',
+  'assets:read', 'assets:manage',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -57,6 +58,7 @@ export const PERMISSION_SCOPE: Record<Permission, PermissionScope> = {
   'cash:read': 'COMPANY', 'cash:record': 'COMPANY',
   'bank:read': 'COMPANY', 'bank:manage': 'COMPANY', 'bank:transfer': 'COMPANY', 'bank:reconcile': 'COMPANY',
   'accounts:rules-manage': 'COMPANY', 'accounts:rule-verify': 'COMPANY', 'accounts:prepare': 'COMPANY',
+  'assets:read': 'COMPANY', 'assets:manage': 'COMPANY',
 };
 export const permissionsOfScope = (...scopes: PermissionScope[]): Permission[] => PERMISSIONS.filter((p) => scopes.includes(PERMISSION_SCOPE[p]));
 
@@ -77,15 +79,15 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
   { key: 'manager', name: 'Manager', description: 'Manages day-to-day work on a company: can review but not approve or manage access',
     permissions: [...ORG_READ, 'job:read', 'practice:read', 'company:read', 'company:update', 'period:read', 'period:manage',
       'document:read', 'document:upload', 'document:archive', 'task:read', 'task:manage', 'workflow:read', 'workflow:manage', 'workflow:review', 'ai:use', 'contact:read', 'contact:manage', 'document:confidential', 'evidence:read', 'evidence:manage',
-      'account:read', 'account:manage', 'ledger:read', 'journal:post', 'sales:read', 'sales:manage', 'purchases:read', 'purchases:manage', 'cash:read', 'bank:read', 'bank:manage', 'bank:reconcile'] },
+      'account:read', 'account:manage', 'ledger:read', 'journal:post', 'sales:read', 'sales:manage', 'purchases:read', 'purchases:manage', 'cash:read', 'bank:read', 'bank:manage', 'bank:reconcile', 'assets:read', 'assets:manage'] },
   { key: 'accountant', name: 'Accountant', description: 'Work on assigned client companies',
     permissions: [...READ, 'practice:read', 'company:create', 'company:update', 'period:manage', 'document:upload', 'document:archive', 'job:read', 'audit:read',
       'task:read', 'task:manage', 'workflow:read', 'workflow:manage', 'workflow:review', 'ai:use', 'ai:approve', 'contact:read', 'contact:manage', 'evidence:read', 'evidence:manage',
-      'account:read', 'account:manage', 'ledger:read', 'journal:post', 'ledger:control-adjustment', 'fx:rate-manage', 'contact:bank-details', 'vat:manage', 'sales:read', 'sales:manage', 'sales:approve', 'purchases:read', 'purchases:manage', 'purchases:approve', 'cash:read', 'cash:record', 'bank:read', 'bank:manage', 'bank:transfer', 'bank:reconcile', 'accounts:prepare'] },
+      'account:read', 'account:manage', 'ledger:read', 'journal:post', 'ledger:control-adjustment', 'fx:rate-manage', 'contact:bank-details', 'vat:manage', 'sales:read', 'sales:manage', 'sales:approve', 'purchases:read', 'purchases:manage', 'purchases:approve', 'cash:read', 'cash:record', 'bank:read', 'bank:manage', 'bank:transfer', 'bank:reconcile', 'accounts:prepare', 'assets:read', 'assets:manage'] },
   { key: 'bookkeeper', name: 'Bookkeeper', description: 'Prepare records for assigned companies',
-    permissions: [...READ, 'practice:read', 'document:upload', 'job:read', 'task:read', 'task:manage', 'workflow:read', 'ai:use', 'contact:read', 'contact:manage', 'evidence:read', 'evidence:manage', 'account:read', 'ledger:read', 'sales:read', 'sales:manage', 'purchases:read', 'purchases:manage', 'cash:read', 'bank:read', 'bank:manage', 'bank:reconcile'] },
+    permissions: [...READ, 'practice:read', 'document:upload', 'job:read', 'task:read', 'task:manage', 'workflow:read', 'ai:use', 'contact:read', 'contact:manage', 'evidence:read', 'evidence:manage', 'account:read', 'ledger:read', 'sales:read', 'sales:manage', 'purchases:read', 'purchases:manage', 'cash:read', 'bank:read', 'bank:manage', 'bank:reconcile', 'assets:read'] },
   { key: 'reviewer', name: 'Reviewer', description: 'Read-only review and audit access',
-    permissions: [...READ, 'practice:read', 'audit:read', 'job:read', 'task:read', 'workflow:read', 'workflow:review', 'contact:read', 'evidence:read', 'account:read', 'ledger:read', 'sales:read', 'purchases:read', 'cash:read', 'bank:read'] },
+    permissions: [...READ, 'practice:read', 'audit:read', 'job:read', 'task:read', 'workflow:read', 'workflow:review', 'contact:read', 'evidence:read', 'account:read', 'ledger:read', 'sales:read', 'purchases:read', 'cash:read', 'bank:read', 'assets:read'] },
   { key: 'client_viewer', name: 'Client Viewer', description: 'Client read-only access to own company',
     permissions: ['org:read', 'company:read', 'period:read', 'document:read'] },
 ];

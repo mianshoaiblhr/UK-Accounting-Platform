@@ -93,6 +93,13 @@ export const JOURNAL_SOURCES: Record<string, JournalSourceDef> = {
   BANK_TRANSFER: { actors: ['USER'], permission: 'bank:transfer', controlAccounts: true, controlKinds: ['BANK', 'CASH'], subLedger: true, description: 'Money moved between two bank or cash accounts (Dr receiving / Cr paying)' },
   BANK_TRANSFER_REVERSAL: { actors: ['USER'], permission: 'bank:transfer', controlAccounts: true, controlKinds: ['BANK', 'CASH'], subLedger: true, description: 'Mirror reversal of a transfer' },
   CASH_RECEIPT_REVERSAL: { actors: ['USER'], permission: 'cash:record', controlAccounts: true, controlKinds: ['BANK', 'CASH', 'VAT_CONTROL'], subLedger: true, description: 'Mirror reversal of a cash receipt (same lines, same VAT rate versions)' },
+  // V2-M2 fixed assets (DEC-058): the register's own postings, corrected in the register by their mirrors; never on a control account, never with VAT
+  FIXED_ASSET_ADDITION: { actors: ['USER'], permission: 'assets:manage', controlAccounts: false, subLedger: true, description: 'Asset added in the register (Dr cost / Cr a non-control offset account)' },
+  FIXED_ASSET_ADDITION_REVERSAL: { actors: ['USER'], permission: 'assets:manage', controlAccounts: false, subLedger: true, description: 'Mirror of an addition reversed before any depreciation (the asset becomes VOID)' },
+  FIXED_ASSET_DEPRECIATION: { actors: ['USER'], permission: 'assets:manage', controlAccounts: false, subLedger: true, description: 'Depreciation run as at a date (Dr depreciation expense / Cr accumulated depreciation, per class)' },
+  FIXED_ASSET_DEPRECIATION_REVERSAL: { actors: ['USER'], permission: 'assets:manage', controlAccounts: false, subLedger: true, description: 'Mirror of the latest live depreciation run' },
+  FIXED_ASSET_DISPOSAL: { actors: ['USER'], permission: 'assets:manage', controlAccounts: false, subLedger: true, description: 'Disposal: depreciation catch-up, cost and accumulated depreciation removed, carrying amount and proceeds on the disposal account' },
+  FIXED_ASSET_DISPOSAL_REVERSAL: { actors: ['USER'], permission: 'assets:manage', controlAccounts: false, subLedger: true, description: 'Mirror of a disposal while no later run is live (the asset is ACTIVE again)' },
 };
 export const isJournalSource = (s: string) => Object.prototype.hasOwnProperty.call(JOURNAL_SOURCES, s);
 /** Sources a client may name on POST /journals. Opening balances and control adjustments go through journal requests (DEC-012). */

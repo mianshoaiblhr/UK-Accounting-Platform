@@ -206,6 +206,21 @@ describe('database access paths that carry security meaning', () => {
     const users = SRC.filter((f) => !f.endsWith('.test.ts') && !rel(f).startsWith('packages/db/src/') && !rel(f).startsWith('packages/contracts/src/retention')).filter((f) => TOUCH.test(read(f))).map(rel).sort();
     expect(users).toEqual(['packages/accounting/src/statutory-report.ts', 'packages/accounting/src/statutory.ts']);
   });
+  it('depreciation never reads the tax fields (V2-FA-07, DEC-058): the arithmetic, the shared asset state and the depreciation service do not mention them', () => {
+    const math = read(`${ROOT}/packages/accounting/src/depreciation-math.ts`);
+    const fa = read(`${ROOT}/packages/accounting/src/fixed-assets.ts`);
+    const state = fa.slice(fa.indexOf('class AssetState'), fa.indexOf('export class FixedAssetService'));
+    const dep = fa.slice(fa.indexOf('export class DepreciationService'));
+    expect(state.length).toBeGreaterThan(200);
+    expect(dep.length).toBeGreaterThan(1000);
+    for (const src of [math, state, dep]) expect(src).not.toMatch(/tax(Category|Cost|_category|_cost)/);
+  });
+  it('the fixed-asset register has one writer, which alone posts the FIXED_ASSET_* sources, through the PostingService only (V2-M2)', () => {
+    const WRITE = /\.(fixedAssetClass|fixedAsset|fixedAssetBasis|depreciationRun|depreciationRunLine)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(fixed_asset\w*|depreciation_run\w*)"?\b/i;
+    expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/fixed-assets.ts']);
+    expect(SRC.filter((f) => /sourceType: '(FIXED_ASSET_\w+)'/.test(read(f))).map(rel)).toEqual(['packages/accounting/src/fixed-assets.ts']);
+    expect(read(`${ROOT}/packages/accounting/src/fixed-assets.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany|update)|INSERT INTO\s+"?journal/);
+  });
   it('the reporting framework has one writer per side (V2-M1): standard content in StandardsService, company choices in FrameworkService, both in statutory.ts', () => {
     const WRITE = /\.(reportingStandard|reportingStandardVersion|statutoryLine|statutoryMapEntry|validationRule|disclosureRule|statutoryAccountOverride|companyReportingFramework)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(reporting_standard\w*|statutory_\w+|validation_rule|disclosure_rule|company_reporting_framework)"?\b/i;
     expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/statutory.ts']);

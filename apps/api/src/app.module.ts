@@ -20,6 +20,7 @@ import { CashApiService, CashController } from './cash/cash.controller';
 import { BankApiService, BankController } from './bank/bank.controller';
 import { ReportsController } from './reports/reports.controller';
 import { AccountsApiService, StandardsController } from './accounts/standards.controller';
+import { AssetsApiService, FixedAssetsController } from './accounts/fixed-assets.controller';
 import { ReferenceController } from './master-data/reference.controller';
 import { FeatureFlagsController } from './features/features.controller';
 import { ProblemFilter } from './common/problem.filter';
@@ -45,7 +46,7 @@ import { OrganisationsController } from './organisations/organisations.controlle
 import { OrganisationsService } from './organisations/organisations.service';
 import { LedgerController } from './ledger/ledger.controller';
 import { LedgerApiService } from './ledger/ledger.service';
-import { FrameworkService, StandardsService, StatutoryReportService, AlertService, DrillDownService, ReportService, BankService, CashService, ReconciliationService, PurchasesService, SalesService, VatService, AccountService, FxSettingsService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, RateService, RevaluationService } from '@uk/accounting';
+import { DepreciationService, FixedAssetService, FrameworkService, StandardsService, StatutoryReportService, AlertService, DrillDownService, ReportService, BankService, CashService, ReconciliationService, PurchasesService, SalesService, VatService, AccountService, FxSettingsService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, RateService, RevaluationService } from '@uk/accounting';
 
 @Module({})
 export class AppModule {
@@ -54,7 +55,7 @@ export class AppModule {
       module: AppModule,
       imports: [InfraModule.forRoot(config), AuditModule, AuthModule],
       controllers: [HealthController, OrganisationsController, CompaniesController, DocumentsController, FoldersController, EvidenceController, JobsController,
-        TasksController, PracticesController, FeatureFlagsController, MasterDataController, ReferenceController, WorkflowsController, NotificationsController, IntegrationsController, AiController, LedgerController, ContactRolesController, VatController, SalesController, PurchasesController, CashController, BankController, ReportsController, StandardsController],
+        TasksController, PracticesController, FeatureFlagsController, MasterDataController, ReferenceController, WorkflowsController, NotificationsController, IntegrationsController, AiController, LedgerController, ContactRolesController, VatController, SalesController, PurchasesController, CashController, BankController, ReportsController, StandardsController, FixedAssetsController],
       providers: [
         { provide: PostingService, useFactory: () => new PostingService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: AccountService, useFactory: () => new AccountService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
@@ -66,6 +67,8 @@ export class AppModule {
         { provide: StandardsService, useFactory: () => new StandardsService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: FrameworkService, useFactory: () => new FrameworkService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: StatutoryReportService, useFactory: () => new StatutoryReportService() }, AccountsApiService,
+        { provide: FixedAssetService, inject: [PostingService], useFactory: (posting: PostingService) => new FixedAssetService(posting, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
+        { provide: DepreciationService, inject: [PostingService], useFactory: (posting: PostingService) => new DepreciationService(posting, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) }, AssetsApiService,
         { provide: ReportService, useFactory: () => new ReportService() }, { provide: DrillDownService, useFactory: () => new DrillDownService() }, { provide: AlertService, useFactory: () => new AlertService() },
         { provide: ReconciliationService, useFactory: () => new ReconciliationService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: BankStatementService, useFactory: () => new BankStatementService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },

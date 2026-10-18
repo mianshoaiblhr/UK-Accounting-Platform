@@ -10,7 +10,7 @@ Everything in V1 plan section 1, plus: only the PostingService writes the ledger
 |---|---|---|---|---|
 | V2-M0 | Decisions DEC-051..054, ADR-62..64, this plan, the V2 matrix | **recorded** (2026-10-17) | Engineering | V2 approval |
 | V2-M1 | Reporting framework as data (section 3) | **built** (2026-10-18; `v2-m1-acceptance.md`); rules unverified until the named accountant | Engineering; the named accountant verifies | V2-M0 |
-| V2-M2 | Fixed assets: classes, register, additions, disposals, depreciation methods, useful lives, residual values, tax vs accounting treatment, reconciliation to the ledger, depreciation runs | planned | Engineering | V2-M1 |
+| V2-M2 | Fixed assets: classes, register, additions, disposals, depreciation methods, useful lives, residual values, tax vs accounting treatment, reconciliation to the ledger, depreciation runs | **built** (2026-10-18; `v2-m2-acceptance.md`) | Engineering | V2-M1 |
 | V2-M3 | Year-end adjustments: accruals, prepayments, deferred income, provisions with reversal; the year-end closing journal to retained earnings | planned | Engineering | V2-M2 |
 | V2-M4 | Director and shareholder balances (director loan movements flagged), related parties | planned | Engineering | V2-M3 |
 | V2-M5 | Statements and notes: FRS 105 micro-entity, then FRS 102 Section 1A, then full FRS 102; policies, comparatives, directors' sections; the size test | planned | Engineering; the named accountant | V2-M1, V2-M3, V2-M4 |
@@ -58,5 +58,54 @@ Rendering notes and policies (V2-M5); the size test from turnover, balance-sheet
 * Architecture: the statutory report service reads ledger and framework tables only.
 * CI green, clean clone, OpenAPI regenerated, the matrix rows for V2-M1 moved with evidence.
 
-## 4. Legal and standards context
+## 4. V2-M2 - Fixed assets and depreciation (specification; DEC-058)
+Recorded before code.
+
+### 4.1 Data (one migration, additive)
+| Table | Holds | Rules (service and database) |
+|---|---|---|
+| `fixed_asset_class` | Per company: code, name, cost / accumulated depreciation / expense / disposal accounts, default method, life (months) or rate (%), residual, convention | Accounts of the right type and subtype, non-control, in the company; code unique per company; changed with a reason (defaults apply to new assets only) |
+| `fixed_asset` | Per company: number (sequence), class, description, acquisition date, in-use date, cost, addition kind (POSTED / LINKED / TAKE_ON), addition journal, take-on accumulated depreciation and date, status (ACTIVE / DISPOSED / VOID), disposal date, proceeds, proceeds account, disposal journal, gain or loss; tax category and tax cost | Cost > 0; in-use date not before acquisition; DISPOSED and VOID final; a disposed asset's figures immutable (trigger) |
+| `fixed_asset_basis` | Per asset, append-only: effective from, carrying amount at that date, method, remaining life (months) or rate, residual, convention, reason, author | First basis at the in-use date (or the day after take-on); a new basis only after the last charged date; never edited or deleted |
+| `depreciation_run` | Per company: as-at date, status (POSTED / REVERSED), journal, reversal journal, total, author | One live run per as-at date; a new run later than every live run; reversal only of the latest live run |
+| `depreciation_run_line` | Per run and asset: class, amount, cumulative after the run | Written once with its run |
+
+All tables: forced row-level security, no DELETE or TRUNCATE for the runtime role, classified, retention ACCOUNTING_RECORDS, in every V1 guard list.
+
+### 4.2 Arithmetic (exact; DEC-058)
+* Depreciable amount since the basis: SL = carrying amount at basis - residual; RB works on the carrying amount.
+* SL, DAILY: due(d) = depreciable x min(1, (d - basis + 1 day) / days of the remaining life). SL, MONTHLY: due(d) = depreciable x min(1, months counted / remaining months), where a month counts once d reaches its last day; the month of the basis counts in full; at disposal the disposal month does not count.
+* RB: after n whole asset years and a fraction f of the current one (days / days of that asset year, or months / 12), carrying(d) = carrying at basis x (1 - r)^n x (1 - r x f), never below the residual. due(d) = carrying at basis - carrying(d).
+* Charge at d = round_half_up(cumulative before the basis + due(d), 2) - already charged. A run charges only assets ACTIVE and in use on d.
+
+### 4.3 Services and API
+* `FixedAssetService`:
+  * classes: create, update, list;
+  * assets: add, get, list, change estimate, change tax fields;
+  * disposals: dispose, reverse disposal;
+  * reverse a POSTED addition;
+  * register report and reconciliation as at a date.
+  `DepreciationService`: preview, post and reverse runs. Both go through the PostingService only.
+* Journal sources (contracts): FIXED_ASSET_ADDITION, FIXED_ASSET_ADDITION_REVERSAL, FIXED_ASSET_DEPRECIATION, FIXED_ASSET_DEPRECIATION_REVERSAL, FIXED_ASSET_DISPOSAL and FIXED_ASSET_DISPOSAL_REVERSAL. All are `subLedger`, with no control accounts and no VAT, under permission `assets:manage`. Each has its five posting-rule test categories in `tests/rules/posting-rules.ts`.
+* Permissions: `assets:read`, `assets:manage` (DEC-058).
+* Routes under `/organisations/{org}/companies/{company}/`, behind `accounts.production`:
+  * `fixed-asset-classes` (list, create, patch);
+  * `fixed-assets` (list, add, get), with `.../estimate`, `.../tax`, `.../dispose`, `.../reverse-disposal` and `.../reverse-addition`;
+  * `depreciation-runs` (list, preview, post), with `.../{id}/reverse`;
+  * `fixed-asset-register?asAt` (register and reconciliation).
+  All are in OpenAPI.
+
+### 4.4 Acceptance
+* Golden (DEC-054): `tests/golden/v2-m2-fixed-assets.json`, written by hand before the code. Two classes:
+  * four assets: straight line monthly, straight line daily, reducing balance daily, and a take-on;
+  * two years of runs, and a disposal at a gain;
+  * a prospective change of estimate.
+  Every charge, the disposal journal, the carrying amounts and the reconciliation are matched to the cent. The workbook recomputes every figure independently.
+* The five categories for each new source: positive; negative (including a non-control or wrong-type account); the mirror reversal and the refused ones; VAT refused; a closed period refused.
+* Database: immutability, append-only basis, one live run per date, no deletes.
+* Permissions and tenancy, as in V2-M1.
+* Architecture: depreciation never reads the tax fields; only the asset services write the asset tables and post the asset sources.
+* CI green, clean clone, OpenAPI regenerated, matrix rows V2-MOD-03, V2-MOD-04 and V2-FA-01..08 moved with evidence.
+
+## 5. Legal and standards context
 See `v2-proposal.md` section 6. The rules entered into the framework are the firm's, from the current text of FRS 102 and FRS 105 and the Companies Act 2006 accounts regulations, verified by its named accountant; engineering builds the mechanism and tests it on synthetic data.

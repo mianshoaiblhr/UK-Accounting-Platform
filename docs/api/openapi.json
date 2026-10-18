@@ -21090,6 +21090,1337 @@
         ]
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/fixed-asset-classes": {
+      "get": {
+        "operationId": "FixedAssets_classes",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Classes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetClassList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "assets:read"
+        ],
+        "summary": "Fixed-asset classes: their accounts and the defaults for new assets",
+        "description": "**Requires permission:** `assets:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "FixedAssets_createClass",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetClass"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "assets:manage"
+        ],
+        "summary": "Create a class over four non-control accounts (cost, accumulated depreciation, depreciation expense, disposal) with default method, life or rate, residual and convention",
+        "description": "**Requires permission:** `assets:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAssetClassRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/fixed-asset-classes/{classId}": {
+      "patch": {
+        "operationId": "FixedAssets_updateClass",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "classId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetClass"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "assets:manage"
+        ],
+        "summary": "Change a class name or its defaults (with a reason); existing assets change only by a change of estimate",
+        "description": "**Requires permission:** `assets:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAssetClassRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/fixed-assets": {
+      "get": {
+        "operationId": "FixedAssets_list",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "DISPOSED",
+                "VOID"
+              ]
+            }
+          },
+          {
+            "name": "classId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Assets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixedAssetList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "assets:read"
+        ],
+        "summary": "The register's assets",
+        "description": "**Requires permission:** `assets:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "FixedAssets_add",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixedAsset"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "assets:manage"
+        ],
+        "summary": "Add an asset: posted (Dr cost / Cr a non-control offset), linked to the posting that already carries its cost, or taken on with accumulated depreciation",
+        "description": "**Requires permission:** `assets:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddAssetRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/fixed-assets/{assetId}": {
+      "get": {
+        "operationId": "FixedAssets_get",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "assetId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Asset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixedAsset"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "assets:read"
+        ],
+        "summary": "An asset with its bases, charges, accumulated depreciation and carrying amount",
+        "description": "**Requires permission:** `assets:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/fixed-assets/{assetId}/estimate": {
+      "post": {
+        "operationId": "FixedAssets_estimate",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "assetId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "New basis",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixedAsset"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "assets:manage"
+        ],
+        "summary": "Change of estimate (method, remaining life or rate, residual, convention), prospective from the day after the last charge",
+        "description": "**Requires permission:** `assets:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeEstimateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/fixed-assets/{assetId}/tax": {
+      "post": {
+        "operationId": "FixedAssets_tax",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "assetId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixedAsset"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "assets:manage"
+        ],
+        "summary": "Set the tax category and tax cost (kept apart for V4; no depreciation figure changes)",
+        "description": "**Requires permission:** `assets:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeAssetTaxRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/fixed-assets/{assetId}/dispose": {
+      "post": {
+        "operationId": "FixedAssets_dispose",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "assetId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Disposed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixedAsset"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "assets:manage"
+        ],
+        "summary": "Dispose of an asset: depreciation to the disposal date, cost and accumulated depreciation removed, gain or loss on the class disposal account",
+        "description": "**Requires permission:** `assets:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DisposeAssetRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/fixed-assets/{assetId}/reverse-disposal": {
+      "post": {
+        "operationId": "FixedAssets_reverseDisposal",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "assetId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active again",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixedAsset"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "assets:manage"
+        ],
+        "summary": "Reverse a disposal by its mirror while no later run is live",
+        "description": "**Requires permission:** `assets:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReverseAssetEventRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/fixed-assets/{assetId}/reverse-addition": {
+      "post": {
+        "operationId": "FixedAssets_reverseAddition",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "assetId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Void",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixedAsset"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "assets:manage"
+        ],
+        "summary": "Reverse a posted addition by its mirror before any depreciation (the asset becomes VOID)",
+        "description": "**Requires permission:** `assets:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReverseAssetEventRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/fixed-asset-register": {
+      "get": {
+        "operationId": "FixedAssets_register",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "asAt",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Register",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixedAssetRegister"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "assets:read"
+        ],
+        "summary": "The register as at a date by class, and its reconciliation to the ledger by account with the postings it does not explain",
+        "description": "**Requires permission:** `assets:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/depreciation-runs": {
+      "get": {
+        "operationId": "FixedAssets_runs",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Runs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepreciationRunList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "assets:read"
+        ],
+        "summary": "Depreciation runs of the company",
+        "description": "**Requires permission:** `assets:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "FixedAssets_postRun",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Posted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepreciationRun"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "assets:manage"
+        ],
+        "summary": "Post a depreciation run as at a date later than every live run (one journal, a pair of lines per class)",
+        "description": "**Requires permission:** `assets:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepreciationRunRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/depreciation-runs/preview": {
+      "get": {
+        "operationId": "FixedAssets_preview",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "asAt",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Preview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepreciationPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "assets:read"
+        ],
+        "summary": "What a run as at the date would charge, per asset and per class (posts nothing)",
+        "description": "**Requires permission:** `assets:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/depreciation-runs/{runId}": {
+      "get": {
+        "operationId": "FixedAssets_getRun",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "runId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Run",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepreciationRun"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "assets:read"
+        ],
+        "summary": "A run with what it charged each asset",
+        "description": "**Requires permission:** `assets:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/depreciation-runs/{runId}/reverse": {
+      "post": {
+        "operationId": "FixedAssets_reverseRun",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "runId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reversed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepreciationRun"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "assets:manage"
+        ],
+        "summary": "Reverse the latest live run by its mirror",
+        "description": "**Requires permission:** `assets:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReverseAssetEventRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -30413,6 +31744,1205 @@
           "reconciliation",
           "problems",
           "notices"
+        ],
+        "additionalProperties": false
+      },
+      "AssetClass": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "costAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "depreciationAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expenseAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "disposalAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "STRAIGHT_LINE",
+              "REDUCING_BALANCE"
+            ]
+          },
+          "lifeMonths": {
+            "type": "integer",
+            "nullable": true
+          },
+          "ratePercent": {
+            "type": "string",
+            "nullable": true
+          },
+          "residualPercent": {
+            "type": "string"
+          },
+          "convention": {
+            "type": "string",
+            "enum": [
+              "DAILY",
+              "MONTHLY"
+            ]
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "code",
+          "name",
+          "costAccountId",
+          "depreciationAccountId",
+          "expenseAccountId",
+          "disposalAccountId",
+          "method",
+          "lifeMonths",
+          "ratePercent",
+          "residualPercent",
+          "convention",
+          "createdByUserId",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "AssetClassList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "costAccountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "depreciationAccountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "expenseAccountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "disposalAccountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "method": {
+                  "type": "string",
+                  "enum": [
+                    "STRAIGHT_LINE",
+                    "REDUCING_BALANCE"
+                  ]
+                },
+                "lifeMonths": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "ratePercent": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "residualPercent": {
+                  "type": "string"
+                },
+                "convention": {
+                  "type": "string",
+                  "enum": [
+                    "DAILY",
+                    "MONTHLY"
+                  ]
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "code",
+                "name",
+                "costAccountId",
+                "depreciationAccountId",
+                "expenseAccountId",
+                "disposalAccountId",
+                "method",
+                "lifeMonths",
+                "ratePercent",
+                "residualPercent",
+                "convention",
+                "createdByUserId",
+                "createdAt",
+                "updatedAt"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "FixedAsset": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "classId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "type": "integer"
+          },
+          "description": {
+            "type": "string"
+          },
+          "acquiredOn": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "inUseFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "cost": {
+            "type": "string",
+            "description": "Exact decimal"
+          },
+          "additionKind": {
+            "type": "string",
+            "enum": [
+              "POSTED",
+              "LINKED",
+              "TAKE_ON"
+            ]
+          },
+          "additionJournalId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "offsetAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "takeOnDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "takeOnAccumulated": {
+            "type": "string",
+            "description": "Exact decimal"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "DISPOSED",
+              "VOID"
+            ]
+          },
+          "additionReversalJournalId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "disposedOn": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "proceeds": {
+            "type": "string",
+            "nullable": true,
+            "description": "Exact decimal"
+          },
+          "proceedsAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "disposalJournalId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "disposalCatchUp": {
+            "type": "string",
+            "nullable": true,
+            "description": "Exact decimal"
+          },
+          "gainOrLoss": {
+            "type": "string",
+            "nullable": true,
+            "description": "Proceeds less carrying amount (negative: a loss)"
+          },
+          "tax": {
+            "type": "object",
+            "properties": {
+              "category": {
+                "type": "string",
+                "enum": [
+                  "AIA",
+                  "MAIN_POOL",
+                  "SPECIAL_RATE_POOL",
+                  "SINGLE_ASSET_POOL",
+                  "NOT_QUALIFYING",
+                  "UNDECIDED"
+                ]
+              },
+              "cost": {
+                "type": "string",
+                "nullable": true,
+                "description": "Exact decimal"
+              }
+            },
+            "required": [
+              "category",
+              "cost"
+            ],
+            "additionalProperties": false,
+            "description": "Kept apart for capital allowances (V4); never read by depreciation"
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "classCode": {
+            "type": "string"
+          },
+          "accumulatedDepreciation": {
+            "type": "string",
+            "description": "Exact decimal"
+          },
+          "carryingAmount": {
+            "type": "string",
+            "description": "Exact decimal"
+          },
+          "lastChargedOn": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "bases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "effectiveFrom": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "carryingAmount": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                },
+                "accumulatedBefore": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                },
+                "method": {
+                  "type": "string",
+                  "enum": [
+                    "STRAIGHT_LINE",
+                    "REDUCING_BALANCE"
+                  ]
+                },
+                "lifeMonths": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "ratePercent": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "residual": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                },
+                "convention": {
+                  "type": "string",
+                  "enum": [
+                    "DAILY",
+                    "MONTHLY"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "effectiveFrom",
+                "carryingAmount",
+                "accumulatedBefore",
+                "method",
+                "lifeMonths",
+                "ratePercent",
+                "residual",
+                "convention",
+                "reason",
+                "createdByUserId",
+                "createdAt"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Depreciation bases, append-only; a change of estimate adds one prospectively"
+          },
+          "charges": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "runId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "asAt": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "amount": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                }
+              },
+              "required": [
+                "runId",
+                "asAt",
+                "amount"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "classId",
+          "number",
+          "description",
+          "acquiredOn",
+          "inUseFrom",
+          "cost",
+          "additionKind",
+          "additionJournalId",
+          "offsetAccountId",
+          "takeOnDate",
+          "takeOnAccumulated",
+          "status",
+          "additionReversalJournalId",
+          "disposedOn",
+          "proceeds",
+          "proceedsAccountId",
+          "disposalJournalId",
+          "disposalCatchUp",
+          "gainOrLoss",
+          "tax",
+          "createdByUserId",
+          "createdAt",
+          "classCode",
+          "accumulatedDepreciation",
+          "carryingAmount",
+          "lastChargedOn",
+          "bases",
+          "charges"
+        ],
+        "additionalProperties": false
+      },
+      "FixedAssetList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "classId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "number": {
+                  "type": "integer"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "acquiredOn": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "inUseFrom": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "cost": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                },
+                "additionKind": {
+                  "type": "string",
+                  "enum": [
+                    "POSTED",
+                    "LINKED",
+                    "TAKE_ON"
+                  ]
+                },
+                "additionJournalId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "offsetAccountId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "takeOnDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "takeOnAccumulated": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "ACTIVE",
+                    "DISPOSED",
+                    "VOID"
+                  ]
+                },
+                "additionReversalJournalId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "disposedOn": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "proceeds": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Exact decimal"
+                },
+                "proceedsAccountId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "disposalJournalId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "disposalCatchUp": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Exact decimal"
+                },
+                "gainOrLoss": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Proceeds less carrying amount (negative: a loss)"
+                },
+                "tax": {
+                  "type": "object",
+                  "properties": {
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "AIA",
+                        "MAIN_POOL",
+                        "SPECIAL_RATE_POOL",
+                        "SINGLE_ASSET_POOL",
+                        "NOT_QUALIFYING",
+                        "UNDECIDED"
+                      ]
+                    },
+                    "cost": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Exact decimal"
+                    }
+                  },
+                  "required": [
+                    "category",
+                    "cost"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Kept apart for capital allowances (V4); never read by depreciation"
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "classId",
+                "number",
+                "description",
+                "acquiredOn",
+                "inUseFrom",
+                "cost",
+                "additionKind",
+                "additionJournalId",
+                "offsetAccountId",
+                "takeOnDate",
+                "takeOnAccumulated",
+                "status",
+                "additionReversalJournalId",
+                "disposedOn",
+                "proceeds",
+                "proceedsAccountId",
+                "disposalJournalId",
+                "disposalCatchUp",
+                "gainOrLoss",
+                "tax",
+                "createdByUserId",
+                "createdAt"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "DepreciationRun": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "asAt": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "POSTED",
+              "REVERSED"
+            ]
+          },
+          "journalId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "reversalJournalId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "total": {
+            "type": "string",
+            "description": "Exact decimal"
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reversedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "reversedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "reversedReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "assetId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "number": {
+                  "type": "integer"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "classId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "amount": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                },
+                "accumulatedAfter": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                }
+              },
+              "required": [
+                "assetId",
+                "number",
+                "description",
+                "classId",
+                "amount",
+                "accumulatedAfter"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "asAt",
+          "status",
+          "journalId",
+          "reversalJournalId",
+          "total",
+          "createdByUserId",
+          "createdAt",
+          "reversedByUserId",
+          "reversedAt",
+          "reversedReason",
+          "lines"
+        ],
+        "additionalProperties": false
+      },
+      "DepreciationRunList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "asAt": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "POSTED",
+                    "REVERSED"
+                  ]
+                },
+                "journalId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "reversalJournalId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "total": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "reversedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "reversedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "reversedReason": {
+                  "type": "string",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "asAt",
+                "status",
+                "journalId",
+                "reversalJournalId",
+                "total",
+                "createdByUserId",
+                "createdAt",
+                "reversedByUserId",
+                "reversedAt",
+                "reversedReason"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "DepreciationPreview": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "asAt": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "total": {
+            "type": "string",
+            "description": "Exact decimal"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "assetId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "number": {
+                  "type": "integer"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "classCode": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                },
+                "accumulatedAfter": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                },
+                "carryingAfter": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                }
+              },
+              "required": [
+                "assetId",
+                "number",
+                "description",
+                "classCode",
+                "amount",
+                "accumulatedAfter",
+                "carryingAfter"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "classes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "classId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "expenseAccountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "depreciationAccountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "amount": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                }
+              },
+              "required": [
+                "classId",
+                "code",
+                "expenseAccountId",
+                "depreciationAccountId",
+                "amount"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "companyId",
+          "asAt",
+          "total",
+          "lines",
+          "classes"
+        ],
+        "additionalProperties": false
+      },
+      "FixedAssetRegister": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "asAt": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "classes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "classId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "cost": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                },
+                "accumulatedDepreciation": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                },
+                "carryingAmount": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                },
+                "assets": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "number": {
+                        "type": "integer"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "ACTIVE",
+                          "DISPOSED"
+                        ]
+                      },
+                      "acquiredOn": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "cost": {
+                        "type": "string",
+                        "description": "Exact decimal"
+                      },
+                      "accumulatedDepreciation": {
+                        "type": "string",
+                        "description": "Exact decimal"
+                      },
+                      "carryingAmount": {
+                        "type": "string",
+                        "description": "Exact decimal"
+                      },
+                      "disposedOn": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "proceeds": {
+                        "type": "string",
+                        "description": "Exact decimal"
+                      },
+                      "gainOrLoss": {
+                        "type": "string",
+                        "description": "Exact decimal"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "number",
+                      "description",
+                      "status",
+                      "acquiredOn",
+                      "cost",
+                      "accumulatedDepreciation",
+                      "carryingAmount"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "classId",
+                "code",
+                "name",
+                "cost",
+                "accumulatedDepreciation",
+                "carryingAmount",
+                "assets"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "reconciliation": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "COST",
+                    "DEPRECIATION"
+                  ]
+                },
+                "register": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                },
+                "ledger": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                },
+                "difference": {
+                  "type": "string",
+                  "description": "Register less ledger"
+                },
+                "reconciled": {
+                  "type": "boolean"
+                },
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "journalId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "journalNumber": {
+                        "type": "integer"
+                      },
+                      "journalDate": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "sourceType": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "amount": {
+                        "type": "string",
+                        "description": "Exact decimal"
+                      },
+                      "registered": {
+                        "type": "string",
+                        "description": "Exact decimal"
+                      },
+                      "unregistered": {
+                        "type": "string",
+                        "description": "Exact decimal"
+                      }
+                    },
+                    "required": [
+                      "journalId",
+                      "journalNumber",
+                      "journalDate",
+                      "sourceType",
+                      "description",
+                      "amount",
+                      "registered",
+                      "unregistered"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "description": "Postings on the account not made or linked by the register"
+                }
+              },
+              "required": [
+                "accountId",
+                "code",
+                "kind",
+                "register",
+                "ledger",
+                "difference",
+                "reconciled",
+                "items"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "reconciled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "companyId",
+          "currency",
+          "asAt",
+          "classes",
+          "reconciliation",
+          "reconciled"
         ],
         "additionalProperties": false
       },
@@ -39820,7 +42350,9 @@
                 "bank:reconcile",
                 "accounts:rules-manage",
                 "accounts:rule-verify",
-                "accounts:prepare"
+                "accounts:prepare",
+                "assets:read",
+                "assets:manage"
               ]
             },
             "minItems": 1
@@ -44625,6 +47157,410 @@
         },
         "required": [
           "reason"
+        ],
+        "additionalProperties": false
+      },
+      "CreateAssetClassRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Z0-9][A-Z0-9_-]{0,19}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "costAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "depreciationAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expenseAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "disposalAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "STRAIGHT_LINE",
+              "REDUCING_BALANCE"
+            ]
+          },
+          "lifeMonths": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1200
+          },
+          "ratePercent": {
+            "type": "string",
+            "pattern": "^\\d{1,2}(\\.\\d{1,4})?$"
+          },
+          "residualPercent": {
+            "type": "string",
+            "pattern": "^\\d{1,2}(\\.\\d{1,4})?$",
+            "default": "0"
+          },
+          "convention": {
+            "type": "string",
+            "enum": [
+              "DAILY",
+              "MONTHLY"
+            ],
+            "default": "MONTHLY"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "costAccountId",
+          "depreciationAccountId",
+          "expenseAccountId",
+          "disposalAccountId",
+          "method"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateAssetClassRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "STRAIGHT_LINE",
+              "REDUCING_BALANCE"
+            ]
+          },
+          "lifeMonths": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1200
+          },
+          "ratePercent": {
+            "type": "string",
+            "pattern": "^\\d{1,2}(\\.\\d{1,4})?$"
+          },
+          "residualPercent": {
+            "type": "string",
+            "pattern": "^\\d{1,2}(\\.\\d{1,4})?$"
+          },
+          "convention": {
+            "type": "string",
+            "enum": [
+              "DAILY",
+              "MONTHLY"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "AddAssetRequest": {
+        "type": "object",
+        "properties": {
+          "classId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "acquiredOn": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "inUseFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "cost": {
+            "type": "string",
+            "pattern": "^\\d{1,15}(\\.\\d{1,4})?$"
+          },
+          "addition": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "POSTED"
+                    ]
+                  },
+                  "offsetAccountId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "offsetAccountId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "LINKED"
+                    ]
+                  },
+                  "journalId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "journalId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "TAKE_ON"
+                    ]
+                  },
+                  "takeOnDate": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "accumulatedDepreciation": {
+                    "type": "string",
+                    "pattern": "^\\d{1,15}(\\.\\d{1,4})?$"
+                  },
+                  "journalId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "takeOnDate",
+                  "accumulatedDepreciation"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "STRAIGHT_LINE",
+              "REDUCING_BALANCE"
+            ]
+          },
+          "lifeMonths": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1200
+          },
+          "ratePercent": {
+            "type": "string",
+            "pattern": "^\\d{1,2}(\\.\\d{1,4})?$"
+          },
+          "residual": {
+            "type": "string",
+            "pattern": "^\\d{1,15}(\\.\\d{1,4})?$"
+          },
+          "convention": {
+            "type": "string",
+            "enum": [
+              "DAILY",
+              "MONTHLY"
+            ]
+          },
+          "tax": {
+            "type": "object",
+            "properties": {
+              "category": {
+                "type": "string",
+                "enum": [
+                  "AIA",
+                  "MAIN_POOL",
+                  "SPECIAL_RATE_POOL",
+                  "SINGLE_ASSET_POOL",
+                  "NOT_QUALIFYING",
+                  "UNDECIDED"
+                ]
+              },
+              "cost": {
+                "type": "string",
+                "pattern": "^\\d{1,15}(\\.\\d{1,4})?$",
+                "nullable": true
+              }
+            },
+            "required": [
+              "category"
+            ],
+            "additionalProperties": false,
+            "default": {
+              "category": "UNDECIDED"
+            }
+          }
+        },
+        "required": [
+          "classId",
+          "description",
+          "acquiredOn",
+          "cost",
+          "addition"
+        ],
+        "additionalProperties": false
+      },
+      "ChangeEstimateRequest": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "STRAIGHT_LINE",
+              "REDUCING_BALANCE"
+            ]
+          },
+          "lifeMonths": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1200
+          },
+          "ratePercent": {
+            "type": "string",
+            "pattern": "^\\d{1,2}(\\.\\d{1,4})?$"
+          },
+          "residual": {
+            "type": "string",
+            "pattern": "^\\d{1,15}(\\.\\d{1,4})?$"
+          },
+          "convention": {
+            "type": "string",
+            "enum": [
+              "DAILY",
+              "MONTHLY"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "ChangeAssetTaxRequest": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "AIA",
+              "MAIN_POOL",
+              "SPECIAL_RATE_POOL",
+              "SINGLE_ASSET_POOL",
+              "NOT_QUALIFYING",
+              "UNDECIDED"
+            ]
+          },
+          "cost": {
+            "type": "string",
+            "pattern": "^\\d{1,15}(\\.\\d{1,4})?$",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "category",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "DisposeAssetRequest": {
+        "type": "object",
+        "properties": {
+          "disposedOn": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "proceeds": {
+            "type": "string",
+            "pattern": "^\\d{1,15}(\\.\\d{1,4})?$",
+            "default": "0"
+          },
+          "proceedsAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "disposedOn",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "ReverseAssetEventRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "DepreciationRunRequest": {
+        "type": "object",
+        "properties": {
+          "asAt": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          }
+        },
+        "required": [
+          "asAt"
         ],
         "additionalProperties": false
       },

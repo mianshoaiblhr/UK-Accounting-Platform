@@ -65,6 +65,11 @@ const FORBIDDEN: Record<string, string[]> = {
   disclosure_rule: ['DELETE', 'TRUNCATE'],
   statutory_account_override: ['DELETE', 'TRUNCATE'],           // ended once, never edited (trigger)
   company_reporting_framework: ['DELETE', 'TRUNCATE'],          // changed with a reason while unlocked (trigger)
+  fixed_asset_class: ['DELETE', 'TRUNCATE'],                    // defaults change with a reason; accounts never (V2-M2)
+  fixed_asset: ['DELETE', 'TRUNCATE'],                          // ACTIVE -> DISPOSED | VOID; acquisition facts immutable (trigger)
+  fixed_asset_basis: ['UPDATE', 'DELETE', 'TRUNCATE'],          // append-only
+  depreciation_run: ['DELETE', 'TRUNCATE'],                     // POSTED -> REVERSED once (trigger)
+  depreciation_run_line: ['UPDATE', 'DELETE', 'TRUNCATE'],      // written once with its run
   notification_preference: ['DELETE', 'TRUNCATE'], // toggled, never removed
   notification_delivery: ['DELETE', 'TRUNCATE'],   // planned deliveries are final once handled
   outbox_event: ['TRUNCATE'],                    // DELETE is system-context only (RLS) and trigger-guarded

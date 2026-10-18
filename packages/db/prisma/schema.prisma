@@ -2244,3 +2244,123 @@ model CompanyReportingFramework {
   @@unique([organisationId, companyId, yearStart], map: "crf_company_year_key")
   @@map("company_reporting_framework")
 }
+
+/// V2-M2 (DEC-058): a fixed-asset class: its four accounts and the defaults for new assets.
+model FixedAssetClass {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId        String   @map("organisation_id") @db.Uuid
+  companyId             String   @map("company_id") @db.Uuid
+  code                  String
+  name                  String
+  costAccountId         String   @map("cost_account_id") @db.Uuid
+  depreciationAccountId String   @map("depreciation_account_id") @db.Uuid
+  expenseAccountId      String   @map("expense_account_id") @db.Uuid
+  disposalAccountId     String   @map("disposal_account_id") @db.Uuid
+  method                String
+  lifeMonths            Int?     @map("life_months")
+  ratePercent           Decimal? @map("rate_percent") @db.Decimal(7, 4)
+  residualPercent       Decimal  @default(0) @map("residual_percent") @db.Decimal(7, 4)
+  convention            String   @default("MONTHLY")
+  createdByUserId       String   @map("created_by_user_id") @db.Uuid
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id], map: "fac_organisation_id_id_key")
+  @@unique([organisationId, companyId, code], map: "fac_company_code_key")
+  @@map("fixed_asset_class")
+}
+
+/// V2-M2 (DEC-058): an asset in the register. Acquisition facts are immutable; a disposal is reversed by its mirror; tax fields are kept apart.
+model FixedAsset {
+  id                        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId            String    @map("organisation_id") @db.Uuid
+  companyId                 String    @map("company_id") @db.Uuid
+  classId                   String    @map("class_id") @db.Uuid
+  number                    Int
+  description               String
+  acquiredOn                DateTime  @map("acquired_on") @db.Date
+  inUseFrom                 DateTime  @map("in_use_from") @db.Date
+  cost                      Decimal   @db.Decimal(19, 4)
+  additionKind              String    @map("addition_kind")
+  additionJournalId         String?   @map("addition_journal_id") @db.Uuid
+  offsetAccountId           String?   @map("offset_account_id") @db.Uuid
+  takeOnDate                DateTime? @map("take_on_date") @db.Date
+  takeOnAccumulated         Decimal   @default(0) @map("take_on_accumulated") @db.Decimal(19, 4)
+  status                    String    @default("ACTIVE")
+  additionReversalJournalId String?   @map("addition_reversal_journal_id") @db.Uuid
+  disposedOn                DateTime? @map("disposed_on") @db.Date
+  proceeds                  Decimal?  @db.Decimal(19, 4)
+  proceedsAccountId         String?   @map("proceeds_account_id") @db.Uuid
+  disposalJournalId         String?   @map("disposal_journal_id") @db.Uuid
+  disposalCatchUp           Decimal?  @map("disposal_catch_up") @db.Decimal(19, 4)
+  disposalAccumulated       Decimal?  @map("disposal_accumulated") @db.Decimal(19, 4)
+  gainOrLoss                Decimal?  @map("gain_or_loss") @db.Decimal(19, 4)
+  taxCategory               String    @default("UNDECIDED") @map("tax_category")
+  taxCost                   Decimal?  @map("tax_cost") @db.Decimal(19, 4)
+  createdByUserId           String    @map("created_by_user_id") @db.Uuid
+  createdAt                 DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                 DateTime  @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id], map: "fa_organisation_id_id_key")
+  @@unique([organisationId, companyId, number], map: "fa_company_number_key")
+  @@index([organisationId, classId], map: "fa_class_idx")
+  @@map("fixed_asset")
+}
+
+/// V2-M2: a depreciation basis of an asset (append-only; a change of estimate adds one, prospectively).
+model FixedAssetBasis {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId    String   @map("organisation_id") @db.Uuid
+  assetId           String   @map("asset_id") @db.Uuid
+  effectiveFrom     DateTime @map("effective_from") @db.Date
+  carryingAmount    Decimal  @map("carrying_amount") @db.Decimal(19, 4)
+  accumulatedBefore Decimal  @map("accumulated_before") @db.Decimal(19, 4)
+  method            String
+  lifeMonths        Int?     @map("life_months")
+  ratePercent       Decimal? @map("rate_percent") @db.Decimal(7, 4)
+  residual          Decimal  @db.Decimal(19, 4)
+  convention        String
+  reason            String
+  createdByUserId   String   @map("created_by_user_id") @db.Uuid
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id], map: "fab_organisation_id_id_key")
+  @@index([organisationId, assetId, effectiveFrom], map: "fab_asset_idx")
+  @@map("fixed_asset_basis")
+}
+
+/// V2-M2: a depreciation run as at a date: one journal, one line per asset charged; reversed only by its mirror while it is the latest live run.
+model DepreciationRun {
+  id                String    @id @db.Uuid
+  organisationId    String    @map("organisation_id") @db.Uuid
+  companyId         String    @map("company_id") @db.Uuid
+  asAt              DateTime  @map("as_at") @db.Date
+  status            String    @default("POSTED")
+  journalId         String?   @map("journal_id") @db.Uuid
+  reversalJournalId String?   @map("reversal_journal_id") @db.Uuid
+  total             Decimal   @db.Decimal(19, 4)
+  createdByUserId   String    @map("created_by_user_id") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  reversedByUserId  String?   @map("reversed_by_user_id") @db.Uuid
+  reversedAt        DateTime? @map("reversed_at") @db.Timestamptz(3)
+  reversedReason    String?   @map("reversed_reason")
+
+  @@unique([organisationId, id], map: "dr_organisation_id_id_key")
+  @@map("depreciation_run")
+}
+
+/// V2-M2: what one run charged one asset (written once with the run).
+model DepreciationRunLine {
+  id               String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId   String  @map("organisation_id") @db.Uuid
+  runId            String  @map("run_id") @db.Uuid
+  assetId          String  @map("asset_id") @db.Uuid
+  classId          String  @map("class_id") @db.Uuid
+  amount           Decimal @db.Decimal(19, 4)
+  accumulatedAfter Decimal @map("accumulated_after") @db.Decimal(19, 4)
+
+  @@unique([organisationId, id], map: "drl_organisation_id_id_key")
+  @@unique([organisationId, runId, assetId], map: "drl_run_asset_key")
+  @@index([organisationId, assetId], map: "drl_asset_idx")
+  @@map("depreciation_run_line")
+}

@@ -149,7 +149,8 @@ describe('period lock, per journal source through its own service (V1-TEST-01)',
 
 describe('fences every source shares (V1-TEST-01)', () => {
   it('a source whose design carries no VAT refuses a VAT code: receipts, payments, transfers, allocations, revaluations, reversals and requests', async () => {
-    const noVat = Object.entries(JOURNAL_SOURCES).filter(([, s]) => !s.vatCodes).map(([k]) => k);
+    // the V2-M2 register sources (FIXED_ASSET_*) are proved in tests/platform/fixed-assets.test.ts on their own accounts
+    const noVat = Object.entries(JOURNAL_SOURCES).filter(([k, s]) => !s.vatCodes && !k.startsWith('FIXED_ASSET_')).map(([k]) => k);
     expect(noVat.sort()).toEqual(['BANK_TRANSFER', 'BANK_TRANSFER_REVERSAL', 'CASH_PAYMENT_REVERSAL', 'CASH_RECEIPT_REVERSAL', 'CONTROL_ADJUSTMENT', 'FX_REVALUATION', 'OPENING_BALANCE', 'PURCHASE_ALLOCATION_FX',
       'PURCHASE_PAYMENT', 'PURCHASE_PAYMENT_REVERSAL', 'REVERSAL', 'SALES_ALLOCATION_FX', 'SALES_RECEIPT', 'SALES_RECEIPT_REVERSAL']);
     const before = journals(co);
@@ -167,9 +168,9 @@ describe('fences every source shares (V1-TEST-01)', () => {
 
   it('every sub-ledger source reaches only its own control kinds (retained earnings is none of them)', async () => {
     const sub = Object.entries(JOURNAL_SOURCES).filter(([, s]) => s.subLedger);
-    expect(sub.length).toBe(16);
+    expect(sub.length).toBe(22);
     for (const [s, def] of sub) {
-      expect(def.controlKinds).not.toContain('RETAINED_EARNINGS');
+      expect(def.controlKinds ?? []).not.toContain('RETAINED_EARNINGS');
       const id = uuidv7();
       await rejects(t((tx) => posting.post(tx, { organisationId: org, companyId: co, journalDate: '2026-02-03', sourceType: s, sourceId: id, description: `${s} to retained earnings`, idempotencyKey: `ck-${id}`, actor: me(),
         lines: [{ accountId: acc[co]!['3200']!, debit: '10.00', credit: '0' }, { accountId: acc[co]!['4000']!, debit: '0', credit: '10.00' }] })), 'control_account_restricted');

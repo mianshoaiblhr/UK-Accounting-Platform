@@ -1,0 +1,52 @@
+{
+  "id": "V2-M2-GOLDEN-01",
+  "purpose": "DEC-054 golden for V2-M2: a synthetic company with two asset classes and four assets (straight line monthly, straight line daily, reducing balance daily, a take-on), three depreciation runs over two years, a disposal at a gain, a prospective change of estimate and a further run; every charge, journal, carrying amount and reconciliation written and added up by hand before the code.",
+  "disclaimer": "SYNTHETIC. Lives, rates and conventions are test choices, not advice on any asset's useful life; the firm sets its own policies (FRS 102 s.17 / FRS 105 s.12).",
+  "periods": [["2025-01-01", "2025-12-31"], ["2026-01-01", "2026-12-31"], ["2027-01-01", "2027-12-31"]],
+  "accounts": [{ "code": "6950", "name": "Profit or loss on disposal of fixed assets", "type": "EXPENSE", "subtype": "OTHER_EXPENSE", "reportingMapping": "PL.OTHER_EXPENSES" }],
+  "seed": [
+    { "kind": "cash", "date": "2025-01-01", "direction": "RECEIPT", "bank": "1200", "lines": [["3000", "10000.00"]], "description": "Shares issued", "ref": "SHARES" },
+    { "kind": "cash", "date": "2025-01-01", "direction": "PAYMENT", "bank": "1200", "lines": [["0030", "2400.00"]], "description": "Printer bought", "ref": "PRINTER" },
+    { "kind": "journal", "date": "2025-12-31", "description": "Furniture brought in from the previous records", "lines": [["0030", "5000.00", "0"], ["0031", "0", "2000.00"], ["3100", "0", "3000.00"]], "ref": "TAKEON" },
+    { "kind": "cash", "date": "2026-03-15", "direction": "PAYMENT", "bank": "1200", "lines": [["0030", "3600.00"]], "description": "Laptops bought", "ref": "LAPTOPS" }
+  ],
+  "classes": [
+    { "code": "OFFICE", "name": "Office equipment", "costAccount": "0030", "depreciationAccount": "0031", "expenseAccount": "6900", "disposalAccount": "6950", "method": "STRAIGHT_LINE", "lifeMonths": 36, "residual": "0.00", "convention": "MONTHLY" },
+    { "code": "MOTOR", "name": "Motor vehicles", "costAccount": "0040", "depreciationAccount": "0041", "expenseAccount": "6900", "disposalAccount": "6950", "method": "REDUCING_BALANCE", "ratePercent": "25", "residual": "0.00", "convention": "DAILY" }
+  ],
+  "assets": [
+    { "key": "A3", "class": "OFFICE", "description": "Printer", "acquiredOn": "2025-01-01", "inUseFrom": "2025-01-01", "cost": "2400.00", "addition": { "kind": "LINKED", "journalRef": "PRINTER" },
+      "method": "STRAIGHT_LINE", "lifeMonths": 24, "residual": "0.00", "convention": "DAILY", "tax": { "category": "AIA" } },
+    { "key": "A4", "class": "OFFICE", "description": "Office furniture (taken on)", "acquiredOn": "2023-07-01", "inUseFrom": "2023-07-01", "cost": "5000.00",
+      "addition": { "kind": "TAKE_ON", "journalRef": "TAKEON", "takeOnDate": "2025-12-31", "accumulatedDepreciation": "2000.00" },
+      "method": "STRAIGHT_LINE", "lifeMonths": 30, "residual": "500.00", "convention": "MONTHLY", "lifeIsRemaining": true, "tax": { "category": "MAIN_POOL" } },
+    { "key": "A1", "class": "OFFICE", "description": "Laptops", "acquiredOn": "2026-03-15", "inUseFrom": "2026-03-15", "cost": "3600.00", "addition": { "kind": "LINKED", "journalRef": "LAPTOPS" }, "tax": { "category": "AIA" } },
+    { "key": "A2", "class": "MOTOR", "description": "Van", "acquiredOn": "2026-07-01", "inUseFrom": "2026-07-01", "cost": "12000.00", "addition": { "kind": "POSTED", "offsetAccount": "2230" },
+      "residual": "1000.00", "tax": { "category": "MAIN_POOL", "cost": "12000.00" } }
+  ],
+  "steps": [
+    { "do": "run", "asAt": "2025-12-31", "expect": { "lines": { "A3": "1200.00" }, "journal": [["6900", "1200.00", "0.00"], ["0031", "0.00", "1200.00"]], "total": "1200.00" },
+      "why": "A3 straight line daily: 2,400 x 365 days (1.1.2025-31.12.2025) / 730 days of life (1.1.2025-31.12.2026) = 1,200.00. A4's basis starts the day after take-on (1.1.2026): nothing yet." },
+    { "do": "dispose", "asset": "A3", "on": "2026-06-30", "proceeds": "1000.00", "proceedsAccount": "1110",
+      "expect": { "catchUp": "595.07", "carrying": "604.93", "gainOrLoss": "395.07",
+        "journal": [["6900", "595.07", "0.00"], ["0031", "0.00", "595.07"], ["0031", "1795.07", "0.00"], ["6950", "604.93", "0.00"], ["0030", "0.00", "2400.00"], ["1110", "1000.00", "0.00"], ["6950", "0.00", "1000.00"]] },
+      "why": "Due at 30.6.2026: 2,400 x 546 days (365 + 181) / 730 = 1,795.0685 -> 1,795.07; charged 1,200.00, catch-up 595.07; carrying 2,400 - 1,795.07 = 604.93; gain 1,000 - 604.93 = 395.07." },
+    { "do": "run", "asAt": "2026-06-30", "expect": { "lines": { "A1": "400.00", "A4": "500.00" }, "journal": [["6900", "900.00", "0.00"], ["0031", "0.00", "900.00"]], "total": "900.00" },
+      "why": "A1 monthly from March 2026 (full month in the month of acquisition): 3,600 / 36 x 4 months (Mar-Jun) = 400.00. A4: (3,000 carrying - 500 residual) x 6 / 30 = 500.00. A2 not yet in use; A3 disposed." },
+    { "do": "run", "asAt": "2026-12-31", "expect": { "lines": { "A1": "600.00", "A4": "500.00", "A2": "1512.33" },
+        "journal": [["6900", "1100.00", "0.00"], ["0031", "0.00", "1100.00"], ["6900", "1512.33", "0.00"], ["0041", "0.00", "1512.33"]], "total": "2612.33" },
+      "why": "A1: 10 months x 100 = 1,000 - 400 = 600.00. A4: 2,500 x 12 / 30 = 1,000 - 500 = 500.00. A2 reducing balance 25% daily: 184 days (1.7-31.12.2026) of a 365-day asset year: 12,000 x 0.25 x 184 / 365 = 1,512.3288 -> 1,512.33." },
+    { "do": "register", "asAt": "2026-12-31", "expect": {
+        "assets": { "A1": ["3600.00", "1000.00", "2600.00", "ACTIVE"], "A4": ["5000.00", "3000.00", "2000.00", "ACTIVE"], "A2": ["12000.00", "1512.33", "10487.67", "ACTIVE"], "A3": ["2400.00", "1795.07", "604.93", "DISPOSED"] },
+        "reconciliation": { "0030": ["8600.00", "8600.00"], "0031": ["4000.00", "4000.00"], "0040": ["12000.00", "12000.00"], "0041": ["1512.33", "1512.33"] } },
+      "why": "Register and ledger at 31.12.2026 (cost accounts debit, depreciation accounts credit). 0030: 2,400 + 5,000 + 3,600 - 2,400 = 8,600. 0031: 2,000 + 1,200 + 595.07 - 1,795.07 + 900 + 1,100 = 4,000. A disposed asset shows its figures at disposal and is left out of the totals." },
+    { "do": "ledger", "expect": { "6900": { "2025": "1200.00", "2026": "4107.40" }, "6950": { "2026": "-395.07" } },
+      "why": "Depreciation expense 2026: 595.07 + 900 + 2,612.33 = 4,107.40. Disposal account net credit 395.07 (a gain), shown debit-positive." },
+    { "do": "estimate", "asset": "A1", "lifeMonths": 13, "residual": "0.00", "reason": "Laptops to be replaced at the end of January 2028",
+      "expect": { "effectiveFrom": "2027-01-01", "carryingAtBasis": "2600.00" },
+      "why": "Prospective: the new basis starts the day after the last charged date (31.12.2026) at the carrying amount then, 3,600 - 1,000 = 2,600, over the 13 remaining months." },
+    { "do": "run", "asAt": "2027-01-31", "expect": { "lines": { "A1": "200.00", "A4": "83.33", "A2": "254.79" },
+        "journal": [["6900", "283.33", "0.00"], ["0031", "0.00", "283.33"], ["6900", "254.79", "0.00"], ["0041", "0.00", "254.79"]], "total": "538.12" },
+      "why": "A1: 2,600 / 13 = 200.00. A4: 2,000 + 2,500 x 13 / 30 = 3,083.333 -> 3,083.33 less 3,000.00 charged = 83.33. A2: 215 days (1.7.2026-31.1.2027) / 365: 12,000 x 0.25 x 215 / 365 = 1,767.1233 -> 1,767.12 less 1,512.33 = 254.79." }
+  ]
+}

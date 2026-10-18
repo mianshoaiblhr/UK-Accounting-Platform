@@ -47,7 +47,8 @@ describe('posting-rule coverage registry (V1-TEST-01, DEC-047)', () => {
   it('keeps n/a for what the design rules out: VAT only on sources without VAT codes, reversal only on mirrors and corrections', () => {
     const na = Object.entries(POSTING_RULE_COVERAGE).flatMap(([s, row]) => CATEGORIES.filter((c) => 'na' in row[c]).map((c) => `${s}.${c}`));
     for (const x of na) expect(x.endsWith('.reversal'), `${x} may not be n/a`).toBe(true);
-    expect(na.sort()).toEqual(['BANK_TRANSFER_REVERSAL.reversal', 'CASH_PAYMENT_REVERSAL.reversal', 'CASH_RECEIPT_REVERSAL.reversal', 'PURCHASE_DEBIT_NOTE.reversal', 'PURCHASE_PAYMENT_REVERSAL.reversal',
+    expect(na.sort()).toEqual(['BANK_TRANSFER_REVERSAL.reversal', 'CASH_PAYMENT_REVERSAL.reversal', 'CASH_RECEIPT_REVERSAL.reversal', 'FIXED_ASSET_ADDITION_REVERSAL.reversal',
+      'FIXED_ASSET_DEPRECIATION_REVERSAL.reversal', 'FIXED_ASSET_DISPOSAL_REVERSAL.reversal', 'PURCHASE_DEBIT_NOTE.reversal', 'PURCHASE_PAYMENT_REVERSAL.reversal',
       'REVERSAL.reversal', 'SALES_CREDIT_NOTE.reversal', 'SALES_RECEIPT_REVERSAL.reversal']);
   });
 });

@@ -15,6 +15,8 @@ const LOCK = T(RULES, 'Lock Co: after January is closed, every document, receipt
 const NO_VAT = T(RULES, 'a source whose design carries no VAT refuses a VAT code: receipts, payments, transfers, allocations, revaluations, reversals and requests');
 const CONTROL_KINDS = T(RULES, 'every sub-ledger source reaches only its own control kinds (retained earnings is none of them)');
 const FX_ALLOC = T(RULES, 'FX Lock Co: an allocation dated in a closed period would post its realised difference there, so it is refused (sales and purchases)');
+const FA_NO_VAT = T(P('fixed-assets'), 'a register source refuses a VAT code (none of them carries VAT)');
+const FA_LOCK = T(P('fixed-assets'), 'after 2026 is closed, every register posting dated in it is refused: additions, runs, disposals and the reversals of each; nothing is written');
 const MIRROR_FINAL = NA('A mirror is final: reversing a reversal is refused (tested in the negative cell)');
 
 export const POSTING_RULE_COVERAGE: Record<string, Record<Category, Cell>> = {
@@ -164,5 +166,48 @@ export const POSTING_RULE_COVERAGE: Record<string, Record<Category, Cell>> = {
     reversal: MIRROR_FINAL,
     vat: NO_VAT,
     periodLock: LOCK,
+  },
+  // V2-M2 fixed assets (DEC-058): the register's own sources, each corrected by its mirror in the register
+  FIXED_ASSET_ADDITION: {
+    positive: T(P('fixed-assets'), 'posts Dr cost / Cr the offset account, and the asset is numbered in the register'),
+    negative: T(P('fixed-assets'), 'refuses a control offset, a class account as offset, a person without assets:manage and an AI actor; nothing is written'),
+    reversal: T(P('fixed-assets'), 'FIXED_ASSET_ADDITION_REVERSAL mirrors the addition and voids the asset; a second reversal and a depreciated asset are refused'),
+    vat: FA_NO_VAT,
+    periodLock: FA_LOCK,
+  },
+  FIXED_ASSET_ADDITION_REVERSAL: {
+    positive: T(P('fixed-assets'), 'FIXED_ASSET_ADDITION_REVERSAL mirrors the addition and voids the asset; a second reversal and a depreciated asset are refused'),
+    negative: T(P('fixed-assets'), 'FIXED_ASSET_ADDITION_REVERSAL mirrors the addition and voids the asset; a second reversal and a depreciated asset are refused'),
+    reversal: MIRROR_FINAL,
+    vat: FA_NO_VAT,
+    periodLock: FA_LOCK,
+  },
+  FIXED_ASSET_DEPRECIATION: {
+    positive: T(P('fixed-assets'), 'posts one pair of lines per class and one line per asset; a run that charges nothing is refused'),
+    negative: T(A('fixed-assets'), 'only the latest live run is reversed, by its mirror; a re-run gives the same charges; a run must be later than every live run'),
+    reversal: T(P('fixed-assets'), 'FIXED_ASSET_DEPRECIATION_REVERSAL mirrors the latest live run only; a reversed run cannot be reversed again; the ledger cannot reverse it directly'),
+    vat: FA_NO_VAT,
+    periodLock: FA_LOCK,
+  },
+  FIXED_ASSET_DEPRECIATION_REVERSAL: {
+    positive: T(P('fixed-assets'), 'FIXED_ASSET_DEPRECIATION_REVERSAL mirrors the latest live run only; a reversed run cannot be reversed again; the ledger cannot reverse it directly'),
+    negative: T(P('fixed-assets'), 'FIXED_ASSET_DEPRECIATION_REVERSAL mirrors the latest live run only; a reversed run cannot be reversed again; the ledger cannot reverse it directly'),
+    reversal: MIRROR_FINAL,
+    vat: FA_NO_VAT,
+    periodLock: FA_LOCK,
+  },
+  FIXED_ASSET_DISPOSAL: {
+    positive: T(P('fixed-assets'), 'posts the catch-up, removes cost and depreciation, and puts the carrying amount and proceeds on the disposal account; refuses a second disposal and a date before use'),
+    negative: T(P('fixed-assets'), 'posts the catch-up, removes cost and depreciation, and puts the carrying amount and proceeds on the disposal account; refuses a second disposal and a date before use'),
+    reversal: T(P('fixed-assets'), 'FIXED_ASSET_DISPOSAL_REVERSAL mirrors the disposal and restores the asset; refused once a later run is live'),
+    vat: FA_NO_VAT,
+    periodLock: FA_LOCK,
+  },
+  FIXED_ASSET_DISPOSAL_REVERSAL: {
+    positive: T(P('fixed-assets'), 'FIXED_ASSET_DISPOSAL_REVERSAL mirrors the disposal and restores the asset; refused once a later run is live'),
+    negative: T(P('fixed-assets'), 'FIXED_ASSET_DISPOSAL_REVERSAL mirrors the disposal and restores the asset; refused once a later run is live'),
+    reversal: MIRROR_FINAL,
+    vat: FA_NO_VAT,
+    periodLock: FA_LOCK,
   },
 };

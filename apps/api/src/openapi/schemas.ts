@@ -423,3 +423,35 @@ export const StatutoryPreview = z.object({
   reconciliation: statutoryProof.extend({ comparative: statutoryProof.optional() }),
   problems: z.array(z.string()), notices: z.array(z.string()),
 });
+
+// ───────────── V2-M2 fixed assets (DEC-058) ─────────────
+const money2 = z.string().describe('Exact decimal');
+const methodE = z.enum(['STRAIGHT_LINE', 'REDUCING_BALANCE']), conventionE = z.enum(['DAILY', 'MONTHLY']);
+export const AssetClass = z.object({ id: uuid, companyId: uuid, code: z.string(), name: z.string(), costAccountId: uuid, depreciationAccountId: uuid, expenseAccountId: uuid, disposalAccountId: uuid,
+  method: methodE, lifeMonths: z.number().int().nullable(), ratePercent: z.string().nullable(), residualPercent: z.string(), convention: conventionE, createdByUserId: uuid, createdAt: ts, updatedAt: ts });
+const assetBase = {
+  id: uuid, companyId: uuid, classId: uuid, number: z.number().int(), description: z.string(), acquiredOn: day, inUseFrom: day, cost: money2, additionKind: z.enum(['POSTED', 'LINKED', 'TAKE_ON']),
+  additionJournalId: uuid.nullable(), offsetAccountId: uuid.nullable(), takeOnDate: day.nullable(), takeOnAccumulated: money2, status: z.enum(['ACTIVE', 'DISPOSED', 'VOID']), additionReversalJournalId: uuid.nullable(),
+  disposedOn: day.nullable(), proceeds: money2.nullable(), proceedsAccountId: uuid.nullable(), disposalJournalId: uuid.nullable(), disposalCatchUp: money2.nullable(), gainOrLoss: money2.nullable().describe('Proceeds less carrying amount (negative: a loss)'),
+  tax: z.object({ category: z.enum(['AIA', 'MAIN_POOL', 'SPECIAL_RATE_POOL', 'SINGLE_ASSET_POOL', 'NOT_QUALIFYING', 'UNDECIDED']), cost: money2.nullable() }).describe('Kept apart for capital allowances (V4); never read by depreciation'),
+  createdByUserId: uuid, createdAt: ts,
+};
+export const FixedAssetSummary = z.object(assetBase);
+export const FixedAssetDetail = z.object({ ...assetBase, classCode: z.string(), accumulatedDepreciation: money2, carryingAmount: money2, lastChargedOn: day.nullable(),
+  bases: z.array(z.object({ id: uuid, effectiveFrom: day, carryingAmount: money2, accumulatedBefore: money2, method: methodE, lifeMonths: z.number().int().nullable(), ratePercent: z.string().nullable(), residual: money2,
+    convention: conventionE, reason: z.string(), createdByUserId: uuid, createdAt: ts })).describe('Depreciation bases, append-only; a change of estimate adds one prospectively'),
+  charges: z.array(z.object({ runId: uuid, asAt: day, amount: money2 })) });
+const runBase = { id: uuid, companyId: uuid, asAt: day, status: z.enum(['POSTED', 'REVERSED']), journalId: uuid.nullable(), reversalJournalId: uuid.nullable(), total: money2, createdByUserId: uuid, createdAt: ts,
+  reversedByUserId: uuid.nullable(), reversedAt: ts.nullable(), reversedReason: z.string().nullable() };
+export const DepreciationRunSummary = z.object(runBase);
+export const DepreciationRunDetail = z.object({ ...runBase, lines: z.array(z.object({ assetId: uuid, number: z.number().int(), description: z.string(), classId: uuid, amount: money2, accumulatedAfter: money2 })) });
+export const DepreciationPreview = z.object({ companyId: uuid, asAt: day, total: money2,
+  lines: z.array(z.object({ assetId: uuid, number: z.number().int(), description: z.string(), classCode: z.string(), amount: money2, accumulatedAfter: money2, carryingAfter: money2 })),
+  classes: z.array(z.object({ classId: uuid, code: z.string(), expenseAccountId: uuid, depreciationAccountId: uuid, amount: money2 })) });
+export const FixedAssetRegister = z.object({ companyId: uuid, currency: z.string(), asAt: day,
+  classes: z.array(z.object({ classId: uuid, code: z.string(), name: z.string(), cost: money2, accumulatedDepreciation: money2, carryingAmount: money2,
+    assets: z.array(z.object({ id: uuid, number: z.number().int(), description: z.string(), status: z.enum(['ACTIVE', 'DISPOSED']), acquiredOn: day, cost: money2, accumulatedDepreciation: money2, carryingAmount: money2,
+      disposedOn: day.optional(), proceeds: money2.optional(), gainOrLoss: money2.optional() })) })),
+  reconciliation: z.array(z.object({ accountId: uuid, code: z.string(), kind: z.enum(['COST', 'DEPRECIATION']), register: money2, ledger: money2, difference: money2.describe('Register less ledger'), reconciled: z.boolean(),
+    items: z.array(z.object({ journalId: uuid, journalNumber: z.number().int(), journalDate: day, sourceType: z.string(), description: z.string(), amount: money2, registered: money2, unregistered: money2 })).describe('Postings on the account not made or linked by the register') })),
+  reconciled: z.boolean() });

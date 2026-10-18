@@ -95,7 +95,8 @@ export const RETENTION_RULES: readonly RetentionRule[] = [
     'purchase_setting', 'purchase_sequence', 'purchase_document', 'purchase_document_line', 'purchase_allocation', 'purchase_payment',
     'cash_transaction', 'cash_transaction_line', 'bank_account', 'bank_statement_import', 'bank_statement_line', 'bank_transfer', 'bank_match', 'bank_reconciliation',
     // V2 accounts production: the framework the accounts were prepared under
-    'reporting_standard', 'reporting_standard_version', 'statutory_line', 'statutory_map_entry', 'validation_rule', 'disclosure_rule', 'statutory_account_override', 'company_reporting_framework']),
+    'reporting_standard', 'reporting_standard_version', 'statutory_line', 'statutory_map_entry', 'validation_rule', 'disclosure_rule', 'statutory_account_override', 'company_reporting_framework',
+    'fixed_asset_class', 'fixed_asset', 'fixed_asset_basis', 'depreciation_run', 'depreciation_run_line']),
   ...tableRules('WHILE_ACTIVE', [
     'user', 'user_identity', 'mfa_factor', 'mfa_recovery_code', 'organisation', 'role', 'organisation_membership', 'practice', 'practice_membership', 'company_membership', 'invitation',
     'company', 'company_officer', 'contact', 'contact_role', 'customer_profile', 'supplier_profile', 'address', 'feature_flag_override', 'task', 'task_attachment', 'task_comment', 'workflow_instance', 'workflow_transition',

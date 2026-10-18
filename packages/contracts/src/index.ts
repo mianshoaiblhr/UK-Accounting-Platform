@@ -18,3 +18,4 @@ export * from './cash';
 export * from './bank';
 export * from './reports';
 export * from './statutory';
+export * from './fixed-assets';

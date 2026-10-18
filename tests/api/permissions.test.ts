@@ -88,6 +88,8 @@ probes.push(
   { name: 'author accounting standard', perm: 'accounts:rules-manage', run: (u) => call('post', `/companies/${company.id}/reporting-standards`, {})(u) },
   { name: 'verify accounting-standard rule', perm: 'accounts:rule-verify', run: (u) => call('post', `/companies/${company.id}/reporting-standard-versions/${GHOST}/verify`, {})(u) },
   { name: 'choose reporting framework', perm: 'accounts:prepare', run: (u) => call('put', `/companies/${company.id}/reporting-frameworks`, {})(u) },
+  { name: 'read the fixed-asset register', perm: 'assets:read', run: (u) => call('get', `/companies/${company.id}/fixed-assets`)(u) },
+  { name: 'add a fixed asset', perm: 'assets:manage', run: (u) => call('post', `/companies/${company.id}/fixed-assets`, {})(u) },
 );
 probes.find((p) => p.name === 'create company')!.run = (u) => call('post', '/companies', { name: `Perm ${Math.random()}` })(u);
 probes.push({ name: 'create period', perm: 'period:manage', run: (u) => call('post', `/companies/${company.id}/periods`, { startDate: `${2000 + Math.floor(Math.random() * 90)}-01-01`, endDate: `${2000 + Math.floor(Math.random() * 90)}-12-31` })(u) });
