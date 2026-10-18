@@ -6,6 +6,6 @@
   "types": "dist/index.d.ts",
   "scripts": { "build": "tsc -p tsconfig.build.json", "typecheck": "tsc --noEmit" },
   "dependencies": {
-    "@uk/contracts": "workspace:*", "@uk/core": "workspace:*", "@uk/db": "workspace:*", "@uk/jobs": "workspace:*", "zod": "^3.24.1"
+    "@uk/contracts": "workspace:*", "@uk/core": "workspace:*", "@uk/db": "workspace:*", "@uk/jobs": "workspace:*", "zod": "^4.6.7"
   }
 }
