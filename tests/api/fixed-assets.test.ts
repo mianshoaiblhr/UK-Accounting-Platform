@@ -93,6 +93,7 @@ describe('the golden scenario (DEC-054)', () => {
     expect(r).toMatchObject({ asAt: st.asAt, status: 'POSTED', total: st.expect.total });
     expect(journalLines(r.journalId)).toBe(expected(st.expect.journal));
     expect(adminSql(`SELECT source_type FROM journal WHERE id = '${r.journalId}'`)).toBe('FIXED_ASSET_DEPRECIATION');
+    expect(ok(await as(bookkeeper, 'get', c(`/journals/${r.journalId}/source`))).source).toMatchObject({ entityType: 'depreciation_run', id: r.id, total: st.expect.total });
     runIds[st.asAt!] = r.id;
     return r;
   };

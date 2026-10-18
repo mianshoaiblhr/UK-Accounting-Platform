@@ -56,6 +56,15 @@ const reversed: Resolver = async (tx, id) => {
   const j = await tx.journal.findFirst({ where: { id } });
   return j && { entityType: 'journal', id: j.id, permission: 'ledger:read', summary: { journalNumber: j.journalNumber, journalDate: isoDay(j.journalDate), sourceType: j.sourceType, description: j.description } };
 };
+const fixedAsset: Resolver = async (tx, id) => {
+  const a = await tx.fixedAsset.findFirst({ where: { id } });
+  return a && { entityType: 'fixed_asset', id: a.id, permission: 'assets:read', summary: { number: a.number, description: a.description, acquiredOn: isoDay(a.acquiredOn), cost: a.cost.toFixed(2), status: a.status, additionKind: a.additionKind,
+    disposedOn: a.disposedOn ? isoDay(a.disposedOn) : null, gainOrLoss: a.gainOrLoss?.toFixed(2) ?? null } };
+};
+const depreciationRun: Resolver = async (tx, id) => {
+  const r = await tx.depreciationRun.findFirst({ where: { id } });
+  return r && { entityType: 'depreciation_run', id: r.id, permission: 'assets:read', summary: { asAt: isoDay(r.asAt), status: r.status, total: r.total.toFixed(2), journalId: r.journalId, reversalJournalId: r.reversalJournalId } };
+};
 
 /** One resolver per journal source (DEC-043). MANUAL journals have no source transaction: their evidence hangs on the journal itself. */
 export const DRILL_RESOLVERS: Record<string, Resolver | null> = {
@@ -66,6 +75,8 @@ export const DRILL_RESOLVERS: Record<string, Resolver | null> = {
   PURCHASE_BILL: purchaseDoc, PURCHASE_DEBIT_NOTE: purchaseDoc, PURCHASE_PAYMENT: purchasePayment, PURCHASE_PAYMENT_REVERSAL: purchasePayment, PURCHASE_ALLOCATION_FX: purchaseAllocation,
   CASH_PAYMENT: cash, CASH_RECEIPT: cash, CASH_PAYMENT_REVERSAL: cash, CASH_RECEIPT_REVERSAL: cash,
   BANK_TRANSFER: transfer, BANK_TRANSFER_REVERSAL: transfer,
+  FIXED_ASSET_ADDITION: fixedAsset, FIXED_ASSET_ADDITION_REVERSAL: fixedAsset, FIXED_ASSET_DISPOSAL: fixedAsset, FIXED_ASSET_DISPOSAL_REVERSAL: fixedAsset,
+  FIXED_ASSET_DEPRECIATION: depreciationRun, FIXED_ASSET_DEPRECIATION_REVERSAL: depreciationRun,
 };
 /** Evidence-graph entity types that can carry attached documents. */
 const EVIDENCE_TYPES = new Set(['sales_document', 'purchase_document', 'cash_transaction', 'journal']);

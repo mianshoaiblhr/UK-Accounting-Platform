@@ -160,9 +160,8 @@ export class FixedAssetService {
       additionJournalId = a.addition.journalId;
     } else if (a.addition.kind === 'LINKED') throw unprocessable('A linked addition names its journal', 'unknown_journal');
     const number = ((await tx.fixedAsset.aggregate({ where: { companyId: a.companyId }, _max: { number: true } }))._max.number ?? 0) + 1;
-    let asset: AssetRow;
     try {
-      asset = await tx.fixedAsset.create({ data: { id, organisationId: a.organisationId, companyId: a.companyId, classId: c.id, number, description: a.description, acquiredOn: toDate(a.acquiredOn), inUseFrom: toDate(inUseFrom),
+      await tx.fixedAsset.create({ data: { id, organisationId: a.organisationId, companyId: a.companyId, classId: c.id, number, description: a.description, acquiredOn: toDate(a.acquiredOn), inUseFrom: toDate(inUseFrom),
         cost, additionKind: a.addition.kind, additionJournalId, offsetAccountId, takeOnDate: a.addition.kind === 'TAKE_ON' ? toDate(a.addition.takeOnDate) : null, takeOnAccumulated: takeOnAcc,
         taxCategory: a.tax.category, taxCost: a.tax.cost ?? null, createdByUserId: a.actor.userId! } });
     } catch (e) {
