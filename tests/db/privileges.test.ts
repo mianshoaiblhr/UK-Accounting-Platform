@@ -75,7 +75,10 @@ const FORBIDDEN: Record<string, string[]> = {
   release_run_line: ['UPDATE', 'DELETE', 'TRUNCATE'],           // written once with its run
   provision: ['UPDATE', 'DELETE', 'TRUNCATE'],                  // written once
   provision_movement: ['DELETE', 'TRUNCATE'],                   // POSTED -> REVERSED once (trigger)
-  year_end_close: ['DELETE', 'TRUNCATE'],                       // POSTED -> REVERSED once (trigger)
+  year_end_close: ['DELETE', 'TRUNCATE'],
+  director_loan_account: ['DELETE', 'TRUNCATE'],                // ACTIVE -> CLOSED once (trigger)
+  director_loan_threshold: ['UPDATE', 'DELETE', 'TRUNCATE'],    // versioned rows, written once
+  related_party: ['DELETE', 'TRUNCATE'],                        // ACTIVE -> ENDED once (trigger)                       // POSTED -> REVERSED once (trigger)
   notification_preference: ['DELETE', 'TRUNCATE'], // toggled, never removed
   notification_delivery: ['DELETE', 'TRUNCATE'],   // planned deliveries are final once handled
   outbox_event: ['TRUNCATE'],                    // DELETE is system-context only (RLS) and trigger-guarded

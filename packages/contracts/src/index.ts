@@ -20,3 +20,4 @@ export * from './reports';
 export * from './statutory';
 export * from './fixed-assets';
 export * from './year-end';
+export * from './directors';

@@ -2497,3 +2497,60 @@ model YearEndClose {
   @@index([organisationId, companyId, status, yearStart], map: "yec_company_idx")
   @@map("year_end_close")
 }
+
+/// V2-M4: a director's or shareholder's loan account on a dedicated non-control ledger account (DEC-062); closed once, never edited.
+model DirectorLoanAccount {
+  id              String    @id @db.Uuid
+  organisationId  String    @map("organisation_id") @db.Uuid
+  companyId       String    @map("company_id") @db.Uuid
+  contactId       String    @map("contact_id") @db.Uuid
+  kind            String
+  accountId       String    @map("account_id") @db.Uuid
+  openedOn        DateTime  @map("opened_on") @db.Date
+  notes           String?
+  status          String    @default("ACTIVE")
+  closedOn        DateTime? @map("closed_on") @db.Date
+  closedReason    String?   @map("closed_reason")
+  closedByUserId  String?   @map("closed_by_user_id") @db.Uuid
+  createdByUserId String    @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id], map: "dla_organisation_id_id_key")
+  @@map("director_loan_account")
+}
+
+/// V2-M4: the firm's review thresholds for loan accounts, one row per change; the latest applies (DEC-062).
+model DirectorLoanThreshold {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  companyId      String   @map("company_id") @db.Uuid
+  largeMovement  Decimal? @map("large_movement") @db.Decimal(19, 4)
+  overdrawn      Decimal? @db.Decimal(19, 4)
+  reason         String
+  setByUserId    String   @map("set_by_user_id") @db.Uuid
+  setAt          DateTime @default(now()) @map("set_at") @db.Timestamptz(3)
+
+  @@index([organisationId, companyId, setAt], map: "dlt_company_idx")
+  @@map("director_loan_threshold")
+}
+
+/// V2-M4: a related party of the company, with its relationship; ended once, never edited (DEC-062).
+model RelatedParty {
+  id              String    @id @db.Uuid
+  organisationId  String    @map("organisation_id") @db.Uuid
+  companyId       String    @map("company_id") @db.Uuid
+  contactId       String    @map("contact_id") @db.Uuid
+  relationship    String
+  description     String
+  fromDate        DateTime  @map("from_date") @db.Date
+  toDate          DateTime? @map("to_date") @db.Date
+  status          String    @default("ACTIVE")
+  endedReason     String?   @map("ended_reason")
+  endedByUserId   String?   @map("ended_by_user_id") @db.Uuid
+  endedAt         DateTime? @map("ended_at") @db.Timestamptz(3)
+  createdByUserId String    @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id], map: "rp_organisation_id_id_key")
+  @@map("related_party")
+}

@@ -21,3 +21,4 @@ export * from './depreciation-math';
 export * from './fixed-assets';
 export * from './year-end';
 export * from './year-end-close';
+export * from './directors';

@@ -235,6 +235,11 @@ describe('database access paths that carry security meaning', () => {
     // the statements that sum income and expense name the closing sources, and the PostingService refuses a closed year (DEC-060)
     for (const f of ['reports.ts', 'statutory-report.ts', 'posting.ts', 'ledger.ts']) expect(read(`${ROOT}/packages/accounting/src/${f}`), f).toMatch(/CLOSING_SOURCES/);
   });
+  it('loan accounts, their thresholds and related parties have one writer, which never writes or posts to the ledger (V2-M4)', () => {
+    const WRITE = /\.(directorLoanAccount|directorLoanThreshold|relatedParty)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(director_loan_\w+|related_party)"?\b/i;
+    expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/directors.ts']);
+    expect(read(`${ROOT}/packages/accounting/src/directors.ts`)).not.toMatch(/\.journal(Line)?\.(create|createMany|update)|INSERT INTO\s+"?journal|PostingService|\.post\(tx/);
+  });
   it('the reporting framework has one writer per side (V2-M1): standard content in StandardsService, company choices in FrameworkService, both in statutory.ts', () => {
     const WRITE = /\.(reportingStandard|reportingStandardVersion|statutoryLine|statutoryMapEntry|validationRule|disclosureRule|statutoryAccountOverride|companyReportingFramework)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(reporting_standard\w*|statutory_\w+|validation_rule|disclosure_rule|company_reporting_framework)"?\b/i;
     expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/statutory.ts']);

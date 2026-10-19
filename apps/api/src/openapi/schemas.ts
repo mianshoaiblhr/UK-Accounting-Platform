@@ -495,3 +495,26 @@ export const YearEndCloseDetail = z.object({ ...closeBase,
 export const YearEndClosePreview = z.object({ companyId: uuid, yearStart: day, yearEnd: day, journalDate: day, retainedEarningsAccountId: uuid.nullable(), profit: amt,
   lines: z.array(z.object({ accountId: uuid, code: z.string(), name: z.string(), debit: amt, credit: amt })),
   warnings: z.array(z.enum(['earlier_years_not_closed'])), canPost: z.boolean(), blockers: z.array(z.object({ code: z.string(), message: z.string() })), notice: z.string() });
+
+// ───────────── V2-M4 director and shareholder loan accounts, related parties (DEC-062) ─────────────
+const loanBase = { id: uuid, companyId: uuid, contactId: uuid, contactName: z.string().nullable(), kind: z.enum(['DIRECTOR', 'SHAREHOLDER', 'DIRECTOR_AND_SHAREHOLDER']), accountId: uuid,
+  accountCode: z.string().nullable(), accountName: z.string().nullable(), openedOn: day, notes: z.string().nullable(), status: z.enum(['ACTIVE', 'CLOSED']), closedOn: day.nullable(),
+  closedReason: z.string().nullable(), closedByUserId: uuid.nullable(), createdByUserId: uuid, createdAt: ts };
+const loanCategory = z.enum(['CASH_AND_BANK', 'EXPENSES', 'INCOME', 'DIVIDENDS', 'OTHER_LOAN_ACCOUNT', 'OTHER', 'MIXED']);
+const loanFlag = z.enum(['OVERDRAWN_AT_END', 'OVERDRAWN_IN_PERIOD', 'LARGE_MOVEMENT', 'OVERDRAWN_ABOVE_THRESHOLD']);
+const loanSummary = { from: day, to: day, opening: amt.describe('Credit-positive: negative means overdrawn'), closing: amt, lowest: amt, lowestOn: day, daysOverdrawn: z.number().int(),
+  byCategory: z.array(z.object({ category: loanCategory, amount: amt })), flags: z.array(loanFlag).describe('Review prompts on the firm\'s thresholds, not legal conclusions'),
+  notEvaluated: z.array(loanFlag).describe('Flags whose threshold is not set: never treated as passed'), largeMovementJournalIds: z.array(uuid),
+  thresholds: z.object({ largeMovement: amt.nullable(), overdrawn: amt.nullable(), setAt: ts }).nullable(), drilldown: z.object({ accountId: uuid, from: day, to: day }), notice: z.string() };
+export const LoanAccount = z.object(loanBase);
+export const LoanAccountStatement = z.object({ ...loanBase, statement: z.object({ ...loanSummary,
+  movements: z.array(z.object({ journalId: uuid, journalNumber: z.number().int(), date: day, sourceType: z.string(), description: z.string(), amount: amt, category: loanCategory, balance: amt })) }) });
+export const LoanAccountReport = z.object({ companyId: uuid, from: day, to: day, flagged: z.number().int(), items: z.array(z.object({ ...loanBase, ...loanSummary, movementCount: z.number().int() })) });
+const thresholdRow = z.object({ id: uuid, largeMovement: amt.nullable(), overdrawn: amt.nullable(), reason: z.string(), setByUserId: uuid, setAt: ts });
+export const LoanThresholds = z.object({ current: thresholdRow.nullable(), history: z.array(thresholdRow), notice: z.string() });
+export const RelatedParty = z.object({ id: uuid, companyId: uuid, contactId: uuid, contactName: z.string().nullable(), relationship: z.string(), description: z.string(), fromDate: day, toDate: day.nullable(),
+  status: z.enum(['ACTIVE', 'ENDED']), endedReason: z.string().nullable(), endedByUserId: uuid.nullable(), endedAt: ts.nullable(), createdByUserId: uuid, createdAt: ts });
+const rpFigure = z.object({ amount: amt, journals: z.array(z.object({ journalId: uuid, journalNumber: z.number().int(), journalDate: day, sourceType: z.string(), amount: amt })) });
+export const RelatedPartyReport = z.object({ companyId: uuid, from: day, to: day, notice: z.string(),
+  items: z.array(RelatedParty.extend({ figures: z.object({ sales: rpFigure, purchases: rpFigure, cashPaid: rpFigure, cashReceived: rpFigure, owedBy: rpFigure, owedTo: rpFigure,
+    loanAccounts: z.array(z.object({ id: uuid, accountId: uuid, closing: amt, lowest: amt, flags: z.array(loanFlag) })) }) })) });

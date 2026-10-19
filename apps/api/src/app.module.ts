@@ -22,6 +22,7 @@ import { ReportsController } from './reports/reports.controller';
 import { AccountsApiService, StandardsController } from './accounts/standards.controller';
 import { AssetsApiService, FixedAssetsController } from './accounts/fixed-assets.controller';
 import { YearEndApiService, YearEndCloseController, YearEndController } from './accounts/year-end.controller';
+import { DirectorsController } from './accounts/directors.controller';
 import { ReferenceController } from './master-data/reference.controller';
 import { FeatureFlagsController } from './features/features.controller';
 import { ProblemFilter } from './common/problem.filter';
@@ -47,7 +48,7 @@ import { OrganisationsController } from './organisations/organisations.controlle
 import { OrganisationsService } from './organisations/organisations.service';
 import { LedgerController } from './ledger/ledger.controller';
 import { LedgerApiService } from './ledger/ledger.service';
-import { YearEndCloseService, YearEndService, DepreciationService, FixedAssetService, FrameworkService, StandardsService, StatutoryReportService, AlertService, DrillDownService, ReportService, BankService, CashService, ReconciliationService, PurchasesService, SalesService, VatService, AccountService, FxSettingsService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, RateService, RevaluationService } from '@uk/accounting';
+import { DirectorService, YearEndCloseService, YearEndService, DepreciationService, FixedAssetService, FrameworkService, StandardsService, StatutoryReportService, AlertService, DrillDownService, ReportService, BankService, CashService, ReconciliationService, PurchasesService, SalesService, VatService, AccountService, FxSettingsService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, RateService, RevaluationService } from '@uk/accounting';
 
 @Module({})
 export class AppModule {
@@ -56,7 +57,7 @@ export class AppModule {
       module: AppModule,
       imports: [InfraModule.forRoot(config), AuditModule, AuthModule],
       controllers: [HealthController, OrganisationsController, CompaniesController, DocumentsController, FoldersController, EvidenceController, JobsController,
-        TasksController, PracticesController, FeatureFlagsController, MasterDataController, ReferenceController, WorkflowsController, NotificationsController, IntegrationsController, AiController, LedgerController, ContactRolesController, VatController, SalesController, PurchasesController, CashController, BankController, ReportsController, StandardsController, FixedAssetsController, YearEndController, YearEndCloseController],
+        TasksController, PracticesController, FeatureFlagsController, MasterDataController, ReferenceController, WorkflowsController, NotificationsController, IntegrationsController, AiController, LedgerController, ContactRolesController, VatController, SalesController, PurchasesController, CashController, BankController, ReportsController, StandardsController, FixedAssetsController, YearEndController, YearEndCloseController, DirectorsController],
       providers: [
         { provide: PostingService, useFactory: () => new PostingService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: AccountService, useFactory: () => new AccountService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
@@ -70,6 +71,7 @@ export class AppModule {
         { provide: StatutoryReportService, useFactory: () => new StatutoryReportService() }, AccountsApiService,
         { provide: FixedAssetService, inject: [PostingService], useFactory: (posting: PostingService) => new FixedAssetService(posting, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: YearEndService, inject: [PostingService], useFactory: (posting: PostingService) => new YearEndService(posting, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) }, YearEndApiService,
+        { provide: DirectorService, useFactory: () => new DirectorService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: YearEndCloseService, inject: [PostingService], useFactory: (posting: PostingService) => new YearEndCloseService(posting, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: DepreciationService, inject: [PostingService], useFactory: (posting: PostingService) => new DepreciationService(posting, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) }, AssetsApiService,
         { provide: ReportService, useFactory: () => new ReportService() }, { provide: DrillDownService, useFactory: () => new DrillDownService() }, { provide: AlertService, useFactory: () => new AlertService() },

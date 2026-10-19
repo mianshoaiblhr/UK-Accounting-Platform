@@ -2,7 +2,7 @@
 
 Source requirements: docs/specifications/V2_Accounts_Production_FRS102_FRS105.md, 00_MASTER_IMPLEMENTATION_MANIFEST.md, decision-log.md DEC-051..054.
 
-Generated from `v2-compliance-matrix.json` at commit `5ab27b8`; CI: <https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39181318428>. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
+Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
 
 ## Plan history (append-only)
 
@@ -15,14 +15,15 @@ Generated from `v2-compliance-matrix.json` at commit `5ab27b8`; CI: <https://git
 * v1.4a (2026-10-18): V2-M3a evidence recorded (CI 39178258465 and CodeQL 39178258477 green on f735149; clean clone 2091 tests, e2e 21/21, OpenAPI drift 0).
 * v1.5 (2026-10-19, V2-M3b, DEC-060): year-end closing journal built. Missing -> Implemented: V2-YEC-01.
 * v1.5a (2026-10-19): V2-M3b evidence recorded (CI 39181318428 and CodeQL 39181318430 green on 5ab27b8; clean clone 2117 tests, e2e 21/21, OpenAPI drift 0). Milestone V2-M3 accepted.
+* v1.6 (2026-10-19, V2-M4, DEC-061/062): DEC-061 records the review of the V2-M2, V2-M3a and V2-M3b golden workings by Shoaib (no row changes status from it). Director and shareholder loan accounts and related parties built. Missing -> Implemented: V2-MOD-09, V2-MOD-10.
 
 ## Summary
 
 | Status | Rows |
 |---|---|
-| IMPLEMENTED | 22 (36% of applicable) |
+| IMPLEMENTED | 24 (39% of applicable) |
 | PARTIALLY IMPLEMENTED | 2 (3% of applicable) |
-| MISSING | 37 (60% of applicable) |
+| MISSING | 35 (57% of applicable) |
 | NOT APPLICABLE | 0 |
 | **Total** | **61** |
 
@@ -34,7 +35,7 @@ Generated from `v2-compliance-matrix.json` at commit `5ab27b8`; CI: <https://git
 | V2-M1 | Reporting framework as data | ACCEPTED under the delegation 2026-10-18 (v2-m1-acceptance.md; CI 39083312122 on fd0f556); rules unverified until Shoaib verifies them (DEC-056) | Engineering (build); qualified accountant (rules) | V2-M0 | 9 | 7 |
 | V2-M2 | Fixed assets and depreciation | ACCEPTED under the delegation 2026-10-18 (v2-m2-acceptance.md; CI 39159238749 on da32ffc) | Engineering | V2-M1 | 10 | 10 |
 | V2-M3 | Year-end adjustments and the closing journal | ACCEPTED under the delegation (DEC-059 split): V2-M3a 2026-10-18 (v2-m3a-acceptance.md; CI 39178258465 on f735149); V2-M3b 2026-10-19 (v2-m3b-acceptance.md; CI 39181318428 on 5ab27b8) | Engineering | V2-M2 | 5 | 5 |
-| V2-M4 | Director balances and related parties | planned | Engineering | V2-M3 | 2 | 0 |
+| V2-M4 | Director balances and related parties | BUILT 2026-10-19 (v2-m4-acceptance.md) | Engineering | V2-M3 | 2 | 2 |
 | V2-M5 | Statements and notes (FRS 105, FRS 102 1A, FRS 102) | planned | Engineering (build); qualified accountant (rules) | V2-M1; V2-M3; V2-M4 | 8 | 0 |
 | V2-M6 | Year-end workflow, review, approval, filing-ready package | planned | Engineering | V2-M5 | 26 | 0 |
 | V2-M7 | Screens behind accounts.production | planned | Engineering (front end) | each API milestone | 1 | 0 |
@@ -111,16 +112,16 @@ A milestone is accepted on an acceptance package: commit SHA, CI run (every job)
 
 ## V2-M4 - Director balances and related parties
 
-**Status:** planned  
+**Status:** BUILT 2026-10-19 (v2-m4-acceptance.md)  
 **Owner:** Engineering  
 **Depends on:** V2-M3  
-**Acceptance:** to be specified before code  
+**Acceptance:** v2-plan.md section 5c.3; v2-m4-acceptance.md  
 **Deferred scope:** -
 
 | ID | Reference | Requirement | Status | Owner | Dependencies | Acceptance criteria | Deferred scope | Evidence | Notes |
 |---|---|---|---|---|---|---|---|---|---|
-| **V2-MOD-09** | V2 Modules | Director/shareholder balances | **MISSING** | Engineering | V2-M1 | Director loan accounts per person with movements and the year-end balance; overdrawn balances and large movements flagged. | - |  |  |
-| **V2-MOD-10** | V2 Modules | Related parties | **MISSING** | Engineering | V2-M1 | Related parties recorded with relationship and transactions for the year, available to the notes. | - |  |  |
+| **V2-MOD-09** | V2 Modules | Director/shareholder balances | **IMPLEMENTED** | Engineering | V2-M1 | Director loan accounts per person with movements and the year-end balance; overdrawn balances and large movements flagged. | - | tests/golden/v2-m4-directors.json (docs/architecture/v2-m4-golden-workings.xlsx recomputes all 79 figures independently: 0 differences); tests/api/directors.test.ts; tests/platform/directors.test.ts; tests/db/directors.test.ts; tests/unit/directors.test.ts | Built in V2-M4 (DEC-062): a loan account per director or shareholder on a dedicated non-control ledger account (a director needs a DIRECTOR appointment); statements with every movement, its category and running balance, the lowest day-end balance and days overdrawn; review flags (overdrawn at the end and in the period; large movements and overdrawn beyond the firm's versioned thresholds, reported as not evaluated when unset). Reads the ledger only; no legal threshold is encoded. |
+| **V2-MOD-10** | V2 Modules | Related parties | **IMPLEMENTED** | Engineering | V2-M1 | Related parties recorded with relationship and transactions for the year, available to the notes. | - | tests/golden/v2-m4-directors.json (docs/architecture/v2-m4-golden-workings.xlsx recomputes all 79 figures independently: 0 differences); tests/api/directors.test.ts; tests/platform/directors.test.ts; tests/db/directors.test.ts; tests/unit/directors.test.ts | Built in V2-M4 (DEC-062): a related-party register (counterparty, relationship, description, from and to dates; ended once) and a report per party for any range: sales and purchases net of VAT from its documents, cash paid and received from its cash transactions, owed by and owed to at the end from the control accounts, and its loan accounts, each with the journals behind it, as the input for the related-party note (V2-M5). |
 
 ## V2-M5 - Statements and notes (FRS 105, FRS 102 1A, FRS 102)
 

@@ -265,6 +265,8 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-057 | V2-M1 golden outputs reviewed | Shoaib, the named accountant, reviewed the V2-M1 golden workings (`v2-m1-golden-workings.xlsx`) on 2026-10-18. This review covers the synthetic expected figures only; it verifies no standard version |
 | DEC-059 | V2-M3 split and V2-M3a design (delegated, DEC-019; recorded before code) | V2-M3a covers accruals and accrued income (auto-reversed on the first day of the next period), prepayments and deferred income (released by schedule) and provisions (made, used, released). V2-M3b covers the closing journal to retained earnings, which every P&L figure excludes. Every posting goes through the PostingService under its own source with a mirror; each balance account reconciles to the ledger |
 | DEC-060 | How V2-M3b is built: the year-end closing journal (delegated, DEC-019; recorded before code) | One closing journal per financial year moves every income and expense balance of the year to retained earnings; while it is live nothing posts income or expense into the year (PostingService and database). Every P&L figure leaves closing journals out; the balance sheet's lines are the same before and after the close, and its trial-balance proof includes the closing journal. Refines DEC-059's "balance sheets include them" without changing DEC-059 |
+| DEC-061 | Golden outputs of V2-M2, V2-M3a and V2-M3b reviewed | On 2026-10-19 the product owner (Shoaib, the named accountant, DEC-056) answered "All verified" after receiving the V2-M3a and V2-M3b acceptance packages and golden workings (V2-M2's were delivered earlier). Recorded as the review of the synthetic golden figures of V2-M2, V2-M3a and V2-M3b. It verifies no standard version: that happens in the platform under DEC-052 |
+| DEC-062 | How V2-M4 is built: director and shareholder loan accounts, related parties (delegated, DEC-019; recorded before code) | Read-only registers over the ledger, no new journal source: a loan account per person on a dedicated non-control ledger account, its statement and review flags (thresholds are the firm's review settings, versioned, never legal values); a related-party register whose year report reads the counterparty's sales, purchase and cash journals and its year-end balances from the ledger |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -528,3 +530,47 @@ These choices refine DEC-036. None of them is a tax rule; the VAT arithmetic is 
 * **Permissions:** writes need `accounts:prepare`, reads need `ledger:read`, behind `accounts.production`. Both sources are `subLedger` and carry no VAT; each has its five posting-rule categories.
 * **Known limitation, unchanged from V1:** the balance sheet's "profit for the financial year to date" starts at the accounting period that contains the date. A company with monthly periods therefore sees the month to date. Using the reporting-framework year there is left to V2-M5.
 * **Not in V2-M3b:** automatic closing when a period is locked; dividends and transfers between reserves, which belong in V2-M4/M5; tax on profit.
+
+### DEC-061 - Golden outputs of V2-M2, V2-M3a and V2-M3b reviewed (2026-10-19)
+* The product owner, who is Shoaib, the named accountant (DEC-056), answered "All verified" after receiving the V2-M3a and V2-M3b acceptance packages and golden workings. The V2-M2 package and workbook had been delivered earlier in the same exchange.
+* This is recorded as the review of the synthetic golden figures in `v2-m2-golden-workings.xlsx`, `v2-m3a-golden-workings.xlsx` and `v2-m3b-golden-workings.xlsx`, as DEC-057 did for V2-M1.
+* **What it does not do:** it verifies no reporting-standard version, map or rule. Under DEC-052 that is done in the platform, by a holder of `accounts:rule-verify` who did not author the content. No matrix row changes status because of this record.
+
+### DEC-062 - How V2-M4 is built: director and shareholder loan accounts, related parties (delegated, DEC-019; recorded before code)
+* **No new postings:** director loan movements already reach the ledger through V1 (cash transactions, bank, journals, documents). V2-M4 reads the ledger and adds registers and review flags. It adds no journal source and writes nothing to the ledger.
+* **Loan accounts:**
+  * Each person's account (`director_loan_account`) names the company, the person (a contact), a kind (DIRECTOR, SHAREHOLDER, DIRECTOR_AND_SHAREHOLDER), a dedicated ledger account, an opening date and notes.
+  * The ledger account must be a non-control ASSET or LIABILITY account, and not bank or cash.
+  * One live loan account per ledger account, and one per person per company.
+  * A kind that includes DIRECTOR needs a DIRECTOR appointment of that contact in the company's officers (V0 master data).
+  * The facts never change. The account moves ACTIVE -> CLOSED once, with a date and reason, and is never deleted.
+* **Statement for a date range:** opening, every movement, and closing.
+  * Sign: credit-positive. Positive means the company owes the person; negative means the account is overdrawn.
+  * Each journal's movement is categorised by its other lines, ignoring VAT: CASH_AND_BANK, EXPENSES, INCOME, DIVIDENDS, OTHER_LOAN_ACCOUNT, or MIXED when they differ.
+  * The day-end running balance gives the lowest balance, the first day it was reached, and the number of days overdrawn.
+* **Review flags:** prompts for the reviewer, not legal conclusions.
+  * OVERDRAWN_AT_END and OVERDRAWN_IN_PERIOD.
+  * LARGE_MOVEMENT: a movement at or above the company's large-movement threshold.
+  * OVERDRAWN_ABOVE_THRESHOLD: the lowest balance at or below minus the company's overdrawn threshold.
+  * The thresholds are the firm's own review settings, stored per company as versioned rows. The latest row applies, and each row records who set it, when and why; none is ever edited.
+  * A threshold that is not set is reported as "not evaluated", never as passed.
+  * No legal value (for example the Companies Act 2006 s.207 amounts, or the CTA 2010 s.455 charge) is encoded. Those belong to the verified framework (DEC-052) and to V4 tax.
+* **Related parties:**
+  * The register (`related_party`) names the company, the counterparty (a contact), a relationship, a description, a from date and an optional to date. Relationships are: DIRECTOR, CLOSE_FAMILY_OF_DIRECTOR, SHAREHOLDER, ENTITY_CONTROLLED_BY_DIRECTOR, KEY_MANAGEMENT, PARENT, SUBSIDIARY, FELLOW_SUBSIDIARY, ASSOCIATE, JOINT_VENTURE, OTHER.
+  * The facts never change; a party is ended once, with a reason. There is one live entry per counterparty and relationship.
+* **Related-party year report:** for each party in the register during the range, everything is read from journal lines:
+  * **Sales** (net, base currency): the non-control lines of the journals of the counterparty's posted sales invoices and credit notes dated in the range.
+  * **Purchases:** the same, for purchase bills and debit notes.
+  * **Cash paid to and received from:** the non-control lines of the counterparty's cash transactions and their reversals.
+  * **Owed by and owed to at the end:** the trade-receivables and trade-payables lines of all the counterparty's sub-ledger journals (documents, receipts, payments, their reversals, and exchange differences on allocation) up to the end.
+  * **Loan account:** its closing balance and lowest balance, where the counterparty has one.
+  * Every figure lists the journals behind it for drill-down.
+  * The report is the input for the related-party note (V2-M5). Choosing what to disclose is the framework's job, not this report's.
+* **Permissions:** writes need `accounts:prepare`; reads need `ledger:read`. The routes sit behind `accounts.production`.
+* **Not in V2-M4:**
+  * disclosure wording and materiality (V2-M5);
+  * the members' approval tracking of Companies Act 2006 ss.197-214;
+  * s.455 and s.464C tax computations (V4);
+  * related-party transactions made only by manual journal, which are listed for the counterparty only if posted through its sub-ledger, cash or loan account;
+  * share registers and shareholdings.
+

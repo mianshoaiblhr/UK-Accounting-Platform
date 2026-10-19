@@ -1,0 +1,70 @@
+{
+  "id": "V2-M4-GOLDEN-01",
+  "purpose": "DEC-054 golden for V2-M4 (DEC-062): a director's and a shareholder's loan accounts through 2026 (statements, categories, lowest balances, days overdrawn and review flags with and without thresholds) and the related-party report of a company controlled by the director that is both customer and supplier. Every figure written and added up by hand before the code.",
+  "disclaimer": "SYNTHETIC. People, companies, amounts and thresholds are test choices. The flags are review prompts set by the firm, not legal conclusions; no Companies Act or tax threshold is encoded.",
+  "periods": [["2026-01-01", "2026-12-31"]],
+  "accounts": [
+    { "code": "2231", "name": "Shareholder loan - B Holder", "type": "LIABILITY", "subtype": "CURRENT_LIABILITY_OTHER", "reportingMapping": "BS.CREDITORS_WITHIN_ONE_YEAR" }
+  ],
+  "people": {
+    "A": { "name": "Alex Director", "kind": "DIRECTOR", "account": "2230", "officer": { "role": "DIRECTOR", "appointedOn": "2020-01-01" } },
+    "B": { "name": "Blair Holder", "kind": "SHAREHOLDER", "account": "2231" }
+  },
+  "postings": [
+    { "ref": "SHARES", "kind": "cash", "direction": "RECEIPT", "date": "2026-01-01", "lines": [["3000", "10000.00"]], "description": "Shares issued" },
+    { "ref": "A1", "kind": "cash", "direction": "RECEIPT", "date": "2026-01-05", "lines": [["2230", "1000.00"]], "description": "Loan from Alex Director" },
+    { "ref": "B1", "kind": "cash", "direction": "PAYMENT", "date": "2026-02-01", "lines": [["2231", "700.00"]], "description": "Advance to Blair Holder" },
+    { "ref": "A2", "kind": "cash", "direction": "PAYMENT", "date": "2026-03-15", "lines": [["2230", "2500.00"]], "description": "Drawings by Alex Director" },
+    { "ref": "A3", "kind": "journal", "date": "2026-04-30", "lines": [["6400", "300.00", "0.00"], ["2230", "0.00", "300.00"]], "description": "Travel paid personally by Alex Director" },
+    { "ref": "A4", "kind": "journal", "date": "2026-06-30", "lines": [["3300", "2000.00", "0.00"], ["2230", "0.00", "2000.00"]], "description": "Interim dividend credited to Alex Director" },
+    { "ref": "A5", "kind": "journal", "date": "2026-09-30", "lines": [["2230", "400.00", "0.00"], ["0030", "0.00", "400.00"]], "description": "Old laptop taken over by Alex Director" },
+    { "ref": "AB", "kind": "journal", "date": "2026-11-30", "lines": [["2230", "100.00", "0.00"], ["2231", "0.00", "100.00"]], "description": "Transfer from Alex Director to Blair Holder" },
+    { "ref": "A6", "kind": "journal", "date": "2026-12-15", "lines": [["2230", "250.00", "0.00"], ["4100", "0.00", "50.00"], ["1110", "0.00", "200.00"]], "description": "Charges to Alex Director" },
+    { "ref": "B2", "kind": "cash", "direction": "RECEIPT", "date": "2026-12-20", "lines": [["2231", "50.00"]], "description": "Repayment by Blair Holder" }
+  ],
+  "loanAccounts": {
+    "A": {
+      "year": { "from": "2026-01-01", "to": "2026-12-31", "opening": "0.00", "closing": "50.00",
+        "movements": [["A1", "2026-01-05", "1000.00", "CASH_AND_BANK", "1000.00"], ["A2", "2026-03-15", "-2500.00", "CASH_AND_BANK", "-1500.00"], ["A3", "2026-04-30", "300.00", "EXPENSES", "-1200.00"],
+          ["A4", "2026-06-30", "2000.00", "DIVIDENDS", "800.00"], ["A5", "2026-09-30", "-400.00", "OTHER", "400.00"], ["AB", "2026-11-30", "-100.00", "OTHER_LOAN_ACCOUNT", "300.00"], ["A6", "2026-12-15", "-250.00", "MIXED", "50.00"]],
+        "byCategory": { "CASH_AND_BANK": "-1500.00", "EXPENSES": "300.00", "DIVIDENDS": "2000.00", "OTHER": "-400.00", "OTHER_LOAN_ACCOUNT": "-100.00", "MIXED": "-250.00" },
+        "lowest": "-1500.00", "lowestOn": "2026-03-15", "daysOverdrawn": 107,
+        "workings": "Overdrawn at the end of 15.3 to 29.6: March 17 days + April 30 + May 31 + June 29 = 107",
+        "flags": ["OVERDRAWN_IN_PERIOD"], "notEvaluated": ["LARGE_MOVEMENT", "OVERDRAWN_ABOVE_THRESHOLD"],
+        "flagsWithThresholds": ["OVERDRAWN_IN_PERIOD", "LARGE_MOVEMENT", "OVERDRAWN_ABOVE_THRESHOLD"], "largeMovements": ["A2", "A4"] },
+      "secondHalf": { "from": "2026-07-01", "to": "2026-12-31", "opening": "800.00", "closing": "50.00", "movements": ["A5", "AB", "A6"], "lowest": "50.00", "lowestOn": "2026-12-15", "daysOverdrawn": 0, "flags": [] }
+    },
+    "B": {
+      "year": { "from": "2026-01-01", "to": "2026-12-31", "opening": "0.00", "closing": "-550.00",
+        "movements": [["B1", "2026-02-01", "-700.00", "CASH_AND_BANK", "-700.00"], ["AB", "2026-11-30", "100.00", "OTHER_LOAN_ACCOUNT", "-600.00"], ["B2", "2026-12-20", "50.00", "CASH_AND_BANK", "-550.00"]],
+        "byCategory": { "CASH_AND_BANK": "-650.00", "OTHER_LOAN_ACCOUNT": "100.00" },
+        "lowest": "-700.00", "lowestOn": "2026-02-01", "daysOverdrawn": 334,
+        "workings": "Overdrawn at the end of every day from 1.2 to 31.12: 365 - 31 = 334",
+        "flags": ["OVERDRAWN_AT_END", "OVERDRAWN_IN_PERIOD"], "notEvaluated": ["LARGE_MOVEMENT", "OVERDRAWN_ABOVE_THRESHOLD"],
+        "flagsWithThresholds": ["OVERDRAWN_AT_END", "OVERDRAWN_IN_PERIOD"], "largeMovements": [] }
+    }
+  },
+  "thresholds": { "largeMovement": "2000.00", "overdrawn": "1000.00", "reason": "Firm review thresholds for this client (synthetic)" },
+  "relatedCompany": {
+    "name": "Alex Holdings Ltd", "relationship": "ENTITY_CONTROLLED_BY_DIRECTOR", "from": "2026-01-01", "description": "Company controlled by Alex Director",
+    "documents": [
+      { "ref": "INV", "kind": "invoice", "date": "2026-05-10", "lines": [["4000", "5000.00"]] },
+      { "ref": "CN", "kind": "creditNote", "of": "INV", "date": "2026-06-01", "lines": [["4000", "500.00"]], "reason": "Part of the order returned" },
+      { "ref": "REC", "kind": "receipt", "date": "2026-07-15", "amount": "3000.00", "allocate": "INV" },
+      { "ref": "BILL", "kind": "bill", "date": "2026-08-01", "supplierReference": "AH-77", "lines": [["6100", "1200.00"]] },
+      { "ref": "PAY", "kind": "payment", "date": "2026-09-01", "amount": "700.00", "allocate": "BILL" },
+      { "ref": "CASH", "kind": "cash", "direction": "PAYMENT", "date": "2026-10-10", "lines": [["6600", "300.00"]], "description": "Consultancy from Alex Holdings" }
+    ]
+  },
+  "relatedReport": {
+    "from": "2026-01-01", "to": "2026-12-31",
+    "parties": {
+      "Alex Holdings Ltd": { "sales": "4500.00", "salesJournals": ["INV", "CN"], "purchases": "1200.00", "purchaseJournals": ["BILL"], "cashPaid": "300.00", "cashReceived": "0.00", "cashJournals": ["CASH"],
+        "owedBy": "1500.00", "owedTo": "500.00", "loanAccount": null,
+        "workings": "sales 5000.00 - 500.00; owed by 5000.00 - 500.00 - 3000.00; owed to 1200.00 - 700.00" },
+      "Alex Director": { "sales": "0.00", "purchases": "0.00", "cashPaid": "0.00", "cashReceived": "0.00", "owedBy": "0.00", "owedTo": "0.00", "loanAccount": { "closing": "50.00", "lowest": "-1500.00" },
+        "workings": "the loan account's own cash movements are loan movements, not cash paid or received" },
+      "Blair Holder": { "sales": "0.00", "purchases": "0.00", "cashPaid": "0.00", "cashReceived": "0.00", "owedBy": "0.00", "owedTo": "0.00", "loanAccount": { "closing": "-550.00", "lowest": "-700.00" } }
+    }
+  }
+}

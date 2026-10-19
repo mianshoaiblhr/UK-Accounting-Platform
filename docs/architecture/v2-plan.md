@@ -12,7 +12,7 @@ Everything in V1 plan section 1, plus: only the PostingService writes the ledger
 | V2-M1 | Reporting framework as data (section 3) | **built** (2026-10-18; `v2-m1-acceptance.md`); rules unverified until the named accountant | Engineering; the named accountant verifies | V2-M0 |
 | V2-M2 | Fixed assets: classes, register, additions, disposals, depreciation methods, useful lives, residual values, tax vs accounting treatment, reconciliation to the ledger, depreciation runs | **built** (2026-10-18; `v2-m2-acceptance.md`) | Engineering | V2-M1 |
 | V2-M3 | Year-end adjustments: accruals, prepayments, deferred income, provisions with reversal; the year-end closing journal to retained earnings | split (DEC-059): **V2-M3a built** (2026-10-18; `v2-m3a-acceptance.md`); **V2-M3b built** (2026-10-19; `v2-m3b-acceptance.md`) | Engineering | V2-M2 |
-| V2-M4 | Director and shareholder balances (director loan movements flagged), related parties | planned | Engineering | V2-M3 |
+| V2-M4 | Director and shareholder balances (director loan movements flagged), related parties | **built** (2026-10-19; `v2-m4-acceptance.md`) | Engineering | V2-M3 |
 | V2-M5 | Statements and notes: FRS 105 micro-entity, then FRS 102 Section 1A, then full FRS 102; policies, comparatives, directors' sections; the size test | planned | Engineering; the named accountant | V2-M1, V2-M3, V2-M4 |
 | V2-M6 | Year-end workflow (the specification's 14 steps), review checklist and flags, partner review, client approval, filing-ready package | planned | Engineering | V2-M5 |
 | V2-M7 | Screens behind `accounts.production` | planned | Engineering (front end) | each API milestone |
@@ -186,6 +186,46 @@ All are in OpenAPI.
   * permissions and tenancy;
   * an architecture test (only the close service writes `year_end_close` and posts its sources);
   * CI green; clean clone; matrix row V2-YEC-01 moved with evidence.
+
+## 5c. V2-M4 - Director and shareholder loan accounts, related parties (specification; DEC-062)
+Recorded before code. Matrix rows V2-MOD-09 and V2-MOD-10. No journal source and no ledger writes: V2-M4 reads the ledger.
+
+### 5c.1 Data (one migration, additive)
+| Table | Holds | Rules |
+|---|---|---|
+| `director_loan_account` | Company, person (contact), kind (DIRECTOR, SHAREHOLDER, DIRECTOR_AND_SHAREHOLDER), ledger account, opened on, notes, status (ACTIVE, CLOSED), closed on and reason, author | Non-control ASSET or LIABILITY account, not bank or cash; one live loan account per ledger account and per person; DIRECTOR kinds need a DIRECTOR appointment; facts immutable; ACTIVE -> CLOSED once |
+| `director_loan_threshold` | Company, large-movement threshold, overdrawn threshold (each optional, above zero), reason, who and when | Written once; the latest row applies; the history is the audit trail |
+| `related_party` | Company, counterparty (contact), relationship, description, from and to dates, status (ACTIVE, ENDED), ended reason, author | One live entry per counterparty and relationship; facts immutable; ended once |
+
+### 5c.2 API (behind `accounts.production`; writes `accounts:prepare`, reads `ledger:read`)
+* `director-loan-accounts`:
+  * list;
+  * create;
+  * get, with its statement for `from`/`to`;
+  * close.
+* `director-loan-accounts/report?from&to`: every account with its opening, movements by category, closing, lowest balance, days overdrawn and flags.
+* `director-loan-thresholds`:
+  * get the current thresholds and their history;
+  * set new ones, with a reason.
+* `related-parties`: list; create; get; end.
+* `related-parties/report?from&to`: per party, sales, purchases, cash paid and received, owed by and owed to at the end, and the loan account, each with its journals.
+
+All are in OpenAPI.
+
+### 5c.3 Acceptance
+* **Golden (DEC-054):** `tests/golden/v2-m4-directors.json`, written by hand before the code and recomputed independently in a workbook:
+  * one director's loan account through a year: a loan in by bank, money drawn by bank, expenses paid personally, a dividend credited, an asset taken over, a transfer to another loan account and a mixed journal; overdrawn mid-year, then back in credit (the rule that VAT lines are ignored is unit-tested);
+  * a second person, a shareholder, overdrawn at the year end;
+  * the statements, categories, lowest balances, days overdrawn and flags under set thresholds and under none;
+  * a related company that is both customer and supplier, with an invoice, a credit note, a receipt, a bill, a part payment and a cash payment;
+  * the related-party report figures and journals.
+* **Tests:**
+  * database guards;
+  * permissions and tenancy;
+  * an architecture test (only the V2-M4 service writes its tables; it never writes the ledger);
+  * CI green;
+  * clean clone;
+  * matrix rows V2-MOD-09 and V2-MOD-10 moved, with evidence.
 
 ## 6. Legal and standards context
 See `v2-proposal.md` section 6. The rules entered into the framework are the firm's, from the current text of FRS 102 and FRS 105 and the Companies Act 2006 accounts regulations, verified by its named accountant; engineering builds the mechanism and tests it on synthetic data.
