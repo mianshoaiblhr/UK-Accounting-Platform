@@ -5,11 +5,11 @@ Prepared under the product owner's delegation (DEC-019, DEC-051), with the desig
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | @@SHA@@ (branch `claude/adoring-cori-mra6ze`); specification recorded before code in v2-plan section 5c and DEC-062 |
-| CI | @@CI@@ |
-| CodeQL | @@CODEQL@@ |
-| Clean clone | @@CLEAN@@ |
-| Local runs | @@LOCAL@@ |
+| Code baseline commit | `87c8956e9d1d26d7e190c7b8fa63e231ae743f62` (V2-M4 in `bc3dc03`; the screen fix in `87c8956`) (branch `claude/adoring-cori-mra6ze`); specification recorded before code in v2-plan section 5c and DEC-062 |
+| CI | [run 39251457210](https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39251457210): every job green (also green on bc3dc03: run 39248378178) |
+| CodeQL | [run 39251456129](https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39251456129): green |
+| Clean clone | Fresh clone at 87c8956: install, build, typecheck and lint clean; 2,146 tests passed; e2e 21/21; OpenAPI drift 0. The earlier clean clone of bc3dc03 failed one e2e test: the screen defect described in section 3, now fixed |
+| Local runs | Build, typecheck and lint clean; 118 test files, 2,146 tests passed; after the screen fix, e2e 21/21 twice |
 
 ## 2. What V2-M4 delivers (v2-plan section 5c)
 | Part | What it is |
