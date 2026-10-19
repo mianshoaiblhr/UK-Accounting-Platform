@@ -55,6 +55,7 @@ Prepared under the product owner's delegation (DEC-019, DEC-051). The design (DE
   1. The balance sheet's trial-balance proof changes with a close, as DEC-060 says. I had compared it as unchanged.
   2. A preview of a year overlapping a live close still finds balances, namely the close's own lines. So "nothing to close" does not apply there.
   3. An outsider gets 404, not 403, as everywhere else in the API.
+* **V1 test changed on purpose:** `tests/platform/reports.test.ts` now expects the P&L drill-down to carry `excludeClosing: true` (DEC-060).
 
 ## 4. Security and permission checks
 | Check | Evidence |
@@ -73,7 +74,12 @@ V2 matrix v1.5 (61 rows: Implemented 22, Partially 2, Missing 37). One row moved
 1. **Year to date:** the balance sheet's "profit for the financial year to date" starts at the accounting period that contains the date (V1 rule, unchanged). A company with monthly periods sees the month to date. Using the reporting-framework year is left to V2-M5.
 2. **Earlier years:** they are not closed automatically. The preview only warns about them.
 3. **Not covered:** dividends, transfers between reserves and tax on profit (V2-M4/M5), and closing automatically when a period is locked.
-4. **Concurrency:** the lock order between a close and concurrent postings is by design (shared and exclusive advisory locks). It is backed by the database trigger. No test runs two transactions racing.
+4. **Concurrency:** the lock order between a close and concurrent postings is proved by one race test with real concurrent transactions (`tests/platform/year-end-close.test.ts`):
+   * a posting left open while the close starts is waited for and closed with the year;
+   * a posting that starts during a reversal waits and then lands in the reopened year;
+   * a posting that starts during a close is refused once the close commits.
+
+   The test covers one company on one database; it is not a load test.
 5. **Production gates unchanged:**
    * standard versions verified by Shoaib (DEC-056);
    * a qualified tax reviewer;

@@ -119,7 +119,7 @@ describe('the books of Report Co', () => {
     expect(pl.reconciliation).toEqual({ incomeLessExpensesFromLedger: '1685.00', difference: '0.00', reconciled: true, comparative: { incomeLessExpensesFromLedger: '400.00', reconciled: true } });
     const admin = pl.lines.find((l) => l.key === 'PL.ADMIN_EXPENSES')!;
     expect(accountsOf(admin).map((a) => `${a.code}:${a.amount}`)).toEqual(['6100:800.00', '6310:200.00', '6800:25.00']);
-    expect(accountsOf(admin)[0]!.drilldown).toEqual({ accountId: acc[co]!['6100'], from: '2026-01-01', to: '2026-12-31' });
+    expect(accountsOf(admin)[0]!.drilldown).toEqual({ accountId: acc[co]!['6100'], from: '2026-01-01', to: '2026-12-31', excludeClosing: true });    // V2-M3b (DEC-060): P&L drill-downs leave closing journals out
     const withEmpty = await t((tx) => reports.profitAndLoss(tx, co, { from: '2026-01-01', to: '2026-12-31', includeEmpty: true }));
     expect(withEmpty.lines.map((l) => l.key)).toContain('PL.TAXATION');
   });
