@@ -2,7 +2,7 @@
 
 Source requirements: docs/specifications/V2_Accounts_Production_FRS102_FRS105.md, 00_MASTER_IMPLEMENTATION_MANIFEST.md, decision-log.md DEC-051..054.
 
-Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
+Generated from `v2-compliance-matrix.json` at commit `d08ecb3`; CI: <https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39288936490>. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
 
 ## Plan history (append-only)
 
@@ -20,6 +20,7 @@ Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence
 * v1.7 (2026-10-19, V2-M5a, DEC-063): V2-M5 split; the accounts document built. Missing -> Implemented: V2-MOD-12, V2-OUT-01, V2-OUT-02, V2-OUT-04, V2-OUT-05, V2-OUT-07. Missing -> Partially: V2-MOD-13 (cash flow in V2-M5b). Mechanism proven on synthetic verified wording only; real standard wording remains the named accountant's (DEC-052).
 * v1.7a (2026-10-19): V2-M5a evidence recorded (CI 39271179477 and CodeQL 39271179462 green on 1492ff6; clean clone 2163 tests, e2e 21/21, OpenAPI drift 0).
 * v1.8 (2026-10-19, DEC-064): at the product owner's instruction engineering drafted FRS 105 (micro) and FRS 102 Section 1A (small) wording packs (content/standards/drafts), importable through the API as UNVERIFIED versions; review workbook v2-draft-wording-review.xlsx. No row changes status: the drafts are unverified and were not checked against the source text (DEC-052).
+* v1.8a (2026-10-19): draft wording packs evidence recorded (CI 39288936490 and CodeQL 39288936669 green on d08ecb3; clean clone 2175 tests, e2e 21/21, OpenAPI drift 0).
 
 ## Summary
 
