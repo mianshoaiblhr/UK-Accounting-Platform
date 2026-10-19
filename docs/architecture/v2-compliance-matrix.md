@@ -2,7 +2,7 @@
 
 Source requirements: docs/specifications/V2_Accounts_Production_FRS102_FRS105.md, 00_MASTER_IMPLEMENTATION_MANIFEST.md, decision-log.md DEC-051..054.
 
-Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
+Generated from `v2-compliance-matrix.json` at commit `5ab27b8`; CI: <https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39181318428>. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
 
 ## Plan history (append-only)
 
@@ -14,6 +14,7 @@ Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence
 * v1.4 (2026-10-18, V2-M3a, DEC-059): year-end adjustments built. Missing -> Implemented: V2-MOD-05..08. Row added: V2-YEC-01, the year-end closing journal, which was in the approved V2-M3 scope but missing from the matrix (61 rows).
 * v1.4a (2026-10-18): V2-M3a evidence recorded (CI 39178258465 and CodeQL 39178258477 green on f735149; clean clone 2091 tests, e2e 21/21, OpenAPI drift 0).
 * v1.5 (2026-10-19, V2-M3b, DEC-060): year-end closing journal built. Missing -> Implemented: V2-YEC-01.
+* v1.5a (2026-10-19): V2-M3b evidence recorded (CI 39181318428 and CodeQL 39181318430 green on 5ab27b8; clean clone 2117 tests, e2e 21/21, OpenAPI drift 0). Milestone V2-M3 accepted.
 
 ## Summary
 
@@ -32,7 +33,7 @@ Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence
 | V2-M0 | Decisions, plan, matrix, ADRs | RECORDED 2026-10-17 (DEC-051..054, ADR-62..64); qualified accountant named 2026-10-18: Shoaib (DEC-056) | Engineering | V2 approval (DEC-051) | 0 | 0 |
 | V2-M1 | Reporting framework as data | ACCEPTED under the delegation 2026-10-18 (v2-m1-acceptance.md; CI 39083312122 on fd0f556); rules unverified until Shoaib verifies them (DEC-056) | Engineering (build); qualified accountant (rules) | V2-M0 | 9 | 7 |
 | V2-M2 | Fixed assets and depreciation | ACCEPTED under the delegation 2026-10-18 (v2-m2-acceptance.md; CI 39159238749 on da32ffc) | Engineering | V2-M1 | 10 | 10 |
-| V2-M3 | Year-end adjustments and the closing journal | SPLIT (DEC-059): V2-M3a adjustments ACCEPTED under the delegation 2026-10-18 (v2-m3a-acceptance.md; CI 39178258465 on f735149); V2-M3b closing journal BUILT 2026-10-19 (v2-m3b-acceptance.md) | Engineering | V2-M2 | 5 | 5 |
+| V2-M3 | Year-end adjustments and the closing journal | ACCEPTED under the delegation (DEC-059 split): V2-M3a 2026-10-18 (v2-m3a-acceptance.md; CI 39178258465 on f735149); V2-M3b 2026-10-19 (v2-m3b-acceptance.md; CI 39181318428 on 5ab27b8) | Engineering | V2-M2 | 5 | 5 |
 | V2-M4 | Director balances and related parties | planned | Engineering | V2-M3 | 2 | 0 |
 | V2-M5 | Statements and notes (FRS 105, FRS 102 1A, FRS 102) | planned | Engineering (build); qualified accountant (rules) | V2-M1; V2-M3; V2-M4 | 8 | 0 |
 | V2-M6 | Year-end workflow, review, approval, filing-ready package | planned | Engineering | V2-M5 | 26 | 0 |
@@ -94,7 +95,7 @@ A milestone is accepted on an acceptance package: commit SHA, CI run (every job)
 
 ## V2-M3 - Year-end adjustments and the closing journal
 
-**Status:** SPLIT (DEC-059): V2-M3a adjustments ACCEPTED under the delegation 2026-10-18 (v2-m3a-acceptance.md; CI 39178258465 on f735149); V2-M3b closing journal BUILT 2026-10-19 (v2-m3b-acceptance.md)  
+**Status:** ACCEPTED under the delegation (DEC-059 split): V2-M3a 2026-10-18 (v2-m3a-acceptance.md; CI 39178258465 on f735149); V2-M3b 2026-10-19 (v2-m3b-acceptance.md; CI 39181318428 on 5ab27b8)  
 **Owner:** Engineering  
 **Depends on:** V2-M2  
 **Acceptance:** v2-plan.md sections 5.3 and 5b.4; v2-m3a-acceptance.md (V2-M3a); v2-m3b-acceptance.md (V2-M3b)  

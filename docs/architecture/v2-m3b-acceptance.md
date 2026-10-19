@@ -5,11 +5,11 @@ Prepared under the product owner's delegation (DEC-019, DEC-051). The design (DE
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | @@SHA@@ (branch `claude/adoring-cori-mra6ze`); specification recorded before code in v2-plan section 5b and DEC-060 |
-| CI | @@CI@@ |
-| CodeQL | @@CODEQL@@ |
-| Clean clone | @@CLEAN@@ |
-| Local runs | @@LOCAL@@ |
+| Code baseline commit | `5ab27b8c434082809b40cee613b31371453438a1` (with `1a8fbf7`) (branch `claude/adoring-cori-mra6ze`); specification recorded before code in v2-plan section 5b and DEC-060 |
+| CI | [run 39181318428](https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39181318428): every job green |
+| CodeQL | [run 39181318430](https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39181318430): green |
+| Clean clone | Fresh clone at 5ab27b8: install, build, typecheck and lint clean; 2,117 tests passed; e2e 21/21; OpenAPI drift 0 |
+| Local runs | Build, typecheck and lint clean. Full run: 2,116 of 2,117 passed; the one failure was a V1 expectation of the P&L drill-down, updated on purpose (section 3); that file and the close tests then passed 16/16 |
 
 ## 2. What V2-M3b delivers (v2-plan section 5b)
 | Part | What it is |
