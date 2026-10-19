@@ -13,6 +13,6 @@ export default tseslint.config(
       'no-restricted-imports': ['error', { paths: [{ name: '@prisma/client', message: 'Import from @uk/db instead.' }] }],
     },
   },
-  { files: ['**/*.mjs'], languageOptions: { globals: { process: 'readonly', URL: 'readonly' } } },
+  { files: ['**/*.mjs'], languageOptions: { globals: { process: 'readonly', URL: 'readonly', console: 'readonly', fetch: 'readonly' } } },
   { files: ['packages/db/**'], rules: { 'no-restricted-imports': 'off' } },
 );

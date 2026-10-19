@@ -1,0 +1,67 @@
+{
+  "pack": "FRS105-MICRO-DRAFT",
+  "status": "DRAFT - written by engineering from its knowledge on 2026-10-19 at the product owner's instruction (DEC-064). Not retrieved from or checked against the FRC's or legislation.gov.uk's text (both unreachable from the build environment). Import it as an UNVERIFIED version; a holder of accounts:rule-verify who is not the importer checks every rule against the current text before verifying (DEC-052).",
+  "standard": { "code": "FRS105", "name": "FRS 105 The Financial Reporting Standard applicable to the Micro-entities Regime" },
+  "version": {
+    "label": "FRS 105 micro-entity - engineering draft 0.1 (unverified)",
+    "effectiveFrom": "2026-01-01",
+    "source": { "url": "https://www.frc.org.uk/library/standards-codes-policy/accounting-and-reporting/uk-accounting-standards/", "provision": "FRS 105; SI 2008/409 Sch 1 (micro-entity formats and notes); Companies Act 2006 ss.384A, 411, 413, 414, 475-477. Drafted, not retrieved: check every rule against the current text", "retrievedOn": "2026-10-19" },
+    "notes": "Engineering draft (DEC-064). Formats follow the micro-entity balance sheet and profit and loss formats as engineering understands them. Staff costs, called up share capital not paid and provisions for liabilities have no V1 reporting line: place those accounts with company overrides. No accounting-policy note is drafted: the micro-entity provisions do not require one (verifier to confirm)."
+  },
+  "lines": [
+    { "key": "P.T", "statement": "PL", "sort": 10, "name": "Turnover", "kind": "ACCOUNTS", "naturalSide": "CREDIT" },
+    { "key": "P.OI", "statement": "PL", "sort": 20, "name": "Other income", "kind": "ACCOUNTS", "naturalSide": "CREDIT" },
+    { "key": "P.RM", "statement": "PL", "sort": 30, "name": "Cost of raw materials and consumables", "kind": "ACCOUNTS", "naturalSide": "DEBIT" },
+    { "key": "P.STAFF", "statement": "PL", "sort": 40, "name": "Staff costs", "kind": "ACCOUNTS", "naturalSide": "DEBIT" },
+    { "key": "P.DEP", "statement": "PL", "sort": 50, "name": "Depreciation and other amounts written off assets", "kind": "ACCOUNTS", "naturalSide": "DEBIT" },
+    { "key": "P.OC", "statement": "PL", "sort": 60, "name": "Other charges", "kind": "ACCOUNTS", "naturalSide": "DEBIT" },
+    { "key": "P.TAX", "statement": "PL", "sort": 70, "name": "Tax", "kind": "ACCOUNTS", "naturalSide": "DEBIT" },
+    { "key": "P.PROFIT", "statement": "PL", "sort": 80, "name": "Profit or loss", "kind": "TOTAL",
+      "formula": [{ "line": "P.T", "sign": 1 }, { "line": "P.OI", "sign": 1 }, { "line": "P.RM", "sign": -1 }, { "line": "P.STAFF", "sign": -1 }, { "line": "P.DEP", "sign": -1 }, { "line": "P.OC", "sign": -1 }, { "line": "P.TAX", "sign": -1 }] },
+    { "key": "B.CSU", "statement": "BS", "sort": 10, "name": "Called up share capital not paid", "kind": "ACCOUNTS", "naturalSide": "DEBIT" },
+    { "key": "B.FA", "statement": "BS", "sort": 20, "name": "Fixed assets", "kind": "ACCOUNTS", "naturalSide": "DEBIT" },
+    { "key": "B.CA", "statement": "BS", "sort": 30, "name": "Current assets", "kind": "ACCOUNTS", "naturalSide": "DEBIT" },
+    { "key": "B.PREPAY", "statement": "BS", "sort": 40, "name": "Prepayments and accrued income", "kind": "ACCOUNTS", "naturalSide": "DEBIT" },
+    { "key": "B.CW", "statement": "BS", "sort": 50, "name": "Creditors: amounts falling due within one year", "kind": "ACCOUNTS", "naturalSide": "CREDIT" },
+    { "key": "B.NCA", "statement": "BS", "sort": 60, "name": "Net current assets (liabilities)", "kind": "TOTAL", "formula": [{ "line": "B.CA", "sign": 1 }, { "line": "B.PREPAY", "sign": 1 }, { "line": "B.CW", "sign": -1 }] },
+    { "key": "B.TALCL", "statement": "BS", "sort": 70, "name": "Total assets less current liabilities", "kind": "TOTAL", "formula": [{ "line": "B.CSU", "sign": 1 }, { "line": "B.FA", "sign": 1 }, { "line": "B.NCA", "sign": 1 }] },
+    { "key": "B.CA1", "statement": "BS", "sort": 80, "name": "Creditors: amounts falling due after more than one year", "kind": "ACCOUNTS", "naturalSide": "CREDIT" },
+    { "key": "B.PROV", "statement": "BS", "sort": 90, "name": "Provisions for liabilities", "kind": "ACCOUNTS", "naturalSide": "CREDIT" },
+    { "key": "B.ACCR", "statement": "BS", "sort": 100, "name": "Accruals and deferred income", "kind": "ACCOUNTS", "naturalSide": "CREDIT" },
+    { "key": "B.NA", "statement": "BS", "sort": 110, "name": "Net assets (liabilities)", "kind": "TOTAL", "formula": [{ "line": "B.TALCL", "sign": 1 }, { "line": "B.CA1", "sign": -1 }, { "line": "B.PROV", "sign": -1 }, { "line": "B.ACCR", "sign": -1 }] },
+    { "key": "B.SC", "statement": "BS", "parentKey": "B.CR", "sort": 10, "name": "Called up share capital", "kind": "ACCOUNTS", "naturalSide": "CREDIT" },
+    { "key": "B.RES", "statement": "BS", "parentKey": "B.CR", "sort": 20, "name": "Other reserves", "kind": "ACCOUNTS", "naturalSide": "CREDIT" },
+    { "key": "B.PLR", "statement": "BS", "parentKey": "B.CR", "sort": 30, "name": "Profit and loss account", "kind": "RETAINED_PROFIT", "naturalSide": "CREDIT" },
+    { "key": "B.CR", "statement": "BS", "sort": 120, "name": "Capital and reserves", "kind": "TOTAL", "formula": [{ "line": "B.SC", "sign": 1 }, { "line": "B.RES", "sign": 1 }, { "line": "B.PLR", "sign": 1 }] }
+  ],
+  "mapEntries": [
+    ["PL.TURNOVER", null, "P.T"], ["PL.OTHER_INCOME", null, "P.OI"], ["PL.INTEREST_RECEIVABLE", null, "P.OI"], ["PL.COST_OF_SALES", null, "P.RM"], ["PL.DEPRECIATION", null, "P.DEP"],
+    ["PL.ADMIN_EXPENSES", null, "P.OC"], ["PL.OTHER_EXPENSES", null, "P.OC"], ["PL.INTEREST_PAYABLE", null, "P.OC"], ["PL.TAXATION", null, "P.TAX"],
+    ["BS.FIXED_ASSETS.TANGIBLE", null, "B.FA"], ["BS.FIXED_ASSETS.INTANGIBLE", null, "B.FA"], ["BS.CURRENT_ASSETS.STOCK", null, "B.CA"], ["BS.CURRENT_ASSETS.DEBTORS", null, "B.CA"],
+    ["BS.CURRENT_ASSETS.DEBTORS", "CURRENT_ASSET_PREPAYMENT", "B.PREPAY"], ["BS.CURRENT_ASSETS.CASH", null, "B.CA"], ["BS.CREDITORS_WITHIN_ONE_YEAR", null, "B.CW"],
+    ["BS.CREDITORS_WITHIN_ONE_YEAR", "CURRENT_LIABILITY_ACCRUAL", "B.ACCR"], ["BS.CREDITORS_AFTER_ONE_YEAR", null, "B.CA1"], ["BS.CAPITAL.SHARE_CAPITAL", null, "B.SC"], ["BS.CAPITAL.RESERVES", null, "B.RES"]
+  ],
+  "validationRules": [
+    { "key": "NA_EQ_CR", "description": "Net assets equal capital and reserves", "severity": "ERROR", "appliesTo": ["MICRO"], "expression": { "eq": [{ "line": "B.NA" }, { "line": "B.CR" }] } }
+  ],
+  "rules": [
+    { "key": "NOTE.EMPLOYEES", "section": "NOTES", "sort": 10, "title": "Employees", "appliesTo": ["MICRO"],
+      "body": "The average number of persons employed by the company (including directors) during the year was {{fact:employees.average}} ({{year:priorEnd}}: {{fact:employees.averagePrior}}).",
+      "source": "Companies Act 2006 s.411 (average number of employees), as applied to micro-entities", "verifierNote": "Confirm the requirement applies to micro-entities for the periods in scope, and whether directors are counted." },
+    { "key": "NOTE.ADV", "section": "NOTES", "sort": 20, "title": "Advances, credits and guarantees granted to directors", "appliesTo": ["MICRO"], "omitWhenEmpty": true,
+      "body": "{{table:directors.advances}}\n{{fact:text.directorAdvanceTerms}}",
+      "source": "Companies Act 2006 s.413", "verifierNote": "s.413 asks for the amount, the interest rate, the main conditions, amounts repaid and amounts written off or waived; the table gives the amounts and text.directorAdvanceTerms the rest. Guarantees are not in the table: add them to the wording if any." },
+    { "key": "NOTE.COMMIT", "section": "NOTES", "sort": 30, "title": "Financial commitments, guarantees and contingencies", "appliesTo": ["MICRO"],
+      "body": "{{fact:text.commitments}}",
+      "source": "SI 2008/409 Sch 1 (micro-entity notes: financial commitments, guarantees and contingencies)", "verifierNote": "Check the paragraph reference and whether a nil statement is expected when there are none." },
+    { "key": "BSS.AUDIT", "section": "BALANCE_SHEET_STATEMENTS", "sort": 10, "title": "Audit exemption", "appliesTo": ["MICRO"],
+      "body": "For the year ending {{year:end}} the company was entitled to exemption from audit under section 477 of the Companies Act 2006 relating to small companies.\nThe members have not required the company to obtain an audit of its accounts for the year in question in accordance with section 476.\nThe directors acknowledge their responsibilities for complying with the requirements of the Act with respect to accounting records and the preparation of accounts.",
+      "source": "Companies Act 2006 s.475(2)-(3), s.476, s.477", "verifierNote": "Statements required on the balance sheet where the audit exemption is taken; check the exact wording expected." },
+    { "key": "BSS.MICRO", "section": "BALANCE_SHEET_STATEMENTS", "sort": 20, "title": "Micro-entity provisions", "appliesTo": ["MICRO"],
+      "body": "These accounts have been prepared in accordance with the provisions applicable to companies subject to the small companies regime and in accordance with the micro-entity provisions.",
+      "source": "Companies Act 2006 s.414(3); s.384A (micro-entity provisions)", "verifierNote": "Check the statement required above the director's signature for micro-entity accounts." },
+    { "key": "BSS.APPROVAL", "section": "BALANCE_SHEET_STATEMENTS", "sort": 30, "title": "Approval", "appliesTo": ["MICRO"],
+      "body": "The financial statements were approved by the board of directors on {{fact:approval.date}} and signed on its behalf by:\n{{fact:approval.director}}, Director",
+      "source": "Companies Act 2006 s.414(1)-(2)", "verifierNote": "Approval by the board and signature by a director on the balance sheet." }
+  ]
+}

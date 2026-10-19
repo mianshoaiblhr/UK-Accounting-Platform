@@ -268,6 +268,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-061 | Golden outputs of V2-M2, V2-M3a and V2-M3b reviewed | On 2026-10-19 the product owner (Shoaib, the named accountant, DEC-056) answered "All verified" after receiving the V2-M3a and V2-M3b acceptance packages and golden workings (V2-M2's were delivered earlier). Recorded as the review of the synthetic golden figures of V2-M2, V2-M3a and V2-M3b. It verifies no standard version: that happens in the platform under DEC-052 |
 | DEC-062 | How V2-M4 is built: director and shareholder loan accounts, related parties (delegated, DEC-019; recorded before code) | Read-only registers over the ledger, no new journal source: a loan account per person on a dedicated non-control ledger account, its statement and review flags (thresholds are the firm's review settings, versioned, never legal values); a related-party register whose year report reads the counterparty's sales, purchase and cash journals and its year-end balances from the ledger |
 | DEC-063 | V2-M5 split; how V2-M5a is built: the accounts document (delegated, DEC-019; recorded before code) | V2-M5a renders the accounts document (statements, accounting policies, notes, directors' report and balance-sheet statements) from wording held as data in the standard version (verified like all its content) and from facts drawn from the ledger, the registers and a few facts the preparer enters. V2-M5b adds the size test (company-law thresholds as verified data) and the cash flow statement (full FRS 102) |
+| DEC-064 | Draft wording packs written by engineering at the product owner's instruction | On 2026-10-19 the product owner said "go add wordings yourself". Engineering drafts FRS 105 (micro-entity) and FRS 102 Section 1A (small) packs: statement lines, the map from V1 reporting lines, validation rules and wording. The packs live in the repository and are imported through the API as UNVERIFIED versions authored by the person running the import. They are never seeded by a migration and never verified by engineering. This amends DEC-052's "nothing is seeded" only to the extent of keeping importable drafts; DEC-052's verification rule is unchanged |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -619,4 +620,23 @@ These choices refine DEC-036. None of them is a tax rule; the VAT arithmetic is 
   * filing-ready output, approval and locking (V2-M6);
   * PDF or iXBRL rendering (V3);
   * any real standard wording (never seeded; DEC-052).
+
+### DEC-064 - Draft wording packs written by engineering at the product owner's instruction (2026-10-19)
+* **Instruction:** after V2-M5a was accepted, the product owner said "Well go add add wordings your self".
+* **What engineering does:**
+  * Drafts two packs as JSON in `content/standards/drafts/`: FRS 105 for micro-entities, and FRS 102 Section 1A for small entities.
+  * Each pack holds:
+    * the statement lines in the statutory formats;
+    * the map from V1 reporting lines;
+    * validation rules;
+    * the wording (policies, notes, the directors' report and the balance-sheet statements) in the V2-M5a template grammar.
+  * Each rule names the provision it is meant to reflect and carries a note for the verifier.
+* **How the drafts were written:** from engineering's knowledge. The FRC's site and legislation.gov.uk could not be reached from the build environment, so no text was retrieved or copied. Every version says so in its notes, and its source records the drafting date rather than a retrieval date.
+* **How a pack gets in:**
+  * It is imported through the public API by `scripts/standards/import-pack.mjs`, as the person running it, who needs `accounts:rules-manage`.
+  * It lands as an UNVERIFIED standard version.
+  * Nothing loads it automatically. No migration seeds it, and engineering never verifies it.
+* **Verification is unchanged (DEC-052):** Shoaib, or another holder of `accounts:rule-verify` who is not the author, checks each rule against the current FRS and Companies Act text, edits or removes what is wrong, and only then verifies. Until then every document from a pack is a preview marked unverified, and it is never complete.
+* **Audit trail:** DEC-052 said no real standard content is entered or seeded. This decision amends that only by allowing these importable drafts in the repository. DEC-052 itself is not rewritten.
+* **Not done:** FRS 102 in full (medium and large companies), charities (SORP), LLPs and groups.
 

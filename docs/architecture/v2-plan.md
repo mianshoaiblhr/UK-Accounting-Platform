@@ -267,5 +267,17 @@ All are in OpenAPI.
   * clean clone;
   * the matrix rows moved with evidence.
 
+## 5e. Draft wording packs (DEC-064)
+At the product owner's instruction, engineering drafted two packs in `content/standards/drafts/`, each reviewable in `v2-draft-wording-review.xlsx`:
+* FRS 105 for micro-entities: 6 wording rules.
+* FRS 102 Section 1A for small entities: 22 wording rules, with format 1 statements.
+
+How a pack is used:
+* It is imported through the API by `scripts/standards/import-pack.mjs` and lands as an UNVERIFIED version.
+* It was drafted from engineering's knowledge. Nothing was retrieved from the source.
+* It is verified only by the named accountant (DEC-052).
+* `tests/unit/standard-packs.test.ts` checks that it is well formed.
+* `tests/api/standard-packs.test.ts` checks that it imports and renders.
+
 ## 6. Legal and standards context
 See `v2-proposal.md` section 6. The rules entered into the framework are the firm's, from the current text of FRS 102 and FRS 105 and the Companies Act 2006 accounts regulations, verified by its named accountant; engineering builds the mechanism and tests it on synthetic data.
