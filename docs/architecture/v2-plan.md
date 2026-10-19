@@ -13,7 +13,7 @@ Everything in V1 plan section 1, plus: only the PostingService writes the ledger
 | V2-M2 | Fixed assets: classes, register, additions, disposals, depreciation methods, useful lives, residual values, tax vs accounting treatment, reconciliation to the ledger, depreciation runs | **built** (2026-10-18; `v2-m2-acceptance.md`) | Engineering | V2-M1 |
 | V2-M3 | Year-end adjustments: accruals, prepayments, deferred income, provisions with reversal; the year-end closing journal to retained earnings | split (DEC-059): **V2-M3a built** (2026-10-18; `v2-m3a-acceptance.md`); **V2-M3b built** (2026-10-19; `v2-m3b-acceptance.md`) | Engineering | V2-M2 |
 | V2-M4 | Director and shareholder balances (director loan movements flagged), related parties | **built** (2026-10-19; `v2-m4-acceptance.md`) | Engineering | V2-M3 |
-| V2-M5 | Statements and notes: FRS 105 micro-entity, then FRS 102 Section 1A, then full FRS 102; policies, comparatives, directors' sections; the size test | planned | Engineering; the named accountant | V2-M1, V2-M3, V2-M4 |
+| V2-M5 | Statements and notes: FRS 105 micro-entity, then FRS 102 Section 1A, then full FRS 102; policies, comparatives, directors' sections; the size test | split (DEC-063): **V2-M5a built** (2026-10-19; `v2-m5a-acceptance.md`); V2-M5b the size test and cash flow next | Engineering; the named accountant | V2-M1, V2-M3, V2-M4 |
 | V2-M6 | Year-end workflow (the specification's 14 steps), review checklist and flags, partner review, client approval, filing-ready package | planned | Engineering | V2-M5 |
 | V2-M7 | Screens behind `accounts.production` | planned | Engineering (front end) | each API milestone |
 
@@ -226,6 +226,46 @@ All are in OpenAPI.
   * CI green;
   * clean clone;
   * matrix rows V2-MOD-09 and V2-MOD-10 moved, with evidence.
+
+## 5d. V2-M5a - The accounts document (specification; DEC-063)
+Recorded before code. V2-M5 is split (DEC-063): V2-M5a is the document; V2-M5b is the size test and the cash flow statement.
+
+### 5d.1 Data (one migration, additive)
+| Object | Holds | Rules |
+|---|---|---|
+| `disclosure_rule` (V2-M1, new columns) | section (POLICIES, NOTES, DIRECTORS_REPORT, BALANCE_SHEET_STATEMENTS), sort, body template, omit when empty | Version content: written while the version is unverified, verified with it, frozen after; the template grammar is checked when written |
+| `accounts_fact` | Framework year, key, value, reason, who and when | Keys from the catalogue (`employees.average`, `employees.averagePrior`, `approval.date`, `approval.director`, `text.*`); values typed; written once; the latest row per key applies |
+
+### 5d.2 API (behind `accounts.production`)
+* Disclosure rules, under `accounts:rules-manage`, take `section`, `sort`, `body` and `omitWhenEmpty`.
+* `accounts-facts?yearStart` (GET, `ledger:read`): the current facts and their history.
+* `accounts-facts` (POST, `accounts:prepare`): set a fact, with a reason.
+* `accounts-document?yearStart` (GET, `ledger:read`): the header (company, year, standard, version, verified), the statements with comparatives (V2-M1), the sections in order with each item's text and table blocks, omitted items, problems, and `complete`.
+
+All are in OpenAPI.
+
+### 5d.3 Acceptance
+* **Golden (DEC-054):** `tests/golden/v2-m5a-document.json`, written by hand before the code and recomputed independently in a workbook.
+  * **The company:** a synthetic micro-entity across two years, with:
+    * a fixed-asset class, an addition in each year, a depreciation run each year and a disposal;
+    * a provision made;
+    * a director's loan account overdrawn during the year;
+    * a related party.
+  * **The version:** a verified synthetic version, shaped like FRS 105, holding policies, notes and balance-sheet statements. One small-company rule is not applied to the micro-entity.
+  * **Expected output:**
+    * the exact rendered text and tables of every item;
+    * the fixed-asset movement table reconciled to the balance sheet;
+    * a missing fact reported;
+    * an empty note omitted.
+* **Tests:**
+  * the template grammar (refused constructs and unknown keys);
+  * verified wording frozen;
+  * facts typed and versioned;
+  * permissions and tenancy;
+  * an architecture test (the document reads; it writes nothing but facts);
+  * CI green;
+  * clean clone;
+  * the matrix rows moved with evidence.
 
 ## 6. Legal and standards context
 See `v2-proposal.md` section 6. The rules entered into the framework are the firm's, from the current text of FRS 102 and FRS 105 and the Companies Act 2006 accounts regulations, verified by its named accountant; engineering builds the mechanism and tests it on synthetic data.

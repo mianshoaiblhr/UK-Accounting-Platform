@@ -2200,6 +2200,11 @@ model DisclosureRule {
   title          String
   appliesTo      String[] @default(["MICRO", "SMALL", "MEDIUM", "LARGE"]) @map("applies_to")
   requires       Json     @default("{}")
+  /// V2-M5a (DEC-063): where the wording sits in the document, its order, the template, and whether an empty item is left out.
+  section        String   @default("NOTES")
+  sort           Int      @default(0)
+  body           String?
+  omitWhenEmpty  Boolean  @default(false) @map("omit_when_empty")
   removed        Boolean  @default(false)
   updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
 
@@ -2553,4 +2558,20 @@ model RelatedParty {
 
   @@unique([organisationId, id], map: "rp_organisation_id_id_key")
   @@map("related_party")
+}
+
+/// V2-M5a (DEC-063): a fact the preparer enters for a framework year (employees, approval, company wording); one row per change, the latest applies.
+model AccountsFact {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  companyId      String   @map("company_id") @db.Uuid
+  frameworkId    String   @map("framework_id") @db.Uuid
+  key            String
+  value          String
+  reason         String
+  setByUserId    String   @map("set_by_user_id") @db.Uuid
+  setAt          DateTime @default(now()) @map("set_at") @db.Timestamptz(3)
+
+  @@index([organisationId, frameworkId, key, setAt], map: "af_framework_idx")
+  @@map("accounts_fact")
 }

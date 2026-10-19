@@ -96,10 +96,17 @@ export const updateValidationRuleSchema = z.object({
 const factKey = z.string().regex(/^[a-z][a-zA-Z0-9_.]{0,79}$/, 'A fact key such as directors.advances or employees.average');
 /** What a note needs: lines of the version and named facts (V2-M5 renders the note; V2-M1 stores and shape-checks it). */
 export const disclosureRequiresSchema = z.object({ lines: z.array(lineKey).max(100).optional(), facts: z.array(factKey).max(100).optional() }).strict();
+/** V2-M5a (DEC-063): where the wording sits, its order, its template (accounts-document.ts grammar) and whether an empty item is left out. */
+const wording = {
+  section: z.enum(['POLICIES', 'NOTES', 'DIRECTORS_REPORT', 'BALANCE_SHEET_STATEMENTS']), sort: z.number().int().min(0).max(10000),
+  body: z.string().min(1).max(20000).nullable(), omitWhenEmpty: z.boolean(),
+};
 export const createDisclosureRuleSchema = z.object({
   key: lineKey, title: z.string().trim().min(3).max(300), appliesTo: sizes.default([...ENTITY_SIZES]), requires: disclosureRequiresSchema.default({}),
+  section: wording.section.default('NOTES'), sort: wording.sort.default(0), body: wording.body.optional(), omitWhenEmpty: wording.omitWhenEmpty.default(false),
 }).strict();
-export const updateDisclosureRuleSchema = z.object({ title: z.string().trim().min(3).max(300).optional(), appliesTo: sizes.optional(), requires: disclosureRequiresSchema.optional() })
+export const updateDisclosureRuleSchema = z.object({ title: z.string().trim().min(3).max(300).optional(), appliesTo: sizes.optional(), requires: disclosureRequiresSchema.optional(),
+  section: wording.section.optional(), sort: wording.sort.optional(), body: wording.body.optional(), omitWhenEmpty: wording.omitWhenEmpty.optional() })
   .strict().refine((v) => Object.keys(v).length > 0, 'Nothing to change');
 
 // ───── Per company ─────

@@ -267,6 +267,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-060 | How V2-M3b is built: the year-end closing journal (delegated, DEC-019; recorded before code) | One closing journal per financial year moves every income and expense balance of the year to retained earnings; while it is live nothing posts income or expense into the year (PostingService and database). Every P&L figure leaves closing journals out; the balance sheet's lines are the same before and after the close, and its trial-balance proof includes the closing journal. Refines DEC-059's "balance sheets include them" without changing DEC-059 |
 | DEC-061 | Golden outputs of V2-M2, V2-M3a and V2-M3b reviewed | On 2026-10-19 the product owner (Shoaib, the named accountant, DEC-056) answered "All verified" after receiving the V2-M3a and V2-M3b acceptance packages and golden workings (V2-M2's were delivered earlier). Recorded as the review of the synthetic golden figures of V2-M2, V2-M3a and V2-M3b. It verifies no standard version: that happens in the platform under DEC-052 |
 | DEC-062 | How V2-M4 is built: director and shareholder loan accounts, related parties (delegated, DEC-019; recorded before code) | Read-only registers over the ledger, no new journal source: a loan account per person on a dedicated non-control ledger account, its statement and review flags (thresholds are the firm's review settings, versioned, never legal values); a related-party register whose year report reads the counterparty's sales, purchase and cash journals and its year-end balances from the ledger |
+| DEC-063 | V2-M5 split; how V2-M5a is built: the accounts document (delegated, DEC-019; recorded before code) | V2-M5a renders the accounts document (statements, accounting policies, notes, directors' report and balance-sheet statements) from wording held as data in the standard version (verified like all its content) and from facts drawn from the ledger, the registers and a few facts the preparer enters. V2-M5b adds the size test (company-law thresholds as verified data) and the cash flow statement (full FRS 102) |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -573,4 +574,49 @@ These choices refine DEC-036. None of them is a tax rule; the VAT arithmetic is 
   * s.455 and s.464C tax computations (V4);
   * related-party transactions made only by manual journal, which are listed for the counterparty only if posted through its sub-ledger, cash or loan account;
   * share registers and shareholdings.
+
+### DEC-063 - V2-M5 split; how V2-M5a is built: the accounts document (delegated, DEC-019; recorded before code)
+* **Split:**
+  * V2-M5a renders the accounts document.
+  * V2-M5b adds two things:
+    * The size test. Its thresholds are company law, so they become verified data: a source, and a second person who is not the author.
+    * The cash flow statement for full FRS 102.
+  * Each half has its own acceptance package.
+* **Wording is version content.** The disclosure rules of a standard version (V2-M1) gain a section, an order, a body template and an "omit when empty" flag:
+  * The sections are POLICIES, NOTES, DIRECTORS_REPORT and BALANCE_SHEET_STATEMENTS.
+  * The wording is verified with the version (DEC-052) and frozen with it.
+  * A rule applies to the entity sizes it lists, against the size chosen for the year (V2-M1).
+  * Nothing is seeded: the firm writes the wording, and Shoaib verifies it.
+* **Templates:** a closed grammar, checked when written. There is no code, no HTML and no expressions; the output is text and tables, never markup. The placeholders are:
+  * `{{line:KEY}}` and `{{line:KEY:prior}}`: a statutory line of the version, this year and the comparative.
+  * `{{fact:KEY}}`: a scalar fact.
+  * `{{table:KEY}}`: a table fact, on its own paragraph.
+  * `{{company:name}}` and `{{company:number}}`.
+  * `{{year:start}}`, `{{year:end}}` and `{{year:priorEnd}}`.
+  * `{{standard:name}}` and `{{version:label}}`.
+  * `{{directors:names}}`: the directors serving at any time in the year, from the officers in V0 master data.
+* **Facts drawn from the platform:**
+  * `fixedAssets.movements` (table), read from the ledger by fixed-asset class:
+    * cost brought forward, additions, disposals and carried forward;
+    * depreciation brought forward, charge, eliminated on disposals, other movements and carried forward;
+    * net book value at both dates.
+  * `provisions.movements` (table), from the V2-M3a register: opening, made, used, released and closing.
+  * `directors.advances` (table), from the V2-M4 loan accounts of directors: opening, advanced, credited or repaid, closing, and the lowest balance.
+  * `relatedParties.transactions` (table), from the V2-M4 report.
+* **Facts the preparer enters:** one row per change for each framework year; the latest applies, and each row records who, when and why.
+  * `employees.average` and `employees.averagePrior` (whole numbers).
+  * `approval.date` (a date).
+  * `approval.director` (a director of the company; rendered as the name).
+  * `text.*`: free wording for the company, such as going concern, post-balance-sheet events, or the terms of advances to directors.
+* **Missing facts:** a missing fact renders as `[missing: key]` and is listed as a problem. A document with any problem, or from an unverified version, is not complete.
+* **Omit when empty:** a rule marked this way is left out when every table it uses has no rows and every line it uses is zero. The omission is listed.
+* **Numbers in the wording:** two decimals with thousands separators, and a minus sign for negatives. The document states its currency.
+* **Dates in the wording:** in full, for example 31 December 2026.
+* **Tables:** keep a fixed set of columns per fact. The fixed-asset note runs down the page by item and across by class, with a total column.
+* **Permissions:** the document needs `ledger:read`. Entering facts needs `accounts:prepare`. Rule wording needs `accounts:rules-manage`, and verification needs `accounts:rule-verify` (V2-M1). The routes sit behind `accounts.production`.
+* **Not in V2-M5a:**
+  * the size test and the cash flow statement (V2-M5b);
+  * filing-ready output, approval and locking (V2-M6);
+  * PDF or iXBRL rendering (V3);
+  * any real standard wording (never seeded; DEC-052).
 

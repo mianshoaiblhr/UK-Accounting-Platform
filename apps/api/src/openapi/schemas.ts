@@ -387,7 +387,8 @@ export const StatutoryLine = z.object({
 });
 export const StatutoryMapEntry = z.object({ id: uuid, sourceLine: z.string().describe('V1 reporting line'), accountSubtype: z.string().nullable(), targetKey: z.string() });
 export const ValidationRuleView = z.object({ id: uuid, key: z.string(), description: z.string(), severity: z.enum(['ERROR', 'WARNING']), appliesTo: sizes, expression: z.record(z.unknown()).describe('Closed grammar (v2-plan 3.3)') });
-export const DisclosureRuleView = z.object({ id: uuid, key: z.string(), title: z.string(), appliesTo: sizes, requires: z.object({ lines: z.array(z.string()).optional(), facts: z.array(z.string()).optional() }) });
+export const DisclosureRuleView = z.object({ id: uuid, key: z.string(), title: z.string(), appliesTo: sizes, requires: z.object({ lines: z.array(z.string()).optional(), facts: z.array(z.string()).optional() }),
+  section: z.enum(['POLICIES', 'NOTES', 'DIRECTORS_REPORT', 'BALANCE_SHEET_STATEMENTS']), sort: z.number().int(), body: z.string().nullable().describe('Wording in the template grammar (V2-M5a)'), omitWhenEmpty: z.boolean() });
 export const ReportingStandard = z.object({ id: uuid, code: z.string(), name: z.string(), createdByUserId: uuid, createdAt: ts,
   versions: z.array(z.object({ id: uuid, label: z.string(), effectiveFrom: day, effectiveTo: day.nullable(), status: versionStatus })) });
 export const StandardVersionDetail = StandardVersion.extend({
@@ -518,3 +519,17 @@ const rpFigure = z.object({ amount: amt, journals: z.array(z.object({ journalId:
 export const RelatedPartyReport = z.object({ companyId: uuid, from: day, to: day, notice: z.string(),
   items: z.array(RelatedParty.extend({ figures: z.object({ sales: rpFigure, purchases: rpFigure, cashPaid: rpFigure, cashReceived: rpFigure, owedBy: rpFigure, owedTo: rpFigure,
     loanAccounts: z.array(z.object({ id: uuid, accountId: uuid, closing: amt, lowest: amt, flags: z.array(loanFlag) })) }) })) });
+
+// ───────────── V2-M5a the accounts document (DEC-063) ─────────────
+const factRow = z.object({ id: uuid, key: z.string(), value: z.string(), reason: z.string(), setByUserId: uuid, setAt: ts });
+export const AccountsFacts = z.object({ yearStart: day, frameworkId: uuid, current: z.array(factRow), history: z.array(factRow) });
+const docBlock = z.union([z.object({ type: z.literal('text'), text: z.string() }), z.object({ type: z.literal('table'), key: z.string(), columns: z.array(z.string()), rows: z.array(z.array(z.string())) })]);
+export const AccountsDocument = z.object({
+  companyId: uuid, companyName: z.string(), companyNumber: z.string().nullable(), currency: z.string(),
+  year: z.object({ start: day, end: day, priorEnd: day, entitySize: z.enum(['MICRO', 'SMALL', 'MEDIUM', 'LARGE']), frameworkId: uuid }),
+  standard: StatutoryPreview.shape.standard, version: StatutoryPreview.shape.version, verified: z.boolean().describe('false: wording and statements from unverified rules (DEC-052)'),
+  statements: StatutoryPreview.shape.statements, reconciliation: StatutoryPreview.shape.reconciliation, validations: StatutoryPreview.shape.validations,
+  sections: z.array(z.object({ section: z.enum(['POLICIES', 'NOTES', 'DIRECTORS_REPORT', 'BALANCE_SHEET_STATEMENTS']), items: z.array(z.object({ key: z.string(), title: z.string(), blocks: z.array(docBlock), missing: z.array(z.string()) })) })),
+  omitted: z.array(z.object({ key: z.string(), title: z.string(), reason: z.enum(['NOT_APPLICABLE', 'EMPTY']) })),
+  problems: z.array(z.string()), complete: z.boolean().describe('Verified rules, every fact present, statements placed, balanced and passing their error rules'), notices: z.array(z.string()),
+});

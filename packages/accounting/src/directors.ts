@@ -199,6 +199,22 @@ export class DirectorService {
     return { companyId, from: q.from, to: q.to, items, flagged: items.filter((x) => x.flags.length > 0).length };
   }
 
+  /** Per director's loan account open in the range (V2-M5a note on advances and credits): opening, advanced, credited or repaid, closing, lowest. */
+  async advancesSummary(tx: Tx, companyId: string, q: { from: string; to: string }) {
+    const minor = await this.minor(tx, companyId);
+    const rows = await tx.directorLoanAccount.findMany({ where: { companyId, kind: { in: DIRECTOR_KINDS }, openedOn: { lte: toDate(q.to) }, OR: [{ closedOn: null }, { closedOn: { gte: toDate(q.from) } }] },
+      orderBy: [{ openedOn: 'asc' }, { createdAt: 'asc' }] });
+    const views = await this.loanView(tx, rows);
+    const out = [];
+    for (const [i, r] of rows.entries()) {
+      const s = await this.statement(tx, companyId, r, q.from, q.to);
+      const amounts = s.movements.map((m) => money(m.amount));
+      out.push({ loanAccountId: r.id, contactId: r.contactId, contactName: views[i]!.contactName, opening: s.opening, closing: s.closing, lowest: s.lowest,
+        advanced: fmt(amounts.filter((x) => x.isNegative()).reduce((t, x) => t.minus(x), ZERO), minor), credited: fmt(amounts.filter((x) => x.greaterThan(0)).reduce((t, x) => t.plus(x), ZERO), minor) });
+    }
+    return out;
+  }
+
   // ───── Related parties ─────
   async createRelatedParty(tx: Tx, a: Ctx & { contactId: string; relationship: (typeof RELATIONSHIPS)[number]; description: string; fromDate: string }) {
     await this.need(a.actor, a.companyId);
@@ -271,9 +287,12 @@ export class DirectorService {
     const views = await this.partyView(tx, parties);
     const loanAccounts = await tx.directorLoanAccount.findMany({ where: { companyId } });
     const loanAccountIds = new Set(loanAccounts.map((l) => l.accountId));
-    const cache = new Map<string, unknown>();
-    const figures = async (contactId: string) => {
-      if (cache.has(contactId)) return cache.get(contactId);
+    type Fig = { amount: string; journals: { journalId: string; journalNumber: number; journalDate: string; sourceType: string; amount: string }[] };
+    type Figures = { sales: Fig; purchases: Fig; cashPaid: Fig; cashReceived: Fig; owedBy: Fig; owedTo: Fig; loanAccounts: { id: string; accountId: string; closing: string; lowest: string; flags: string[] }[] };
+    const cache = new Map<string, Figures>();
+    const figures = async (contactId: string): Promise<Figures> => {
+      const hit = cache.get(contactId);
+      if (hit) return hit;
       const lines = await this.counterpartyLines(tx, companyId, contactId, q.to);
       const inRange = (d: Date) => isoDay(d) >= q.from;
       type J = { journalId: string; journalNumber: number; journalDate: string; sourceType: string; amount: Money };

@@ -1,4 +1,4 @@
-import { checkExpression, expressionLines, lineShapeErrors, type EntitySize } from '@uk/contracts';
+import { checkExpression, expressionLines, lineShapeErrors, parseTemplate, type DocumentSection, type EntitySize } from '@uk/contracts';
 import { conflict, forbidden, notFound, unprocessable, uuidv7 } from '@uk/core';
 import { Prisma, type Tx } from '@uk/db';
 import { auditRow } from '@uk/platform';
@@ -30,7 +30,8 @@ export const standardVersionView = (v: VersionRow) => ({
 export const statutoryLineView = (l: LineRow) => ({ id: l.id, key: l.key, statement: l.statement, parentKey: l.parentKey, sort: l.sort, name: l.name, kind: l.kind, naturalSide: l.naturalSide, formula: (l.formula as Term[] | null) ?? null });
 const mapView = (m: MapRow) => ({ id: m.id, sourceLine: m.sourceLine, accountSubtype: m.accountSubtype, targetKey: m.targetKey });
 const ruleView = (r: RuleRow) => ({ id: r.id, key: r.key, description: r.description, severity: r.severity, appliesTo: r.appliesTo, expression: r.expression as Record<string, unknown> });
-const noteView = (n: NoteRow) => ({ id: n.id, key: n.key, title: n.title, appliesTo: n.appliesTo, requires: n.requires as { lines?: string[]; facts?: string[] } });
+const noteView = (n: NoteRow) => ({ id: n.id, key: n.key, title: n.title, appliesTo: n.appliesTo, requires: n.requires as { lines?: string[]; facts?: string[] },
+  section: n.section, sort: n.sort, body: n.body, omitWhenEmpty: n.omitWhenEmpty });
 
 /** Lines a total depends on, transitively; returns the first cycle found as a list of keys, or null. */
 function findCycle(formulas: Map<string, Term[]>): string[] | null {
@@ -74,6 +75,12 @@ export function versionProblems(c: { lines: LineRow[]; map: MapRow[]; rules: Rul
   const keys = new Set(byKey.keys());
   for (const r of c.rules) for (const e of checkExpression(r.expression, keys)) p.push(`Rule ${r.key}: ${e}`);
   for (const n of c.notes) for (const k of (n.requires as { lines?: string[] }).lines ?? []) if (!keys.has(k)) p.push(`Disclosure ${n.key}: ${k} is not a line of this version`);
+  // V2-M5a: the wording's own references hold too (a line removed after the wording was written)
+  for (const n of c.notes) if (n.body) {
+    const t = parseTemplate(n.body);
+    for (const e of t.errors) p.push(`Disclosure ${n.key}: ${e}`);
+    for (const k of t.lines) if (!keys.has(k)) p.push(`Disclosure ${n.key}: the wording refers to ${k}, not a line of this version`);
+  }
   return p;
 }
 
@@ -152,7 +159,8 @@ export class StandardsService {
     if (c.lines.length) await tx.statutoryLine.createMany({ data: c.lines.map((l) => ({ organisationId, versionId: toId, key: l.key, statement: l.statement, parentKey: l.parentKey, sort: l.sort, name: l.name, kind: l.kind, naturalSide: l.naturalSide, formula: l.formula ?? Prisma.DbNull })) });
     if (c.map.length) await tx.statutoryMapEntry.createMany({ data: c.map.map((m) => ({ organisationId, versionId: toId, sourceLine: m.sourceLine, accountSubtype: m.accountSubtype, targetKey: m.targetKey })) });
     if (c.rules.length) await tx.validationRule.createMany({ data: c.rules.map((r) => ({ organisationId, versionId: toId, key: r.key, description: r.description, severity: r.severity, appliesTo: r.appliesTo, expression: r.expression as Prisma.InputJsonValue })) });
-    if (c.notes.length) await tx.disclosureRule.createMany({ data: c.notes.map((n) => ({ organisationId, versionId: toId, key: n.key, title: n.title, appliesTo: n.appliesTo, requires: n.requires as Prisma.InputJsonValue })) });
+    if (c.notes.length) await tx.disclosureRule.createMany({ data: c.notes.map((n) => ({ organisationId, versionId: toId, key: n.key, title: n.title, appliesTo: n.appliesTo, requires: n.requires as Prisma.InputJsonValue,
+      section: n.section, sort: n.sort, body: n.body, omitWhenEmpty: n.omitWhenEmpty })) });
   }
   async createVersion(tx: Tx, a: Ctx & { standardId: string; label: string; effectiveFrom: string; effectiveTo?: string; source: Source; notes?: string; copyFromVersionId?: string }) {
     await this.need(a.actor, 'accounts:rules-manage', a.companyId);
@@ -374,32 +382,42 @@ export class StandardsService {
     return { id: a.id, removed: true };
   }
 
-  private async checkNote(tx: Tx, versionId: string, requires: { lines?: string[] }) {
+  private async checkNote(tx: Tx, versionId: string, requires: { lines?: string[] }, body?: string | null) {
     const keys = await this.lineKeys(tx, versionId);
     const missing = (requires.lines ?? []).filter((k) => !keys.has(k));
     if (missing.length) throw unprocessable(`The disclosure refers to lines not in this version: ${missing.join(', ')}`, 'unknown_line', { lines: missing });
+    // V2-M5a (DEC-063): the wording follows the template grammar and names only lines of this version
+    if (body) {
+      const t = parseTemplate(body);
+      const problems = [...t.errors, ...t.lines.filter((k) => !keys.has(k)).map((k) => `{{line:${k}}}: not a line of this version`)];
+      if (problems.length) throw unprocessable('The wording does not follow the template grammar', 'invalid_template', { problems });
+    }
   }
   private async note(tx: Tx, versionId: string, id: string) {
     const n = await tx.disclosureRule.findFirst({ where: { id, versionId, removed: false } });
     if (!n) throw notFound('Disclosure rule not found', 'disclosure_not_found');
     return n;
   }
-  async addDisclosureRule(tx: Tx, a: Ctx & { versionId: string; key: string; title: string; appliesTo: EntitySize[]; requires: { lines?: string[]; facts?: string[] } }) {
+  async addDisclosureRule(tx: Tx, a: Ctx & { versionId: string; key: string; title: string; appliesTo: EntitySize[]; requires: { lines?: string[]; facts?: string[] };
+    section?: DocumentSection; sort?: number; body?: string | null; omitWhenEmpty?: boolean }) {
     await this.need(a.actor, 'accounts:rules-manage', a.companyId);
     await this.editable(tx, a.versionId);
-    await this.checkNote(tx, a.versionId, a.requires);
+    await this.checkNote(tx, a.versionId, a.requires, a.body);
     let n: NoteRow;
-    try { n = await tx.disclosureRule.create({ data: { organisationId: a.organisationId, versionId: a.versionId, key: a.key, title: a.title, appliesTo: a.appliesTo, requires: a.requires as Prisma.InputJsonValue } }); }
+    try { n = await tx.disclosureRule.create({ data: { organisationId: a.organisationId, versionId: a.versionId, key: a.key, title: a.title, appliesTo: a.appliesTo, requires: a.requires as Prisma.InputJsonValue,
+      section: a.section ?? 'NOTES', sort: a.sort ?? 0, body: a.body ?? null, omitWhenEmpty: a.omitWhenEmpty ?? false } }); }
     catch (e) { this.dup(e, `Disclosure ${a.key}`); }
     await this.contentAudit(tx, a, 'accounts.disclosure_rule_added', 'disclosure_rule', n.id, undefined, noteView(n));
     return noteView(n);
   }
-  async updateDisclosureRule(tx: Tx, a: Ctx & { versionId: string; id: string; title?: string; appliesTo?: EntitySize[]; requires?: { lines?: string[]; facts?: string[] } }) {
+  async updateDisclosureRule(tx: Tx, a: Ctx & { versionId: string; id: string; title?: string; appliesTo?: EntitySize[]; requires?: { lines?: string[]; facts?: string[] };
+    section?: DocumentSection; sort?: number; body?: string | null; omitWhenEmpty?: boolean }) {
     await this.need(a.actor, 'accounts:rules-manage', a.companyId);
     await this.editable(tx, a.versionId);
     const before = await this.note(tx, a.versionId, a.id);
-    if (a.requires) await this.checkNote(tx, a.versionId, a.requires);
-    const after = await tx.disclosureRule.update({ where: { id: a.id }, data: { ...(a.title !== undefined ? { title: a.title } : {}), ...(a.appliesTo ? { appliesTo: a.appliesTo } : {}), ...(a.requires ? { requires: a.requires as Prisma.InputJsonValue } : {}) } });
+    if (a.requires || a.body) await this.checkNote(tx, a.versionId, a.requires ?? {}, a.body);
+    const after = await tx.disclosureRule.update({ where: { id: a.id }, data: { ...(a.title !== undefined ? { title: a.title } : {}), ...(a.appliesTo ? { appliesTo: a.appliesTo } : {}), ...(a.requires ? { requires: a.requires as Prisma.InputJsonValue } : {}),
+      ...(a.section ? { section: a.section } : {}), ...(a.sort !== undefined ? { sort: a.sort } : {}), ...(a.body !== undefined ? { body: a.body } : {}), ...(a.omitWhenEmpty !== undefined ? { omitWhenEmpty: a.omitWhenEmpty } : {}) } });
     await this.contentAudit(tx, a, 'accounts.disclosure_rule_changed', 'disclosure_rule', a.id, noteView(before), noteView(after));
     return noteView(after);
   }

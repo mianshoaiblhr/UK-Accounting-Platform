@@ -25031,6 +25031,221 @@
         }
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/accounts-document": {
+      "get": {
+        "operationId": "AccountsDocument_document",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "yearStart",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountsDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The accounts document of a framework year: statements with comparatives, then policies, notes, directors' report and balance-sheet statements rendered from the version's wording and the facts, with what was omitted, the problems and whether it is complete",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/accounts-facts": {
+      "get": {
+        "operationId": "AccountsDocument_facts",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "yearStart",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Facts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountsFacts"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The preparer's facts for a framework year: current values and history",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "AccountsDocument_setFact",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountsFacts"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:prepare"
+        ],
+        "summary": "Set a fact for a framework year (employees, approval date and director, company wording), with a reason; the history is kept",
+        "description": "**Requires permission:** `accounts:prepare`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAccountsFactRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -32991,6 +33206,26 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                "section": {
+                  "type": "string",
+                  "enum": [
+                    "POLICIES",
+                    "NOTES",
+                    "DIRECTORS_REPORT",
+                    "BALANCE_SHEET_STATEMENTS"
+                  ]
+                },
+                "sort": {
+                  "type": "integer"
+                },
+                "body": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Wording in the template grammar (V2-M5a)"
+                },
+                "omitWhenEmpty": {
+                  "type": "boolean"
                 }
               },
               "required": [
@@ -32998,7 +33233,11 @@
                 "key",
                 "title",
                 "appliesTo",
-                "requires"
+                "requires",
+                "section",
+                "sort",
+                "body",
+                "omitWhenEmpty"
               ],
               "additionalProperties": false
             }
@@ -33231,6 +33470,26 @@
               }
             },
             "additionalProperties": false
+          },
+          "section": {
+            "type": "string",
+            "enum": [
+              "POLICIES",
+              "NOTES",
+              "DIRECTORS_REPORT",
+              "BALANCE_SHEET_STATEMENTS"
+            ]
+          },
+          "sort": {
+            "type": "integer"
+          },
+          "body": {
+            "type": "string",
+            "nullable": true,
+            "description": "Wording in the template grammar (V2-M5a)"
+          },
+          "omitWhenEmpty": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -33238,7 +33497,11 @@
           "key",
           "title",
           "appliesTo",
-          "requires"
+          "requires",
+          "section",
+          "sort",
+          "body",
+          "omitWhenEmpty"
         ],
         "additionalProperties": false
       },
@@ -38622,6 +38885,823 @@
           "to",
           "notice",
           "items"
+        ],
+        "additionalProperties": false
+      },
+      "AccountsFacts": {
+        "type": "object",
+        "properties": {
+          "yearStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "frameworkId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "current": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "setByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "setAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "key",
+                "value",
+                "reason",
+                "setByUserId",
+                "setAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "setByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "setAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "key",
+                "value",
+                "reason",
+                "setByUserId",
+                "setAt"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "yearStart",
+          "frameworkId",
+          "current",
+          "history"
+        ],
+        "additionalProperties": false
+      },
+      "AccountsDocument": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyName": {
+            "type": "string"
+          },
+          "companyNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string"
+          },
+          "year": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "end": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "priorEnd": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "entitySize": {
+                "type": "string",
+                "enum": [
+                  "MICRO",
+                  "SMALL",
+                  "MEDIUM",
+                  "LARGE"
+                ]
+              },
+              "frameworkId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "start",
+              "end",
+              "priorEnd",
+              "entitySize",
+              "frameworkId"
+            ],
+            "additionalProperties": false
+          },
+          "standard": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "code": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "code",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "version": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "label": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "UNVERIFIED",
+                  "VERIFIED",
+                  "SUPERSEDED"
+                ],
+                "description": "UNVERIFIED content gives previews only; VERIFIED is immutable; SUPERSEDED was replaced by a new version"
+              },
+              "effectiveFrom": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "effectiveTo": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "nullable": true
+              },
+              "source": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string"
+                  },
+                  "provision": {
+                    "type": "string"
+                  },
+                  "retrievedOn": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  }
+                },
+                "required": [
+                  "url",
+                  "provision",
+                  "retrievedOn"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "status",
+              "effectiveFrom",
+              "effectiveTo",
+              "source"
+            ],
+            "additionalProperties": false
+          },
+          "verified": {
+            "type": "boolean",
+            "description": "false: wording and statements from unverified rules (DEC-052)"
+          },
+          "statements": {
+            "type": "object",
+            "properties": {
+              "profitAndLoss": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "statement": {
+                      "type": "string",
+                      "enum": [
+                        "PL",
+                        "BS"
+                      ]
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "ACCOUNTS",
+                        "TOTAL",
+                        "RETAINED_PROFIT"
+                      ]
+                    },
+                    "parentKey": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "depth": {
+                      "type": "integer"
+                    },
+                    "amount": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Exact decimal; null when a total cannot be computed (see problems)"
+                    },
+                    "comparative": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Exact decimal; null when a total cannot be computed (see problems)"
+                    },
+                    "accounts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "accountId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "amount": {
+                            "type": "string"
+                          },
+                          "drilldown": {
+                            "type": "object",
+                            "properties": {
+                              "accountId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "from": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                "nullable": true
+                              },
+                              "to": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                              }
+                            },
+                            "required": [
+                              "accountId",
+                              "from",
+                              "to"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "accountId",
+                          "code",
+                          "name",
+                          "amount",
+                          "drilldown"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "key",
+                    "name",
+                    "statement",
+                    "kind",
+                    "parentKey",
+                    "depth",
+                    "amount"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "balanceSheet": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "statement": {
+                      "type": "string",
+                      "enum": [
+                        "PL",
+                        "BS"
+                      ]
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "ACCOUNTS",
+                        "TOTAL",
+                        "RETAINED_PROFIT"
+                      ]
+                    },
+                    "parentKey": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "depth": {
+                      "type": "integer"
+                    },
+                    "amount": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Exact decimal; null when a total cannot be computed (see problems)"
+                    },
+                    "comparative": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Exact decimal; null when a total cannot be computed (see problems)"
+                    },
+                    "accounts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "accountId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "amount": {
+                            "type": "string"
+                          },
+                          "drilldown": {
+                            "type": "object",
+                            "properties": {
+                              "accountId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "from": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                "nullable": true
+                              },
+                              "to": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                              }
+                            },
+                            "required": [
+                              "accountId",
+                              "from",
+                              "to"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "accountId",
+                          "code",
+                          "name",
+                          "amount",
+                          "drilldown"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "key",
+                    "name",
+                    "statement",
+                    "kind",
+                    "parentKey",
+                    "depth",
+                    "amount"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "profitAndLoss",
+              "balanceSheet"
+            ],
+            "additionalProperties": false
+          },
+          "reconciliation": {
+            "type": "object",
+            "properties": {
+              "profitAndLoss": {
+                "type": "object",
+                "properties": {
+                  "profitFromLedger": {
+                    "type": "string"
+                  },
+                  "profitFromLines": {
+                    "type": "string"
+                  },
+                  "difference": {
+                    "type": "string"
+                  },
+                  "reconciled": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "profitFromLedger",
+                  "profitFromLines",
+                  "difference",
+                  "reconciled"
+                ],
+                "additionalProperties": false
+              },
+              "balanceSheet": {
+                "type": "object",
+                "properties": {
+                  "difference": {
+                    "type": "string"
+                  },
+                  "balanced": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "difference",
+                  "balanced"
+                ],
+                "additionalProperties": false
+              },
+              "trialBalance": {
+                "type": "object",
+                "properties": {
+                  "debit": {
+                    "type": "string"
+                  },
+                  "credit": {
+                    "type": "string"
+                  },
+                  "balanced": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "debit",
+                  "credit",
+                  "balanced"
+                ],
+                "additionalProperties": false
+              },
+              "comparative": {
+                "type": "object",
+                "properties": {
+                  "profitAndLoss": {
+                    "type": "object",
+                    "properties": {
+                      "profitFromLedger": {
+                        "type": "string"
+                      },
+                      "profitFromLines": {
+                        "type": "string"
+                      },
+                      "difference": {
+                        "type": "string"
+                      },
+                      "reconciled": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "profitFromLedger",
+                      "profitFromLines",
+                      "difference",
+                      "reconciled"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "balanceSheet": {
+                    "type": "object",
+                    "properties": {
+                      "difference": {
+                        "type": "string"
+                      },
+                      "balanced": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "difference",
+                      "balanced"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "trialBalance": {
+                    "type": "object",
+                    "properties": {
+                      "debit": {
+                        "type": "string"
+                      },
+                      "credit": {
+                        "type": "string"
+                      },
+                      "balanced": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "debit",
+                      "credit",
+                      "balanced"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "profitAndLoss",
+                  "balanceSheet",
+                  "trialBalance"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "profitAndLoss",
+              "balanceSheet",
+              "trialBalance"
+            ],
+            "additionalProperties": false
+          },
+          "validations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "ERROR",
+                    "WARNING"
+                  ]
+                },
+                "passed": {
+                  "type": "boolean"
+                },
+                "error": {
+                  "type": "string",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "key",
+                "description",
+                "severity",
+                "passed",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "section": {
+                  "type": "string",
+                  "enum": [
+                    "POLICIES",
+                    "NOTES",
+                    "DIRECTORS_REPORT",
+                    "BALANCE_SHEET_STATEMENTS"
+                  ]
+                },
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "key": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "blocks": {
+                        "type": "array",
+                        "items": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "text"
+                                  ]
+                                },
+                                "text": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "text"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "table"
+                                  ]
+                                },
+                                "key": {
+                                  "type": "string"
+                                },
+                                "columns": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "rows": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "key",
+                                "columns",
+                                "rows"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
+                        }
+                      },
+                      "missing": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "key",
+                      "title",
+                      "blocks",
+                      "missing"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "section",
+                "items"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "omitted": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "NOT_APPLICABLE",
+                    "EMPTY"
+                  ]
+                }
+              },
+              "required": [
+                "key",
+                "title",
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "complete": {
+            "type": "boolean",
+            "description": "Verified rules, every fact present, statements placed, balanced and passing their error rules"
+          },
+          "notices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "companyId",
+          "companyName",
+          "companyNumber",
+          "currency",
+          "year",
+          "standard",
+          "version",
+          "verified",
+          "statements",
+          "reconciliation",
+          "validations",
+          "sections",
+          "omitted",
+          "problems",
+          "complete",
+          "notices"
         ],
         "additionalProperties": false
       },
@@ -52722,6 +53802,32 @@
             },
             "additionalProperties": false,
             "default": {}
+          },
+          "section": {
+            "type": "string",
+            "enum": [
+              "POLICIES",
+              "NOTES",
+              "DIRECTORS_REPORT",
+              "BALANCE_SHEET_STATEMENTS"
+            ],
+            "default": "NOTES"
+          },
+          "sort": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000,
+            "default": 0
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000,
+            "nullable": true
+          },
+          "omitWhenEmpty": {
+            "type": "boolean",
+            "default": false
           }
         },
         "required": [
@@ -52773,6 +53879,29 @@
               }
             },
             "additionalProperties": false
+          },
+          "section": {
+            "type": "string",
+            "enum": [
+              "POLICIES",
+              "NOTES",
+              "DIRECTORS_REPORT",
+              "BALANCE_SHEET_STATEMENTS"
+            ]
+          },
+          "sort": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000,
+            "nullable": true
+          },
+          "omitWhenEmpty": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -53903,6 +55032,35 @@
         },
         "required": [
           "toDate",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "SetAccountsFactRequest": {
+        "type": "object",
+        "properties": {
+          "yearStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "yearStart",
+          "key",
+          "value",
           "reason"
         ],
         "additionalProperties": false

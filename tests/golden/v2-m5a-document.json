@@ -1,0 +1,136 @@
+{
+  "id": "V2-M5A-GOLDEN-01",
+  "purpose": "DEC-054 golden for V2-M5a (DEC-063): the accounts document of a synthetic micro-entity for 2026 with 2025 alongside: statements, accounting policies, notes and balance-sheet statements rendered from a verified synthetic version's wording, with facts from the ledger (fixed-asset movements), the registers (provisions, a director's advances, related parties) and the preparer. Every figure and every rendered sentence written by hand before the code.",
+  "disclaimer": "SYNTHETIC. The wording is test wording, not the text of FRS 105, FRS 102 or the Companies Act; nothing here is a verified standard. The company, people and amounts are test choices.",
+  "periods": [["2025-01-01", "2025-12-31"], ["2026-01-01", "2026-12-31"]],
+  "accounts": [
+    { "code": "6950", "name": "Profit or loss on disposal of fixed assets", "type": "EXPENSE", "subtype": "OTHER_EXPENSE", "reportingMapping": "PL.OTHER_EXPENSES" },
+    { "code": "2160", "name": "Provisions", "type": "LIABILITY", "subtype": "CURRENT_LIABILITY_OTHER", "reportingMapping": "BS.CREDITORS_WITHIN_ONE_YEAR" }
+  ],
+  "company": { "name": "Golden Accounts Ltd", "number": "09999999", "director": "Morgan Director", "appointedOn": "2020-01-01" },
+  "seed": [
+    { "ref": "SHARES", "date": "2025-01-01", "direction": "RECEIPT", "lines": [["3000", "3000.00"]], "description": "Shares issued" },
+    { "ref": "LAPTOPS", "date": "2025-01-01", "direction": "PAYMENT", "lines": [["0030", "3600.00"]], "description": "Laptops" },
+    { "ref": "SALES25", "date": "2025-03-31", "direction": "RECEIPT", "lines": [["4000", "12000.00"]], "description": "Sales 2025" },
+    { "ref": "RENT25", "date": "2025-06-30", "direction": "PAYMENT", "lines": [["6100", "4000.00"]], "description": "Rent 2025" },
+    { "ref": "ADVANCE", "date": "2026-02-15", "direction": "PAYMENT", "lines": [["2230", "1500.00"]], "description": "Advance to Morgan Director" },
+    { "ref": "SALES26", "date": "2026-03-31", "direction": "RECEIPT", "lines": [["4000", "15000.00"]], "description": "Sales 2026" },
+    { "ref": "PRINTER", "date": "2026-04-01", "direction": "PAYMENT", "lines": [["0030", "1800.00"]], "description": "Printer" },
+    { "ref": "REPAID", "date": "2026-08-31", "direction": "RECEIPT", "lines": [["2230", "1500.00"]], "description": "Advance repaid by Morgan Director" },
+    { "ref": "RENT26", "date": "2026-09-30", "direction": "PAYMENT", "lines": [["6100", "5000.00"]], "description": "Rent 2026" }
+  ],
+  "journals": [
+    { "ref": "EXPENSES", "date": "2026-11-30", "lines": [["6400", "200.00", "0.00"], ["2230", "0.00", "200.00"]], "description": "Travel paid personally by Morgan Director" }
+  ],
+  "fixedAssets": {
+    "class": { "code": "OFFICE", "name": "Office equipment", "costAccount": "0030", "depreciationAccount": "0031", "expenseAccount": "6900", "disposalAccount": "6950", "method": "STRAIGHT_LINE", "lifeMonths": 36, "residual": "0.00", "convention": "MONTHLY" },
+    "assets": [
+      { "key": "A1", "description": "Laptops", "acquiredOn": "2025-01-01", "cost": "3600.00", "journalRef": "LAPTOPS" },
+      { "key": "A2", "description": "Printer", "acquiredOn": "2026-04-01", "cost": "1800.00", "journalRef": "PRINTER" }
+    ],
+    "steps": [
+      { "do": "run", "asAt": "2025-12-31", "total": "1200.00", "why": "A1: 3,600 / 36 x 12 months = 1,200.00" },
+      { "do": "dispose", "asset": "A1", "on": "2026-06-30", "proceeds": "2000.00", "proceedsAccount": "1110", "catchUp": "500.00", "why": "Monthly convention: no charge in the month of disposal; January to May 2026 = 5 x 100 = 500.00; accumulated 1,700.00; carrying 1,900.00; gain 100.00" },
+      { "do": "run", "asAt": "2026-12-31", "total": "450.00", "why": "A2: full month in the month of acquisition; April to December 2026 = 9 x 50 = 450.00" }
+    ]
+  },
+  "provision": { "name": "Warranty claims", "account": "2160", "expenseAccount": "6700", "basis": "Expected warranty claims on 2026 sales (synthetic)", "made": { "date": "2026-12-31", "amount": "800.00", "reason": "Year-end estimate (synthetic)" } },
+  "loanAccount": { "account": "2230", "openedOn": "2025-01-01" },
+  "relatedParty": { "relationship": "DIRECTOR", "description": "Director", "fromDate": "2020-01-01" },
+  "standard": { "code": "SYNTH-DOC", "name": "Synthetic micro-entity accounts (test only)" },
+  "version": { "label": "Synthetic document v1", "effectiveFrom": "2025-01-01", "source": { "url": "https://example.test/synthetic-document", "provision": "Synthetic test wording, not a real standard", "retrievedOn": "2026-10-19" } },
+  "linesFrom": "tests/golden/v2-m1-micro-synthetic.json",
+  "rules": [
+    { "key": "POL.BASIS", "section": "POLICIES", "sort": 10, "title": "Basis of preparation", "appliesTo": ["MICRO", "SMALL"],
+      "body": "These financial statements have been prepared under {{standard:name}} ({{version:label}}) for the year ended {{year:end}}." },
+    { "key": "POL.FA", "section": "POLICIES", "sort": 20, "title": "Tangible fixed assets", "appliesTo": ["MICRO", "SMALL"],
+      "body": "Tangible fixed assets are stated at cost less accumulated depreciation. Depreciation is charged over the estimated useful lives of the assets." },
+    { "key": "NOTE.EMPLOYEES", "section": "NOTES", "sort": 10, "title": "Employees", "appliesTo": ["MICRO", "SMALL"],
+      "body": "The average number of persons employed by the company during the year was {{fact:employees.average}} ({{year:priorEnd}}: {{fact:employees.averagePrior}})." },
+    { "key": "NOTE.FA", "section": "NOTES", "sort": 20, "title": "Tangible fixed assets", "appliesTo": ["MICRO", "SMALL"],
+      "body": "Net book value at {{year:end}}: {{line:B.FA}} ({{year:priorEnd}}: {{line:B.FA:prior}}).\n{{table:fixedAssets.movements}}" },
+    { "key": "NOTE.PROV", "section": "NOTES", "sort": 30, "title": "Provisions", "appliesTo": ["MICRO", "SMALL"], "omitWhenEmpty": true,
+      "body": "{{table:provisions.movements}}" },
+    { "key": "NOTE.ADV", "section": "NOTES", "sort": 40, "title": "Advances and credits to directors", "appliesTo": ["MICRO", "SMALL"],
+      "body": "{{table:directors.advances}}\n{{fact:text.directorAdvanceTerms}}" },
+    { "key": "NOTE.GC", "section": "NOTES", "sort": 50, "title": "Going concern", "appliesTo": ["MICRO", "SMALL"],
+      "body": "{{fact:text.goingConcern}}" },
+    { "key": "NOTE.LONG", "section": "NOTES", "sort": 60, "title": "Creditors: amounts falling due after more than one year", "appliesTo": ["MICRO", "SMALL"], "omitWhenEmpty": true,
+      "body": "Amounts falling due after more than one year: {{line:B.CA1}}." },
+    { "key": "NOTE.RP", "section": "NOTES", "sort": 70, "title": "Related parties", "appliesTo": ["MICRO", "SMALL"],
+      "body": "{{table:relatedParties.transactions}}" },
+    { "key": "DR.DIRECTORS", "section": "DIRECTORS_REPORT", "sort": 10, "title": "Directors", "appliesTo": ["SMALL"],
+      "body": "The directors who served during the year were {{directors:names}}." },
+    { "key": "BSS.MICRO", "section": "BALANCE_SHEET_STATEMENTS", "sort": 10, "title": "Statements on the balance sheet", "appliesTo": ["MICRO"],
+      "body": "{{company:name}} ({{company:number}}): these accounts have been prepared in accordance with the micro-entity provisions (synthetic wording).\nApproved by the board on {{fact:approval.date}} and signed on its behalf by {{fact:approval.director}}." }
+  ],
+  "refusedTemplates": [
+    { "body": "Turnover was {{line:NOPE}}.", "why": "not a line of this version" },
+    { "body": "{{fact:employees.total}}", "why": "not a known fact" },
+    { "body": "See {{table:fixedAssets.movements}} below.", "why": "a table stands on its own paragraph" },
+    { "body": "{{line:B.FA:next}}", "why": "unknown construct" },
+    { "body": "<b>{{year:end}}</b> {{#if x}}", "why": "unknown construct" }
+  ],
+  "facts": [
+    { "key": "employees.average", "value": "3" },
+    { "key": "employees.averagePrior", "value": "2" },
+    { "key": "approval.date", "value": "2027-03-31" },
+    { "key": "approval.director", "value": "@director" },
+    { "key": "text.directorAdvanceTerms", "value": "The advance was interest free and repayable on demand." }
+  ],
+  "lateFact": { "key": "text.goingConcern", "value": "The directors consider that the company is a going concern." },
+  "refusedFacts": [
+    { "key": "employees.average", "value": "2.5", "why": "a whole number" },
+    { "key": "approval.date", "value": "31/03/2027", "why": "a date" },
+    { "key": "approval.director", "value": "@outsider", "why": "a director of the company" },
+    { "key": "turnover", "value": "1", "why": "not in the catalogue" }
+  ],
+  "expected": {
+    "yearStart": "2026-01-01",
+    "statements": {
+      "P.T": ["15000.00", "12000.00"], "P.DEP": ["950.00", "1200.00"], "P.OC": ["5900.00", "4000.00"], "P.PROFIT": ["8150.00", "6800.00"],
+      "B.FA": ["1350.00", "2400.00"], "B.CA": ["17600.00", "7400.00"], "B.CW": ["1000.00", "0.00"], "B.NA": ["17950.00", "9800.00"], "B.SC": ["3000.00", "3000.00"], "B.PLR": ["14950.00", "6800.00"], "B.CR": ["17950.00", "9800.00"]
+    },
+    "workings": {
+      "P.OC 2026": "rent 5,000 + travel 200 + warranty provision 800 + disposal account (1,900 - 2,000) = 5,900",
+      "P.DEP 2026": "catch-up 500 + run 450 = 950",
+      "B.CA 2026": "bank (3,000 + 12,000 - 3,600 - 4,000) + (15,000 - 5,000 - 1,800 - 1,500 + 1,500) = 15,600; other debtors (disposal proceeds) 2,000",
+      "B.CW 2026": "director's loan account 200 (credit) + provision 800",
+      "B.PLR 2026": "6,800 + 8,150 = 14,950"
+    },
+    "sections": [
+      { "section": "POLICIES", "items": [
+        { "key": "POL.BASIS", "title": "Basis of preparation", "blocks": [["text", "These financial statements have been prepared under Synthetic micro-entity accounts (test only) (Synthetic document v1) for the year ended 31 December 2026."]] },
+        { "key": "POL.FA", "title": "Tangible fixed assets", "blocks": [["text", "Tangible fixed assets are stated at cost less accumulated depreciation. Depreciation is charged over the estimated useful lives of the assets."]] }
+      ] },
+      { "section": "NOTES", "items": [
+        { "key": "NOTE.EMPLOYEES", "title": "Employees", "blocks": [["text", "The average number of persons employed by the company during the year was 3 (31 December 2025: 2)."]] },
+        { "key": "NOTE.FA", "title": "Tangible fixed assets", "blocks": [
+          ["text", "Net book value at 31 December 2026: 1,350.00 (31 December 2025: 2,400.00)."],
+          ["table", "fixedAssets.movements", ["", "Office equipment", "Total"], [
+            ["Cost at 1 January 2026", "3,600.00", "3,600.00"], ["Additions", "1,800.00", "1,800.00"], ["Disposals", "-3,600.00", "-3,600.00"], ["Cost at 31 December 2026", "1,800.00", "1,800.00"],
+            ["Depreciation at 1 January 2026", "1,200.00", "1,200.00"], ["Charge for the year", "950.00", "950.00"], ["Eliminated on disposals", "-1,700.00", "-1,700.00"], ["Other movements", "0.00", "0.00"],
+            ["Depreciation at 31 December 2026", "450.00", "450.00"], ["Net book value at 31 December 2026", "1,350.00", "1,350.00"], ["Net book value at 31 December 2025", "2,400.00", "2,400.00"]]]] },
+        { "key": "NOTE.PROV", "title": "Provisions", "blocks": [
+          ["table", "provisions.movements", ["Provision", "At 1 January 2026", "Made", "Used", "Released", "At 31 December 2026"], [["Warranty claims", "0.00", "800.00", "0.00", "0.00", "800.00"]]]] },
+        { "key": "NOTE.ADV", "title": "Advances and credits to directors", "blocks": [
+          ["table", "directors.advances", ["Director", "At 1 January 2026", "Advanced", "Credited or repaid", "At 31 December 2026", "Most overdrawn"], [["Morgan Director", "0.00", "1,500.00", "1,700.00", "200.00", "-1,500.00"]]],
+          ["text", "The advance was interest free and repayable on demand."]] },
+        { "key": "NOTE.GC", "title": "Going concern", "blocks": [["text", "[missing: text.goingConcern]"]], "missing": ["text.goingConcern"],
+          "afterLateFact": [["text", "The directors consider that the company is a going concern."]] },
+        { "key": "NOTE.RP", "title": "Related parties", "blocks": [
+          ["table", "relatedParties.transactions", ["Party", "Relationship", "Sales", "Purchases", "Cash paid", "Cash received", "Owed by", "Owed to", "Loan account"], [["Morgan Director", "Director", "0.00", "0.00", "0.00", "0.00", "0.00", "0.00", "200.00"]]]] }
+      ] },
+      { "section": "BALANCE_SHEET_STATEMENTS", "items": [
+        { "key": "BSS.MICRO", "title": "Statements on the balance sheet", "blocks": [
+          ["text", "Golden Accounts Ltd (09999999): these accounts have been prepared in accordance with the micro-entity provisions (synthetic wording)."],
+          ["text", "Approved by the board on 31 March 2027 and signed on its behalf by Morgan Director."]] }
+      ] }
+    ],
+    "omitted": [["NOTE.LONG", "EMPTY"], ["DR.DIRECTORS", "NOT_APPLICABLE"]],
+    "problemsBefore": ["NOTE.GC: missing fact text.goingConcern"],
+    "completeBefore": false, "completeAfter": true,
+    "fixedAssetWorkings": "Cost: 3,600 + 1,800 - 3,600 = 1,800. Depreciation: 1,200 + (500 + 450) - 1,700 = 450. Net book value 1,800 - 450 = 1,350, equal to B.FA. Disposal of A1 at 30.6.2026: accumulated 1,200 + 500 = 1,700, carrying 1,900, proceeds 2,000, gain 100.",
+    "advancesWorkings": "Loan account (credit-positive): 0; 15.2 -1,500; 31.8 +1,500 = 0; 30.11 +200 = 200. Advanced 1,500; credited or repaid 1,500 + 200 = 1,700; lowest -1,500."
+  }
+}

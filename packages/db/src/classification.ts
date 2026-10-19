@@ -101,6 +101,7 @@ export const TABLE_PROTECTION: Record<string, { protection: Protection; why: str
   release_run_line: { protection: 'RLS+APP', why: 'V2-M3a what a release run released from each schedule: written once (no UPDATE privilege, trigger).' },
   provision: { protection: 'RLS+APP', why: 'V2-M3a provisions with their accounts and basis: written once (no UPDATE privilege, trigger).' },
   provision_movement: { protection: 'RLS+APP', why: 'V2-M3a provision movements: dated in order, never below zero, the latest reversed once (trigger).' },
+  accounts_fact: { protection: 'RLS+APP', why: 'V2-M5a facts the preparer enters for a framework year: typed, written once, the latest applies (UPDATE revoked).' },
   director_loan_account: { protection: 'RLS+APP', why: 'V2-M4 loan accounts of directors and shareholders on dedicated ledger accounts: immutable facts, closed once (trigger).' },
   director_loan_threshold: { protection: 'RLS+APP', why: 'V2-M4 firm review thresholds for loan accounts: written once, the latest applies (UPDATE revoked).' },
   related_party: { protection: 'RLS+APP', why: 'V2-M4 related-party register: immutable facts, ended once (trigger).' },

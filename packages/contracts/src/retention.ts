@@ -97,7 +97,7 @@ export const RETENTION_RULES: readonly RetentionRule[] = [
     // V2 accounts production: the framework the accounts were prepared under
     'reporting_standard', 'reporting_standard_version', 'statutory_line', 'statutory_map_entry', 'validation_rule', 'disclosure_rule', 'statutory_account_override', 'company_reporting_framework',
     'fixed_asset_class', 'fixed_asset', 'fixed_asset_basis', 'depreciation_run', 'depreciation_run_line',
-    'year_end_item', 'release_run', 'release_run_line', 'provision', 'provision_movement', 'year_end_close', 'director_loan_account', 'director_loan_threshold', 'related_party']),
+    'year_end_item', 'release_run', 'release_run_line', 'provision', 'provision_movement', 'year_end_close', 'director_loan_account', 'director_loan_threshold', 'related_party', 'accounts_fact']),
   ...tableRules('WHILE_ACTIVE', [
     'user', 'user_identity', 'mfa_factor', 'mfa_recovery_code', 'organisation', 'role', 'organisation_membership', 'practice', 'practice_membership', 'company_membership', 'invitation',
     'company', 'company_officer', 'contact', 'contact_role', 'customer_profile', 'supplier_profile', 'address', 'feature_flag_override', 'task', 'task_attachment', 'task_comment', 'workflow_instance', 'workflow_transition',
