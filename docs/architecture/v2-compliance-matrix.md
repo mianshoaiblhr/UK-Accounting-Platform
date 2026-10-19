@@ -2,7 +2,7 @@
 
 Source requirements: docs/specifications/V2_Accounts_Production_FRS102_FRS105.md, 00_MASTER_IMPLEMENTATION_MANIFEST.md, decision-log.md DEC-051..054.
 
-Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
+Generated from `v2-compliance-matrix.json` at commit `1492ff6`; CI: <https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39271179477>. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
 
 ## Plan history (append-only)
 
@@ -18,6 +18,7 @@ Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence
 * v1.6 (2026-10-19, V2-M4, DEC-061/062): DEC-061 records the review of the V2-M2, V2-M3a and V2-M3b golden workings by Shoaib (no row changes status from it). Director and shareholder loan accounts and related parties built. Missing -> Implemented: V2-MOD-09, V2-MOD-10.
 * v1.6a (2026-10-19): V2-M4 evidence recorded (CI 39251457210 and CodeQL 39251456129 green on 87c8956; clean clone 2146 tests, e2e 21/21, OpenAPI drift 0). A V1-M9a screen defect found by the first clean clone (a stale answer overwriting a newer one) was fixed in 87c8956.
 * v1.7 (2026-10-19, V2-M5a, DEC-063): V2-M5 split; the accounts document built. Missing -> Implemented: V2-MOD-12, V2-OUT-01, V2-OUT-02, V2-OUT-04, V2-OUT-05, V2-OUT-07. Missing -> Partially: V2-MOD-13 (cash flow in V2-M5b). Mechanism proven on synthetic verified wording only; real standard wording remains the named accountant's (DEC-052).
+* v1.7a (2026-10-19): V2-M5a evidence recorded (CI 39271179477 and CodeQL 39271179462 green on 1492ff6; clean clone 2163 tests, e2e 21/21, OpenAPI drift 0).
 
 ## Summary
 
@@ -38,7 +39,7 @@ Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence
 | V2-M2 | Fixed assets and depreciation | ACCEPTED under the delegation 2026-10-18 (v2-m2-acceptance.md; CI 39159238749 on da32ffc) | Engineering | V2-M1 | 10 | 10 |
 | V2-M3 | Year-end adjustments and the closing journal | ACCEPTED under the delegation (DEC-059 split): V2-M3a 2026-10-18 (v2-m3a-acceptance.md; CI 39178258465 on f735149); V2-M3b 2026-10-19 (v2-m3b-acceptance.md; CI 39181318428 on 5ab27b8) | Engineering | V2-M2 | 5 | 5 |
 | V2-M4 | Director balances and related parties | ACCEPTED under the delegation 2026-10-19 (v2-m4-acceptance.md; CI 39251457210 on 87c8956) | Engineering | V2-M3 | 2 | 2 |
-| V2-M5 | Statements and notes (FRS 105, FRS 102 1A, FRS 102) | SPLIT (DEC-063): V2-M5a the accounts document BUILT 2026-10-19 (v2-m5a-acceptance.md); V2-M5b the size test and the cash flow statement next | Engineering (build); qualified accountant (rules) | V2-M1; V2-M3; V2-M4 | 8 | 6 |
+| V2-M5 | Statements and notes (FRS 105, FRS 102 1A, FRS 102) | SPLIT (DEC-063): V2-M5a the accounts document ACCEPTED under the delegation 2026-10-19 (v2-m5a-acceptance.md; CI 39271179477 on 1492ff6); V2-M5b the size test and the cash flow statement next | Engineering (build); qualified accountant (rules) | V2-M1; V2-M3; V2-M4 | 8 | 6 |
 | V2-M6 | Year-end workflow, review, approval, filing-ready package | planned | Engineering | V2-M5 | 26 | 0 |
 | V2-M7 | Screens behind accounts.production | planned | Engineering (front end) | each API milestone | 1 | 0 |
 
@@ -127,7 +128,7 @@ A milestone is accepted on an acceptance package: commit SHA, CI run (every job)
 
 ## V2-M5 - Statements and notes (FRS 105, FRS 102 1A, FRS 102)
 
-**Status:** SPLIT (DEC-063): V2-M5a the accounts document BUILT 2026-10-19 (v2-m5a-acceptance.md); V2-M5b the size test and the cash flow statement next  
+**Status:** SPLIT (DEC-063): V2-M5a the accounts document ACCEPTED under the delegation 2026-10-19 (v2-m5a-acceptance.md; CI 39271179477 on 1492ff6); V2-M5b the size test and the cash flow statement next  
 **Owner:** Engineering (build); qualified accountant (rules)  
 **Depends on:** V2-M1; V2-M3; V2-M4  
 **Acceptance:** v2-plan.md section 5d.3; v2-m5a-acceptance.md (V2-M5a)  

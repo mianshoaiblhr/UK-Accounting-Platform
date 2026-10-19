@@ -7,11 +7,11 @@ This is milestone evidence only, **not production approval** (DEC-006). All data
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | @@SHA@@ (branch `claude/adoring-cori-mra6ze`); specification recorded before code in v2-plan section 5d and DEC-063 |
-| CI | @@CI@@ |
-| CodeQL | @@CODEQL@@ |
-| Clean clone | @@CLEAN@@ |
-| Local runs | @@LOCAL@@ |
+| Code baseline commit | `1492ff61a58235ab69ea6bf870790cb27a94b48a` (branch `claude/adoring-cori-mra6ze`); specification recorded before code in v2-plan section 5d and DEC-063 |
+| CI | [run 39271179477](https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39271179477): every job green |
+| CodeQL | [run 39271179462](https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39271179462): green |
+| Clean clone | Fresh clone at 1492ff6: install, build, typecheck and lint clean; 2,163 tests passed; e2e 21/21; OpenAPI drift 0 |
+| Local runs | Build, typecheck and lint clean; 121 test files, 2,163 tests passed (before the push) |
 
 ## 2. What V2-M5a delivers (v2-plan section 5d)
 | Part | What it is |
