@@ -50,6 +50,10 @@ Prepared under the product owner's delegation (DEC-019, DEC-051), with the desig
   * Each figure lists the journals behind it.
 * **The two people as related parties:** their loan accounts' closing and lowest balances. Their loan accounts' own cash is not counted as cash paid or received.
 * **Hand figures:** all matched on the first run of the API test.
+* **Screen defect found by the clean clone, fixed:** the first clean-clone run of `bc3dc03` failed one browser test (CI on the same commit was green). The balance-sheet screen showed the answer for its default date (31.12) after the user had already chosen 30.6. The screens' data hook let a slower answer for an earlier request overwrite a newer one.
+  * The defect dates from V1-M9a; it was not caused by V2-M4.
+  * The hook (`apps/web/src/lib/workspace.tsx`, `useApi`) now shows only the answer to the latest request.
+  * The browser suite then passed twice in a row (21/21 each).
 * **Test expectation corrected:** in the database test, Prisma reports a unique-index refusal as "Unique constraint failed" rather than by the index name. The test now accepts either wording; the database refused correctly.
 
 ## 4. Security and permission checks

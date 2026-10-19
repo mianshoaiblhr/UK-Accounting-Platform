@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useParams, usePathname, useRouter } from 'next/navigation';
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Nav } from '@/components/Nav';
 import { ApiError, api, errorText, type Company, type CompanyAccess, type Me } from '@/lib/api';
 
@@ -88,10 +88,13 @@ export function WorkspaceShell({ children, need }: { children: ReactNode; need?:
 export function useApi<T>(path: string | null) {
   const [data, setData] = useState<T>();
   const [error, setError] = useState('');
+  // only the latest request may set what the screen shows: a slower answer for an earlier path (a date being changed) is dropped, never shown
+  const latest = useRef(0);
   const load = useCallback(async () => {
     if (!path) return;
+    const call = ++latest.current;
     setError('');
-    try { setData(await api<T>(path)); } catch (e) { setError(errorText(e)); }
+    try { const d = await api<T>(path); if (call === latest.current) setData(d); } catch (e) { if (call === latest.current) setError(errorText(e)); }
   }, [path]);
   useEffect(() => { void load(); }, [load]);
   return { data, error, reload: load };
