@@ -10272,6 +10272,19 @@
               "type": "string",
               "maxLength": 100
             }
+          },
+          {
+            "name": "excludeClosing",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "default": "false"
+            }
           }
         ],
         "responses": {
@@ -23636,6 +23649,393 @@
         ]
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/year-end-closes": {
+      "get": {
+        "operationId": "YearEndClose_list",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "POSTED",
+                "REVERSED"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Closes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YearEndCloseList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "Closes of financial years to retained earnings",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "YearEndClose_close",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Closed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YearEndClose"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:prepare"
+        ],
+        "summary": "Close a financial year: one journal dated the year end moves every income and expense balance of the year to retained earnings; the year then takes no income or expense until the close is reversed",
+        "description": "**Requires permission:** `accounts:prepare`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/YearEndCloseRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/year-end-closes/preview": {
+      "get": {
+        "operationId": "YearEndClose_preview",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "yearStart",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "yearEnd",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Preview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YearEndClosePreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The closing journal a financial year would get now, its warnings and every reason it cannot post (posts nothing)",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/year-end-closes/{closeId}": {
+      "get": {
+        "operationId": "YearEndClose_get",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "closeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Close",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YearEndClose"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "A close with its journal lines and the year's income less expenses including it",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/year-end-closes/{closeId}/reverse": {
+      "post": {
+        "operationId": "YearEndClose_reverse",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "closeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reversed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YearEndClose"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:prepare"
+        ],
+        "summary": "Reverse a close by its mirror dated the year end (the year takes income and expense again)",
+        "description": "**Requires permission:** `accounts:prepare`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReverseYearEndCloseRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -27924,6 +28324,10 @@
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
             "nullable": true
           },
+          "excludeClosing": {
+            "type": "boolean",
+            "description": "Year-end closing journals left out of the opening balance, the lines and the running balance (DEC-060)"
+          },
           "openingBalance": {
             "type": "string",
             "pattern": "^-?\\d+(\\.\\d+)?$",
@@ -28004,6 +28408,7 @@
           "account",
           "from",
           "to",
+          "excludeClosing",
           "openingBalance",
           "items",
           "nextCursor"
@@ -35338,6 +35743,349 @@
         ],
         "additionalProperties": false
       },
+      "YearEndClose": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "yearStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "yearEnd": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "POSTED",
+              "REVERSED"
+            ]
+          },
+          "profit": {
+            "type": "string",
+            "description": "Credited to retained earnings; a loss is negative"
+          },
+          "retainedEarningsAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "journalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reversalJournalId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reversedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "reversedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "reversedReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "yearIncomeLessExpensesIncludingClose": {
+            "type": "string",
+            "description": "The year's income less expenses with every journal included: zero while the close is live"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "lineNo": {
+                  "type": "integer"
+                },
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "code": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "name": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "debit": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                },
+                "credit": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                },
+                "description": {
+                  "type": "string",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "lineNo",
+                "accountId",
+                "code",
+                "name",
+                "debit",
+                "credit",
+                "description"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "yearStart",
+          "yearEnd",
+          "status",
+          "profit",
+          "retainedEarningsAccountId",
+          "journalId",
+          "reversalJournalId",
+          "createdByUserId",
+          "createdAt",
+          "reversedByUserId",
+          "reversedAt",
+          "reversedReason",
+          "yearIncomeLessExpensesIncludingClose",
+          "lines"
+        ],
+        "additionalProperties": false
+      },
+      "YearEndCloseList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "yearStart": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "yearEnd": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "POSTED",
+                    "REVERSED"
+                  ]
+                },
+                "profit": {
+                  "type": "string",
+                  "description": "Credited to retained earnings; a loss is negative"
+                },
+                "retainedEarningsAccountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "journalId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "reversalJournalId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "reversedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "reversedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "reversedReason": {
+                  "type": "string",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "yearStart",
+                "yearEnd",
+                "status",
+                "profit",
+                "retainedEarningsAccountId",
+                "journalId",
+                "reversalJournalId",
+                "createdByUserId",
+                "createdAt",
+                "reversedByUserId",
+                "reversedAt",
+                "reversedReason"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "YearEndClosePreview": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "yearStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "yearEnd": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "journalDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "retainedEarningsAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "profit": {
+            "type": "string",
+            "description": "Exact decimal"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "debit": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                },
+                "credit": {
+                  "type": "string",
+                  "description": "Exact decimal"
+                }
+              },
+              "required": [
+                "accountId",
+                "code",
+                "name",
+                "debit",
+                "credit"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "earlier_years_not_closed"
+              ]
+            }
+          },
+          "canPost": {
+            "type": "boolean"
+          },
+          "blockers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "code",
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "notice": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "companyId",
+          "yearStart",
+          "yearEnd",
+          "journalDate",
+          "retainedEarningsAccountId",
+          "profit",
+          "lines",
+          "warnings",
+          "canPost",
+          "blockers",
+          "notice"
+        ],
+        "additionalProperties": false
+      },
       "ProfitAndLoss": {
         "type": "object",
         "properties": {
@@ -35436,6 +36184,10 @@
                           "to": {
                             "type": "string",
                             "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                          },
+                          "excludeClosing": {
+                            "type": "boolean",
+                            "description": "P&L lines: leave closing journals out, as the figure does"
                           }
                         },
                         "required": [
@@ -35614,6 +36366,10 @@
                           "to": {
                             "type": "string",
                             "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                          },
+                          "excludeClosing": {
+                            "type": "boolean",
+                            "description": "P&L lines: leave closing journals out, as the figure does"
                           }
                         },
                         "required": [
@@ -35684,7 +36440,12 @@
                   "credit",
                   "balanced"
                 ],
-                "additionalProperties": false
+                "additionalProperties": false,
+                "description": "The whole ledger, year-end closing journals included"
+              },
+              "closedToRetainedEarnings": {
+                "type": "string",
+                "description": "What year-end closing journals moved to retained earnings up to the date; the lines leave them out, so they read the same before and after a close (DEC-060)"
               },
               "comparative": {
                 "type": "object",
@@ -35719,7 +36480,12 @@
                       "credit",
                       "balanced"
                     ],
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "description": "The whole ledger, year-end closing journals included"
+                  },
+                  "closedToRetainedEarnings": {
+                    "type": "string",
+                    "description": "What year-end closing journals moved to retained earnings up to the date; the lines leave them out, so they read the same before and after a close (DEC-060)"
                   }
                 },
                 "required": [
@@ -35727,7 +36493,8 @@
                   "capitalAndReserves",
                   "difference",
                   "balanced",
-                  "trialBalance"
+                  "trialBalance",
+                  "closedToRetainedEarnings"
                 ],
                 "additionalProperties": false
               }
@@ -35737,7 +36504,8 @@
               "capitalAndReserves",
               "difference",
               "balanced",
-              "trialBalance"
+              "trialBalance",
+              "closedToRetainedEarnings"
             ],
             "additionalProperties": false
           },
@@ -50414,6 +51182,38 @@
         "additionalProperties": false
       },
       "ReverseProvisionMovementRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "YearEndCloseRequest": {
+        "type": "object",
+        "properties": {
+          "yearStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "yearEnd": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          }
+        },
+        "required": [
+          "yearStart",
+          "yearEnd"
+        ],
+        "additionalProperties": false
+      },
+      "ReverseYearEndCloseRequest": {
         "type": "object",
         "properties": {
           "reason": {

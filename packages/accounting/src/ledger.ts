@@ -1,4 +1,4 @@
-import { DEBIT_NORMAL, type AccountType } from '@uk/contracts';
+import { CLOSING_SOURCES, DEBIT_NORMAL, type AccountType } from '@uk/contracts';
 import { notFound, unprocessable } from '@uk/core';
 import type { Tx } from '@uk/db';
 import { ZERO, fmt, money, type Money } from './money';
@@ -53,11 +53,12 @@ export class LedgerQueries {
   }
 
   /** General ledger for one account with a running balance (natural side: positive = the account's normal side). Keyset pagination; the running balance is recomputed server-side for every page. */
-  async generalLedger(tx: Tx, companyId: string, q: { accountId: string; from?: string; to?: string; limit: number; cursor?: string }) {
+  async generalLedger(tx: Tx, companyId: string, q: { accountId: string; from?: string; to?: string; limit: number; cursor?: string; excludeClosing?: boolean }) {
     const { minor, currency } = await minorUnits(tx, companyId);
     const account = await tx.account.findFirst({ where: { id: q.accountId, companyId } });
     if (!account) throw notFound('Account not found');
     const from = q.from ?? MIN_DAY, to = q.to ?? MAX_DAY;
+    const skip: string[] = q.excludeClosing ? [...CLOSING_SOURCES] : [];
     let after = { d: MIN_DAY, n: 0, l: 0 };
     if (q.cursor) {
       const m = /^(\d{4}-\d{2}-\d{2})\|(\d+)\|(\d+)$/.exec(q.cursor);
@@ -68,11 +69,11 @@ export class LedgerQueries {
       const r = whereSql === 'opening'
         ? await tx.$queryRaw<{ d: string | null; c: string | null }[]>`
             SELECT sum(l.debit)::text AS d, sum(l.credit)::text AS c FROM journal_line l JOIN journal j ON j.id = l.journal_id AND j.organisation_id = l.organisation_id
-             WHERE l.company_id = ${companyId}::uuid AND l.account_id = ${q.accountId}::uuid AND j.journal_date < ${from}::date`
+             WHERE l.company_id = ${companyId}::uuid AND l.account_id = ${q.accountId}::uuid AND j.journal_date < ${from}::date AND j.source_type <> ALL(${skip}::text[])`
         : await tx.$queryRaw<{ d: string | null; c: string | null }[]>`
             SELECT sum(l.debit)::text AS d, sum(l.credit)::text AS c FROM journal_line l JOIN journal j ON j.id = l.journal_id AND j.organisation_id = l.organisation_id
              WHERE l.company_id = ${companyId}::uuid AND l.account_id = ${q.accountId}::uuid AND j.journal_date >= ${from}::date AND j.journal_date <= ${to}::date
-               AND (j.journal_date, j.journal_number, l.line_no) <= (${after.d}::date, ${after.n}::int, ${after.l}::int)`;
+               AND (j.journal_date, j.journal_number, l.line_no) <= (${after.d}::date, ${after.n}::int, ${after.l}::int) AND j.source_type <> ALL(${skip}::text[])`;
       return { d: money(r[0]?.d ?? '0'), c: money(r[0]?.c ?? '0') };
     };
     const opening = await sum('opening');
@@ -81,7 +82,7 @@ export class LedgerQueries {
       SELECT j.id AS journal_id, j.journal_number, j.journal_date, l.line_no, l.debit::text AS debit, l.credit::text AS credit, l.description AS line_description, j.description, j.source_type, j.source_id, j.source_reference
         FROM journal_line l JOIN journal j ON j.id = l.journal_id AND j.organisation_id = l.organisation_id
        WHERE l.company_id = ${companyId}::uuid AND l.account_id = ${q.accountId}::uuid AND j.journal_date >= ${from}::date AND j.journal_date <= ${to}::date
-         AND (j.journal_date, j.journal_number, l.line_no) > (${after.d}::date, ${after.n}::int, ${after.l}::int)
+         AND (j.journal_date, j.journal_number, l.line_no) > (${after.d}::date, ${after.n}::int, ${after.l}::int) AND j.source_type <> ALL(${skip}::text[])
        ORDER BY j.journal_date, j.journal_number, l.line_no LIMIT ${q.limit + 1}`;
     const rows = page.slice(0, q.limit);
     let run = natural(account.type, opening.d.plus(consumed.d), opening.c.plus(consumed.c));
@@ -92,13 +93,13 @@ export class LedgerQueries {
         debit: fmt(debit, minor), credit: fmt(credit, minor), balance: fmt(run, minor) };
     });
     const last = rows[rows.length - 1];
-    return { currency, account: { id: account.id, code: account.code, name: account.name, type: account.type }, from: q.from ?? null, to: q.to ?? null,
+    return { currency, account: { id: account.id, code: account.code, name: account.name, type: account.type }, from: q.from ?? null, to: q.to ?? null, excludeClosing: !!q.excludeClosing,
       openingBalance: fmt(natural(account.type, opening.d, opening.c), minor), items, nextCursor: page.length > q.limit && last ? `${isoDay(last.journal_date)}|${last.journal_number}|${last.line_no}` : null };
   }
 
   /**
-   * Trial balance as at a date (default today) or at the end of a period (with that period's movement). Cumulative from the first posting; no
-   * year-end closing of P&L accounts yet (V2). Warns about non-zero suspense balances. Reads journal lines only.
+   * Trial balance as at a date (default today) or at the end of a period (with that period's movement). Cumulative from the first posting; it shows
+   * the ledger as it is, year-end closing journals included (DEC-060). Warns about non-zero suspense balances. Reads journal lines only.
    */
   async trialBalance(tx: Tx, companyId: string, q: { periodId?: string; asOf?: string }) {
     const { minor, currency } = await minorUnits(tx, companyId);

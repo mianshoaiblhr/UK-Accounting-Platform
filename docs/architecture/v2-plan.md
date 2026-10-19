@@ -11,7 +11,7 @@ Everything in V1 plan section 1, plus: only the PostingService writes the ledger
 | V2-M0 | Decisions DEC-051..054, ADR-62..64, this plan, the V2 matrix | **recorded** (2026-10-17) | Engineering | V2 approval |
 | V2-M1 | Reporting framework as data (section 3) | **built** (2026-10-18; `v2-m1-acceptance.md`); rules unverified until the named accountant | Engineering; the named accountant verifies | V2-M0 |
 | V2-M2 | Fixed assets: classes, register, additions, disposals, depreciation methods, useful lives, residual values, tax vs accounting treatment, reconciliation to the ledger, depreciation runs | **built** (2026-10-18; `v2-m2-acceptance.md`) | Engineering | V2-M1 |
-| V2-M3 | Year-end adjustments: accruals, prepayments, deferred income, provisions with reversal; the year-end closing journal to retained earnings | split (DEC-059): **V2-M3a built** (2026-10-18; `v2-m3a-acceptance.md`); V2-M3b closing journal next | Engineering | V2-M2 |
+| V2-M3 | Year-end adjustments: accruals, prepayments, deferred income, provisions with reversal; the year-end closing journal to retained earnings | split (DEC-059): **V2-M3a built** (2026-10-18; `v2-m3a-acceptance.md`); **V2-M3b built** (2026-10-19; `v2-m3b-acceptance.md`) | Engineering | V2-M2 |
 | V2-M4 | Director and shareholder balances (director loan movements flagged), related parties | planned | Engineering | V2-M3 |
 | V2-M5 | Statements and notes: FRS 105 micro-entity, then FRS 102 Section 1A, then full FRS 102; policies, comparatives, directors' sections; the size test | planned | Engineering; the named accountant | V2-M1, V2-M3, V2-M4 |
 | V2-M6 | Year-end workflow (the specification's 14 steps), review checklist and flags, partner review, client approval, filing-ready package | planned | Engineering | V2-M5 |
@@ -137,6 +137,55 @@ All are in OpenAPI.
   * a provision made, used and released;
   * the reconciliation at both dates, and the P&L effect per account.
 * **Tests:** the five categories for each of the nine sources; database guards; permissions and tenancy; an architecture test (only the year-end service writes its tables and posts its sources); CI green; clean clone; matrix rows V2-MOD-05..08 moved with evidence.
+
+## 5b. V2-M3b - Year-end closing journal (specification; DEC-060)
+Recorded before code. Matrix row V2-YEC-01.
+
+### 5b.1 Data (one migration, additive)
+| Table / object | Holds | Rules |
+|---|---|---|
+| `year_end_close` | Company, year start and end, retained-earnings account, journal, profit (credit to retained earnings positive), status (POSTED, REVERSED), reversal journal, who, when and why | Start <= end; at most 18 months; no overlapping live close (database); facts immutable; POSTED -> REVERSED once with a reason; never deleted |
+| `journal_line` trigger | - | An income or expense line dated in the year of a live close is refused unless its journal is the close or the close's mirror |
+
+### 5b.2 Posting and statements
+* **Sources:**
+  * YEAR_END_CLOSE: Dr each income account / Cr each expense account by its net for the year, and the difference to retained earnings.
+  * YEAR_END_CLOSE_REVERSAL: its mirror.
+  * Both are `accounts:prepare`, `subLedger`, reach only the RETAINED_EARNINGS control account, and carry no VAT.
+* **PostingService:** a journal with an income or expense line takes a shared company close lock; one dated in a closed year is refused (`year_closed`), including journal requests at request time.
+* **Management P&L:** closing journals are left out of the lines, the totals and the reconciliation to the ledger. Drill-downs carry `excludeClosing: true`.
+* **Balance sheet:** the lines and both P&L-reserve figures leave out closing journals, so they are the same before and after the close. The trial-balance proof includes them. The reconciliation reports `closedToRetainedEarnings`.
+* **Statutory preview:** the lines and proofs leave out closing journals, and the trial-balance proof includes them. The notice about the closing journal is replaced.
+* **FX report:** closing journals are not exchange differences.
+* **General ledger:** `excludeClosing=true` leaves out closing lines, including from the opening balance and the running balance.
+* **Trial balance:** unchanged; it includes closes.
+
+### 5b.3 API (behind `accounts.production`; writes `accounts:prepare`, reads `ledger:read`)
+* `year-end-closes/preview?yearStart&yearEnd`: the lines, the profit, any warnings, and the reasons it cannot post.
+* `year-end-closes` (POST): close the year.
+* `year-end-closes` (GET): list.
+* `year-end-closes/{id}`: one close, with its journal lines and the year's income and expense net with the close included (zero while live).
+* `year-end-closes/{id}/reverse`: post the mirror, with a reason.
+
+All are in OpenAPI.
+
+### 5b.4 Acceptance
+* **Golden (DEC-054):** `tests/golden/v2-m3b-close.json`, written by hand before the code and recomputed independently in a workbook:
+  * two years of manual postings and a V2-M3a accrual auto-reversed into the third year;
+  * closing 2025 and 2026, with each closing journal's lines and profit;
+  * the trial balance after the close;
+  * the balance sheet at both year ends and mid-2027, identical before and after the closes;
+  * the 2026 and multi-year P&L, identical before and after;
+  * the reversal and the re-close.
+* **Tests:**
+  * the five categories for both sources;
+  * `year_closed` from the service and from the database;
+  * the year rules (alignment, gaps, 18 months, overlap, nothing to close), a loss year, and a year spanning two periods;
+  * the statutory preview and the FX report the same before and after;
+  * general-ledger `excludeClosing`;
+  * permissions and tenancy;
+  * an architecture test (only the close service writes `year_end_close` and posts its sources);
+  * CI green; clean clone; matrix row V2-YEC-01 moved with evidence.
 
 ## 6. Legal and standards context
 See `v2-proposal.md` section 6. The rules entered into the framework are the firm's, from the current text of FRS 102 and FRS 105 and the Companies Act 2006 accounts regulations, verified by its named accountant; engineering builds the mechanism and tests it on synthetic data.

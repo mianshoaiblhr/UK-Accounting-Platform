@@ -97,7 +97,8 @@ export const JournalDetail = JournalHeader.extend({
 });
 export const JournalPage = z.object({ currency: z.string().length(3), items: z.array(JournalHeader), nextCursor: z.string().nullable() });
 export const GeneralLedger = z.object({
-  currency: z.string().length(3), account: z.object({ id: uuid, code: z.string(), name: z.string(), type: z.string() }), from: day.nullable(), to: day.nullable(), openingBalance: signedMoney,
+  currency: z.string().length(3), account: z.object({ id: uuid, code: z.string(), name: z.string(), type: z.string() }), from: day.nullable(), to: day.nullable(),
+  excludeClosing: z.boolean().describe('Year-end closing journals left out of the opening balance, the lines and the running balance (DEC-060)'), openingBalance: signedMoney,
   items: z.array(z.object({ journalId: uuid, journalNumber: z.number().int(), journalDate: day, lineNo: z.number().int(), description: z.string(), sourceType: z.string(), sourceId: z.string().nullable(), sourceReference: z.string().nullable(), debit: money, credit: money, balance: signedMoney.describe('Running balance on the account\'s natural side') })),
   nextCursor: z.string().nullable(),
 });
@@ -256,7 +257,8 @@ export const PayablesReconciliation = z.object({
 });
 
 // ───────────── Reports (M8) ─────────────
-const ReportAccount = z.object({ accountId: uuid, code: z.string(), name: z.string(), amount: z.string(), drilldown: z.object({ accountId: uuid, from: day.nullable(), to: day }).describe('Opens the general ledger of the account for the range') });
+const ReportAccount = z.object({ accountId: uuid, code: z.string(), name: z.string(), amount: z.string(),
+  drilldown: z.object({ accountId: uuid, from: day.nullable(), to: day, excludeClosing: z.boolean().optional().describe('P&L lines: leave closing journals out, as the figure does') }).describe('Opens the general ledger of the account for the range') });
 const ReportLine = z.object({ key: z.string(), name: z.string(), amount: z.string(), comparative: z.string().optional(), total: z.boolean().optional(), accounts: z.array(ReportAccount).optional(), drilldown: z.record(z.unknown()).optional() });
 export const ProfitAndLoss = z.object({
   companyId: uuid, companyName: z.string(), currency: z.string().length(3), from: day, to: day, comparative: z.object({ from: day, to: day }).nullable(), mappingVersion: z.number().int(),
@@ -264,7 +266,9 @@ export const ProfitAndLoss = z.object({
   reconciliation: z.object({ incomeLessExpensesFromLedger: z.string(), difference: z.string(), reconciled: z.boolean(), comparative: z.object({ incomeLessExpensesFromLedger: z.string(), reconciled: z.boolean() }).optional() }).describe('The P&L against the net of every income and expense account: must reconcile to the cent'),
   notice: z.string(),
 });
-const BsProof = z.object({ netAssets: z.string(), capitalAndReserves: z.string(), difference: z.string(), balanced: z.boolean(), trialBalance: z.object({ debit: z.string(), credit: z.string(), balanced: z.boolean() }) });
+const BsProof = z.object({ netAssets: z.string(), capitalAndReserves: z.string(), difference: z.string(), balanced: z.boolean(),
+  trialBalance: z.object({ debit: z.string(), credit: z.string(), balanced: z.boolean() }).describe('The whole ledger, year-end closing journals included'),
+  closedToRetainedEarnings: z.string().describe('What year-end closing journals moved to retained earnings up to the date; the lines leave them out, so they read the same before and after a close (DEC-060)') });
 export const BalanceSheet = z.object({
   companyId: uuid, companyName: z.string(), currency: z.string().length(3), asOf: day, compareAsOf: day.nullable(), financialYearStart: day.nullable(), mappingVersion: z.number().int(),
   lines: z.array(ReportLine), netAssets: z.string(), reconciliation: BsProof.extend({ comparative: BsProof.optional() }), notice: z.string(),
@@ -480,3 +484,14 @@ export const YearEndRegister = z.object({ companyId: uuid, asAt: day,
   reconciliation: z.array(z.object({ accountId: uuid, code: z.string(), register: amt, ledger: amt.describe('Assets debit-positive, liabilities credit-positive'), difference: amt, reconciled: z.boolean(),
     items: z.array(z.object({ journalId: uuid, journalNumber: z.number().int(), journalDate: day, sourceType: z.string(), description: z.string(), amount: amt, registered: amt, unregistered: amt })) })),
   reconciled: z.boolean() });
+
+// ───────────── V2-M3b year-end closing journal (DEC-060) ─────────────
+const closeBase = { id: uuid, companyId: uuid, yearStart: day, yearEnd: day, status: z.enum(['POSTED', 'REVERSED']), profit: amt.describe('Credited to retained earnings; a loss is negative'), retainedEarningsAccountId: uuid,
+  journalId: uuid, reversalJournalId: uuid.nullable(), createdByUserId: uuid, createdAt: ts, reversedByUserId: uuid.nullable(), reversedAt: ts.nullable(), reversedReason: z.string().nullable() };
+export const YearEndCloseSummary = z.object(closeBase);
+export const YearEndCloseDetail = z.object({ ...closeBase,
+  yearIncomeLessExpensesIncludingClose: amt.describe('The year\'s income less expenses with every journal included: zero while the close is live'),
+  lines: z.array(z.object({ lineNo: z.number().int(), accountId: uuid, code: z.string().nullable(), name: z.string().nullable(), debit: amt, credit: amt, description: z.string().nullable() })) });
+export const YearEndClosePreview = z.object({ companyId: uuid, yearStart: day, yearEnd: day, journalDate: day, retainedEarningsAccountId: uuid.nullable(), profit: amt,
+  lines: z.array(z.object({ accountId: uuid, code: z.string(), name: z.string(), debit: amt, credit: amt })),
+  warnings: z.array(z.enum(['earlier_years_not_closed'])), canPost: z.boolean(), blockers: z.array(z.object({ code: z.string(), message: z.string() })), notice: z.string() });

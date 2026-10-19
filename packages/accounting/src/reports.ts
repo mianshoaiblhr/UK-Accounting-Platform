@@ -1,4 +1,4 @@
-import { MONETARY_SUBTYPES, REPORT_LINES, REPORT_MAPPING_VERSION } from '@uk/contracts';
+import { CLOSING_SOURCES, MONETARY_SUBTYPES, REPORT_LINES, REPORT_MAPPING_VERSION } from '@uk/contracts';
 import { notFound, unprocessable } from '@uk/core';
 import type { Tx } from '@uk/db';
 import { RateService, convert } from './fx';
@@ -8,7 +8,10 @@ import { ZERO, fmt, money, type Money } from './money';
  * Financial statements and the FX report (M8; DEC-043, DEC-045). Every figure comes from `journal_line` summed by account and mapped through the
  * versioned reporting-line registry (ADR-48); nothing here reads a source-document table (architecture-tested, V1-ARC-02). Each statement carries its
  * reconciliation to the trial balance, and every line lists the accounts and the general-ledger range that make it up (drill-down, V1-RPT-02).
+ * Year-end closing journals (V2-M3b, DEC-060) are left out of every P&L figure and of the balance-sheet lines, so the statements read the same before
+ * and after a close; the balance sheet's trial-balance proof takes the whole ledger.
  */
+const CLOSING: string[] = [...CLOSING_SOURCES];
 const isoDay = (d: Date) => d.toISOString().slice(0, 10);
 const MIN_DAY = '0001-01-01';
 
@@ -34,12 +37,13 @@ export class ReportService {
     return { ...c, minor };
   }
 
-  /** Debits and credits per account for journals dated in [from, to] (journal lines only). */
-  private async balances(tx: Tx, companyId: string, from: string, to: string): Promise<Bal[]> {
+  /** Debits and credits per account for journals dated in [from, to] (journal lines only); closing journals left out unless asked for. */
+  private async balances(tx: Tx, companyId: string, from: string, to: string, withClosing = false): Promise<Bal[]> {
+    const skip = withClosing ? [] : CLOSING;
     const rows = await tx.$queryRaw<{ account_id: string; code: string; name: string; type: string; reporting_mapping: string; d: string; c: string }[]>`
       SELECT l.account_id, a.code, a.name, a.type::text AS type, a.reporting_mapping, sum(l.debit)::text AS d, sum(l.credit)::text AS c
         FROM journal_line l JOIN journal j ON j.id = l.journal_id AND j.organisation_id = l.organisation_id JOIN account a ON a.id = l.account_id AND a.organisation_id = l.organisation_id
-       WHERE l.company_id = ${companyId}::uuid AND j.journal_date >= ${from}::date AND j.journal_date <= ${to}::date
+       WHERE l.company_id = ${companyId}::uuid AND j.journal_date >= ${from}::date AND j.journal_date <= ${to}::date AND j.source_type <> ALL(${skip}::text[])
        GROUP BY l.account_id, a.code, a.name, a.type, a.reporting_mapping ORDER BY a.code`;
     return rows.map((r) => ({ accountId: r.account_id, code: r.code, name: r.name, type: r.type, mapping: r.reporting_mapping, d: money(r.d), c: money(r.c) }));
   }
@@ -80,7 +84,7 @@ export class ReportService {
     const cmp = q.compareFrom ? await run(q.compareFrom, q.compareTo!) : null;
     const f = (m: Money | undefined) => fmt(m ?? ZERO, co.minor);
     const line = (key: string) => ({ key, name: REPORT_LINES[key]!.name, amount: f(cur.p.lines[key]), ...(cmp ? { comparative: f(cmp.p.lines[key]) } : {}),
-      accounts: cur.p.accounts[key]!.map((a) => ({ accountId: a.id, code: a.code, name: a.name, amount: f(a.amount), drilldown: { accountId: a.id, from: q.from, to: q.to } })) });
+      accounts: cur.p.accounts[key]!.map((a) => ({ accountId: a.id, code: a.code, name: a.name, amount: f(a.amount), drilldown: { accountId: a.id, from: q.from, to: q.to, excludeClosing: true } })) });
     const total = (name: string, k: keyof ReturnType<ReportService['plTotals']>) => ({ key: `TOTAL.${k}`, name, total: true, amount: f(cur.t[k]), ...(cmp ? { comparative: f(cmp.t[k]) } : {}) });
     const keep = (l: { amount: string; comparative?: string; total?: boolean }) => q.includeEmpty || l.total || !money(l.amount).isZero() || (l.comparative !== undefined && !money(l.comparative).isZero());
     const lines = [
@@ -94,7 +98,7 @@ export class ReportService {
       lines, profitForPeriod: f(cur.t.profitForPeriod),
       reconciliation: { incomeLessExpensesFromLedger: f(cur.net), difference: f(cur.t.profitForPeriod.minus(cur.net)), reconciled: cur.t.profitForPeriod.equals(cur.net),
         ...(cmp ? { comparative: { incomeLessExpensesFromLedger: f(cmp.net), reconciled: cmp.t.profitForPeriod.equals(cmp.net) } } : {}) },
-      notice: 'Management accounts from the ledger: exact amounts, no rounding, no notes. Statutory accounts (FRS 102/105) come in V2.',
+      notice: 'Management accounts from the ledger: exact amounts, no rounding, no notes. Year-end closing journals are left out, so a closed year shows its profit (DEC-060).',
     };
   }
 
@@ -106,14 +110,16 @@ export class ReportService {
 
   private async balanceSheetAt(tx: Tx, companyId: string, asOf: string) {
     const bals = await this.balances(tx, companyId, MIN_DAY, asOf);
+    const ledger = await this.balances(tx, companyId, MIN_DAY, asOf, true);
     const yStart = await this.yearStart(tx, companyId, asOf);
     const ytd = yStart === MIN_DAY ? this.plNet(bals) : this.plNet(await this.balances(tx, companyId, yStart, asOf));
     const plCumulative = this.plNet(bals);
     const lines: Record<string, Money> = {}; const accounts: Record<string, { id: string; code: string; name: string; amount: Money }[]> = {};
+    // the trial-balance proof takes the whole ledger, closing journals included
     let tbDebit = ZERO, tbCredit = ZERO;
+    for (const b of ledger) { const net = b.d.minus(b.c); if (net.greaterThan(0)) tbDebit = tbDebit.plus(net); else tbCredit = tbCredit.plus(net.negated()); }
     for (const b of bals) {
       const net = b.d.minus(b.c);
-      if (net.greaterThan(0)) tbDebit = tbDebit.plus(net); else tbCredit = tbCredit.plus(net.negated());
       if (REPORT_LINES[b.mapping]?.statement !== 'BS') continue;
       const amount = b.type === 'ASSET' ? net : net.negated();
       if (amount.isZero()) continue;
@@ -128,7 +134,12 @@ export class ReportService {
     const share = v('BS.CAPITAL.SHARE_CAPITAL'), reserves = v('BS.CAPITAL.RESERVES');
     const broughtForward = plCumulative.minus(ytd);
     const equity = share.plus(reserves).plus(plCumulative);
-    return { lines, accounts, fixed, current, within, after, netCurrent, totalLessCurrent, netAssets, share, reserves, broughtForward, ytd, plCumulative, equity, yearStart: yStart === MIN_DAY ? null : yStart, tbDebit, tbCredit };
+    // what live and reversed closes put on retained earnings up to the date (a reversed close nets to nothing with its mirror)
+    const [ct] = await tx.$queryRaw<{ v: string | null }[]>`
+      SELECT sum(l.credit - l.debit)::text AS v FROM journal_line l JOIN journal j ON j.id = l.journal_id AND j.organisation_id = l.organisation_id JOIN account a ON a.id = l.account_id AND a.organisation_id = l.organisation_id
+       WHERE l.company_id = ${companyId}::uuid AND j.journal_date <= ${asOf}::date AND j.source_type = ANY(${CLOSING}::text[]) AND a.control_kind = 'RETAINED_EARNINGS'`;
+    const closedToRetainedEarnings = money(ct?.v ?? '0');
+    return { closedToRetainedEarnings, lines, accounts, fixed, current, within, after, netCurrent, totalLessCurrent, netAssets, share, reserves, broughtForward, ytd, plCumulative, equity, yearStart: yStart === MIN_DAY ? null : yStart, tbDebit, tbCredit };
   }
 
   async balanceSheet(tx: Tx, companyId: string, q: { asOf: string; compareAsOf?: string; includeEmpty?: boolean }) {
@@ -152,11 +163,11 @@ export class ReportService {
       total('TOTAL.EQUITY', 'Capital and reserves', (b) => b.equity),
     ].filter(keep);
     const proof = (b: typeof cur) => ({ netAssets: f(b.netAssets), capitalAndReserves: f(b.equity), difference: f(b.netAssets.minus(b.equity)), balanced: b.netAssets.equals(b.equity),
-      trialBalance: { debit: f(b.tbDebit), credit: f(b.tbCredit), balanced: b.tbDebit.equals(b.tbCredit) } });
+      trialBalance: { debit: f(b.tbDebit), credit: f(b.tbCredit), balanced: b.tbDebit.equals(b.tbCredit) }, closedToRetainedEarnings: f(b.closedToRetainedEarnings) });
     return {
       companyId, companyName: co.name, currency: co.baseCurrency, asOf: q.asOf, compareAsOf: q.compareAsOf ?? null, financialYearStart: cur.yearStart, mappingVersion: REPORT_MAPPING_VERSION,
       lines, netAssets: f(cur.netAssets), reconciliation: { ...proof(cur), ...(cmp ? { comparative: proof(cmp) } : {}) },
-      notice: 'Management accounts from the ledger: there is no year-end closing journal yet, so the profit and loss account is the P&L cumulated to the date (V2 adds statutory presentation).',
+      notice: 'Management accounts from the ledger. The profit and loss account is the P&L cumulated to the date: year-end closing journals are left out of the lines, so they read the same before and after a close, and closedToRetainedEarnings shows what the closes moved (DEC-060). The trial-balance proof includes them.',
     };
   }
 
@@ -173,6 +184,7 @@ export class ReportService {
              (SELECT min(coalesce(x.adjusts_currency, x.original_currency)) FROM journal_line x WHERE x.journal_id = j.id AND coalesce(x.adjusts_currency, x.original_currency) IS NOT NULL) AS ccy
         FROM journal_line l JOIN journal j ON j.id = l.journal_id AND j.organisation_id = l.organisation_id
        WHERE l.company_id = ${companyId}::uuid AND l.account_id = ANY(${fxAccounts}::uuid[]) AND j.journal_date >= ${q.from}::date AND j.journal_date <= ${q.to}::date
+         AND j.source_type <> ALL(${CLOSING}::text[])
        GROUP BY j.id, j.journal_number, j.journal_date, j.source_type, l.account_id ORDER BY j.journal_date, j.journal_number`;
     const kind = (accountId: string) => (accountId === settings?.realisedAccountId ? 'REALISED' : 'UNREALISED');
     const byKind = (k: string) => diffs.filter((d) => kind(d.account_id) === k);

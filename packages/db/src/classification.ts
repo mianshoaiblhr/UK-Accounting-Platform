@@ -101,6 +101,7 @@ export const TABLE_PROTECTION: Record<string, { protection: Protection; why: str
   release_run_line: { protection: 'RLS+APP', why: 'V2-M3a what a release run released from each schedule: written once (no UPDATE privilege, trigger).' },
   provision: { protection: 'RLS+APP', why: 'V2-M3a provisions with their accounts and basis: written once (no UPDATE privilege, trigger).' },
   provision_movement: { protection: 'RLS+APP', why: 'V2-M3a provision movements: dated in order, never below zero, the latest reversed once (trigger).' },
+  year_end_close: { protection: 'RLS+APP', why: 'V2-M3b closing journal of a financial year: no overlapping live close, POSTED -> REVERSED once (trigger); a live close keeps income and expense out of the year (journal_line trigger).' },
   company_reporting_framework: { protection: 'RLS+APP', why: 'V2-M1 the standard version and entity size of each financial year; audited; locked once approved (V2-M6).' },
   cash_transaction: { protection: 'RLS+APP', why: 'Money in and out without a source document (M6c); cash:record; posted when recorded; immutable; reversed once by a proven mirror journal (trigger).' },
   cash_transaction_line: { protection: 'RLS+APP', why: 'Lines of a cash transaction; written once with it (trigger); no UPDATE/DELETE privilege.' },

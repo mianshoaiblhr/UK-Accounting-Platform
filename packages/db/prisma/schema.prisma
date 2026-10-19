@@ -2474,3 +2474,26 @@ model ProvisionMovement {
   @@index([organisationId, provisionId, movementDate], map: "pm_provision_idx")
   @@map("provision_movement")
 }
+
+/// V2-M3b: the closing journal of one financial year (DEC-060): the year's income and expense moved to retained earnings; reversed only by its mirror.
+model YearEndClose {
+  id                        String    @id @db.Uuid
+  organisationId            String    @map("organisation_id") @db.Uuid
+  companyId                 String    @map("company_id") @db.Uuid
+  yearStart                 DateTime  @map("year_start") @db.Date
+  yearEnd                   DateTime  @map("year_end") @db.Date
+  retainedEarningsAccountId String    @map("retained_earnings_account_id") @db.Uuid
+  journalId                 String    @map("journal_id") @db.Uuid
+  profit                    Decimal   @db.Decimal(19, 4)
+  status                    String    @default("POSTED")
+  reversalJournalId         String?   @map("reversal_journal_id") @db.Uuid
+  createdByUserId           String    @map("created_by_user_id") @db.Uuid
+  createdAt                 DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  reversedByUserId          String?   @map("reversed_by_user_id") @db.Uuid
+  reversedAt                DateTime? @map("reversed_at") @db.Timestamptz(3)
+  reversedReason            String?   @map("reversed_reason")
+
+  @@unique([organisationId, id], map: "yec_organisation_id_id_key")
+  @@index([organisationId, companyId, status, yearStart], map: "yec_company_idx")
+  @@map("year_end_close")
+}

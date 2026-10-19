@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Fragment, useState } from 'react';
 import { qs } from '@/lib/workspace';
 
-export interface ReportLine { key: string; name: string; amount: string; comparative?: string; total?: boolean; accounts?: { accountId: string; code: string; name: string; amount: string; drilldown: { accountId: string; from: string | null; to: string } }[] }
+export interface ReportLine { key: string; name: string; amount: string; comparative?: string; total?: boolean; accounts?: { accountId: string; code: string; name: string; amount: string; drilldown: { accountId: string; from: string | null; to: string; excludeClosing?: boolean } }[] }
 
 /** A financial statement exactly as the API returned it (DEC-048): lines, totals and comparatives; each line opens its accounts, each account its ledger. */
 export function Statement({ lines, base, currency, compareLabel, label }: { lines: ReportLine[]; base: string; currency: string; label: string; compareLabel?: string | null }) {
@@ -21,7 +21,7 @@ export function Statement({ lines, base, currency, compareLabel, label }: { line
             </tr>
             {open[l.key] && l.accounts?.map((a) => (
               <tr key={`${l.key}-${a.accountId}`}>
-                <td className="indent"><Link href={`${base}/ledger${qs({ accountId: a.accountId, from: a.drilldown.from ?? undefined, to: a.drilldown.to })}`}>{a.code} {a.name}</Link></td>
+                <td className="indent"><Link href={`${base}/ledger${qs({ accountId: a.accountId, from: a.drilldown.from ?? undefined, to: a.drilldown.to, excludeClosing: a.drilldown.excludeClosing ? 'true' : undefined })}`}>{a.code} {a.name}</Link></td>
                 <td className="num">{a.amount}</td>
                 {compareLabel ? <td /> : null}
               </tr>

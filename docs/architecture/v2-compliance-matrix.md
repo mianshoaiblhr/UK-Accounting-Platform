@@ -2,7 +2,7 @@
 
 Source requirements: docs/specifications/V2_Accounts_Production_FRS102_FRS105.md, 00_MASTER_IMPLEMENTATION_MANIFEST.md, decision-log.md DEC-051..054.
 
-Generated from `v2-compliance-matrix.json` at commit `f735149`; CI: <https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39178258465>. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
+Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
 
 ## Plan history (append-only)
 
@@ -13,14 +13,15 @@ Generated from `v2-compliance-matrix.json` at commit `f735149`; CI: <https://git
 * v1.3a (2026-10-18): V2-M2 evidence recorded (CI 39159238749 and CodeQL 39159238888 green on da32ffc; clean clone 2047 tests, e2e 21/21, OpenAPI drift 0).
 * v1.4 (2026-10-18, V2-M3a, DEC-059): year-end adjustments built. Missing -> Implemented: V2-MOD-05..08. Row added: V2-YEC-01, the year-end closing journal, which was in the approved V2-M3 scope but missing from the matrix (61 rows).
 * v1.4a (2026-10-18): V2-M3a evidence recorded (CI 39178258465 and CodeQL 39178258477 green on f735149; clean clone 2091 tests, e2e 21/21, OpenAPI drift 0).
+* v1.5 (2026-10-19, V2-M3b, DEC-060): year-end closing journal built. Missing -> Implemented: V2-YEC-01.
 
 ## Summary
 
 | Status | Rows |
 |---|---|
-| IMPLEMENTED | 21 (34% of applicable) |
+| IMPLEMENTED | 22 (36% of applicable) |
 | PARTIALLY IMPLEMENTED | 2 (3% of applicable) |
-| MISSING | 38 (62% of applicable) |
+| MISSING | 37 (60% of applicable) |
 | NOT APPLICABLE | 0 |
 | **Total** | **61** |
 
@@ -31,7 +32,7 @@ Generated from `v2-compliance-matrix.json` at commit `f735149`; CI: <https://git
 | V2-M0 | Decisions, plan, matrix, ADRs | RECORDED 2026-10-17 (DEC-051..054, ADR-62..64); qualified accountant named 2026-10-18: Shoaib (DEC-056) | Engineering | V2 approval (DEC-051) | 0 | 0 |
 | V2-M1 | Reporting framework as data | ACCEPTED under the delegation 2026-10-18 (v2-m1-acceptance.md; CI 39083312122 on fd0f556); rules unverified until Shoaib verifies them (DEC-056) | Engineering (build); qualified accountant (rules) | V2-M0 | 9 | 7 |
 | V2-M2 | Fixed assets and depreciation | ACCEPTED under the delegation 2026-10-18 (v2-m2-acceptance.md; CI 39159238749 on da32ffc) | Engineering | V2-M1 | 10 | 10 |
-| V2-M3 | Year-end adjustments and the closing journal | SPLIT (DEC-059): V2-M3a adjustments ACCEPTED under the delegation 2026-10-18 (v2-m3a-acceptance.md; CI 39178258465 on f735149); V2-M3b closing journal next | Engineering | V2-M2 | 5 | 4 |
+| V2-M3 | Year-end adjustments and the closing journal | SPLIT (DEC-059): V2-M3a adjustments ACCEPTED under the delegation 2026-10-18 (v2-m3a-acceptance.md; CI 39178258465 on f735149); V2-M3b closing journal BUILT 2026-10-19 (v2-m3b-acceptance.md) | Engineering | V2-M2 | 5 | 5 |
 | V2-M4 | Director balances and related parties | planned | Engineering | V2-M3 | 2 | 0 |
 | V2-M5 | Statements and notes (FRS 105, FRS 102 1A, FRS 102) | planned | Engineering (build); qualified accountant (rules) | V2-M1; V2-M3; V2-M4 | 8 | 0 |
 | V2-M6 | Year-end workflow, review, approval, filing-ready package | planned | Engineering | V2-M5 | 26 | 0 |
@@ -93,10 +94,10 @@ A milestone is accepted on an acceptance package: commit SHA, CI run (every job)
 
 ## V2-M3 - Year-end adjustments and the closing journal
 
-**Status:** SPLIT (DEC-059): V2-M3a adjustments ACCEPTED under the delegation 2026-10-18 (v2-m3a-acceptance.md; CI 39178258465 on f735149); V2-M3b closing journal next  
+**Status:** SPLIT (DEC-059): V2-M3a adjustments ACCEPTED under the delegation 2026-10-18 (v2-m3a-acceptance.md; CI 39178258465 on f735149); V2-M3b closing journal BUILT 2026-10-19 (v2-m3b-acceptance.md)  
 **Owner:** Engineering  
 **Depends on:** V2-M2  
-**Acceptance:** v2-plan.md section 5.3; v2-m3a-acceptance.md (V2-M3a)  
+**Acceptance:** v2-plan.md sections 5.3 and 5b.4; v2-m3a-acceptance.md (V2-M3a); v2-m3b-acceptance.md (V2-M3b)  
 **Deferred scope:** -
 
 | ID | Reference | Requirement | Status | Owner | Dependencies | Acceptance criteria | Deferred scope | Evidence | Notes |
@@ -105,7 +106,7 @@ A milestone is accepted on an acceptance package: commit SHA, CI run (every job)
 | **V2-MOD-06** | V2 Modules | Prepayments | **IMPLEMENTED** | Engineering | V2-M1 | Prepayments released over their period by schedule; balance reconciles to the ledger. | - | tests/golden/v2-m3a-adjustments.json (docs/architecture/v2-m3a-golden-workings.xlsx recomputes all 51 figures independently: 0 differences); tests/api/year-end.test.ts; tests/platform/year-end.test.ts; tests/db/year-end.test.ts | Prepayments are set up from the expense account (posted) or linked to the payment that carries them, and released by release runs, straight line by day or by month. The balance reconciles to the ledger by account; unregistered postings are listed. |
 | **V2-MOD-07** | V2 Modules | Provisions | **IMPLEMENTED** | Engineering | V2-M1 | Provisions recorded with basis and movement (made, used, released) and reconciled to the ledger. | - | tests/golden/v2-m3a-adjustments.json (docs/architecture/v2-m3a-golden-workings.xlsx recomputes all 51 figures independently: 0 differences); tests/api/year-end.test.ts; tests/platform/year-end.test.ts; tests/db/year-end.test.ts | A provision records its accounts and basis. Movements are made, used and released in date order and never take the balance below zero (service and database). The movement report gives opening, made, used, released and closing; the balance reconciles to the ledger. Discounting is not covered (DEC-059). |
 | **V2-MOD-08** | V2 Modules | Deferred income | **IMPLEMENTED** | Engineering | V2-M1 | Deferred income released by schedule; balance reconciles to the ledger. | - | tests/golden/v2-m3a-adjustments.json (docs/architecture/v2-m3a-golden-workings.xlsx recomputes all 51 figures independently: 0 differences); tests/api/year-end.test.ts; tests/platform/year-end.test.ts; tests/db/year-end.test.ts | Deferred income is set up from the income account or linked, and released by release runs. The balance reconciles to the ledger. |
-| **V2-YEC-01** | v2-proposal section 4 (V2-M3) | Year-end closing journal to retained earnings | **MISSING** | Engineering | DEC-059 | The year's income and expense balances are closed to the retained-earnings account by one journal at the year end, reversible only by its mirror; every P&L figure (management P&L, statutory preview, FX report) excludes closing journals, and balance sheets include them, so statements reconcile before and after the close. | - |  | Added 2026-10-18 from the approved plan (DEC-059): the closing journal was in V2-M3's approved scope but had no matrix row. Built in V2-M3b. |
+| **V2-YEC-01** | v2-proposal section 4 (V2-M3) | Year-end closing journal to retained earnings | **IMPLEMENTED** | Engineering | DEC-059 | The year's income and expense balances are closed to the retained-earnings account by one journal at the year end, reversible only by its mirror; every P&L figure (management P&L, statutory preview, FX report) excludes closing journals, and balance sheets include them, so statements reconcile before and after the close. | - | tests/golden/v2-m3b-close.json (docs/architecture/v2-m3b-golden-workings.xlsx recomputes all 152 figures independently: 0 differences); tests/api/year-end-close.test.ts; tests/platform/year-end-close.test.ts; tests/db/year-end-close.test.ts; tests/api/statutory.test.ts (preview unchanged by closes) | Added 2026-10-18 from the approved plan (DEC-059). Built in V2-M3b (DEC-060): one closing journal per financial year (aligned to accounting periods, at most 18 months, never overlapping a live close) moves every income and expense balance of the year to retained earnings; while it is live the PostingService and the database refuse income and expense dated in the year; it is corrected only by its mirror. The management P&L, the balance sheet lines, the statutory preview and the FX report leave closing journals out and read the same before and after a close; the trial balance and the balance sheet's trial-balance proof include them. |
 
 ## V2-M4 - Director balances and related parties
 

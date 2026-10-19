@@ -5,7 +5,7 @@ import { Suspense, useState } from 'react';
 import { WorkspaceShell, qs, useApi, useWorkspace } from '@/lib/workspace';
 
 interface Ledger {
-  currency: string; account: { id: string; code: string; name: string; type: string }; from: string | null; to: string | null; openingBalance: string;
+  currency: string; account: { id: string; code: string; name: string; type: string }; from: string | null; to: string | null; excludeClosing?: boolean; openingBalance: string;
   items: { journalId: string; journalNumber: number; journalDate: string; lineNo: number; description: string; sourceType: string; debit: string; credit: string; balance: string }[];
   nextCursor: string | null;
 }
@@ -17,7 +17,9 @@ function LedgerPage() {
   const [from, setFrom] = useState(sp.get('from') ?? '');
   const [to, setTo] = useState(sp.get('to') ?? '');
   const [cursor, setCursor] = useState<string>();
-  const { data, error } = useApi<Ledger>(accountId ? w.path(`/ledger${qs({ accountId, from, to, cursor, limit: '200' })}`) : null);
+  // a P&L drill-down leaves year-end closing journals out, as its figure does (DEC-060)
+  const excludeClosing = sp.get('excludeClosing') === 'true' ? 'true' : undefined;
+  const { data, error } = useApi<Ledger>(accountId ? w.path(`/ledger${qs({ accountId, from, to, cursor, limit: '200', excludeClosing })}`) : null);
   if (!accountId) return <div className="card"><p className="muted">Open an account from the chart of accounts or the trial balance.</p></div>;
   return (
     <div className="card">
@@ -26,6 +28,7 @@ function LedgerPage() {
         <div><label htmlFor="from">From</label><input id="from" type="date" value={from} onChange={(e) => { setFrom(e.target.value); setCursor(undefined); }} /></div>
         <div><label htmlFor="to">To</label><input id="to" type="date" value={to} onChange={(e) => { setTo(e.target.value); setCursor(undefined); }} /></div>
       </div>
+      {data?.excludeClosing && <p className="muted" data-testid="excludes-closing">Year-end closing journals are left out, as in the profit and loss figure this came from.</p>}
       {error && <p className="error" role="alert">{error}</p>}
       {data && (
         <table data-testid="ledger">

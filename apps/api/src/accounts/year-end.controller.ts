@@ -2,10 +2,10 @@ import { Body, Controller, Get, HttpCode, Inject, Injectable, Param, ParseUUIDPi
 import type { z } from 'zod';
 import {
   cancelYearEndItemSchema, createProvisionSchema, createYearEndItemSchema, provisionMovementSchema, provisionReportQuerySchema, releasePreviewQuerySchema, releaseRunSchema, reverseProvisionMovementSchema,
-  reverseReleaseRunSchema, yearEndItemListQuerySchema, yearEndRegisterQuerySchema, type Permission,
+  reverseReleaseRunSchema, reverseYearEndCloseSchema, yearEndCloseListQuerySchema, yearEndClosePreviewQuerySchema, yearEndCloseSchema, yearEndItemListQuerySchema, yearEndRegisterQuerySchema, type Permission,
 } from '@uk/contracts';
 import type { Database, Tx } from '@uk/db';
-import { YearEndService, type PostingActor } from '@uk/accounting';
+import { YearEndCloseService, YearEndService, type PostingActor } from '@uk/accounting';
 import { Idempotent, Org, RequireFeature, RequirePermissions } from '../common/decorators';
 import { DB } from '../common/tokens';
 import type { OrgAccess } from '../common/types';
@@ -67,4 +67,22 @@ export class YearEndController {
   }
   @Get('year-end-register') @RequirePermissions('ledger:read')
   register(@Org() org: OrgAccess, @ID('companyId') c: string, @Query(new ZodPipe(yearEndRegisterQuerySchema)) q: In<typeof yearEndRegisterQuerySchema>) { return this.api.run(org, c, (tx) => this.ye.register(tx, c, q.asAt)); }
+}
+
+/** V2-M3b closing journal (DEC-060): preview, close, list, get and reverse a financial year's close to retained earnings. Behind `accounts.production`. */
+@Controller('organisations/:organisationId/companies/:companyId/year-end-closes')
+@RequireFeature('accounts.production')
+export class YearEndCloseController {
+  constructor(private readonly api: YearEndApiService, private readonly closes: YearEndCloseService) {}
+
+  @Get() @RequirePermissions('ledger:read')
+  list(@Org() org: OrgAccess, @ID('companyId') c: string, @Query(new ZodPipe(yearEndCloseListQuerySchema)) q: In<typeof yearEndCloseListQuerySchema>) { return this.api.run(org, c, (tx) => this.closes.list(tx, c, q)); }
+  @Get('preview') @RequirePermissions('ledger:read')
+  preview(@Org() org: OrgAccess, @ID('companyId') c: string, @Query(new ZodPipe(yearEndClosePreviewQuerySchema)) q: In<typeof yearEndClosePreviewQuerySchema>) { return this.api.run(org, c, (tx) => this.closes.preview(tx, c, q)); }
+  @Post() @RequirePermissions('accounts:prepare') @Idempotent()
+  close(@Org() org: OrgAccess, @ID('companyId') c: string, @Body(new ZodPipe(yearEndCloseSchema)) b: In<typeof yearEndCloseSchema>) { return this.api.run(org, c, (tx, x) => this.closes.close(tx, { ...x, ...b })); }
+  @Get(':closeId') @RequirePermissions('ledger:read')
+  get(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('closeId') id: string) { return this.api.run(org, c, (tx) => this.closes.get(tx, c, id)); }
+  @Post(':closeId/reverse') @HttpCode(200) @RequirePermissions('accounts:prepare') @Idempotent()
+  reverse(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('closeId') id: string, @Body(new ZodPipe(reverseYearEndCloseSchema)) b: In<typeof reverseYearEndCloseSchema>) { return this.api.run(org, c, (tx, x) => this.closes.reverse(tx, { ...x, id, ...b })); }
 }

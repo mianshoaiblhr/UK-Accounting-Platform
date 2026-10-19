@@ -40,12 +40,12 @@
     },
     "V2-M3": {
       "title": "Year-end adjustments and the closing journal",
-      "status": "SPLIT (DEC-059): V2-M3a adjustments ACCEPTED under the delegation 2026-10-18 (v2-m3a-acceptance.md; CI 39178258465 on f735149); V2-M3b closing journal next",
+      "status": "SPLIT (DEC-059): V2-M3a adjustments ACCEPTED under the delegation 2026-10-18 (v2-m3a-acceptance.md; CI 39178258465 on f735149); V2-M3b closing journal BUILT 2026-10-19 (v2-m3b-acceptance.md)",
       "owner": "Engineering",
       "depends": [
         "V2-M2"
       ],
-      "acceptance": "v2-plan.md section 5.3; v2-m3a-acceptance.md (V2-M3a)",
+      "acceptance": "v2-plan.md sections 5.3 and 5b.4; v2-m3a-acceptance.md (V2-M3a); v2-m3b-acceptance.md (V2-M3b)",
       "deferred": "-"
     },
     "V2-M4": {
@@ -267,9 +267,9 @@
       "ref": "v2-proposal section 4 (V2-M3)",
       "req": "Year-end closing journal to retained earnings",
       "m": "V2-M3",
-      "s": "M",
-      "ev": "",
-      "note": "Added 2026-10-18 from the approved plan (DEC-059): the closing journal was in V2-M3's approved scope but had no matrix row. Built in V2-M3b.",
+      "s": "I",
+      "ev": "tests/golden/v2-m3b-close.json (docs/architecture/v2-m3b-golden-workings.xlsx recomputes all 152 figures independently: 0 differences); tests/api/year-end-close.test.ts; tests/platform/year-end-close.test.ts; tests/db/year-end-close.test.ts; tests/api/statutory.test.ts (preview unchanged by closes)",
+      "note": "Added 2026-10-18 from the approved plan (DEC-059). Built in V2-M3b (DEC-060): one closing journal per financial year (aligned to accounting periods, at most 18 months, never overlapping a live close) moves every income and expense balance of the year to retained earnings; while it is live the PostingService and the database refuse income and expense dated in the year; it is corrected only by its mirror. The management P&L, the balance sheet lines, the statutory preview and the FX report leave closing journals out and read the same before and after a close; the trial balance and the balance sheet's trial-balance proof include them.",
       "owner": "Engineering",
       "deps": "DEC-059",
       "accept": "The year's income and expense balances are closed to the retained-earnings account by one journal at the year end, reversible only by its mirror; every P&L figure (management P&L, statutory preview, FX report) excludes closing journals, and balance sheets include them, so statements reconcile before and after the close.",
@@ -895,6 +895,7 @@
     "v1.3 (2026-10-18, V2-M2, DEC-057/058): fixed assets built. Missing -> Implemented: V2-MOD-03, V2-MOD-04, V2-FA-01..08. Golden review of V2-M1 by Shoaib recorded (DEC-057); V2-TEST-01 stays Partially.",
     "v1.3a (2026-10-18): V2-M2 evidence recorded (CI 39159238749 and CodeQL 39159238888 green on da32ffc; clean clone 2047 tests, e2e 21/21, OpenAPI drift 0).",
     "v1.4 (2026-10-18, V2-M3a, DEC-059): year-end adjustments built. Missing -> Implemented: V2-MOD-05..08. Row added: V2-YEC-01, the year-end closing journal, which was in the approved V2-M3 scope but missing from the matrix (61 rows).",
-    "v1.4a (2026-10-18): V2-M3a evidence recorded (CI 39178258465 and CodeQL 39178258477 green on f735149; clean clone 2091 tests, e2e 21/21, OpenAPI drift 0)."
+    "v1.4a (2026-10-18): V2-M3a evidence recorded (CI 39178258465 and CodeQL 39178258477 green on f735149; clean clone 2091 tests, e2e 21/21, OpenAPI drift 0).",
+    "v1.5 (2026-10-19, V2-M3b, DEC-060): year-end closing journal built. Missing -> Implemented: V2-YEC-01."
   ]
 }

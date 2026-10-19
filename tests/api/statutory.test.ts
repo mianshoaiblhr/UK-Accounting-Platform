@@ -266,6 +266,26 @@ describe('the golden micro-entity trial balance (DEC-054)', () => {
   });
 });
 
+describe('year-end closes (V2-M3b, DEC-060)', () => {
+  it('closing both years changes nothing in the statutory preview of either year; the closes are then reversed', async () => {
+    const years = G.frameworks.map((f) => [f.yearStart, f.yearEnd] as const);
+    // every line and proof is the same; only the trial-balance proof, which takes the whole ledger, sees the closing journals (and still balances)
+    const strip = (x: unknown): unknown => (Array.isArray(x) ? x.map(strip) : x && typeof x === 'object'
+      ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, k === 'trialBalance' ? (v as { balanced: boolean }).balanced : strip(v)])) : x);
+    const previews = async () => (await Promise.all(years.map(([start]) => preview(reviewer, start)))).map(strip);
+    const before = await previews();
+    const ids: string[] = [];
+    for (const [yearStart, yearEnd] of years) {
+      const r = await as(accountant, 'post', c('/year-end-closes'), { yearStart, yearEnd });
+      expect(r.status, JSON.stringify(r.body)).toBe(201);
+      ids.push(r.body.id);
+    }
+    expect(await previews()).toEqual(before);
+    for (const id of ids) expect((await as(accountant, 'post', c(`/year-end-closes/${id}/reverse`), { reason: 'Synthetic: preview unchanged' })).status).toBe(200);
+    expect(await previews()).toEqual(before);
+  });
+});
+
 describe('access', () => {
   it('reading needs ledger:read; another organisation sees nothing; the routes are behind accounts.production', async () => {
     expect((await as(viewer, 'get', c('/reporting-standards'))).status).toBe(403);

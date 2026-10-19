@@ -20,6 +20,8 @@ const FA_LOCK = T(P('fixed-assets'), 'after 2026 is closed, every register posti
 const YE_NO_VAT = T(P('year-end'), 'a year-end source refuses a VAT code (none of them carries VAT)');
 const YE_LOCK = T(P('year-end'), 'after 2026 is closed, every year-end posting dated in it is refused: accruals and their reversals and cancellations, set-ups and their cancellations, provision movements and their reversals; nothing is written');
 const YE_RUN_LOCK = T(P('year-end'), 'a release run and its reversal dated in a closed period are refused (a company with no later runs)');
+const YEC_NO_VAT = T(P('year-end-close'), 'a closing source refuses a VAT code (neither carries VAT)');
+const YEC_LOCK = T(P('year-end-close'), 'a close and its reversal dated in a closed or locked period are refused; nothing is written');
 const MIRROR_FINAL = NA('A mirror is final: reversing a reversal is refused (tested in the negative cell)');
 
 export const POSTING_RULE_COVERAGE: Record<string, Record<Category, Cell>> = {
@@ -276,5 +278,19 @@ export const POSTING_RULE_COVERAGE: Record<string, Record<Category, Cell>> = {
     reversal: MIRROR_FINAL,
     vat: YE_NO_VAT,
     periodLock: YE_LOCK,
+  },
+  YEAR_END_CLOSE: {
+    positive: T(P('year-end-close'), 'closes a year: one journal dated the year end, income and expense to retained earnings in code order; a loss debits retained earnings'),
+    negative: T(P('year-end-close'), 'refuses a year that is not aligned to periods, has a gap, runs over 18 months, overlaps a live close or has nothing to close, and anyone without accounts:prepare or an AI; nothing is written'),
+    reversal: T(P('year-end-close'), 'YEAR_END_CLOSE is corrected only by its mirror: the ledger cannot reverse it directly'),
+    vat: YEC_NO_VAT,
+    periodLock: YEC_LOCK,
+  },
+  YEAR_END_CLOSE_REVERSAL: {
+    positive: T(P('year-end-close'), 'reversing a close posts its mirror at the year end and opens the year to income and expense again; closing again closes what is there now'),
+    negative: T(P('year-end-close'), 'a reversed close cannot be reversed again; a closing source reaches no control account but retained earnings; the mirror is final'),
+    reversal: MIRROR_FINAL,
+    vat: YEC_NO_VAT,
+    periodLock: YEC_LOCK,
   },
 };

@@ -1,0 +1,78 @@
+{
+  "id": "V2-M3B-GOLDEN-01",
+  "purpose": "DEC-054 golden for V2-M3b (DEC-060): two financial years closed to retained earnings, the statements before and after the closes, a refused posting into a closed year, the reversal, a late posting and the re-close. Every journal and figure written and added up by hand before the code.",
+  "disclaimer": "SYNTHETIC. The amounts are test choices for a synthetic company; nothing here is a real business or a verified standard rule.",
+  "periods": [["2025-01-01", "2025-12-31"], ["2026-01-01", "2026-12-31"], ["2027-01-01", "2027-12-31"]],
+  "seed": [
+    { "ref": "J1", "date": "2025-01-01", "description": "Equipment contributed for shares", "lines": [["0030", "5000.00", "0.00"], ["3000", "0.00", "5000.00"]] },
+    { "ref": "J2", "date": "2025-06-30", "description": "Sales 2025", "lines": [["1110", "12000.00", "0.00"], ["4000", "0.00", "12000.00"]] },
+    { "ref": "J3", "date": "2025-09-30", "description": "Rent 2025", "lines": [["6100", "7500.00", "0.00"], ["1110", "0.00", "7500.00"]] },
+    { "ref": "J4", "date": "2026-03-31", "description": "Sales 2026", "lines": [["1110", "9000.00", "0.00"], ["4000", "0.00", "9000.00"]] },
+    { "ref": "J5", "date": "2026-05-31", "description": "Telephone 2026", "lines": [["6300", "1234.56", "0.00"], ["1110", "0.00", "1234.56"]] },
+    { "ref": "J6", "date": "2026-09-30", "description": "Other income 2026", "lines": [["1110", "3000.00", "0.00"], ["4100", "0.00", "3000.00"]] },
+    { "ref": "J7", "date": "2026-11-30", "description": "Professional fees 2026", "lines": [["6600", "2100.00", "0.00"], ["1110", "0.00", "2100.00"]] },
+    { "ref": "J8", "date": "2027-02-28", "description": "Sales 2027", "lines": [["1110", "1000.00", "0.00"], ["4000", "0.00", "1000.00"]] }
+  ],
+  "accrual": { "kind": "ACCRUAL", "description": "Electricity December 2026", "amount": "400.00", "plAccount": "6110", "balanceAccount": "2110", "date": "2026-12-31",
+    "expect": { "journal": [["6110", "400.00", "0.00"], ["2110", "0.00", "400.00"]], "reversal": { "date": "2027-01-01", "journal": [["2110", "400.00", "0.00"], ["6110", "0.00", "400.00"]] } } },
+
+  "workings": {
+    "profit2025": "12000.00 - 7500.00 = 4500.00",
+    "profit2026": "income 9000.00 + 3000.00 = 12000.00; expenses 400.00 + 1234.56 + 2100.00 = 3734.56; profit 12000.00 - 3734.56 = 8265.44",
+    "profit2027ToJune": "income 1000.00; expense 6110 is -400.00 (the accrual reversed); profit 1400.00",
+    "debtors2026": "12000.00 - 7500.00 + 9000.00 - 1234.56 + 3000.00 - 2100.00 = 13165.44",
+    "debtors2027June": "13165.44 + 1000.00 = 14165.44",
+    "closedTo2026": "4500.00 + 8265.44 = 12765.44"
+  },
+
+  "before": {
+    "profitAndLoss2026": { "from": "2026-01-01", "to": "2026-12-31", "lines": { "PL.TURNOVER": "9000.00", "PL.ADMIN_EXPENSES": "3734.56", "PL.OTHER_INCOME": "3000.00" },
+      "grossProfit": "9000.00", "operatingProfit": "8265.44", "profitForPeriod": "8265.44", "incomeLessExpensesFromLedger": "8265.44" },
+    "profitAndLossAll": { "from": "2025-01-01", "to": "2027-06-30", "lines": { "PL.TURNOVER": "22000.00", "PL.ADMIN_EXPENSES": "10834.56", "PL.OTHER_INCOME": "3000.00" },
+      "profitForPeriod": "14165.44", "incomeLessExpensesFromLedger": "14165.44" },
+    "balanceSheets": [
+      { "asOf": "2025-12-31", "lines": { "BS.FIXED_ASSETS.TANGIBLE": "5000.00", "BS.CURRENT_ASSETS.DEBTORS": "4500.00", "BS.CAPITAL.SHARE_CAPITAL": "5000.00", "PL.BROUGHT_FORWARD": "0.00", "PL.YEAR_TO_DATE": "4500.00" },
+        "netAssets": "9500.00", "equity": "9500.00" },
+      { "asOf": "2026-12-31", "lines": { "BS.FIXED_ASSETS.TANGIBLE": "5000.00", "BS.CURRENT_ASSETS.DEBTORS": "13165.44", "BS.CREDITORS_WITHIN_ONE_YEAR": "400.00", "BS.CAPITAL.SHARE_CAPITAL": "5000.00", "PL.BROUGHT_FORWARD": "4500.00", "PL.YEAR_TO_DATE": "8265.44" },
+        "netAssets": "17765.44", "equity": "17765.44" },
+      { "asOf": "2027-06-30", "lines": { "BS.FIXED_ASSETS.TANGIBLE": "5000.00", "BS.CURRENT_ASSETS.DEBTORS": "14165.44", "BS.CREDITORS_WITHIN_ONE_YEAR": "0.00", "BS.CAPITAL.SHARE_CAPITAL": "5000.00", "PL.BROUGHT_FORWARD": "12765.44", "PL.YEAR_TO_DATE": "1400.00" },
+        "netAssets": "19165.44", "equity": "19165.44" }
+    ],
+    "trialBalance2026": { "asOf": "2026-12-31", "rows": [["0030", "5000.00", "0.00"], ["1110", "13165.44", "0.00"], ["2110", "0.00", "400.00"], ["3000", "0.00", "5000.00"], ["4000", "0.00", "21000.00"], ["4100", "0.00", "3000.00"],
+      ["6100", "7500.00", "0.00"], ["6110", "400.00", "0.00"], ["6300", "1234.56", "0.00"], ["6600", "2100.00", "0.00"]], "totalDebit": "29400.00", "totalCredit": "29400.00" }
+  },
+
+  "closes": {
+    "preview2026First": { "yearStart": "2026-01-01", "yearEnd": "2026-12-31", "profit": "8265.44", "warnings": ["earlier_years_not_closed"] },
+    "close2025": { "yearStart": "2025-01-01", "yearEnd": "2025-12-31", "journalDate": "2025-12-31", "profit": "4500.00",
+      "journal": [["4000", "12000.00", "0.00"], ["6100", "0.00", "7500.00"], ["3200", "0.00", "4500.00"]] },
+    "close2026": { "yearStart": "2026-01-01", "yearEnd": "2026-12-31", "journalDate": "2026-12-31", "profit": "8265.44", "warnings": [],
+      "journal": [["4000", "9000.00", "0.00"], ["4100", "3000.00", "0.00"], ["6110", "0.00", "400.00"], ["6300", "0.00", "1234.56"], ["6600", "0.00", "2100.00"], ["3200", "0.00", "8265.44"]] }
+  },
+
+  "after": {
+    "note": "The P&L and balance sheets are exactly those under 'before' (DEC-060); only the trial balance and the transfer to retained earnings change.",
+    "closedToRetainedEarnings": { "2025-12-31": "4500.00", "2026-12-31": "12765.44", "2027-06-30": "12765.44" },
+    "trialBalance2026": { "asOf": "2026-12-31", "rows": [["0030", "5000.00", "0.00"], ["1110", "13165.44", "0.00"], ["2110", "0.00", "400.00"], ["3000", "0.00", "5000.00"], ["3200", "0.00", "12765.44"],
+      ["4000", "0.00", "0.00"], ["4100", "0.00", "0.00"], ["6100", "0.00", "0.00"], ["6110", "0.00", "0.00"], ["6300", "0.00", "0.00"], ["6600", "0.00", "0.00"]], "totalDebit": "18165.44", "totalCredit": "18165.44" },
+    "closeView2026": { "status": "POSTED", "yearIncomeLessExpensesIncludingClose": "0.00" },
+    "generalLedger4000": {
+      "from": "2026-01-01", "to": "2026-12-31",
+      "all": { "openingBalance": "0.00", "items": [["J4", "0.00", "9000.00", "9000.00"], ["CLOSE2026", "9000.00", "0.00", "0.00"]] },
+      "excludeClosing": { "openingBalance": "12000.00", "items": [["J4", "0.00", "9000.00", "21000.00"]] }
+    },
+    "refusedPosting": { "date": "2026-12-20", "lines": [["6310", "50.00", "0.00"], ["1110", "0.00", "50.00"]], "code": "year_closed" },
+    "closeAgain2026": { "code": "year_already_closed" }
+  },
+
+  "reopen": {
+    "reverse2026": { "reason": "Late stationery invoice for December 2026", "journalDate": "2026-12-31",
+      "journal": [["4000", "0.00", "9000.00"], ["4100", "0.00", "3000.00"], ["6110", "400.00", "0.00"], ["6300", "1234.56", "0.00"], ["6600", "2100.00", "0.00"], ["3200", "8265.44", "0.00"]] },
+    "latePosting": { "date": "2026-12-20", "description": "Late stationery invoice", "lines": [["6310", "50.00", "0.00"], ["1110", "0.00", "50.00"]] },
+    "reclose2026": { "profit": "8215.44", "workings": "8265.44 - 50.00 = 8215.44",
+      "journal": [["4000", "9000.00", "0.00"], ["4100", "3000.00", "0.00"], ["6110", "0.00", "400.00"], ["6300", "0.00", "1234.56"], ["6310", "0.00", "50.00"], ["6600", "0.00", "2100.00"], ["3200", "0.00", "8215.44"]] },
+    "profitAndLoss2026": { "lines": { "PL.TURNOVER": "9000.00", "PL.ADMIN_EXPENSES": "3784.56", "PL.OTHER_INCOME": "3000.00" }, "profitForPeriod": "8215.44" },
+    "balanceSheet2026": { "asOf": "2026-12-31", "lines": { "BS.FIXED_ASSETS.TANGIBLE": "5000.00", "BS.CURRENT_ASSETS.DEBTORS": "13115.44", "BS.CREDITORS_WITHIN_ONE_YEAR": "400.00", "BS.CAPITAL.SHARE_CAPITAL": "5000.00", "PL.BROUGHT_FORWARD": "4500.00", "PL.YEAR_TO_DATE": "8215.44" },
+      "netAssets": "17715.44", "equity": "17715.44", "closedToRetainedEarnings": "12715.44" }
+  }
+}

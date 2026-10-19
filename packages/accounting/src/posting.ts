@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { Events, JOURNAL_SOURCES, type ActorKind } from '@uk/contracts';
+import { CLOSING_SOURCES, Events, JOURNAL_SOURCES, type ActorKind } from '@uk/contracts';
 import { conflict, forbidden, getContext, notFound, unprocessable } from '@uk/core';
 import type { Tx } from '@uk/db';
 import { auditRow, publishEvent } from '@uk/platform';
@@ -385,6 +385,9 @@ export class PostingService {
 
   private async prepareLedger(tx: Tx, input: PostInput, source: (typeof JOURNAL_SOURCES)[string], base: { company: { baseCurrency: string }; cur: { minorUnits: number }; date: Date; lines: { accountId: string; debit: Money; credit: Money; original?: PostLineOriginal; generated?: boolean }[] }) {
     const { cur, date, lines } = base;
+    // 5a. every posting takes the company's year-close lock shared, before any other lock; a year-end close takes it exclusively (V2-M3b, DEC-060),
+    // so a posting either commits before the close reads the year's balances or sees the close and is refused at 7c
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock_shared(hashtextextended(${'yearclose:' + input.companyId}, 0))`;
     // 6. period
     const periodRef = await tx.accountingPeriod.findFirst({ where: { companyId: input.companyId, startDate: { lte: date }, endDate: { gte: date } }, select: { id: true } });
     if (!periodRef) throw unprocessable(`No accounting period covers ${input.journalDate}`, 'no_period');
@@ -406,6 +409,12 @@ export class PostingService {
       if ((a.activeFrom && date < a.activeFrom) || (a.activeTo && date > a.activeTo)) throw unprocessable(`Account ${a.code} is not active on ${input.journalDate}`, 'account_inactive');
       if (a.isControl && !source.controlAccounts && typed.has(id)) throw unprocessable(`Account ${a.code} is a control account; ${input.sourceType} journals cannot post to it (it is maintained by its sub-ledger)`, 'control_account_restricted');
       if (a.isControl && source.controlKinds && typed.has(id) && !source.controlKinds.includes(a.controlKind as never)) throw unprocessable(`Account ${a.code} is a ${a.controlKind ?? 'control'} account; ${input.sourceType} journals reach only ${source.controlKinds.join(', ')}`, 'control_account_restricted');
+    }
+
+    // 7c. a closed financial year takes no income or expense until its closing journal is reversed (DEC-060; the database refuses it again)
+    if (!(CLOSING_SOURCES as readonly string[]).includes(input.sourceType) && found.some((a) => a.type === 'INCOME' || a.type === 'EXPENSE')) {
+      const closed = await tx.yearEndClose.findFirst({ where: { companyId: input.companyId, status: 'POSTED', yearStart: { lte: date }, yearEnd: { gte: date } }, select: { yearStart: true, yearEnd: true } });
+      if (closed) throw unprocessable(`The financial year ${isoDay(closed.yearStart)} to ${isoDay(closed.yearEnd)} is closed: income and expense cannot be posted into it until its closing journal is reversed`, 'year_closed');
     }
 
     // 7b. opening balances are the one source allowed onto control accounts, so they are fenced: dated at the very start of record keeping

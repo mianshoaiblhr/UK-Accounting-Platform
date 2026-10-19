@@ -39,3 +39,10 @@ export const provisionMovementSchema = z.object({ kind: z.enum(PROVISION_MOVEMEN
 export const reverseProvisionMovementSchema = z.object({ reason }).strict();
 export const provisionReportQuerySchema = z.object({ from: isoDate, to: isoDate }).strict().refine((q) => q.to >= q.from, { message: 'to cannot precede from', path: ['to'] });
 export const yearEndRegisterQuerySchema = z.object({ asAt: isoDate }).strict();
+
+/** V2-M3b closing journal (DEC-060): a financial year [yearStart, yearEnd] aligned to accounting periods, at most 18 months. */
+const year = z.object({ yearStart: isoDate, yearEnd: isoDate }).strict().refine((q) => q.yearEnd >= q.yearStart, { message: 'yearEnd cannot precede yearStart', path: ['yearEnd'] });
+export const yearEndCloseSchema = year;
+export const yearEndClosePreviewQuerySchema = year;
+export const reverseYearEndCloseSchema = z.object({ reason }).strict();
+export const yearEndCloseListQuerySchema = z.object({ status: z.enum(['POSTED', 'REVERSED']).optional() }).strict();

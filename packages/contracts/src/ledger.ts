@@ -110,7 +110,12 @@ export const JOURNAL_SOURCES: Record<string, JournalSourceDef> = {
   ADJUSTMENT_RELEASE_REVERSAL: { actors: ['USER'], permission: 'accounts:prepare', controlAccounts: false, subLedger: true, description: 'Mirror of the latest live release run' },
   PROVISION_MOVEMENT: { actors: ['USER'], permission: 'accounts:prepare', controlAccounts: false, subLedger: true, description: 'Provision made (Dr expense / Cr provision), used (Dr provision / Cr cost account) or released (Dr provision / Cr expense)' },
   PROVISION_MOVEMENT_REVERSAL: { actors: ['USER'], permission: 'accounts:prepare', controlAccounts: false, subLedger: true, description: 'Mirror of the latest live movement of a provision' },
+  // V2-M3b closing journal (DEC-060): the year's income and expense to retained earnings, corrected only by its mirror; no VAT
+  YEAR_END_CLOSE: { actors: ['USER'], permission: 'accounts:prepare', controlAccounts: true, controlKinds: ['RETAINED_EARNINGS'], subLedger: true, description: 'Closing journal of a financial year: every income and expense balance of the year moved to retained earnings' },
+  YEAR_END_CLOSE_REVERSAL: { actors: ['USER'], permission: 'accounts:prepare', controlAccounts: true, controlKinds: ['RETAINED_EARNINGS'], subLedger: true, description: 'Mirror of a closing journal (the year is open to income and expense again)' },
 };
+/** The closing journal's sources (DEC-060): every P&L figure leaves them out; balance-sheet lines too, so they read the same before and after a close. */
+export const CLOSING_SOURCES = ['YEAR_END_CLOSE', 'YEAR_END_CLOSE_REVERSAL'] as const;
 export const isJournalSource = (s: string) => Object.prototype.hasOwnProperty.call(JOURNAL_SOURCES, s);
 /** Sources a client may name on POST /journals. Opening balances and control adjustments go through journal requests (DEC-012). */
 export const API_JOURNAL_SOURCES = ['MANUAL'] as const;
@@ -176,6 +181,8 @@ export const journalListQuerySchema = z.object({
 export const ledgerQuerySchema = z.object({
   accountId: z.string().uuid(), from: isoDate.optional(), to: isoDate.optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50), cursor: z.string().max(100).optional(),
+  /** V2-M3b (DEC-060): leave closing journals out (opening, lines and running balance), so a P&L drill-down adds up to its figure. */
+  excludeClosing: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'),
 }).strict();
 export const trialBalanceQuerySchema = z.object({ periodId: z.string().uuid().optional(), asOf: isoDate.optional() }).strict()
   .refine((q) => !(q.periodId && q.asOf), { message: 'Give periodId or asOf, not both' });

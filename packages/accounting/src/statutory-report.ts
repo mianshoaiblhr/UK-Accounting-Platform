@@ -1,4 +1,4 @@
-import { COMPARISONS, type BoolExpr, type NumExpr } from '@uk/contracts';
+import { CLOSING_SOURCES, COMPARISONS, type BoolExpr, type NumExpr } from '@uk/contracts';
 import { notFound } from '@uk/core';
 import type { Tx } from '@uk/db';
 import { ZERO, fmt, money, type Money } from './money';
@@ -55,19 +55,20 @@ interface Unplaced { accountId: string; code: string; name: string; type: string
 const isPl = (type: string) => type === 'INCOME' || type === 'EXPENSE';
 
 export class StatutoryReportService {
-  /** Debits and credits per account for journals dated in [from, to]. */
-  private async balances(tx: Tx, companyId: string, from: string, to: string): Promise<Bal[]> {
+  /** Debits and credits per account for journals dated in [from, to]; year-end closing journals left out unless asked for (DEC-060). */
+  private async balances(tx: Tx, companyId: string, from: string, to: string, withClosing = false): Promise<Bal[]> {
+    const skip: string[] = withClosing ? [] : [...CLOSING_SOURCES];
     const rows = await tx.$queryRaw<{ account_id: string; code: string; name: string; type: string; subtype: string; reporting_mapping: string; d: string; c: string }[]>`
       SELECT l.account_id, a.code, a.name, a.type::text AS type, a.subtype, a.reporting_mapping, sum(l.debit)::text AS d, sum(l.credit)::text AS c
         FROM journal_line l JOIN journal j ON j.id = l.journal_id AND j.organisation_id = l.organisation_id JOIN account a ON a.id = l.account_id AND a.organisation_id = l.organisation_id
-       WHERE l.company_id = ${companyId}::uuid AND j.journal_date >= ${from}::date AND j.journal_date <= ${to}::date
+       WHERE l.company_id = ${companyId}::uuid AND j.journal_date >= ${from}::date AND j.journal_date <= ${to}::date AND j.source_type <> ALL(${skip}::text[])
        GROUP BY l.account_id, a.code, a.name, a.type, a.subtype, a.reporting_mapping ORDER BY a.code`;
     return rows.map((r) => ({ accountId: r.account_id, code: r.code, name: r.name, type: r.type, subtype: r.subtype, mapping: r.reporting_mapping, d: money(r.d), c: money(r.c) }));
   }
 
   /** One period: the P&L for [from, to] and the balance sheet at `to`. */
   private async compute(tx: Tx, companyId: string, from: string, to: string, lines: Line[], target: (b: Bal) => string | undefined) {
-    const [year, cumulative] = await Promise.all([this.balances(tx, companyId, from, to), this.balances(tx, companyId, MIN_DAY, to)]);
+    const [year, cumulative, ledger] = await Promise.all([this.balances(tx, companyId, from, to), this.balances(tx, companyId, MIN_DAY, to), this.balances(tx, companyId, MIN_DAY, to, true)]);
     const byKey = new Map(lines.map((l) => [l.key, l]));
     const values = new Map<string, Money>();
     const accounts = new Map<string, Placed[]>();
@@ -86,7 +87,7 @@ export class StatutoryReportService {
       values.set(line.key, values.get(line.key)!.plus(amount));
       accounts.get(line.key)!.push({ accountId: b.accountId, code: b.code, name: b.name, amount });
     }
-    // the profit and loss of every year to the date, until the V2-M3 closing journal exists (DEC-055)
+    // the profit and loss of every year to the date; closing journals are left out, so it is the same before and after a close (DEC-055, DEC-060)
     const plCumulative = cumulative.filter((b) => isPl(b.type)).reduce((t, b) => t.plus(b.c).minus(b.d), ZERO);
     for (const l of lines) if (l.kind === 'RETAINED_PROFIT') values.set(l.key, l.naturalSide === 'DEBIT' ? plCumulative.negated() : plCumulative);
     // totals: signed sums of other lines, evaluated on demand; a cycle or a missing line leaves the total without a value and is reported
@@ -112,7 +113,7 @@ export class StatutoryReportService {
     const profitFromLines = lines.filter((l) => l.kind === 'ACCOUNTS' && l.statement === 'PL').reduce((t, l) => t.minus(debitPositive(l)), ZERO);
     const bsNet = lines.filter((l) => (l.kind === 'ACCOUNTS' && l.statement === 'BS') || l.kind === 'RETAINED_PROFIT').reduce((t, l) => t.plus(debitPositive(l)), ZERO);
     let tbDebit = ZERO, tbCredit = ZERO;
-    for (const b of cumulative) { const n = b.d.minus(b.c); if (n.greaterThan(0)) tbDebit = tbDebit.plus(n); else tbCredit = tbCredit.minus(n); }
+    for (const b of ledger) { const n = b.d.minus(b.c); if (n.greaterThan(0)) tbDebit = tbDebit.plus(n); else tbCredit = tbCredit.minus(n); }
     return { values, accounts, unplaced, problems: [...new Set(problems)], profitFromLedger, profitFromLines, bsNet, tbDebit, tbCredit, plCumulative };
   }
 
@@ -177,7 +178,7 @@ export class StatutoryReportService {
       ...(verified ? [] : ['PREVIEW ONLY: this standard version is not verified by a second person holding accounts:rule-verify (DEC-052); nothing filing-ready can be produced from it.']),
       ...(version.status === 'SUPERSEDED' ? ['This standard version has been superseded; the year still uses it until its framework is changed.'] : []),
       ...(cmpRange && !cmpRange.framework ? ['No framework year ends the day before this year: the comparative is the twelve months before it, on this year\'s version.'] : []),
-      'Computed from the ledger only; there is no year-end closing journal yet, so retained profit is the profit and loss of every year to the year end (V2-M3).',
+      'Computed from the ledger only. Year-end closing journals are left out of every line, so retained profit is the profit and loss of every year to the year end whether or not the years are closed; the trial-balance proof includes them (DEC-060).',
     ];
     return {
       companyId, companyName: co.name, currency: co.baseCurrency,
