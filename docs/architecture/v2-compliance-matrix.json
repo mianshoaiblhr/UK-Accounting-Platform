@@ -40,7 +40,7 @@
     },
     "V2-M3": {
       "title": "Year-end adjustments and the closing journal",
-      "status": "SPLIT (DEC-059): V2-M3a adjustments BUILT 2026-10-18 (v2-m3a-acceptance.md); V2-M3b closing journal next",
+      "status": "SPLIT (DEC-059): V2-M3a adjustments ACCEPTED under the delegation 2026-10-18 (v2-m3a-acceptance.md; CI 39178258465 on f735149); V2-M3b closing journal next",
       "owner": "Engineering",
       "depends": [
         "V2-M2"
@@ -894,6 +894,7 @@
     "v1.2 (2026-10-18, DEC-056): V2-M1 evidence recorded (CI 39083312122 and CodeQL green on fd0f556; clean clone 1977 tests, e2e 21/21). Qualified accountant named: Shoaib; no row changes status from the naming alone.",
     "v1.3 (2026-10-18, V2-M2, DEC-057/058): fixed assets built. Missing -> Implemented: V2-MOD-03, V2-MOD-04, V2-FA-01..08. Golden review of V2-M1 by Shoaib recorded (DEC-057); V2-TEST-01 stays Partially.",
     "v1.3a (2026-10-18): V2-M2 evidence recorded (CI 39159238749 and CodeQL 39159238888 green on da32ffc; clean clone 2047 tests, e2e 21/21, OpenAPI drift 0).",
-    "v1.4 (2026-10-18, V2-M3a, DEC-059): year-end adjustments built. Missing -> Implemented: V2-MOD-05..08. Row added: V2-YEC-01, the year-end closing journal, which was in the approved V2-M3 scope but missing from the matrix (61 rows)."
+    "v1.4 (2026-10-18, V2-M3a, DEC-059): year-end adjustments built. Missing -> Implemented: V2-MOD-05..08. Row added: V2-YEC-01, the year-end closing journal, which was in the approved V2-M3 scope but missing from the matrix (61 rows).",
+    "v1.4a (2026-10-18): V2-M3a evidence recorded (CI 39178258465 and CodeQL 39178258477 green on f735149; clean clone 2091 tests, e2e 21/21, OpenAPI drift 0)."
   ]
 }

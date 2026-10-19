@@ -5,11 +5,11 @@ Prepared under the product owner's delegation (DEC-019, DEC-051), with the split
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | @@SHA@@ (branch `claude/adoring-cori-mra6ze`); specification recorded before code in v2-plan section 5 and DEC-059 |
-| CI | @@CI@@ |
-| CodeQL | @@CODEQL@@ |
-| Clean clone | @@CLEAN@@ |
-| Local runs | @@LOCAL@@ |
+| Code baseline commit | `f7351495085990bb736be8d2408f4d0587691ccc` (branch `claude/adoring-cori-mra6ze`); specification recorded before code in v2-plan section 5 and DEC-059 |
+| CI | [run 39178258465](https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39178258465): every job green |
+| CodeQL | [run 39178258477](https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39178258477): green |
+| Clean clone | Fresh clone at f735149: install, build, typecheck and lint clean; 2,091 tests passed; e2e 21/21; OpenAPI drift 0 |
+| Local runs | Build, typecheck and lint clean; 111 test files, 2,091 tests passed (before the push) |
 
 ## 2. What V2-M3a delivers (v2-plan section 5)
 | Part | What it is |
