@@ -381,6 +381,8 @@ export const StandardVersion = z.object({
   id: uuid, standardId: uuid, label: z.string(), effectiveFrom: day, effectiveTo: day.nullable(), source, notes: z.string().nullable(), status: versionStatus, copiedFromId: uuid.nullable(),
   createdByUserId: uuid, createdAt: ts, verifiedByUserId: uuid.nullable(), verifiedAt: ts.nullable(), verificationNotes: z.string().nullable(), supersededById: uuid.nullable(),
   turnoverLineKey: z.string().nullable().describe('V2-M5b: the P&L line the size test reads as turnover'),
+  cashFlowAppliesTo: sizes.describe('V2-M5c: the entity sizes whose accounts include the cash flow statement (empty: none)'),
+  cashFlowCaptions: z.record(z.string()).nullable().describe('V2-M5c: profit, operating, investing, financing, netChange, opening, closing'),
 });
 export const StatutoryLine = z.object({
   id: uuid, key: z.string(), statement: z.enum(['PL', 'BS']), parentKey: z.string().nullable(), sort: z.number().int(), name: z.string(), kind: z.enum(['ACCOUNTS', 'TOTAL', 'RETAINED_PROFIT']),
@@ -392,8 +394,12 @@ export const DisclosureRuleView = z.object({ id: uuid, key: z.string(), title: z
   section: z.enum(['POLICIES', 'NOTES', 'DIRECTORS_REPORT', 'BALANCE_SHEET_STATEMENTS']), sort: z.number().int(), body: z.string().nullable().describe('Wording in the template grammar (V2-M5a)'), omitWhenEmpty: z.boolean() });
 export const ReportingStandard = z.object({ id: uuid, code: z.string(), name: z.string(), createdByUserId: uuid, createdAt: ts,
   versions: z.array(z.object({ id: uuid, label: z.string(), effectiveFrom: day, effectiveTo: day.nullable(), status: versionStatus })) });
+export const CashFlowClassView = z.object({ id: uuid, key: z.string(), section: z.enum(['OPERATING', 'INVESTING', 'FINANCING']), sort: z.number().int(), name: z.string(),
+  adjustmentName: z.string().nullable().describe('Investing and financing: the caption of the non-cash part, among the operating adjustments'), inflowName: z.string().nullable(), outflowName: z.string().nullable() });
+export const CashFlowMapEntryView = z.object({ id: uuid, sourceLine: z.string().describe('V1 reporting line'), accountSubtype: z.string().nullable(), target: z.string().describe('A cash-flow class key, or CASH') });
 export const StandardVersionDetail = StandardVersion.extend({
   standard: z.object({ id: uuid, code: z.string(), name: z.string() }), lines: z.array(StatutoryLine), mapEntries: z.array(StatutoryMapEntry), validationRules: z.array(ValidationRuleView), disclosureRules: z.array(DisclosureRuleView),
+  cashFlowClasses: z.array(CashFlowClassView), cashFlowMapEntries: z.array(CashFlowMapEntryView),
   problems: z.array(z.string()).describe('What stops the version from being verified (empty when consistent)'),
 });
 export const ContentRemoved = z.object({ id: uuid, removed: z.literal(true) });
@@ -529,7 +535,7 @@ export const AccountsDocument = z.object({
   companyId: uuid, companyName: z.string(), companyNumber: z.string().nullable(), currency: z.string(),
   year: z.object({ start: day, end: day, priorEnd: day, entitySize: z.enum(['MICRO', 'SMALL', 'MEDIUM', 'LARGE']), frameworkId: uuid }),
   standard: StatutoryPreview.shape.standard, version: StatutoryPreview.shape.version, verified: z.boolean().describe('false: wording and statements from unverified rules (DEC-052)'),
-  statements: StatutoryPreview.shape.statements, reconciliation: StatutoryPreview.shape.reconciliation, validations: StatutoryPreview.shape.validations,
+  statements: StatutoryPreview.shape.statements.extend({ cashFlow: z.lazy(() => CashFlowStatement).nullable().describe('V2-M5c: when the version lists the year\'s size') }), reconciliation: StatutoryPreview.shape.reconciliation, validations: StatutoryPreview.shape.validations,
   sections: z.array(z.object({ section: z.enum(['POLICIES', 'NOTES', 'DIRECTORS_REPORT', 'BALANCE_SHEET_STATEMENTS']), items: z.array(z.object({ key: z.string(), title: z.string(), blocks: z.array(docBlock), missing: z.array(z.string()) })) })),
   omitted: z.array(z.object({ key: z.string(), title: z.string(), reason: z.enum(['NOT_APPLICABLE', 'EMPTY']) })),
   problems: z.array(z.string()), complete: z.boolean().describe('Verified rules, every fact present, statements placed, balanced and passing their error rules'), notices: z.array(z.string()),
@@ -558,6 +564,24 @@ export const SizeTest = z.object({
     classes: z.array(z.object({ class: z.enum(['MICRO', 'SMALL', 'MEDIUM']), limits: classLimits.nullable().describe('The turnover limit is adjusted for a year that is not twelve months'),
       conditions: z.object({ turnover: tri, balanceSheetTotal: tri, employees: tri }), met: tri, priorMet: tri, status: tri, basis: z.enum(['BOTH_YEARS', 'CARRIED_FORWARD', 'FIRST_YEAR']).nullable() })),
   })).describe('The year asked for, then the preceding years its statuses needed'),
+  problems: z.array(z.string()), notices: z.array(z.string()),
+});
+
+// ───────────── V2-M5c the cash flow statement (DEC-067) ─────────────
+const cfAmount = z.string().describe('Exact decimal; inflows positive');
+const cfLine = z.object({ key: z.string(), kind: z.enum(['PROFIT', 'ADJUSTMENT', 'MOVEMENT', 'CASH', 'INFLOW', 'OUTFLOW', 'UNCLASSIFIED']), classKey: z.string().nullable(), name: z.string(),
+  amount: cfAmount, comparative: cfAmount.optional(), accounts: z.array(z.object({ accountId: uuid, code: z.string(), name: z.string(), amount: cfAmount })) });
+const cfTotal = z.object({ name: z.string(), amount: cfAmount, comparative: cfAmount.optional() });
+const cfProof = z.object({ cashMovement: cfAmount, statementNetChange: cfAmount, difference: cfAmount, reconciled: z.boolean(), opening: cfAmount, closing: cfAmount });
+export const CashFlowStatement = z.object({
+  companyId: uuid, companyName: z.string(), currency: z.string(),
+  year: z.object({ start: day, end: day, entitySize: z.enum(['MICRO', 'SMALL', 'MEDIUM', 'LARGE']), frameworkId: uuid }),
+  comparative: z.object({ start: day, end: day, fromFramework: z.boolean() }).nullable(),
+  standard: z.object({ id: uuid, code: z.string(), name: z.string() }), version: z.object({ id: uuid, label: z.string(), status: versionStatus, cashFlowAppliesTo: sizes }),
+  verified: z.boolean(), applies: z.boolean().describe('The version lists the year\'s entity size'),
+  sections: z.array(z.object({ section: z.enum(['OPERATING', 'INVESTING', 'FINANCING']), lines: z.array(cfLine), total: cfTotal })),
+  netChange: cfTotal, opening: cfTotal, closing: cfTotal, proof: cfProof.extend({ comparative: cfProof.optional() }),
+  unplacedAccounts: z.array(z.object({ accountId: uuid, code: z.string(), name: z.string(), reportingLine: z.string(), subtype: z.string() })),
   problems: z.array(z.string()), notices: z.array(z.string()),
 });
 

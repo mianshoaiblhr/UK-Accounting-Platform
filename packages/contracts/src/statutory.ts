@@ -42,6 +42,9 @@ export const updateStandardVersionSchema = z.object({
   source: ruleSourceSchema.optional(), notes: z.string().trim().max(2000).nullable().optional(),
   /** V2-M5b (DEC-066): the version's turnover line, a P&L line, read by the size test; null clears it. */
   turnoverLineKey: lineKey.nullable().optional(),
+  /** V2-M5c (DEC-067): the entity sizes whose accounts include a cash flow statement (empty: none), and its captions. */
+  cashFlowAppliesTo: z.array(z.enum(ENTITY_SIZES)).max(4).refine((a) => new Set(a).size === a.length, 'Each size once').optional(),
+  cashFlowCaptions: z.lazy(() => cashFlowCaptionsSchema).nullable().optional(),
 }).strict().refine((v) => Object.keys(v).length > 0, 'Nothing to change').refine(datesInOrder, { message: 'effectiveTo cannot precede effectiveFrom', path: ['effectiveTo'] });
 /** A change to a verified version: the new version's dates and source, plus why it changes. Its content is copied from the old one, then edited. */
 export const supersedeStandardVersionSchema = z.object({ ...versionFields, reason: z.string().trim().min(10).max(1000) }).strict()
@@ -110,6 +113,41 @@ export const createDisclosureRuleSchema = z.object({
 export const updateDisclosureRuleSchema = z.object({ title: z.string().trim().min(3).max(300).optional(), appliesTo: sizes.optional(), requires: disclosureRequiresSchema.optional(),
   section: wording.section.optional(), sort: wording.sort.optional(), body: wording.body.optional(), omitWhenEmpty: wording.omitWhenEmpty.optional() })
   .strict().refine((v) => Object.keys(v).length > 0, 'Nothing to change');
+
+// ───── Cash flow (V2-M5c; DEC-067): classes, the map to them or to cash, captions ─────
+export const CASH_FLOW_SECTIONS = ['OPERATING', 'INVESTING', 'FINANCING'] as const;
+export type CashFlowSection = (typeof CASH_FLOW_SECTIONS)[number];
+/** The map target that marks cash and cash equivalents; never a class key. */
+export const CASH_TARGET = 'CASH';
+const caption = z.string().trim().min(1).max(300);
+export const CASH_FLOW_CAPTIONS = ['profit', 'operating', 'investing', 'financing', 'netChange', 'opening', 'closing'] as const;
+export const cashFlowCaptionsSchema = z.object(Object.fromEntries(CASH_FLOW_CAPTIONS.map((k) => [k, caption])) as Record<(typeof CASH_FLOW_CAPTIONS)[number], typeof caption>).strict();
+export interface CashFlowClassShape { section?: string; adjustmentName?: string | null; inflowName?: string | null; outflowName?: string | null }
+/** The shape rules of a class, shared by create and by the merged result of an update (the database repeats them). */
+export function cashFlowClassErrors(c: CashFlowClassShape): string[] {
+  const e: string[] = [];
+  if (c.section === 'OPERATING' && (c.adjustmentName || c.inflowName || c.outflowName)) e.push('An operating class shows its whole movement: it has no non-cash, inflow or outflow caption');
+  if (c.section !== 'OPERATING' && !c.adjustmentName) e.push('An investing or financing class needs a caption for its non-cash part (adjustmentName)');
+  if (!c.inflowName !== !c.outflowName) e.push('Gross captions come in pairs: inflowName and outflowName');
+  return e;
+}
+const classKey = lineKey.refine((k) => k !== CASH_TARGET, 'CASH is reserved for cash and cash equivalents');
+export const createCashFlowClassSchema = z.object({
+  key: classKey, section: z.enum(CASH_FLOW_SECTIONS), sort: z.number().int().min(0).max(10000).default(0), name: caption,
+  adjustmentName: caption.nullable().optional(), inflowName: caption.nullable().optional(), outflowName: caption.nullable().optional(),
+}).strict().superRefine((c, ctx) => { for (const m of cashFlowClassErrors(c)) ctx.addIssue({ code: 'custom', message: m }); });
+export const updateCashFlowClassSchema = z.object({
+  section: z.enum(CASH_FLOW_SECTIONS).optional(), sort: z.number().int().min(0).max(10000).optional(), name: caption.optional(),
+  adjustmentName: caption.nullable().optional(), inflowName: caption.nullable().optional(), outflowName: caption.nullable().optional(),
+}).strict().refine((v) => Object.keys(v).length > 0, 'Nothing to change');
+export const createCashFlowMapEntrySchema = z.object({
+  sourceLine: z.string().refine((s) => Object.prototype.hasOwnProperty.call(REPORT_LINES, s), 'Unknown V1 reporting line'),
+  accountSubtype: z.string().refine((s) => ALL_SUBTYPES.includes(s), 'Unknown subtype').nullable().optional(),
+  /** A class key of the version, or CASH. */
+  target: lineKey,
+}).strict().refine((m) => m.target !== CASH_TARGET || m.sourceLine.startsWith('BS.'), { message: 'Only a balance-sheet line can be cash', path: ['target'] });
+export const updateCashFlowMapEntrySchema = z.object({ target: lineKey }).strict();
+export const cashFlowQuerySchema = z.object({ yearStart: isoDate, compare: flag }).strict();
 
 // ───── Per company ─────
 export const setReportingFrameworkSchema = z.object({

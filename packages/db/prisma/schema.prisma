@@ -2135,6 +2135,9 @@ model ReportingStandardVersion {
   supersededById    String?   @map("superseded_by_id") @db.Uuid
   /// V2-M5b (DEC-066): the key of the version's turnover line, read by the size test
   turnoverLineKey   String?   @map("turnover_line_key")
+  /// V2-M5c (DEC-067): the entity sizes whose accounts include a cash flow statement, and its captions
+  cashFlowAppliesTo String[]  @default([]) @map("cash_flow_applies_to")
+  cashFlowCaptions  Json?     @map("cash_flow_captions")
 
   @@unique([organisationId, id], map: "rsv_organisation_id_id_key")
   @@index([organisationId, standardId, effectiveFrom], map: "rsv_standard_idx")
@@ -2612,3 +2615,38 @@ model SizeThresholdSet {
   @@index([organisationId, effectiveFrom], map: "sts_effective_idx")
   @@map("size_threshold_set")
 }
+
+/// V2-M5c (DEC-067): a cash-flow class of one version: its section, captions and order.
+model CashFlowClass {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  versionId      String   @map("version_id") @db.Uuid
+  key            String
+  section        String
+  sort           Int      @default(0)
+  name           String
+  adjustmentName String?  @map("adjustment_name")
+  inflowName     String?  @map("inflow_name")
+  outflowName    String?  @map("outflow_name")
+  removed        Boolean  @default(false)
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@map("cash_flow_class")
+}
+
+/// V2-M5c (DEC-067): a V1 reporting line (optionally narrowed by subtype) placed in a cash-flow class of one version, or as cash.
+model CashFlowMapEntry {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  versionId      String   @map("version_id") @db.Uuid
+  sourceLine     String   @map("source_line")
+  accountSubtype String?  @map("account_subtype")
+  target         String
+  removed        Boolean  @default(false)
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@map("cash_flow_map_entry")
+}
+

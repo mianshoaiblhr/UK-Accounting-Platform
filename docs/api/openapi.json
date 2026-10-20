@@ -20645,6 +20645,522 @@
         ]
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reporting-standard-versions/{versionId}/cash-flow-classes": {
+      "post": {
+        "operationId": "Standards_addCashClass",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashFlowClass"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Add a cash-flow class (operating, investing or financing) with its captions to an unverified version",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCashFlowClassRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reporting-standard-versions/{versionId}/cash-flow-classes/{classId}": {
+      "patch": {
+        "operationId": "Standards_updateCashClass",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "classId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashFlowClass"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Change a cash-flow class of an unverified version",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCashFlowClassRequest"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "Standards_removeCashClass",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "classId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentRemoved"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Remove a cash-flow class no map entry targets",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reporting-standard-versions/{versionId}/cash-flow-map-entries": {
+      "post": {
+        "operationId": "Standards_addCashMap",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashFlowMapEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Place a V1 reporting line (optionally one account subtype) in a cash-flow class, or as CASH; the most specific entry wins",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCashFlowMapEntryRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/reporting-standard-versions/{versionId}/cash-flow-map-entries/{entryId}": {
+      "patch": {
+        "operationId": "Standards_updateCashMap",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "entryId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashFlowMapEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Point a cash-flow map entry at another class or at CASH",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCashFlowMapEntryRequest"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "Standards_removeCashMap",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "entryId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentRemoved"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:rules-manage"
+        ],
+        "summary": "Remove a cash-flow map entry from an unverified version",
+        "description": "**Requires permission:** `accounts:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/organisations/{organisationId}/companies/{companyId}/reporting-frameworks": {
       "get": {
         "operationId": "Standards_frameworksList",
@@ -21092,6 +21608,87 @@
           "ledger:read"
         ],
         "summary": "Statutory P&L and balance sheet of a financial year from the ledger through its framework, with the prior year, unplaced accounts, validations and proofs; marked as a preview unless the version is verified",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/cash-flow": {
+      "get": {
+        "operationId": "Standards_cashFlowStatement",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "yearStart",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "compare",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashFlowStatement"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The cash flow statement of a framework year by the indirect method, from the ledger through the version's cash-flow classes and map, with the prior year, the accounts of each line and the proof against the movement in cash",
         "description": "**Requires permission:** `ledger:read`",
         "security": [
           {
@@ -33401,6 +33998,27 @@
                   "type": "string",
                   "nullable": true,
                   "description": "V2-M5b: the P&L line the size test reads as turnover"
+                },
+                "cashFlowAppliesTo": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "MICRO",
+                      "SMALL",
+                      "MEDIUM",
+                      "LARGE"
+                    ]
+                  },
+                  "description": "V2-M5c: the entity sizes whose accounts include the cash flow statement (empty: none)"
+                },
+                "cashFlowCaptions": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "nullable": true,
+                  "description": "V2-M5c: profit, operating, investing, financing, netChange, opening, closing"
                 }
               },
               "required": [
@@ -33419,7 +34037,9 @@
                 "verifiedAt",
                 "verificationNotes",
                 "supersededById",
-                "turnoverLineKey"
+                "turnoverLineKey",
+                "cashFlowAppliesTo",
+                "cashFlowCaptions"
               ],
               "additionalProperties": false
             }
@@ -33523,6 +34143,27 @@
             "type": "string",
             "nullable": true,
             "description": "V2-M5b: the P&L line the size test reads as turnover"
+          },
+          "cashFlowAppliesTo": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "MICRO",
+                "SMALL",
+                "MEDIUM",
+                "LARGE"
+              ]
+            },
+            "description": "V2-M5c: the entity sizes whose accounts include the cash flow statement (empty: none)"
+          },
+          "cashFlowCaptions": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true,
+            "description": "V2-M5c: profit, operating, investing, financing, netChange, opening, closing"
           },
           "standard": {
             "type": "object",
@@ -33787,6 +34428,90 @@
               "additionalProperties": false
             }
           },
+          "cashFlowClasses": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "key": {
+                  "type": "string"
+                },
+                "section": {
+                  "type": "string",
+                  "enum": [
+                    "OPERATING",
+                    "INVESTING",
+                    "FINANCING"
+                  ]
+                },
+                "sort": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "adjustmentName": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Investing and financing: the caption of the non-cash part, among the operating adjustments"
+                },
+                "inflowName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "outflowName": {
+                  "type": "string",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "key",
+                "section",
+                "sort",
+                "name",
+                "adjustmentName",
+                "inflowName",
+                "outflowName"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "cashFlowMapEntries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "sourceLine": {
+                  "type": "string",
+                  "description": "V1 reporting line"
+                },
+                "accountSubtype": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "target": {
+                  "type": "string",
+                  "description": "A cash-flow class key, or CASH"
+                }
+              },
+              "required": [
+                "id",
+                "sourceLine",
+                "accountSubtype",
+                "target"
+              ],
+              "additionalProperties": false
+            }
+          },
           "problems": {
             "type": "array",
             "items": {
@@ -33812,11 +34537,15 @@
           "verificationNotes",
           "supersededById",
           "turnoverLineKey",
+          "cashFlowAppliesTo",
+          "cashFlowCaptions",
           "standard",
           "lines",
           "mapEntries",
           "validationRules",
           "disclosureRules",
+          "cashFlowClasses",
+          "cashFlowMapEntries",
           "problems"
         ],
         "additionalProperties": false
@@ -39890,11 +40619,473 @@
                   ],
                   "additionalProperties": false
                 }
+              },
+              "cashFlow": {
+                "type": "object",
+                "properties": {
+                  "companyId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "companyName": {
+                    "type": "string"
+                  },
+                  "currency": {
+                    "type": "string"
+                  },
+                  "year": {
+                    "type": "object",
+                    "properties": {
+                      "start": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "end": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "entitySize": {
+                        "type": "string",
+                        "enum": [
+                          "MICRO",
+                          "SMALL",
+                          "MEDIUM",
+                          "LARGE"
+                        ]
+                      },
+                      "frameworkId": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    },
+                    "required": [
+                      "start",
+                      "end",
+                      "entitySize",
+                      "frameworkId"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "comparative": {
+                    "type": "object",
+                    "properties": {
+                      "start": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "end": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "fromFramework": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "start",
+                      "end",
+                      "fromFramework"
+                    ],
+                    "additionalProperties": false,
+                    "nullable": true
+                  },
+                  "standard": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "code",
+                      "name"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "version": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "label": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "UNVERIFIED",
+                          "VERIFIED",
+                          "SUPERSEDED"
+                        ],
+                        "description": "UNVERIFIED content gives previews only; VERIFIED is immutable; SUPERSEDED was replaced by a new version"
+                      },
+                      "cashFlowAppliesTo": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "MICRO",
+                            "SMALL",
+                            "MEDIUM",
+                            "LARGE"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "label",
+                      "status",
+                      "cashFlowAppliesTo"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "verified": {
+                    "type": "boolean"
+                  },
+                  "applies": {
+                    "type": "boolean",
+                    "description": "The version lists the year's entity size"
+                  },
+                  "sections": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "section": {
+                          "type": "string",
+                          "enum": [
+                            "OPERATING",
+                            "INVESTING",
+                            "FINANCING"
+                          ]
+                        },
+                        "lines": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "PROFIT",
+                                  "ADJUSTMENT",
+                                  "MOVEMENT",
+                                  "CASH",
+                                  "INFLOW",
+                                  "OUTFLOW",
+                                  "UNCLASSIFIED"
+                                ]
+                              },
+                              "classKey": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "amount": {
+                                "type": "string",
+                                "description": "Exact decimal; inflows positive"
+                              },
+                              "comparative": {
+                                "type": "string",
+                                "description": "Exact decimal; inflows positive"
+                              },
+                              "accounts": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "accountId": {
+                                      "type": "string",
+                                      "format": "uuid"
+                                    },
+                                    "code": {
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "amount": {
+                                      "type": "string",
+                                      "description": "Exact decimal; inflows positive"
+                                    }
+                                  },
+                                  "required": [
+                                    "accountId",
+                                    "code",
+                                    "name",
+                                    "amount"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "kind",
+                              "classKey",
+                              "name",
+                              "amount",
+                              "accounts"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "total": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "amount": {
+                              "type": "string",
+                              "description": "Exact decimal; inflows positive"
+                            },
+                            "comparative": {
+                              "type": "string",
+                              "description": "Exact decimal; inflows positive"
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "amount"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "section",
+                        "lines",
+                        "total"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "netChange": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "amount": {
+                        "type": "string",
+                        "description": "Exact decimal; inflows positive"
+                      },
+                      "comparative": {
+                        "type": "string",
+                        "description": "Exact decimal; inflows positive"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "amount"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "opening": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "amount": {
+                        "type": "string",
+                        "description": "Exact decimal; inflows positive"
+                      },
+                      "comparative": {
+                        "type": "string",
+                        "description": "Exact decimal; inflows positive"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "amount"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "closing": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "amount": {
+                        "type": "string",
+                        "description": "Exact decimal; inflows positive"
+                      },
+                      "comparative": {
+                        "type": "string",
+                        "description": "Exact decimal; inflows positive"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "amount"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "proof": {
+                    "type": "object",
+                    "properties": {
+                      "cashMovement": {
+                        "type": "string",
+                        "description": "Exact decimal; inflows positive"
+                      },
+                      "statementNetChange": {
+                        "type": "string",
+                        "description": "Exact decimal; inflows positive"
+                      },
+                      "difference": {
+                        "type": "string",
+                        "description": "Exact decimal; inflows positive"
+                      },
+                      "reconciled": {
+                        "type": "boolean"
+                      },
+                      "opening": {
+                        "type": "string",
+                        "description": "Exact decimal; inflows positive"
+                      },
+                      "closing": {
+                        "type": "string",
+                        "description": "Exact decimal; inflows positive"
+                      },
+                      "comparative": {
+                        "type": "object",
+                        "properties": {
+                          "cashMovement": {
+                            "type": "string",
+                            "description": "Exact decimal; inflows positive"
+                          },
+                          "statementNetChange": {
+                            "type": "string",
+                            "description": "Exact decimal; inflows positive"
+                          },
+                          "difference": {
+                            "type": "string",
+                            "description": "Exact decimal; inflows positive"
+                          },
+                          "reconciled": {
+                            "type": "boolean"
+                          },
+                          "opening": {
+                            "type": "string",
+                            "description": "Exact decimal; inflows positive"
+                          },
+                          "closing": {
+                            "type": "string",
+                            "description": "Exact decimal; inflows positive"
+                          }
+                        },
+                        "required": [
+                          "cashMovement",
+                          "statementNetChange",
+                          "difference",
+                          "reconciled",
+                          "opening",
+                          "closing"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "cashMovement",
+                      "statementNetChange",
+                      "difference",
+                      "reconciled",
+                      "opening",
+                      "closing"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "unplacedAccounts": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "accountId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "reportingLine": {
+                          "type": "string"
+                        },
+                        "subtype": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "accountId",
+                        "code",
+                        "name",
+                        "reportingLine",
+                        "subtype"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "problems": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "notices": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "companyId",
+                  "companyName",
+                  "currency",
+                  "year",
+                  "comparative",
+                  "standard",
+                  "version",
+                  "verified",
+                  "applies",
+                  "sections",
+                  "netChange",
+                  "opening",
+                  "closing",
+                  "proof",
+                  "unplacedAccounts",
+                  "problems",
+                  "notices"
+                ],
+                "additionalProperties": false,
+                "nullable": true,
+                "description": "V2-M5c: when the version lists the year's size"
               }
             },
             "required": [
               "profitAndLoss",
-              "balanceSheet"
+              "balanceSheet",
+              "cashFlow"
             ],
             "additionalProperties": false
           },
@@ -41003,6 +42194,543 @@
           "fits",
           "verified",
           "years",
+          "problems",
+          "notices"
+        ],
+        "additionalProperties": false
+      },
+      "CashFlowClass": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "key": {
+            "type": "string"
+          },
+          "section": {
+            "type": "string",
+            "enum": [
+              "OPERATING",
+              "INVESTING",
+              "FINANCING"
+            ]
+          },
+          "sort": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "adjustmentName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Investing and financing: the caption of the non-cash part, among the operating adjustments"
+          },
+          "inflowName": {
+            "type": "string",
+            "nullable": true
+          },
+          "outflowName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "section",
+          "sort",
+          "name",
+          "adjustmentName",
+          "inflowName",
+          "outflowName"
+        ],
+        "additionalProperties": false
+      },
+      "CashFlowMapEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceLine": {
+            "type": "string",
+            "description": "V1 reporting line"
+          },
+          "accountSubtype": {
+            "type": "string",
+            "nullable": true
+          },
+          "target": {
+            "type": "string",
+            "description": "A cash-flow class key, or CASH"
+          }
+        },
+        "required": [
+          "id",
+          "sourceLine",
+          "accountSubtype",
+          "target"
+        ],
+        "additionalProperties": false
+      },
+      "CashFlowStatement": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyName": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "year": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "end": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "entitySize": {
+                "type": "string",
+                "enum": [
+                  "MICRO",
+                  "SMALL",
+                  "MEDIUM",
+                  "LARGE"
+                ]
+              },
+              "frameworkId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "start",
+              "end",
+              "entitySize",
+              "frameworkId"
+            ],
+            "additionalProperties": false
+          },
+          "comparative": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "end": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "fromFramework": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "start",
+              "end",
+              "fromFramework"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "standard": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "code": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "code",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "version": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "label": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "UNVERIFIED",
+                  "VERIFIED",
+                  "SUPERSEDED"
+                ],
+                "description": "UNVERIFIED content gives previews only; VERIFIED is immutable; SUPERSEDED was replaced by a new version"
+              },
+              "cashFlowAppliesTo": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "MICRO",
+                    "SMALL",
+                    "MEDIUM",
+                    "LARGE"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "status",
+              "cashFlowAppliesTo"
+            ],
+            "additionalProperties": false
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "applies": {
+            "type": "boolean",
+            "description": "The version lists the year's entity size"
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "section": {
+                  "type": "string",
+                  "enum": [
+                    "OPERATING",
+                    "INVESTING",
+                    "FINANCING"
+                  ]
+                },
+                "lines": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "key": {
+                        "type": "string"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "PROFIT",
+                          "ADJUSTMENT",
+                          "MOVEMENT",
+                          "CASH",
+                          "INFLOW",
+                          "OUTFLOW",
+                          "UNCLASSIFIED"
+                        ]
+                      },
+                      "classKey": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "amount": {
+                        "type": "string",
+                        "description": "Exact decimal; inflows positive"
+                      },
+                      "comparative": {
+                        "type": "string",
+                        "description": "Exact decimal; inflows positive"
+                      },
+                      "accounts": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "accountId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "code": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "amount": {
+                              "type": "string",
+                              "description": "Exact decimal; inflows positive"
+                            }
+                          },
+                          "required": [
+                            "accountId",
+                            "code",
+                            "name",
+                            "amount"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "key",
+                      "kind",
+                      "classKey",
+                      "name",
+                      "amount",
+                      "accounts"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "total": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "amount": {
+                      "type": "string",
+                      "description": "Exact decimal; inflows positive"
+                    },
+                    "comparative": {
+                      "type": "string",
+                      "description": "Exact decimal; inflows positive"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "amount"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "section",
+                "lines",
+                "total"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "netChange": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "amount": {
+                "type": "string",
+                "description": "Exact decimal; inflows positive"
+              },
+              "comparative": {
+                "type": "string",
+                "description": "Exact decimal; inflows positive"
+              }
+            },
+            "required": [
+              "name",
+              "amount"
+            ],
+            "additionalProperties": false
+          },
+          "opening": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "amount": {
+                "type": "string",
+                "description": "Exact decimal; inflows positive"
+              },
+              "comparative": {
+                "type": "string",
+                "description": "Exact decimal; inflows positive"
+              }
+            },
+            "required": [
+              "name",
+              "amount"
+            ],
+            "additionalProperties": false
+          },
+          "closing": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "amount": {
+                "type": "string",
+                "description": "Exact decimal; inflows positive"
+              },
+              "comparative": {
+                "type": "string",
+                "description": "Exact decimal; inflows positive"
+              }
+            },
+            "required": [
+              "name",
+              "amount"
+            ],
+            "additionalProperties": false
+          },
+          "proof": {
+            "type": "object",
+            "properties": {
+              "cashMovement": {
+                "type": "string",
+                "description": "Exact decimal; inflows positive"
+              },
+              "statementNetChange": {
+                "type": "string",
+                "description": "Exact decimal; inflows positive"
+              },
+              "difference": {
+                "type": "string",
+                "description": "Exact decimal; inflows positive"
+              },
+              "reconciled": {
+                "type": "boolean"
+              },
+              "opening": {
+                "type": "string",
+                "description": "Exact decimal; inflows positive"
+              },
+              "closing": {
+                "type": "string",
+                "description": "Exact decimal; inflows positive"
+              },
+              "comparative": {
+                "type": "object",
+                "properties": {
+                  "cashMovement": {
+                    "type": "string",
+                    "description": "Exact decimal; inflows positive"
+                  },
+                  "statementNetChange": {
+                    "type": "string",
+                    "description": "Exact decimal; inflows positive"
+                  },
+                  "difference": {
+                    "type": "string",
+                    "description": "Exact decimal; inflows positive"
+                  },
+                  "reconciled": {
+                    "type": "boolean"
+                  },
+                  "opening": {
+                    "type": "string",
+                    "description": "Exact decimal; inflows positive"
+                  },
+                  "closing": {
+                    "type": "string",
+                    "description": "Exact decimal; inflows positive"
+                  }
+                },
+                "required": [
+                  "cashMovement",
+                  "statementNetChange",
+                  "difference",
+                  "reconciled",
+                  "opening",
+                  "closing"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "cashMovement",
+              "statementNetChange",
+              "difference",
+              "reconciled",
+              "opening",
+              "closing"
+            ],
+            "additionalProperties": false
+          },
+          "unplacedAccounts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "reportingLine": {
+                  "type": "string"
+                },
+                "subtype": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "accountId",
+                "code",
+                "name",
+                "reportingLine",
+                "subtype"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "companyId",
+          "companyName",
+          "currency",
+          "year",
+          "comparative",
+          "standard",
+          "version",
+          "verified",
+          "applies",
+          "sections",
+          "netChange",
+          "opening",
+          "closing",
+          "proof",
+          "unplacedAccounts",
           "problems",
           "notices"
         ],
@@ -54686,6 +56414,70 @@
             "type": "string",
             "pattern": "^[A-Z0-9][A-Z0-9_.-]{0,79}$",
             "nullable": true
+          },
+          "cashFlowAppliesTo": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "MICRO",
+                "SMALL",
+                "MEDIUM",
+                "LARGE"
+              ]
+            },
+            "maxItems": 4
+          },
+          "cashFlowCaptions": {
+            "type": "object",
+            "properties": {
+              "profit": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              },
+              "operating": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              },
+              "investing": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              },
+              "financing": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              },
+              "netChange": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              },
+              "opening": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              },
+              "closing": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              }
+            },
+            "required": [
+              "profit",
+              "operating",
+              "investing",
+              "financing",
+              "netChange",
+              "opening",
+              "closing"
+            ],
+            "additionalProperties": false,
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -55212,6 +57004,134 @@
             "type": "boolean"
           }
         },
+        "additionalProperties": false
+      },
+      "CreateCashFlowClassRequest": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[A-Z0-9][A-Z0-9_.-]{0,79}$"
+          },
+          "section": {
+            "type": "string",
+            "enum": [
+              "OPERATING",
+              "INVESTING",
+              "FINANCING"
+            ]
+          },
+          "sort": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000,
+            "default": 0
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "adjustmentName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "nullable": true
+          },
+          "inflowName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "nullable": true
+          },
+          "outflowName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "nullable": true
+          }
+        },
+        "required": [
+          "key",
+          "section",
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateCashFlowClassRequest": {
+        "type": "object",
+        "properties": {
+          "section": {
+            "type": "string",
+            "enum": [
+              "OPERATING",
+              "INVESTING",
+              "FINANCING"
+            ]
+          },
+          "sort": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "adjustmentName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "nullable": true
+          },
+          "inflowName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "nullable": true
+          },
+          "outflowName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateCashFlowMapEntryRequest": {
+        "type": "object",
+        "properties": {
+          "sourceLine": {
+            "type": "string"
+          },
+          "accountSubtype": {
+            "type": "string",
+            "nullable": true
+          },
+          "target": {
+            "type": "string",
+            "pattern": "^[A-Z0-9][A-Z0-9_.-]{0,79}$"
+          }
+        },
+        "required": [
+          "sourceLine",
+          "target"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateCashFlowMapEntryRequest": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "pattern": "^[A-Z0-9][A-Z0-9_.-]{0,79}$"
+          }
+        },
+        "required": [
+          "target"
+        ],
         "additionalProperties": false
       },
       "SetReportingFrameworkRequest": {

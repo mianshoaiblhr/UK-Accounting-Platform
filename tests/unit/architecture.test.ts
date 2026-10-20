@@ -201,10 +201,10 @@ describe('database access paths that carry security meaning', () => {
     expect(src).not.toMatch(/\btx\.\w+\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\(|\$executeRaw|\b(INSERT|UPDATE|DELETE)\b/);
     expect(src).not.toMatch(/\beval\(|new Function\(/);
   });
-  it('no transaction module reads the reporting framework: only the framework service and the statutory reports (preview and, from V2-M5a, the accounts document) touch its tables; from V2-M5b the size test reads the lines of a version (V2-ARC-01, ADR-62)', () => {
+  it('no transaction module reads the reporting framework: only the framework service and the statutory reports (preview and, from V2-M5a, the accounts document) touch its tables; from V2-M5b the size test reads the lines of a version and from V2-M5c the cash flow statement reads its cash-flow content (V2-ARC-01, ADR-62)', () => {
     const TOUCH = /\.(reportingStandard|reportingStandardVersion|statutoryLine|statutoryMapEntry|validationRule|disclosureRule|statutoryAccountOverride|companyReportingFramework)\.|\b(reporting_standard\w*|statutory_(line|map_entry|account_override)|validation_rule|disclosure_rule|company_reporting_framework)\b/;
     const users = SRC.filter((f) => !f.endsWith('.test.ts') && !rel(f).startsWith('packages/db/src/') && !rel(f).startsWith('packages/contracts/src/retention')).filter((f) => TOUCH.test(read(f))).map(rel).sort();
-    expect(users).toEqual(['packages/accounting/src/accounts-document.ts', 'packages/accounting/src/size-test.ts', 'packages/accounting/src/statutory-report.ts', 'packages/accounting/src/statutory.ts']);
+    expect(users).toEqual(['packages/accounting/src/accounts-document.ts', 'packages/accounting/src/cash-flow.ts', 'packages/accounting/src/size-test.ts', 'packages/accounting/src/statutory-report.ts', 'packages/accounting/src/statutory.ts']);
   });
   it('depreciation never reads the tax fields (V2-FA-07, DEC-058): the arithmetic, the shared asset state and the depreciation service do not mention them', () => {
     const math = read(`${ROOT}/packages/accounting/src/depreciation-math.ts`);
@@ -246,6 +246,13 @@ describe('database access paths that carry security meaning', () => {
     expect(src).not.toMatch(/\.journal(Line)?\.(create|createMany|update)|INSERT INTO\s+"?journal|PostingService|\.(disclosureRule|reportingStandardVersion|statutoryLine)\.(create|update|delete)/);
     expect(src.match(/\.\w+\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\(/g)?.sort()).toEqual(['.accountsFact.create(', '.auditEvent.createMany(']);
   });
+  it('the cash flow statement reads the ledger and the framework only, and writes nothing (V2-M5c)', () => {
+    const src = read(`${ROOT}/packages/accounting/src/cash-flow.ts`);
+    expect([...new Set([...src.matchAll(/\btx\.(\w+)\./g)].map((m) => m[1]))].sort()).toEqual(['account', 'cashFlowClass', 'cashFlowMapEntry', 'company', 'companyReportingFramework', 'currency', 'reportingStandard', 'reportingStandardVersion']);
+    expect([...new Set([...src.matchAll(/\b(?:FROM|JOIN)\s+"?(\w+)/g)].map((m) => m[1]))].sort()).toEqual(['journal', 'journal_line']);
+    expect(src).not.toMatch(/\btx\.\w+\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\(|\$executeRaw|\b(INSERT|UPDATE|DELETE)\b|PostingService/);
+    expect(src).toMatch(/CLOSING_SOURCES/);
+  });
   it('size thresholds have one writer; the size test reads and writes nothing (V2-M5b)', () => {
     const WRITE = /\.sizeThresholdSet\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?size_threshold_set"?\b/i;
     expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/size-test.ts']);
@@ -255,7 +262,7 @@ describe('database access paths that carry security meaning', () => {
     expect([...new Set([...test.matchAll(/\btx\.(\w+)\./g)].map((m) => m[1]))].sort()).toEqual(['accountsFact', 'company', 'companyReportingFramework', 'reportingStandardVersion', 'sizeThresholdSet', 'statutoryLine']);
   });
   it('the reporting framework has one writer per side (V2-M1): standard content in StandardsService, company choices in FrameworkService, both in statutory.ts', () => {
-    const WRITE = /\.(reportingStandard|reportingStandardVersion|statutoryLine|statutoryMapEntry|validationRule|disclosureRule|statutoryAccountOverride|companyReportingFramework)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(reporting_standard\w*|statutory_\w+|validation_rule|disclosure_rule|company_reporting_framework)"?\b/i;
+    const WRITE = /\.(reportingStandard|reportingStandardVersion|statutoryLine|statutoryMapEntry|validationRule|disclosureRule|cashFlowClass|cashFlowMapEntry|statutoryAccountOverride|companyReportingFramework)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b|\b(INSERT INTO|UPDATE|DELETE FROM)\s+"?(reporting_standard\w*|statutory_\w+|validation_rule|disclosure_rule|cash_flow_\w+|company_reporting_framework)"?\b/i;
     expect(SRC.filter((f) => WRITE.test(read(f))).map(rel)).toEqual(['packages/accounting/src/statutory.ts']);
     expect(read(`${ROOT}/packages/accounting/src/statutory.ts`)).not.toMatch(/\.journal(Line)?\.|PostingService|\beval\(|new Function\(/);
   });

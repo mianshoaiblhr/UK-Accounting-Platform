@@ -13,7 +13,7 @@ Everything in V1 plan section 1, plus: only the PostingService writes the ledger
 | V2-M2 | Fixed assets: classes, register, additions, disposals, depreciation methods, useful lives, residual values, tax vs accounting treatment, reconciliation to the ledger, depreciation runs | **built** (2026-10-18; `v2-m2-acceptance.md`) | Engineering | V2-M1 |
 | V2-M3 | Year-end adjustments: accruals, prepayments, deferred income, provisions with reversal; the year-end closing journal to retained earnings | split (DEC-059): **V2-M3a built** (2026-10-18; `v2-m3a-acceptance.md`); **V2-M3b built** (2026-10-19; `v2-m3b-acceptance.md`) | Engineering | V2-M2 |
 | V2-M4 | Director and shareholder balances (director loan movements flagged), related parties | **built** (2026-10-19; `v2-m4-acceptance.md`) | Engineering | V2-M3 |
-| V2-M5 | Statements and notes: FRS 105 micro-entity, then FRS 102 Section 1A, then full FRS 102; policies, comparatives, directors' sections; the size test | split (DEC-063, DEC-066): **V2-M5a built** (2026-10-19; `v2-m5a-acceptance.md`); **V2-M5b built** (2026-10-20; `v2-m5b-acceptance.md`, the size test, section 5f); V2-M5c the cash flow statement (full FRS 102) after it | Engineering; the named accountant | V2-M1, V2-M3, V2-M4 |
+| V2-M5 | Statements and notes: FRS 105 micro-entity, then FRS 102 Section 1A, then full FRS 102; policies, comparatives, directors' sections; the size test | split (DEC-063, DEC-066): **V2-M5a built** (2026-10-19; `v2-m5a-acceptance.md`); **V2-M5b built** (2026-10-20; `v2-m5b-acceptance.md`, the size test, section 5f); **V2-M5c built** (2026-10-20; `v2-m5c-acceptance.md`, the cash flow statement, section 5g) | Engineering; the named accountant | V2-M1, V2-M3, V2-M4 |
 | V2-M6 | Year-end workflow (the specification's 14 steps), review checklist and flags, partner review, client approval, filing-ready package | planned | Engineering | V2-M5 |
 | V2-M7 | Screens behind `accounts.production` | planned | Engineering (front end) | each API milestone |
 
@@ -344,6 +344,59 @@ For a framework year *n*, with the set *S(n)* governing its start date:
   * permissions and tenancy;
   * the draft thresholds import as UNVERIFIED;
   * an architecture test (the size test reads, writes nothing);
+  * CI green, clean clone, the matrix rows moved with evidence.
+
+## 5g. V2-M5c - The cash flow statement (specification; DEC-067)
+Recorded before code.
+
+### 5g.1 Data (one migration, additive; version content, verified and frozen with the version, copied when superseded)
+| Object | Holds | Rules |
+|---|---|---|
+| `cash_flow_class` | Per version: key, section (OPERATING, INVESTING, FINANCING), sort, caption, non-cash caption (investing and financing), optional inflow and outflow captions | Key unique per version and never `CASH`; the non-cash caption is required for investing and financing; inflow and outflow captions both or neither, investing and financing only |
+| `cash_flow_map_entry` | Per version: V1 reporting line, optional account subtype, target (a class key or `CASH`) | One per (line, subtype); the most specific wins |
+| `reporting_standard_version` (two columns) | `cash_flow_applies_to` (entity sizes) and `cash_flow_captions` (profit, operating, investing, financing, netChange, opening, closing) | When any size is listed, every caption is set and some entry maps to CASH |
+
+### 5g.2 The computation (DEC-067)
+For a year and its comparative on the year's version, closing journals left out. For each non-cash account:
+* E = -(net debit movement);
+* C = the same over journals with a cash line;
+* N = E - C.
+
+The profit line is the E of the P&L accounts the map does not place.
+
+The statement:
+* **Operating:**
+  * profit;
+  * then, per investing or financing class, the sum of N, under its non-cash caption;
+  * then, per operating class, the sum of E;
+  * then the section total.
+* **Investing and financing:** per class, the sum of C (gross by direction when the class has inflow and outflow captions), then the total.
+* **Net change, opening and closing cash.** A line that is zero in both years is left out.
+* **Each line** lists its accounts and amounts.
+* **Unplaced accounts:** a balance-sheet account with a movement and no target goes to an "Unclassified movements" line in operating and is reported as a problem.
+* **Proof:** the net change equals the cash accounts' movement, and opening plus the change equals closing.
+
+### 5g.3 API (behind `accounts.production`)
+* Under `reporting-standard-versions/{id}` (`accounts:rules-manage`, while unverified):
+  * `cash-flow-classes`: create, update, remove;
+  * `cash-flow-map-entries`: create, update, remove.
+* The version PATCH takes `cashFlowAppliesTo` and `cashFlowCaptions`; the version view shows the classes and the map.
+* `cash-flow?yearStart&compare` (`ledger:read`): the statement with comparatives, accounts per line, the proof, unplaced accounts, problems and notices.
+* The accounts document includes the statement when the year's size is listed.
+* All in OpenAPI.
+
+### 5g.4 Acceptance
+* **Golden (DEC-054):** `tests/golden/v2-m5c-cash-flow.json`, written by hand before the code and recomputed independently in a workbook.
+  * **The company:** a synthetic medium-sized company over 2025 and 2026, with credit sales and purchases, stock, fixed-asset purchases, depreciation and a disposal with proceeds, a loan raised and repaid, interest paid and accrued, interest received, tax charged and paid, shares issued, and a dividend paid; 2025 is closed.
+  * **The version:** a verified synthetic version with synthetic classes and captions.
+  * **Expected output:** every line of 2026 with its 2025 comparative, the proof, and the direct check that operating cash equals receipts less payments.
+* **Tests:**
+  * the identity on generated ledgers (unit);
+  * content verified and frozen (service and database);
+  * an unplaced account shown and reported;
+  * a small company's document without the statement;
+  * permissions and tenancy;
+  * an architecture test (reads only);
   * CI green, clean clone, the matrix rows moved with evidence.
 
 ## 6. Legal and standards context

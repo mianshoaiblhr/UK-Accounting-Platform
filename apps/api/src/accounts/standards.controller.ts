@@ -1,12 +1,13 @@
 import { Body, Controller, Delete, Get, HttpCode, Inject, Injectable, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import type { z } from 'zod';
 import {
+  cashFlowQuerySchema, createCashFlowClassSchema, createCashFlowMapEntrySchema, updateCashFlowClassSchema, updateCashFlowMapEntrySchema,
   createDisclosureRuleSchema, createMapEntrySchema, createStandardSchema, createStandardVersionSchema, createStatutoryLineSchema, createValidationRuleSchema, endStatutoryOverrideSchema,
   setReportingFrameworkSchema, setStatutoryOverrideSchema, statutoryOverrideListQuerySchema, statutoryPreviewQuerySchema, supersedeStandardVersionSchema, updateDisclosureRuleSchema,
   updateMapEntrySchema, updateStandardVersionSchema, updateStatutoryLineSchema, updateValidationRuleSchema, verifyStandardVersionSchema, type Permission,
 } from '@uk/contracts';
 import type { Database, Tx } from '@uk/db';
-import { FrameworkService, StandardsService, StatutoryReportService, type RuleActor } from '@uk/accounting';
+import { CashFlowService, FrameworkService, StandardsService, StatutoryReportService, type RuleActor } from '@uk/accounting';
 import { Idempotent, Org, RequireFeature, RequirePermissions } from '../common/decorators';
 import { DB } from '../common/tokens';
 import type { OrgAccess } from '../common/types';
@@ -32,7 +33,8 @@ export class AccountsApiService {
 @Controller('organisations/:organisationId/companies/:companyId')
 @RequireFeature('accounts.production')
 export class StandardsController {
-  constructor(private readonly api: AccountsApiService, private readonly standards: StandardsService, private readonly frameworks: FrameworkService, private readonly report: StatutoryReportService) {}
+  constructor(private readonly api: AccountsApiService, private readonly standards: StandardsService, private readonly frameworks: FrameworkService, private readonly report: StatutoryReportService,
+    private readonly cashFlow: CashFlowService) {}
 
   // ───── Standards and versions ─────
   @Get('reporting-standards') @RequirePermissions('ledger:read')
@@ -102,6 +104,28 @@ export class StandardsController {
   @Delete('reporting-standard-versions/:versionId/disclosure-rules/:ruleId') @HttpCode(200) @RequirePermissions('accounts:rules-manage')
   removeNote(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('versionId') v: string, @ID('ruleId') id: string) { return this.api.run(org, c, (tx, x) => this.standards.removeDisclosureRule(tx, { ...x, versionId: v, id })); }
 
+  // V2-M5c (DEC-067): cash-flow classes and the map to them or to cash
+  @Post('reporting-standard-versions/:versionId/cash-flow-classes') @RequirePermissions('accounts:rules-manage') @Idempotent()
+  addCashClass(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('versionId') v: string, @Body(new ZodPipe(createCashFlowClassSchema)) b: In<typeof createCashFlowClassSchema>) {
+    return this.api.run(org, c, (tx, x) => this.standards.addCashFlowClass(tx, { ...x, versionId: v, ...b }));
+  }
+  @Patch('reporting-standard-versions/:versionId/cash-flow-classes/:classId') @RequirePermissions('accounts:rules-manage')
+  updateCashClass(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('versionId') v: string, @ID('classId') id: string, @Body(new ZodPipe(updateCashFlowClassSchema)) b: In<typeof updateCashFlowClassSchema>) {
+    return this.api.run(org, c, (tx, x) => this.standards.updateCashFlowClass(tx, { ...x, versionId: v, id, ...b }));
+  }
+  @Delete('reporting-standard-versions/:versionId/cash-flow-classes/:classId') @HttpCode(200) @RequirePermissions('accounts:rules-manage')
+  removeCashClass(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('versionId') v: string, @ID('classId') id: string) { return this.api.run(org, c, (tx, x) => this.standards.removeCashFlowClass(tx, { ...x, versionId: v, id })); }
+  @Post('reporting-standard-versions/:versionId/cash-flow-map-entries') @RequirePermissions('accounts:rules-manage') @Idempotent()
+  addCashMap(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('versionId') v: string, @Body(new ZodPipe(createCashFlowMapEntrySchema)) b: In<typeof createCashFlowMapEntrySchema>) {
+    return this.api.run(org, c, (tx, x) => this.standards.addCashFlowMapEntry(tx, { ...x, versionId: v, ...b }));
+  }
+  @Patch('reporting-standard-versions/:versionId/cash-flow-map-entries/:entryId') @RequirePermissions('accounts:rules-manage')
+  updateCashMap(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('versionId') v: string, @ID('entryId') id: string, @Body(new ZodPipe(updateCashFlowMapEntrySchema)) b: In<typeof updateCashFlowMapEntrySchema>) {
+    return this.api.run(org, c, (tx, x) => this.standards.updateCashFlowMapEntry(tx, { ...x, versionId: v, id, ...b }));
+  }
+  @Delete('reporting-standard-versions/:versionId/cash-flow-map-entries/:entryId') @HttpCode(200) @RequirePermissions('accounts:rules-manage')
+  removeCashMap(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('versionId') v: string, @ID('entryId') id: string) { return this.api.run(org, c, (tx, x) => this.standards.removeCashFlowMapEntry(tx, { ...x, versionId: v, id })); }
+
   // ───── Per company ─────
   @Get('reporting-frameworks') @RequirePermissions('ledger:read')
   frameworksList(@Org() org: OrgAccess, @ID('companyId') c: string) { return this.api.run(org, c, (tx) => this.frameworks.list(tx, c)); }
@@ -117,4 +141,6 @@ export class StandardsController {
   }
   @Get('statutory-preview') @RequirePermissions('ledger:read')
   preview(@Org() org: OrgAccess, @ID('companyId') c: string, @Query(new ZodPipe(statutoryPreviewQuerySchema)) q: In<typeof statutoryPreviewQuerySchema>) { return this.api.run(org, c, (tx) => this.report.preview(tx, c, q)); }
+  @Get('cash-flow') @RequirePermissions('ledger:read')
+  cashFlowStatement(@Org() org: OrgAccess, @ID('companyId') c: string, @Query(new ZodPipe(cashFlowQuerySchema)) q: In<typeof cashFlowQuerySchema>) { return this.api.run(org, c, (tx) => this.cashFlow.statement(tx, c, q)); }
 }

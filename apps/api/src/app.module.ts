@@ -50,7 +50,7 @@ import { OrganisationsController } from './organisations/organisations.controlle
 import { OrganisationsService } from './organisations/organisations.service';
 import { LedgerController } from './ledger/ledger.controller';
 import { LedgerApiService } from './ledger/ledger.service';
-import { AccountsDocumentService, SizeTestService, SizeThresholdService, DirectorService, YearEndCloseService, YearEndService, DepreciationService, FixedAssetService, FrameworkService, StandardsService, StatutoryReportService, AlertService, DrillDownService, ReportService, BankService, CashService, ReconciliationService, PurchasesService, SalesService, VatService, AccountService, FxSettingsService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, RateService, RevaluationService } from '@uk/accounting';
+import { AccountsDocumentService, CashFlowService, SizeTestService, SizeThresholdService, DirectorService, YearEndCloseService, YearEndService, DepreciationService, FixedAssetService, FrameworkService, StandardsService, StatutoryReportService, AlertService, DrillDownService, ReportService, BankService, CashService, ReconciliationService, PurchasesService, SalesService, VatService, AccountService, FxSettingsService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, RateService, RevaluationService } from '@uk/accounting';
 
 @Module({})
 export class AppModule {
@@ -70,7 +70,7 @@ export class AppModule {
         { provide: BankService, useFactory: () => new BankService({ crypto: new FieldEncryption(config.FIELD_ENCRYPTION_KEY), captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: StandardsService, useFactory: () => new StandardsService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: FrameworkService, useFactory: () => new FrameworkService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
-        { provide: StatutoryReportService, useFactory: () => new StatutoryReportService() }, AccountsApiService,
+        { provide: StatutoryReportService, useFactory: () => new StatutoryReportService() }, { provide: CashFlowService, useFactory: () => new CashFlowService() }, AccountsApiService,
         { provide: FixedAssetService, inject: [PostingService], useFactory: (posting: PostingService) => new FixedAssetService(posting, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: YearEndService, inject: [PostingService], useFactory: (posting: PostingService) => new YearEndService(posting, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) }, YearEndApiService,
         { provide: AccountsDocumentService, inject: [StatutoryReportService, DirectorService, YearEndService], useFactory: (st: StatutoryReportService, d: DirectorService, ye: YearEndService) => new AccountsDocumentService(st, d, ye, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },

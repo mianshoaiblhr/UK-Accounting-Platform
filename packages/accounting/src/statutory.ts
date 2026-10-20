@@ -1,4 +1,4 @@
-import { checkExpression, expressionLines, lineShapeErrors, parseTemplate, type DocumentSection, type EntitySize } from '@uk/contracts';
+import { CASH_TARGET, cashFlowClassErrors, checkExpression, expressionLines, lineShapeErrors, parseTemplate, type DocumentSection, type EntitySize } from '@uk/contracts';
 import { conflict, forbidden, notFound, unprocessable, uuidv7 } from '@uk/core';
 import { Prisma, type Tx } from '@uk/db';
 import { auditRow } from '@uk/platform';
@@ -19,6 +19,8 @@ type LineRow = Awaited<ReturnType<Tx['statutoryLine']['findUniqueOrThrow']>>;
 type MapRow = Awaited<ReturnType<Tx['statutoryMapEntry']['findUniqueOrThrow']>>;
 type RuleRow = Awaited<ReturnType<Tx['validationRule']['findUniqueOrThrow']>>;
 type NoteRow = Awaited<ReturnType<Tx['disclosureRule']['findUniqueOrThrow']>>;
+type CashClassRow = Awaited<ReturnType<Tx['cashFlowClass']['findUniqueOrThrow']>>;
+type CashMapRow = Awaited<ReturnType<Tx['cashFlowMapEntry']['findUniqueOrThrow']>>;
 type Term = { line: string; sign: number };
 interface Source { url: string; provision: string; retrievedOn: string }
 
@@ -26,11 +28,13 @@ export const standardVersionView = (v: VersionRow) => ({
   id: v.id, standardId: v.standardId, label: v.label, effectiveFrom: isoDay(v.effectiveFrom), effectiveTo: v.effectiveTo ? isoDay(v.effectiveTo) : null,
   source: { url: v.sourceUrl, provision: v.sourceReference, retrievedOn: isoDay(v.sourceRetrievedOn) }, notes: v.notes, status: v.status, copiedFromId: v.copiedFromId,
   createdByUserId: v.createdByUserId, createdAt: v.createdAt, verifiedByUserId: v.verifiedByUserId, verifiedAt: v.verifiedAt, verificationNotes: v.verificationNotes, supersededById: v.supersededById,
-  turnoverLineKey: v.turnoverLineKey,
+  turnoverLineKey: v.turnoverLineKey, cashFlowAppliesTo: v.cashFlowAppliesTo, cashFlowCaptions: (v.cashFlowCaptions as Record<string, string> | null) ?? null,
 });
 export const statutoryLineView = (l: LineRow) => ({ id: l.id, key: l.key, statement: l.statement, parentKey: l.parentKey, sort: l.sort, name: l.name, kind: l.kind, naturalSide: l.naturalSide, formula: (l.formula as Term[] | null) ?? null });
 const mapView = (m: MapRow) => ({ id: m.id, sourceLine: m.sourceLine, accountSubtype: m.accountSubtype, targetKey: m.targetKey });
 const ruleView = (r: RuleRow) => ({ id: r.id, key: r.key, description: r.description, severity: r.severity, appliesTo: r.appliesTo, expression: r.expression as Record<string, unknown> });
+export const cashFlowClassView = (c: CashClassRow) => ({ id: c.id, key: c.key, section: c.section, sort: c.sort, name: c.name, adjustmentName: c.adjustmentName, inflowName: c.inflowName, outflowName: c.outflowName });
+const cashMapView = (m: CashMapRow) => ({ id: m.id, sourceLine: m.sourceLine, accountSubtype: m.accountSubtype, target: m.target });
 const noteView = (n: NoteRow) => ({ id: n.id, key: n.key, title: n.title, appliesTo: n.appliesTo, requires: n.requires as { lines?: string[]; facts?: string[] },
   section: n.section, sort: n.sort, body: n.body, omitWhenEmpty: n.omitWhenEmpty });
 
@@ -53,7 +57,8 @@ function findCycle(formulas: Map<string, Term[]>): string[] | null {
  * The consistency of a version's content (DEC-055): everything refers to lines of the version, totals and parents have no cycle, parents sit on
  * the same statement, map entries and overrides land on accounts lines, rule expressions follow the grammar. Empty = consistent.
  */
-export function versionProblems(c: { lines: LineRow[]; map: MapRow[]; rules: RuleRow[]; notes: NoteRow[]; overrideTargets?: string[]; turnoverLineKey?: string | null }): string[] {
+export function versionProblems(c: { lines: LineRow[]; map: MapRow[]; rules: RuleRow[]; notes: NoteRow[]; overrideTargets?: string[]; turnoverLineKey?: string | null;
+  cashClasses?: CashClassRow[]; cashMap?: CashMapRow[]; cashFlowAppliesTo?: string[]; cashFlowCaptions?: unknown }): string[] {
   const p: string[] = [];
   const byKey = new Map(c.lines.map((l) => [l.key, l]));
   if (c.lines.length === 0) p.push('The version has no statement lines');
@@ -84,6 +89,14 @@ export function versionProblems(c: { lines: LineRow[]; map: MapRow[]; rules: Rul
   }
   // V2-M5b: the turnover line the size test reads is a P&L line of the version
   if (c.turnoverLineKey && byKey.get(c.turnoverLineKey)?.statement !== 'PL') p.push(`The turnover line ${c.turnoverLineKey} is not a profit and loss line of this version`);
+  // V2-M5c: the cash-flow map lands on classes of the version or on cash; a version with the statement has its captions and its cash
+  const classKeys = new Set((c.cashClasses ?? []).map((k) => k.key));
+  for (const k of c.cashClasses ?? []) for (const e of cashFlowClassErrors(k)) p.push(`Cash-flow class ${k.key}: ${e}`);
+  for (const m of c.cashMap ?? []) if (m.target !== CASH_TARGET && !classKeys.has(m.target)) p.push(`Cash-flow map ${m.sourceLine}${m.accountSubtype ? `/${m.accountSubtype}` : ''}: ${m.target} is not a cash-flow class of this version`);
+  if ((c.cashFlowAppliesTo ?? []).length) {
+    if (!c.cashFlowCaptions) p.push('The cash flow statement applies to some sizes but has no captions');
+    if (!(c.cashMap ?? []).some((m) => m.target === CASH_TARGET)) p.push('The cash flow statement applies to some sizes but nothing is mapped to CASH');
+  }
   return p;
 }
 
@@ -109,13 +122,15 @@ export class StandardsService {
   }
   private async content(tx: Tx, versionId: string) {
     const where = { versionId, removed: false };
-    const [lines, map, rules, notes] = await Promise.all([
+    const [lines, map, rules, notes, cashClasses, cashMap] = await Promise.all([
       tx.statutoryLine.findMany({ where, orderBy: [{ statement: 'asc' }, { sort: 'asc' }, { key: 'asc' }] }),
       tx.statutoryMapEntry.findMany({ where, orderBy: [{ sourceLine: 'asc' }, { accountSubtype: 'asc' }] }),
       tx.validationRule.findMany({ where, orderBy: { key: 'asc' } }),
       tx.disclosureRule.findMany({ where, orderBy: { key: 'asc' } }),
+      tx.cashFlowClass.findMany({ where, orderBy: [{ section: 'asc' }, { sort: 'asc' }, { key: 'asc' }] }),
+      tx.cashFlowMapEntry.findMany({ where, orderBy: [{ sourceLine: 'asc' }, { accountSubtype: 'asc' }] }),
     ]);
-    return { lines, map, rules, notes };
+    return { lines, map, rules, notes, cashClasses, cashMap };
   }
   private mapDb(e: unknown): never {
     const msg = dbMessage(e);
@@ -153,7 +168,8 @@ export class StandardsService {
     const s = await tx.reportingStandard.findFirstOrThrow({ where: { id: v.standardId } });
     const c = await this.content(tx, id);
     return { ...standardVersionView(v), standard: { id: s.id, code: s.code, name: s.name }, lines: c.lines.map(statutoryLineView), mapEntries: c.map.map(mapView),
-      validationRules: c.rules.map(ruleView), disclosureRules: c.notes.map(noteView), problems: versionProblems({ ...c, turnoverLineKey: v.turnoverLineKey }) };
+      validationRules: c.rules.map(ruleView), disclosureRules: c.notes.map(noteView), cashFlowClasses: c.cashClasses.map(cashFlowClassView), cashFlowMapEntries: c.cashMap.map(cashMapView),
+      problems: versionProblems({ ...c, turnoverLineKey: v.turnoverLineKey, cashFlowAppliesTo: v.cashFlowAppliesTo, cashFlowCaptions: v.cashFlowCaptions }) };
   }
 
   /** Copies the live content of one version into another (a new version, or a supersession). */
@@ -164,6 +180,9 @@ export class StandardsService {
     if (c.rules.length) await tx.validationRule.createMany({ data: c.rules.map((r) => ({ organisationId, versionId: toId, key: r.key, description: r.description, severity: r.severity, appliesTo: r.appliesTo, expression: r.expression as Prisma.InputJsonValue })) });
     if (c.notes.length) await tx.disclosureRule.createMany({ data: c.notes.map((n) => ({ organisationId, versionId: toId, key: n.key, title: n.title, appliesTo: n.appliesTo, requires: n.requires as Prisma.InputJsonValue,
       section: n.section, sort: n.sort, body: n.body, omitWhenEmpty: n.omitWhenEmpty })) });
+    if (c.cashClasses.length) await tx.cashFlowClass.createMany({ data: c.cashClasses.map((k) => ({ organisationId, versionId: toId, key: k.key, section: k.section, sort: k.sort, name: k.name,
+      adjustmentName: k.adjustmentName, inflowName: k.inflowName, outflowName: k.outflowName })) });
+    if (c.cashMap.length) await tx.cashFlowMapEntry.createMany({ data: c.cashMap.map((m) => ({ organisationId, versionId: toId, sourceLine: m.sourceLine, accountSubtype: m.accountSubtype, target: m.target })) });
   }
   async createVersion(tx: Tx, a: Ctx & { standardId: string; label: string; effectiveFrom: string; effectiveTo?: string; source: Source; notes?: string; copyFromVersionId?: string }) {
     await this.need(a.actor, 'accounts:rules-manage', a.companyId);
@@ -173,13 +192,14 @@ export class StandardsService {
     try {
       v = await tx.reportingStandardVersion.create({ data: { organisationId: a.organisationId, standardId: a.standardId, label: a.label, effectiveFrom: toDate(a.effectiveFrom), effectiveTo: a.effectiveTo ? toDate(a.effectiveTo) : null,
         sourceUrl: a.source.url, sourceReference: a.source.provision, sourceRetrievedOn: toDate(a.source.retrievedOn), notes: a.notes ?? null, copiedFromId: a.copyFromVersionId ?? null, createdByUserId: a.actor.userId,
-        turnoverLineKey: from?.turnoverLineKey ?? null } });
+        turnoverLineKey: from?.turnoverLineKey ?? null, cashFlowAppliesTo: from?.cashFlowAppliesTo ?? [], cashFlowCaptions: (from?.cashFlowCaptions as Prisma.InputJsonValue | undefined) ?? Prisma.DbNull } });
     } catch (e) { this.mapDb(e); }
     if (a.copyFromVersionId) await this.copyContent(tx, a.organisationId, a.copyFromVersionId, v.id);
     await this.audit(tx, { action: 'accounts.standard_version_created', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actor.userId, entityType: 'reporting_standard_version', entityId: v.id, after: standardVersionView(v) });
     return this.getVersion(tx, v.id);
   }
-  async updateVersion(tx: Tx, a: Ctx & { id: string; label?: string; effectiveFrom?: string; effectiveTo?: string | null; source?: Source; notes?: string | null; turnoverLineKey?: string | null }) {
+  async updateVersion(tx: Tx, a: Ctx & { id: string; label?: string; effectiveFrom?: string; effectiveTo?: string | null; source?: Source; notes?: string | null; turnoverLineKey?: string | null;
+    cashFlowAppliesTo?: EntitySize[]; cashFlowCaptions?: Record<string, string> | null }) {
     await this.need(a.actor, 'accounts:rules-manage', a.companyId);
     const before = await this.editable(tx, a.id);
     const from = a.effectiveFrom ?? isoDay(before.effectiveFrom), to = a.effectiveTo === undefined ? (before.effectiveTo ? isoDay(before.effectiveTo) : null) : a.effectiveTo;
@@ -191,7 +211,9 @@ export class StandardsService {
       after = await tx.reportingStandardVersion.update({ where: { id: a.id }, data: {
         ...(a.label !== undefined ? { label: a.label } : {}), effectiveFrom: toDate(from), effectiveTo: to ? toDate(to) : null,
         ...(a.source ? { sourceUrl: a.source.url, sourceReference: a.source.provision, sourceRetrievedOn: toDate(a.source.retrievedOn) } : {}),
-        ...(a.notes !== undefined ? { notes: a.notes } : {}), ...(a.turnoverLineKey !== undefined ? { turnoverLineKey: a.turnoverLineKey } : {}) } });
+        ...(a.notes !== undefined ? { notes: a.notes } : {}), ...(a.turnoverLineKey !== undefined ? { turnoverLineKey: a.turnoverLineKey } : {}),
+        ...(a.cashFlowAppliesTo !== undefined ? { cashFlowAppliesTo: a.cashFlowAppliesTo } : {}),
+        ...(a.cashFlowCaptions !== undefined ? { cashFlowCaptions: a.cashFlowCaptions === null ? Prisma.DbNull : (a.cashFlowCaptions as Prisma.InputJsonValue) } : {}) } });
     } catch (e) { this.mapDb(e); }
     await this.audit(tx, { action: 'accounts.standard_version_changed', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actor.userId, entityType: 'reporting_standard_version', entityId: a.id, before: standardVersionView(before), after: standardVersionView(after) });
     return this.getVersion(tx, a.id);
@@ -204,11 +226,11 @@ export class StandardsService {
     if (v.createdByUserId === a.actor.userId) throw forbidden('A standard version must be verified by someone other than its author', 'self_verification_not_allowed');
     const c = await this.content(tx, a.id);
     const overrides = await tx.statutoryAccountOverride.findMany({ where: { versionId: a.id, endedAt: null }, select: { targetKey: true } });
-    const problems = versionProblems({ ...c, overrideTargets: overrides.map((o) => o.targetKey), turnoverLineKey: v.turnoverLineKey });
+    const problems = versionProblems({ ...c, overrideTargets: overrides.map((o) => o.targetKey), turnoverLineKey: v.turnoverLineKey, cashFlowAppliesTo: v.cashFlowAppliesTo, cashFlowCaptions: v.cashFlowCaptions });
     if (problems.length) throw unprocessable('The version is not consistent and cannot be verified', 'version_inconsistent', { problems });
     const after = await tx.reportingStandardVersion.update({ where: { id: a.id }, data: { status: 'VERIFIED', verifiedByUserId: a.actor.userId, verifiedAt: new Date(), verificationNotes: a.notes } });
     await this.audit(tx, { action: 'accounts.standard_version_verified', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actor.userId, entityType: 'reporting_standard_version', entityId: a.id,
-      before: { status: v.status }, after: { status: after.status, verifiedByUserId: after.verifiedByUserId, verificationNotes: after.verificationNotes, lines: c.lines.length, mapEntries: c.map.length, validationRules: c.rules.length, disclosureRules: c.notes.length } });
+      before: { status: v.status }, after: { status: after.status, verifiedByUserId: after.verifiedByUserId, verificationNotes: after.verificationNotes, lines: c.lines.length, mapEntries: c.map.length, validationRules: c.rules.length, disclosureRules: c.notes.length, cashFlowClasses: c.cashClasses.length, cashFlowMapEntries: c.cashMap.length } });
     return this.getVersion(tx, a.id);
   }
   /** A change to a verified version (DEC-055): a new UNVERIFIED version with the same content, and the old one marked SUPERSEDED, in one transaction. */
@@ -223,7 +245,7 @@ export class StandardsService {
     try {
       v = await tx.reportingStandardVersion.create({ data: { id, organisationId: a.organisationId, standardId: old.standardId, label: a.label, effectiveFrom: toDate(a.effectiveFrom), effectiveTo: a.effectiveTo ? toDate(a.effectiveTo) : null,
         sourceUrl: a.source.url, sourceReference: a.source.provision, sourceRetrievedOn: toDate(a.source.retrievedOn), notes: a.notes ?? null, copiedFromId: old.id, createdByUserId: a.actor.userId,
-        turnoverLineKey: old.turnoverLineKey } });
+        turnoverLineKey: old.turnoverLineKey, cashFlowAppliesTo: old.cashFlowAppliesTo, cashFlowCaptions: (old.cashFlowCaptions as Prisma.InputJsonValue | null) ?? Prisma.DbNull } });
     } catch (e) { this.mapDb(e); }
     await this.copyContent(tx, a.organisationId, old.id, id);
     await this.audit(tx, { action: 'accounts.standard_version_superseded', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actor.userId, entityType: 'reporting_standard_version', entityId: old.id,
@@ -435,6 +457,84 @@ export class StandardsService {
     const n = await this.note(tx, a.versionId, a.id);
     await tx.disclosureRule.update({ where: { id: a.id }, data: { removed: true } });
     await this.contentAudit(tx, a, 'accounts.disclosure_rule_removed', 'disclosure_rule', a.id, noteView(n));
+    return { id: a.id, removed: true };
+  }
+
+  // ───── Cash flow (V2-M5c; DEC-067): classes and the map, only while UNVERIFIED ─────
+  private async cashClass(tx: Tx, versionId: string, id: string) {
+    const c = await tx.cashFlowClass.findFirst({ where: { id, versionId, removed: false } });
+    if (!c) throw notFound('Cash-flow class not found', 'cash_flow_class_not_found');
+    return c;
+  }
+  private async cashTarget(tx: Tx, versionId: string, target: string) {
+    if (target === CASH_TARGET) return;
+    if (!(await tx.cashFlowClass.findFirst({ where: { versionId, key: target, removed: false }, select: { id: true } })))
+      throw unprocessable(`${target} is not a cash-flow class of this version (or CASH)`, 'unknown_cash_flow_class', { target });
+  }
+  async addCashFlowClass(tx: Tx, a: Ctx & { versionId: string; key: string; section: string; sort: number; name: string; adjustmentName?: string | null; inflowName?: string | null; outflowName?: string | null }) {
+    await this.need(a.actor, 'accounts:rules-manage', a.companyId);
+    await this.editable(tx, a.versionId);
+    let c: CashClassRow;
+    try {
+      c = await tx.cashFlowClass.create({ data: { organisationId: a.organisationId, versionId: a.versionId, key: a.key, section: a.section, sort: a.sort, name: a.name,
+        adjustmentName: a.adjustmentName ?? null, inflowName: a.inflowName ?? null, outflowName: a.outflowName ?? null } });
+    } catch (e) { this.dup(e, `Cash-flow class ${a.key}`); }
+    await this.contentAudit(tx, a, 'accounts.cash_flow_class_added', 'cash_flow_class', c.id, undefined, cashFlowClassView(c));
+    return cashFlowClassView(c);
+  }
+  async updateCashFlowClass(tx: Tx, a: Ctx & { versionId: string; id: string; section?: string; sort?: number; name?: string; adjustmentName?: string | null; inflowName?: string | null; outflowName?: string | null }) {
+    await this.need(a.actor, 'accounts:rules-manage', a.companyId);
+    await this.editable(tx, a.versionId);
+    const before = await this.cashClass(tx, a.versionId, a.id);
+    const pick = <K extends 'adjustmentName' | 'inflowName' | 'outflowName'>(k: K) => (a[k] === undefined ? before[k] : a[k]);
+    const merged = { section: a.section ?? before.section, sort: a.sort ?? before.sort, name: a.name ?? before.name, adjustmentName: pick('adjustmentName'), inflowName: pick('inflowName'), outflowName: pick('outflowName') };
+    const shape = cashFlowClassErrors(merged);
+    if (shape.length) throw unprocessable(shape.join('; '), 'invalid_cash_flow_class', { problems: shape });
+    const after = await tx.cashFlowClass.update({ where: { id: a.id }, data: merged });
+    await this.contentAudit(tx, a, 'accounts.cash_flow_class_changed', 'cash_flow_class', a.id, cashFlowClassView(before), cashFlowClassView(after));
+    return cashFlowClassView(after);
+  }
+  async removeCashFlowClass(tx: Tx, a: Ctx & { versionId: string; id: string }) {
+    await this.need(a.actor, 'accounts:rules-manage', a.companyId);
+    await this.editable(tx, a.versionId);
+    const c = await this.cashClass(tx, a.versionId, a.id);
+    const used = await tx.cashFlowMapEntry.count({ where: { versionId: a.versionId, removed: false, target: c.key } });
+    if (used) throw conflict(`Cash-flow class ${c.key} is the target of ${used} map entr${used === 1 ? 'y' : 'ies'}; move them first`, 'cash_flow_class_in_use');
+    await tx.cashFlowClass.update({ where: { id: a.id }, data: { removed: true } });
+    await this.contentAudit(tx, a, 'accounts.cash_flow_class_removed', 'cash_flow_class', a.id, cashFlowClassView(c));
+    return { id: a.id, removed: true };
+  }
+  private async cashMapEntry(tx: Tx, versionId: string, id: string) {
+    const m = await tx.cashFlowMapEntry.findFirst({ where: { id, versionId, removed: false } });
+    if (!m) throw notFound('Cash-flow map entry not found', 'cash_flow_map_entry_not_found');
+    return m;
+  }
+  async addCashFlowMapEntry(tx: Tx, a: Ctx & { versionId: string; sourceLine: string; accountSubtype?: string | null; target: string }) {
+    await this.need(a.actor, 'accounts:rules-manage', a.companyId);
+    await this.editable(tx, a.versionId);
+    await this.cashTarget(tx, a.versionId, a.target);
+    let m: CashMapRow;
+    try { m = await tx.cashFlowMapEntry.create({ data: { organisationId: a.organisationId, versionId: a.versionId, sourceLine: a.sourceLine, accountSubtype: a.accountSubtype ?? null, target: a.target } }); }
+    catch (e) { this.dup(e, `A cash-flow map entry for ${a.sourceLine}${a.accountSubtype ? `/${a.accountSubtype}` : ''}`); }
+    await this.contentAudit(tx, a, 'accounts.cash_flow_map_entry_added', 'cash_flow_map_entry', m.id, undefined, cashMapView(m));
+    return cashMapView(m);
+  }
+  async updateCashFlowMapEntry(tx: Tx, a: Ctx & { versionId: string; id: string; target: string }) {
+    await this.need(a.actor, 'accounts:rules-manage', a.companyId);
+    await this.editable(tx, a.versionId);
+    const before = await this.cashMapEntry(tx, a.versionId, a.id);
+    await this.cashTarget(tx, a.versionId, a.target);
+    if (a.target === CASH_TARGET && !before.sourceLine.startsWith('BS.')) throw unprocessable('Only a balance-sheet line can be cash', 'invalid_cash_target');
+    const after = await tx.cashFlowMapEntry.update({ where: { id: a.id }, data: { target: a.target } });
+    await this.contentAudit(tx, a, 'accounts.cash_flow_map_entry_changed', 'cash_flow_map_entry', a.id, cashMapView(before), cashMapView(after));
+    return cashMapView(after);
+  }
+  async removeCashFlowMapEntry(tx: Tx, a: Ctx & { versionId: string; id: string }) {
+    await this.need(a.actor, 'accounts:rules-manage', a.companyId);
+    await this.editable(tx, a.versionId);
+    const m = await this.cashMapEntry(tx, a.versionId, a.id);
+    await tx.cashFlowMapEntry.update({ where: { id: a.id }, data: { removed: true } });
+    await this.contentAudit(tx, a, 'accounts.cash_flow_map_entry_removed', 'cash_flow_map_entry', a.id, cashMapView(m));
     return { id: a.id, removed: true };
   }
 }

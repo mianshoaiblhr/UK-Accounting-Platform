@@ -1,0 +1,126 @@
+{
+  "id": "V2-M5C-GOLDEN-01",
+  "purpose": "DEC-054 golden for V2-M5c (DEC-067): the cash flow statement (indirect method) of a synthetic medium-sized company for 2026 with 2025 alongside, from the ledger through a verified synthetic version's cash-flow classes and map. It covers credit sales and purchases, stock, fixed-asset purchases, depreciation and a disposal with proceeds, a loan raised and repaid, interest paid and accrued, interest received, tax charged and paid, shares issued and a dividend paid, with 2025 closed. Every figure was written by hand before the code.",
+  "disclaimer": "SYNTHETIC. The classes, the map and the captions are test choices, not FRS 102 Section 7 text or a verified classification. The company and amounts are test choices.",
+  "linesFrom": "tests/golden/v2-m1-micro-synthetic.json",
+  "company": { "name": "Golden Cash Flow Ltd" },
+  "periods": [["2025-01-01", "2025-12-31"], ["2026-01-01", "2026-12-31"]],
+  "accounts": [
+    { "code": "6950", "name": "Profit or loss on disposal of fixed assets", "type": "EXPENSE", "subtype": "OTHER_EXPENSE", "reportingMapping": "PL.OTHER_EXPENSES" }
+  ],
+  "cash": [
+    { "date": "2025-01-01", "direction": "RECEIPT", "lines": [["3000", "10000.00"]], "description": "Shares issued" },
+    { "date": "2025-01-15", "direction": "RECEIPT", "lines": [["2300", "20000.00"]], "description": "Bank loan drawn" },
+    { "date": "2025-02-01", "direction": "PAYMENT", "lines": [["0030", "12000.00"]], "description": "Office equipment bought" },
+    { "date": "2025-06-30", "direction": "PAYMENT", "lines": [["6100", "6000.00"]], "description": "Rent 2025" },
+    { "date": "2025-08-31", "direction": "PAYMENT", "lines": [["2110", "25000.00"]], "description": "Paid to suppliers 2025" },
+    { "date": "2025-09-30", "direction": "RECEIPT", "lines": [["1110", "42000.00"]], "description": "Received from customers 2025" },
+    { "date": "2025-12-31", "direction": "PAYMENT", "lines": [["7000", "1000.00"]], "description": "Loan interest 2025" },
+    { "date": "2026-01-10", "direction": "RECEIPT", "lines": [["4900", "100.00"]], "description": "Deposit interest received" },
+    { "date": "2026-04-30", "direction": "PAYMENT", "lines": [["2220", "2000.00"]], "description": "Corporation tax for 2025 paid" },
+    { "date": "2026-05-31", "direction": "PAYMENT", "lines": [["0030", "5000.00"]], "description": "New office equipment" },
+    { "date": "2026-06-30", "direction": "PAYMENT", "lines": [["6100", "7000.00"]], "description": "Rent 2026" },
+    { "date": "2026-06-30", "direction": "RECEIPT", "lines": [["1110", "63000.00"]], "description": "Received from customers 2026" },
+    { "date": "2026-06-30", "direction": "PAYMENT", "lines": [["7000", "800.00"]], "description": "Loan interest paid 2026" },
+    { "date": "2026-07-31", "direction": "PAYMENT", "lines": [["2110", "31000.00"]], "description": "Paid to suppliers 2026" },
+    { "date": "2026-09-30", "direction": "RECEIPT", "lines": [["6950", "500.00"]], "description": "Proceeds of old equipment sold" },
+    { "date": "2026-10-31", "direction": "PAYMENT", "lines": [["2300", "4000.00"]], "description": "Bank loan repayment" },
+    { "date": "2026-11-30", "direction": "PAYMENT", "lines": [["3300", "5000.00"]], "description": "Dividend paid" }
+  ],
+  "journals": [
+    { "date": "2025-03-31", "description": "Stock bought on credit 2025", "lines": [["1000", "30000.00", "0.00"], ["2110", "0.00", "30000.00"]] },
+    { "date": "2025-06-30", "description": "Credit sales 2025", "lines": [["1110", "50000.00", "0.00"], ["4000", "0.00", "50000.00"]] },
+    { "date": "2025-12-31", "description": "Cost of goods sold 2025", "lines": [["5000", "24000.00", "0.00"], ["1000", "0.00", "24000.00"]] },
+    { "date": "2025-12-31", "description": "Depreciation 2025", "lines": [["6900", "3000.00", "0.00"], ["0031", "0.00", "3000.00"]] },
+    { "date": "2025-12-31", "description": "Corporation tax charge 2025", "lines": [["7100", "2000.00", "0.00"], ["2220", "0.00", "2000.00"]] },
+    { "date": "2026-02-28", "description": "Stock bought on credit 2026", "lines": [["1000", "28000.00", "0.00"], ["2110", "0.00", "28000.00"]] },
+    { "date": "2026-03-31", "description": "Credit sales 2026", "lines": [["1110", "60000.00", "0.00"], ["4000", "0.00", "60000.00"]] },
+    { "date": "2026-09-30", "description": "Old equipment disposed of (cost 2,000, depreciation 1,200)", "lines": [["0031", "1200.00", "0.00"], ["6950", "800.00", "0.00"], ["0030", "0.00", "2000.00"]] },
+    { "date": "2026-12-31", "description": "Cost of goods sold 2026", "lines": [["5000", "30000.00", "0.00"], ["1000", "0.00", "30000.00"]] },
+    { "date": "2026-12-31", "description": "Depreciation 2026", "lines": [["6900", "3500.00", "0.00"], ["0031", "0.00", "3500.00"]] },
+    { "date": "2026-12-31", "description": "Loan interest accrued 2026", "lines": [["7000", "200.00", "0.00"], ["2110", "0.00", "200.00"]] },
+    { "date": "2026-12-31", "description": "Corporation tax charge 2026", "lines": [["7100", "3000.00", "0.00"], ["2220", "0.00", "3000.00"]] }
+  ],
+  "closes": [["2025-01-01", "2025-12-31"]],
+  "frameworks": [
+    { "yearStart": "2025-01-01", "yearEnd": "2025-12-31", "entitySize": "MEDIUM" },
+    { "yearStart": "2026-01-01", "yearEnd": "2026-12-31", "entitySize": "MEDIUM" }
+  ],
+  "cashFlow": {
+    "appliesTo": ["MEDIUM", "LARGE"],
+    "captions": {
+      "profit": "Profit before interest and tax", "operating": "Net cash from operating activities", "investing": "Net cash from investing activities",
+      "financing": "Net cash from financing activities", "netChange": "Net increase in cash", "opening": "Cash at the beginning of the year", "closing": "Cash at the end of the year"
+    },
+    "classes": [
+      { "key": "OP.DEBTORS", "section": "OPERATING", "sort": 10, "name": "Decrease (increase) in debtors" },
+      { "key": "OP.STOCK", "section": "OPERATING", "sort": 20, "name": "Decrease (increase) in stocks" },
+      { "key": "OP.CREDITORS", "section": "OPERATING", "sort": 30, "name": "Increase (decrease) in creditors" },
+      { "key": "OP.TAX", "section": "OPERATING", "sort": 40, "name": "Corporation tax paid" },
+      { "key": "INV.FA", "section": "INVESTING", "sort": 10, "name": "Net payments for tangible fixed assets", "adjustmentName": "Depreciation and disposals",
+        "inflowName": "Receipts from sales of tangible fixed assets", "outflowName": "Payments to acquire tangible fixed assets" },
+      { "key": "INV.INT", "section": "INVESTING", "sort": 20, "name": "Interest received", "adjustmentName": "Interest receivable not received" },
+      { "key": "FIN.SHARES", "section": "FINANCING", "sort": 10, "name": "Issue of shares", "adjustmentName": "Non-cash share capital movements" },
+      { "key": "FIN.LOANS", "section": "FINANCING", "sort": 20, "name": "Net bank loans", "adjustmentName": "Non-cash loan movements", "inflowName": "New bank loans", "outflowName": "Repayment of bank loans" },
+      { "key": "FIN.DIV", "section": "FINANCING", "sort": 30, "name": "Dividends paid", "adjustmentName": "Non-cash reserve movements" },
+      { "key": "FIN.INT", "section": "FINANCING", "sort": 40, "name": "Interest paid", "adjustmentName": "Interest payable not paid" }
+    ],
+    "map": [
+      ["BS.CURRENT_ASSETS.CASH", null, "CASH"],
+      ["BS.CURRENT_ASSETS.DEBTORS", null, "OP.DEBTORS"],
+      ["BS.CURRENT_ASSETS.STOCK", null, "OP.STOCK"],
+      ["BS.CREDITORS_WITHIN_ONE_YEAR", null, "OP.CREDITORS"],
+      ["BS.CREDITORS_WITHIN_ONE_YEAR", "CURRENT_LIABILITY_TAX", "OP.TAX"],
+      ["PL.TAXATION", null, "OP.TAX"],
+      ["BS.FIXED_ASSETS.TANGIBLE", null, "INV.FA"],
+      ["BS.FIXED_ASSETS.INTANGIBLE", null, "INV.FA"],
+      ["PL.OTHER_EXPENSES", "OTHER_EXPENSE", "INV.FA"],
+      ["PL.INTEREST_RECEIVABLE", null, "INV.INT"],
+      ["BS.CAPITAL.SHARE_CAPITAL", null, "FIN.SHARES"],
+      ["BS.CREDITORS_AFTER_ONE_YEAR", null, "FIN.LOANS"],
+      ["BS.CAPITAL.RESERVES", null, "FIN.DIV"],
+      ["PL.INTEREST_PAYABLE", null, "FIN.INT"]
+    ]
+  },
+  "workings": {
+    "identity": "For every non-cash account E = -(net debit movement in the year), C = the same over journals that have a line on a cash account, N = E - C. Closing journals are left out. The change in cash equals the sum of E over all accounts, so the statement always adds up when every account is placed.",
+    "profit": "Unplaced P&L accounts only (sales, cost of sales, rent, depreciation): 2026 60,000 - 30,000 - 7,000 - 3,500 = 19,500; 2025 50,000 - 24,000 - 6,000 - 3,000 = 17,000. The full profit is 15,300 (2026) and 14,000 (2025): the difference is interest received 100, the disposal loss 300, interest 1,000 and tax 3,000 in 2026; interest 1,000 and tax 2,000 in 2025, all placed in classes.",
+    "fixedAssets": "2026: 0030 moved +5,000 - 2,000 so E = -3,000, C = -5,000 (the purchase), N = +2,000 (cost of the disposal). 0031 moved +1,200 - 3,500 so E = +2,300 = N. 6950 moved 800 - 500 so E = -300, C = +500 (proceeds), N = -800. N of the class = 2,000 + 2,300 - 800 = 3,500, the depreciation charge: the disposal loss is already out of the profit line because 6950 is placed. 2025: E 0030 = -12,000 = C; 0031 N = 3,000.",
+    "interest": "2026: 7000 E = -1,000, C = -800 (paid), N = -200 (accrued into creditors, which add it back as part of their movement). 4900 E = C = +100.",
+    "workingCapital": "2026: debtors 8,000 + 60,000 - 63,000 = 5,000, down 3,000; stock 6,000 + 28,000 - 30,000 = 4,000, down 2,000; creditors (2110) 5,000 + 28,000 + 200 - 31,000 = 2,200, down 2,800. Tax: 7100 E = -3,000; 2220 moved -3,000 + 2,000 so E = +1,000; together -2,000, the tax paid.",
+    "cash": "Bank 2025: 10,000 + 20,000 - 12,000 - 6,000 - 25,000 + 42,000 - 1,000 = 28,000. 2026: +100 - 2,000 - 5,000 - 7,000 + 63,000 - 800 - 31,000 + 500 - 4,000 - 5,000 = +8,800, closing 36,800.",
+    "direct": "Operating cash by the direct method: 2026 receipts from customers 63,000 less payments to suppliers 31,000, rent 7,000 and tax 2,000 = 23,000; 2025 42,000 - 25,000 - 6,000 = 11,000. Both equal the indirect totals."
+  },
+  "expected": {
+    "yearStart": "2026-01-01",
+    "lines": [
+      { "section": "OPERATING", "key": "PROFIT", "name": "Profit before interest and tax", "amount": "19500.00", "comparative": "17000.00" },
+      { "section": "OPERATING", "key": "ADJ:INV.FA", "name": "Depreciation and disposals", "amount": "3500.00", "comparative": "3000.00",
+        "accounts": [["0030", "2000.00"], ["0031", "2300.00"], ["6950", "-800.00"]] },
+      { "section": "OPERATING", "key": "ADJ:FIN.INT", "name": "Interest payable not paid", "amount": "-200.00", "comparative": "0.00" },
+      { "section": "OPERATING", "key": "OP.DEBTORS", "name": "Decrease (increase) in debtors", "amount": "3000.00", "comparative": "-8000.00" },
+      { "section": "OPERATING", "key": "OP.STOCK", "name": "Decrease (increase) in stocks", "amount": "2000.00", "comparative": "-6000.00" },
+      { "section": "OPERATING", "key": "OP.CREDITORS", "name": "Increase (decrease) in creditors", "amount": "-2800.00", "comparative": "5000.00" },
+      { "section": "OPERATING", "key": "OP.TAX", "name": "Corporation tax paid", "amount": "-2000.00", "comparative": "0.00", "accounts": [["2220", "1000.00"], ["7100", "-3000.00"]] },
+      { "section": "INVESTING", "key": "INV.FA:IN", "name": "Receipts from sales of tangible fixed assets", "amount": "500.00", "comparative": "0.00" },
+      { "section": "INVESTING", "key": "INV.FA:OUT", "name": "Payments to acquire tangible fixed assets", "amount": "-5000.00", "comparative": "-12000.00" },
+      { "section": "INVESTING", "key": "INV.INT", "name": "Interest received", "amount": "100.00", "comparative": "0.00" },
+      { "section": "FINANCING", "key": "FIN.SHARES", "name": "Issue of shares", "amount": "0.00", "comparative": "10000.00" },
+      { "section": "FINANCING", "key": "FIN.LOANS:IN", "name": "New bank loans", "amount": "0.00", "comparative": "20000.00" },
+      { "section": "FINANCING", "key": "FIN.LOANS:OUT", "name": "Repayment of bank loans", "amount": "-4000.00", "comparative": "0.00" },
+      { "section": "FINANCING", "key": "FIN.DIV", "name": "Dividends paid", "amount": "-5000.00", "comparative": "0.00" },
+      { "section": "FINANCING", "key": "FIN.INT", "name": "Interest paid", "amount": "-800.00", "comparative": "-1000.00" }
+    ],
+    "totals": {
+      "OPERATING": { "name": "Net cash from operating activities", "amount": "23000.00", "comparative": "11000.00" },
+      "INVESTING": { "name": "Net cash from investing activities", "amount": "-4400.00", "comparative": "-12000.00" },
+      "FINANCING": { "name": "Net cash from financing activities", "amount": "-9800.00", "comparative": "29000.00" }
+    },
+    "netChange": { "name": "Net increase in cash", "amount": "8800.00", "comparative": "28000.00" },
+    "opening": { "name": "Cash at the beginning of the year", "amount": "28000.00", "comparative": "0.00" },
+    "closing": { "name": "Cash at the end of the year", "amount": "36800.00", "comparative": "28000.00" },
+    "omitted": ["ADJ:INV.INT", "ADJ:FIN.SHARES", "ADJ:FIN.LOANS", "ADJ:FIN.DIV"],
+    "proof": { "cashMovement": "8800.00", "statementNetChange": "8800.00", "difference": "0.00", "reconciled": true },
+    "fullProfit": { "amount": "15300.00", "comparative": "14000.00" }
+  }
+}

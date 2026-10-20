@@ -79,6 +79,8 @@ const FORBIDDEN: Record<string, string[]> = {
   director_loan_account: ['DELETE', 'TRUNCATE'],                // ACTIVE -> CLOSED once (trigger)
   director_loan_threshold: ['UPDATE', 'DELETE', 'TRUNCATE'],    // versioned rows, written once
   related_party: ['DELETE', 'TRUNCATE'],
+  cash_flow_class: ['DELETE', 'TRUNCATE'],                      // version content; frozen once the version is verified (trigger)
+  cash_flow_map_entry: ['DELETE', 'TRUNCATE'],
   size_threshold_set: ['DELETE', 'TRUNCATE'],                   // verified once, superseded once; immutable once verified (trigger)
   accounts_fact: ['UPDATE', 'DELETE', 'TRUNCATE'],                // written once; the latest applies                        // ACTIVE -> ENDED once (trigger)                       // POSTED -> REVERSED once (trigger)
   notification_preference: ['DELETE', 'TRUNCATE'], // toggled, never removed

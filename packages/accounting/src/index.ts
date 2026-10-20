@@ -24,3 +24,4 @@ export * from './year-end-close';
 export * from './directors';
 export * from './accounts-document';
 export * from './size-test';
+export * from './cash-flow';

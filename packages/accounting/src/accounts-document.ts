@@ -2,6 +2,7 @@ import { DOCUMENT_SECTIONS, PRIOR_MET_VALUES, PRIOR_STATUS_VALUES, isEnteredFact
 import { forbidden, notFound, unprocessable } from '@uk/core';
 import type { Tx } from '@uk/db';
 import { auditRow } from '@uk/platform';
+import { CashFlowService } from './cash-flow';
 import { addDays } from './depreciation-math';
 import type { DirectorService } from './directors';
 import { ZERO, money, type Money } from './money';
@@ -33,6 +34,8 @@ type Block = { type: 'text'; text: string } | { type: 'table'; key: string; colu
 export class AccountsDocumentService {
   constructor(private readonly statutory: StatutoryReportService, private readonly directors: DirectorService, private readonly yearEnd: YearEndService,
     private readonly opts: { captureDeviceMetadata?: boolean } = {}) {}
+  /** V2-M5c: the cash flow statement joins the statements when the version lists the year's size (DEC-067). It reads only. */
+  private readonly cashFlow = new CashFlowService();
   private audit(tx: Tx, e: Parameters<typeof auditRow>[0]) { return tx.auditEvent.createMany({ data: [auditRow(e, this.opts.captureDeviceMetadata)] }); }
   private async framework(tx: Tx, companyId: string, yearStart: string) {
     const fw = await tx.companyReportingFramework.findFirst({ where: { companyId, yearStart: toDate(yearStart) } });
@@ -170,10 +173,16 @@ export class AccountsDocumentService {
     if (preview.validationSummary.errors) problems.push(`Statements: ${preview.validationSummary.errors} validation rule(s) failed`);
     if (!preview.reconciliation.balanceSheet.balanced) problems.push('Statements: the balance sheet does not balance');
     for (const p of preview.problems) problems.push(`Statements: ${p}`);
+    const version = await tx.reportingStandardVersion.findFirstOrThrow({ where: { id: fw.versionId }, select: { cashFlowAppliesTo: true } });
+    const cashFlow = version.cashFlowAppliesTo.includes(fw.entitySize) ? await this.cashFlow.statement(tx, companyId, { yearStart: start, compare: true }) : null;
+    if (cashFlow) {
+      for (const p of cashFlow.problems) problems.push(`Cash flow: ${p}`);
+      if (!cashFlow.proof.reconciled) problems.push('Cash flow: the statement does not reconcile to the movement in cash');
+    }
     return {
       companyId, companyName: company.name, companyNumber: company.companyNumber, currency: company.baseCurrency,
       year: { start, end, priorEnd, entitySize: fw.entitySize, frameworkId: fw.id }, standard: preview.standard, version: preview.version, verified: preview.verified,
-      statements: preview.statements, reconciliation: preview.reconciliation, validations: preview.validations,
+      statements: { ...preview.statements, cashFlow }, reconciliation: preview.reconciliation, validations: preview.validations,
       sections: DOCUMENT_SECTIONS.filter((s) => sections.has(s)).map((s) => ({ section: s, items: sections.get(s)! })),
       omitted, problems, complete: preview.verified && problems.length === 0,
       notices: [...preview.notices, 'Amounts in the wording have two decimals and thousands separators; dates are in full. The output is text and tables, never markup.'],

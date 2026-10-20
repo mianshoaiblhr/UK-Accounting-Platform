@@ -271,6 +271,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-064 | Draft wording packs written by engineering at the product owner's instruction | On 2026-10-19 the product owner said "go add wordings yourself". Engineering drafts FRS 105 (micro-entity) and FRS 102 Section 1A (small) packs: statement lines, the map from V1 reporting lines, validation rules and wording. The packs live in the repository and are imported through the API as UNVERIFIED versions authored by the person running the import. They are never seeded by a migration and never verified by engineering. This amends DEC-052's "nothing is seeded" only to the extent of keeping importable drafts; DEC-052's verification rule is unchanged |
 | DEC-065 | Draft wording packs reviewed by the product owner | On 2026-10-20 the product owner (Shoaib, DEC-056) said "I have gone through documents" after receiving the DEC-064 packs and `v2-draft-wording-review.xlsx`. Recorded as the product owner's read of the drafts. No verdicts were returned and nothing is verified: the packs stay UNVERIFIED until a holder of `accounts:rule-verify` who is not the importer verifies them in the platform (DEC-052) |
 | DEC-066 | V2-M5b split again; how V2-M5b is built: the size test (delegated, DEC-019; recorded before code) | V2-M5b is the size test only; the cash flow statement moves to V2-M5c. Company-law size thresholds are organisation data in effective-dated threshold sets, each with a source, created UNVERIFIED and verified by a second person, never seeded. The test of a framework year applies the "two or more of three" conditions and the two-consecutive-years rule per class, with turnover adjusted for a year that is not twelve months, and reports whether the entity size chosen for the year fits. Amends DEC-063's split only; DEC-063 is not rewritten |
+| DEC-067 | How V2-M5c is built: the cash flow statement (delegated, DEC-019; recorded before code) | The cash flow statement is version content verified with the version (DEC-052): cash-flow classes (operating, investing, financing, with their captions), a map from V1 reporting lines to the classes or to cash, the sizes that need the statement and its captions. The figures come from the ledger by one exact identity: the change in cash equals minus the movement of every other account; investing and financing classes show their cash part (from journals that move cash), their non-cash part is an operating adjustment, and operating classes show their whole movement (the indirect method). The statement always reconciles to the ledger's cash; an account the map does not place is shown as unclassified and keeps the statement incomplete |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -693,4 +694,32 @@ These choices refine DEC-036. None of them is a tax rule; the VAT arithmetic is 
   * the cash flow statement (V2-M5c);
   * gating approval or filing on the size test (V2-M6 reads it);
   * groups, LLPs' separate regulations, and charities.
+
+### DEC-067 - How V2-M5c is built: the cash flow statement (delegated, DEC-019; recorded before code)
+* **Content is the version's, never code (DEC-052).** A standard version gains, all verified with it and frozen after:
+  * **cash-flow classes:** a key, a section (OPERATING, INVESTING or FINANCING), an order and a caption.
+    * An investing or financing class also has a caption for its non-cash part, shown among the operating adjustments.
+    * It may also have separate inflow and outflow captions, to show gross receipts and payments.
+  * **a cash-flow map:** a V1 reporting line, optionally narrowed by account subtype, maps to a class or to CASH. The most specific entry wins.
+  * **the entity sizes** whose accounts include the statement, and its captions (profit, the three section totals, the net change, and opening and closing cash).
+* **The figures (exact, from the ledger, closing journals left out):** for every account other than cash, its effect E is minus its net debit movement in the year.
+  * Its cash part C is the same, taken only over journals with a line on a cash account.
+  * Its non-cash part is N = E - C.
+  * The change in cash always equals the sum of E over all accounts.
+* **The statement (indirect method):**
+  * **Profit line:** the E of the P&L accounts the map does not place.
+  * **Operating section:**
+    * the profit line;
+    * for each investing or financing class, the sum of N (for example depreciation, against the fixed-asset class);
+    * for each operating class, the sum of E (working capital, or tax paid when the tax charge and the tax creditor share a class).
+  * **Investing and financing sections:** each class's C, gross by direction when the class asks for it.
+  * **Net change in cash, opening and closing cash:** from the cash accounts.
+  * **Proof:** the net change equals the cash accounts' movement. By the identity this holds whenever every account is placed; a balance-sheet account the map does not place goes to an "unclassified" line and is listed as a problem.
+* **Comparative:** the preceding framework year, or the twelve months before, on the same version (as V2-M1).
+* **Accounts document:** the statement joins the statements when the year's entity size is one the version lists. Its problems keep the document incomplete.
+* **Not in V2-M5c:**
+  * per-company cash-flow overrides (classification follows the V1 reporting line and subtype);
+  * the direct method;
+  * the notes on cash flows (analysis of net debt);
+  * any real FRS 102 classification or caption (never seeded; the named accountant enters and verifies them).
 
