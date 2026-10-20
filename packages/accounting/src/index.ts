@@ -23,3 +23,4 @@ export * from './year-end';
 export * from './year-end-close';
 export * from './directors';
 export * from './accounts-document';
+export * from './size-test';

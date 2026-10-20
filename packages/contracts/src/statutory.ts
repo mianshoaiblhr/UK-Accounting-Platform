@@ -40,6 +40,8 @@ export const createStandardVersionSchema = z.object({ ...versionFields, copyFrom
 export const updateStandardVersionSchema = z.object({
   label: versionFields.label.optional(), effectiveFrom: isoDate.optional(), effectiveTo: isoDate.nullable().optional(),
   source: ruleSourceSchema.optional(), notes: z.string().trim().max(2000).nullable().optional(),
+  /** V2-M5b (DEC-066): the version's turnover line, a P&L line, read by the size test; null clears it. */
+  turnoverLineKey: lineKey.nullable().optional(),
 }).strict().refine((v) => Object.keys(v).length > 0, 'Nothing to change').refine(datesInOrder, { message: 'effectiveTo cannot precede effectiveFrom', path: ['effectiveTo'] });
 /** A change to a verified version: the new version's dates and source, plus why it changes. Its content is copied from the old one, then edited. */
 export const supersedeStandardVersionSchema = z.object({ ...versionFields, reason: z.string().trim().min(10).max(1000) }).strict()

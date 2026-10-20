@@ -2133,6 +2133,8 @@ model ReportingStandardVersion {
   verifiedAt        DateTime? @map("verified_at") @db.Timestamptz(3)
   verificationNotes String?   @map("verification_notes")
   supersededById    String?   @map("superseded_by_id") @db.Uuid
+  /// V2-M5b (DEC-066): the key of the version's turnover line, read by the size test
+  turnoverLineKey   String?   @map("turnover_line_key")
 
   @@unique([organisationId, id], map: "rsv_organisation_id_id_key")
   @@index([organisationId, standardId, effectiveFrom], map: "rsv_standard_idx")
@@ -2574,4 +2576,39 @@ model AccountsFact {
 
   @@index([organisationId, frameworkId, key, setAt], map: "af_framework_idx")
   @@map("accounts_fact")
+}
+
+/// V2-M5b (DEC-066): company-law size thresholds for the financial years beginning in a date range; UNVERIFIED until a second person verifies them (DEC-052).
+model SizeThresholdSet {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId          String    @map("organisation_id") @db.Uuid
+  label                   String
+  effectiveFrom           DateTime  @map("effective_from") @db.Date
+  effectiveTo             DateTime? @map("effective_to") @db.Date
+  priorYearOnFirst        Boolean   @default(false) @map("prior_year_on_first")
+  microTurnover           Decimal   @map("micro_turnover") @db.Decimal(19, 4)
+  microBalanceSheetTotal  Decimal   @map("micro_balance_sheet_total") @db.Decimal(19, 4)
+  microEmployees          Int       @map("micro_employees")
+  smallTurnover           Decimal   @map("small_turnover") @db.Decimal(19, 4)
+  smallBalanceSheetTotal  Decimal   @map("small_balance_sheet_total") @db.Decimal(19, 4)
+  smallEmployees          Int       @map("small_employees")
+  mediumTurnover          Decimal   @map("medium_turnover") @db.Decimal(19, 4)
+  mediumBalanceSheetTotal Decimal   @map("medium_balance_sheet_total") @db.Decimal(19, 4)
+  mediumEmployees         Int       @map("medium_employees")
+  sourceUrl               String    @map("source_url")
+  sourceReference         String    @map("source_reference")
+  sourceRetrievedOn       DateTime  @map("source_retrieved_on") @db.Date
+  notes                   String?
+  status                  String    @default("UNVERIFIED")
+  copiedFromId            String?   @map("copied_from_id") @db.Uuid
+  createdByUserId         String    @map("created_by_user_id") @db.Uuid
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  verifiedByUserId        String?   @map("verified_by_user_id") @db.Uuid
+  verifiedAt              DateTime? @map("verified_at") @db.Timestamptz(3)
+  verificationNotes       String?   @map("verification_notes")
+  supersededById          String?   @map("superseded_by_id") @db.Uuid
+
+  @@unique([organisationId, id], map: "sts_organisation_id_id_key")
+  @@index([organisationId, effectiveFrom], map: "sts_effective_idx")
+  @@map("size_threshold_set")
 }

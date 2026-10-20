@@ -2,14 +2,14 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { addMember, bearer, createUser, makeCompany, orgPath, startStack, type Stack, type TestUser } from '../helpers/stack';
-import { importPack } from '../../scripts/standards/import-pack.mjs';
+import { importPack, importThresholds } from '../../scripts/standards/import-pack.mjs';
 
 /**
  * DEC-064: the draft wording packs import through the public API as UNVERIFIED versions with no consistency problems, and render a document
  * for a synthetic company: marked unverified, never complete, the wording filled from the ledger and the facts. Synthetic company data only.
  */
 const pack = (f: string) => JSON.parse(readFileSync(resolve(__dirname, '../../content/standards/drafts', f), 'utf8'));
-const MICRO = pack('frs105-micro.json'), SMALL = pack('frs102-1a-small.json');
+const MICRO = pack('frs105-micro.json'), SMALL = pack('frs102-1a-small.json'), SIZES = pack('uk-size-thresholds.json');
 
 let s: Stack;
 let owner: TestUser, author: TestUser, accountant: TestUser, reviewer: TestUser;
@@ -44,12 +44,23 @@ describe('importing the drafts (DEC-064)', () => {
     for (const [name, p] of [['micro', MICRO], ['small', SMALL]] as const) {
       const r = await importPack(call, p);
       versions[name] = r.versionId;
-      expect(r).toMatchObject({ status: 'UNVERIFIED', lines: p.lines.length, mapEntries: p.mapEntries.length, validationRules: p.validationRules.length, disclosureRules: p.rules.length, problems: [] });
+      expect(r).toMatchObject({ status: 'UNVERIFIED', turnoverLineKey: 'P.T', lines: p.lines.length, mapEntries: p.mapEntries.length, validationRules: p.validationRules.length, disclosureRules: p.rules.length, problems: [] });
     }
     // the importer cannot verify their own import (DEC-052)
     expect((await as(author, 'post', c(`/reporting-standard-versions/${versions.micro}/verify`), { notes: 'Checked by the importer, which is refused' })).body.code).toBe('self_verification_not_allowed');
     // a person without accounts:rules-manage cannot import
     await expect(importPack((m, p, b) => as(accountant, m, c(p), b), MICRO)).rejects.toThrow(/HTTP 403/);
+  });
+});
+
+describe('importing the draft size thresholds (DEC-066)', () => {
+  it('each set lands UNVERIFIED with its limits; the importer cannot verify; the size test from them is a preview', async () => {
+    const call = (m: 'get' | 'post' | 'put' | 'patch', p: string, b?: object) => as(author, m, c(p), b);
+    const r = await importThresholds(call, SIZES);
+    expect(r.sets.map((x) => x.status)).toEqual(['UNVERIFIED', 'UNVERIFIED']);
+    const set = ok(await as(reviewer, 'get', c(`/size-threshold-sets/${r.sets[1]!.id}`)));
+    expect(set).toMatchObject({ effectiveFrom: '2025-04-06', effectiveTo: null, priorYearOnFirst: true, limits: SIZES.sets[1].limits });
+    expect((await as(author, 'post', c(`/size-threshold-sets/${r.sets[1]!.id}/verify`), { notes: 'Checked by the importer, which is refused' })).body.code).toBe('self_verification_not_allowed');
   });
 });
 
@@ -69,6 +80,16 @@ describe('a document from the unverified FRS 105 draft', () => {
     expect(text(d, 'BSS.APPROVAL')).toEqual(['The financial statements were approved by the board of directors on 28 February 2027 and signed on its behalf by:', 'Robin Director, Director']);
     expect(d.omitted).toEqual([{ key: 'NOTE.ADV', title: 'Advances, credits and guarantees granted to directors', reason: 'EMPTY' }]);
     expect(d.problems).toEqual([]);                                       // nothing is missing: it is incomplete only because the wording is unverified
+  });
+});
+
+describe('the size test from the drafts', () => {
+  it('the micro-entity year qualifies as MICRO under the draft 2025 thresholds, as a preview because they are unverified', async () => {
+    ok(await as(accountant, 'post', c('/accounts-facts'), { yearStart: '2026-01-01', key: 'size.priorStatus', value: 'FIRST_YEAR', reason: 'Synthetic company in its first year' }), 201);
+    const t = ok(await as(reviewer, 'get', c('/size-test?yearStart=2026-01-01')));
+    expect([t.qualifiesAs, t.chosen, t.fits, t.verified, t.problems]).toEqual(['MICRO', 'MICRO', true, false, []]);
+    expect(t.years[0]).toMatchObject({ thresholdSet: { status: 'UNVERIFIED' }, figures: { turnover: '20000.00', balanceSheetTotal: '12600.00', employees: 1 } });
+    expect(t.years[0].classes[0]).toMatchObject({ class: 'MICRO', limits: { turnover: '1000000.00', balanceSheetTotal: '500000.00', employees: 10 }, met: true, status: true, basis: 'FIRST_YEAR' });
   });
 });
 

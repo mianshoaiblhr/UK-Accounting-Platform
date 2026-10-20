@@ -2,12 +2,15 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  checkExpression, createDisclosureRuleSchema, createMapEntrySchema, createStandardSchema, createStandardVersionSchema, createStatutoryLineSchema, createValidationRuleSchema, parseTemplate,
+  checkExpression, createDisclosureRuleSchema, createMapEntrySchema, createStandardSchema, createStandardVersionSchema, createStatutoryLineSchema, createThresholdSetSchema, createValidationRuleSchema, parseTemplate,
+  updateStandardVersionSchema,
 } from '@uk/contracts';
 
 /** DEC-064: the draft wording packs are well formed before anyone imports them; each rule names its provision and a note for the verifier. Content correctness is the verifier's (DEC-052). */
 const DIR = resolve(__dirname, '../../content/standards/drafts');
-const packs = readdirSync(DIR).filter((f) => f.endsWith('.json')).map((f) => ({ file: f, pack: JSON.parse(readFileSync(resolve(DIR, f), 'utf8')) }));
+const files = readdirSync(DIR).filter((f) => f.endsWith('.json')).map((f) => ({ file: f, pack: JSON.parse(readFileSync(resolve(DIR, f), 'utf8')) }));
+const packs = files.filter((p) => p.pack.lines);
+const thresholds = files.filter((p) => p.pack.sets);
 
 describe('draft wording packs (DEC-064)', () => {
   it('there are two: FRS 105 micro-entity and FRS 102 Section 1A small', () => {
@@ -46,6 +49,10 @@ describe('draft wording packs (DEC-064)', () => {
           for (const k of t.lines) expect(keys.has(k), `${r.key} refers to ${k}`).toBe(true);
         }
       });
+      it('names a profit and loss line as its turnover line for the size test (DEC-066)', () => {
+        expect(updateStandardVersionSchema.safeParse({ turnoverLineKey: pack.turnoverLine }).success).toBe(true);
+        expect(pack.lines.find((l: { key: string }) => l.key === pack.turnoverLine)?.statement).toBe('PL');
+      });
       it('every rule names the provision it reflects and carries a note for the verifier', () => {
         for (const r of pack.rules) {
           expect(r.source, r.key).toMatch(/Companies Act 2006|FRS 10[25]|SI 2008\/409/);
@@ -55,3 +62,23 @@ describe('draft wording packs (DEC-064)', () => {
     });
   }
 });
+
+describe('draft size thresholds (DEC-066)', () => {
+  it('there is one pack, marked as an unverified engineering draft, with two sets that do not overlap', () => {
+    expect(thresholds.map((p) => p.file)).toEqual(['uk-size-thresholds.json']);
+    const { pack } = thresholds[0]!;
+    expect(pack.status).toMatch(/ENGINEERING DRAFT - UNVERIFIED/);
+    expect(pack.sets.map((s: { effectiveFrom: string; effectiveTo: string | null }) => [s.effectiveFrom, s.effectiveTo])).toEqual([['2016-01-01', '2025-04-05'], ['2025-04-06', null]]);
+  });
+  it('every set passes the API\'s own schema (nested limits), names its source as drafted, and carries a note for the verifier', () => {
+    for (const { verifierNote, ...set } of thresholds[0]!.pack.sets) {
+      const r = createThresholdSetSchema.safeParse(set);
+      expect(r.success, JSON.stringify(r.error?.issues)).toBe(true);
+      expect(set.label).toMatch(/unverified/i);
+      expect(set.source.provision).toMatch(/Companies Act 2006 ss\.382, 384A and 465/);
+      expect(set.source.provision).toMatch(/not retrieved/i);
+      expect(verifierNote.length).toBeGreaterThan(50);
+    }
+  });
+});
+

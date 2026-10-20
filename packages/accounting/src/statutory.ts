@@ -26,6 +26,7 @@ export const standardVersionView = (v: VersionRow) => ({
   id: v.id, standardId: v.standardId, label: v.label, effectiveFrom: isoDay(v.effectiveFrom), effectiveTo: v.effectiveTo ? isoDay(v.effectiveTo) : null,
   source: { url: v.sourceUrl, provision: v.sourceReference, retrievedOn: isoDay(v.sourceRetrievedOn) }, notes: v.notes, status: v.status, copiedFromId: v.copiedFromId,
   createdByUserId: v.createdByUserId, createdAt: v.createdAt, verifiedByUserId: v.verifiedByUserId, verifiedAt: v.verifiedAt, verificationNotes: v.verificationNotes, supersededById: v.supersededById,
+  turnoverLineKey: v.turnoverLineKey,
 });
 export const statutoryLineView = (l: LineRow) => ({ id: l.id, key: l.key, statement: l.statement, parentKey: l.parentKey, sort: l.sort, name: l.name, kind: l.kind, naturalSide: l.naturalSide, formula: (l.formula as Term[] | null) ?? null });
 const mapView = (m: MapRow) => ({ id: m.id, sourceLine: m.sourceLine, accountSubtype: m.accountSubtype, targetKey: m.targetKey });
@@ -52,7 +53,7 @@ function findCycle(formulas: Map<string, Term[]>): string[] | null {
  * The consistency of a version's content (DEC-055): everything refers to lines of the version, totals and parents have no cycle, parents sit on
  * the same statement, map entries and overrides land on accounts lines, rule expressions follow the grammar. Empty = consistent.
  */
-export function versionProblems(c: { lines: LineRow[]; map: MapRow[]; rules: RuleRow[]; notes: NoteRow[]; overrideTargets?: string[] }): string[] {
+export function versionProblems(c: { lines: LineRow[]; map: MapRow[]; rules: RuleRow[]; notes: NoteRow[]; overrideTargets?: string[]; turnoverLineKey?: string | null }): string[] {
   const p: string[] = [];
   const byKey = new Map(c.lines.map((l) => [l.key, l]));
   if (c.lines.length === 0) p.push('The version has no statement lines');
@@ -81,6 +82,8 @@ export function versionProblems(c: { lines: LineRow[]; map: MapRow[]; rules: Rul
     for (const e of t.errors) p.push(`Disclosure ${n.key}: ${e}`);
     for (const k of t.lines) if (!keys.has(k)) p.push(`Disclosure ${n.key}: the wording refers to ${k}, not a line of this version`);
   }
+  // V2-M5b: the turnover line the size test reads is a P&L line of the version
+  if (c.turnoverLineKey && byKey.get(c.turnoverLineKey)?.statement !== 'PL') p.push(`The turnover line ${c.turnoverLineKey} is not a profit and loss line of this version`);
   return p;
 }
 
@@ -150,7 +153,7 @@ export class StandardsService {
     const s = await tx.reportingStandard.findFirstOrThrow({ where: { id: v.standardId } });
     const c = await this.content(tx, id);
     return { ...standardVersionView(v), standard: { id: s.id, code: s.code, name: s.name }, lines: c.lines.map(statutoryLineView), mapEntries: c.map.map(mapView),
-      validationRules: c.rules.map(ruleView), disclosureRules: c.notes.map(noteView), problems: versionProblems(c) };
+      validationRules: c.rules.map(ruleView), disclosureRules: c.notes.map(noteView), problems: versionProblems({ ...c, turnoverLineKey: v.turnoverLineKey }) };
   }
 
   /** Copies the live content of one version into another (a new version, or a supersession). */
@@ -165,27 +168,30 @@ export class StandardsService {
   async createVersion(tx: Tx, a: Ctx & { standardId: string; label: string; effectiveFrom: string; effectiveTo?: string; source: Source; notes?: string; copyFromVersionId?: string }) {
     await this.need(a.actor, 'accounts:rules-manage', a.companyId);
     if (!(await tx.reportingStandard.findFirst({ where: { id: a.standardId }, select: { id: true } }))) throw notFound('Standard not found', 'standard_not_found');
-    if (a.copyFromVersionId) await this.version(tx, a.copyFromVersionId);
+    const from = a.copyFromVersionId ? await this.version(tx, a.copyFromVersionId) : null;
     let v: VersionRow;
     try {
       v = await tx.reportingStandardVersion.create({ data: { organisationId: a.organisationId, standardId: a.standardId, label: a.label, effectiveFrom: toDate(a.effectiveFrom), effectiveTo: a.effectiveTo ? toDate(a.effectiveTo) : null,
-        sourceUrl: a.source.url, sourceReference: a.source.provision, sourceRetrievedOn: toDate(a.source.retrievedOn), notes: a.notes ?? null, copiedFromId: a.copyFromVersionId ?? null, createdByUserId: a.actor.userId } });
+        sourceUrl: a.source.url, sourceReference: a.source.provision, sourceRetrievedOn: toDate(a.source.retrievedOn), notes: a.notes ?? null, copiedFromId: a.copyFromVersionId ?? null, createdByUserId: a.actor.userId,
+        turnoverLineKey: from?.turnoverLineKey ?? null } });
     } catch (e) { this.mapDb(e); }
     if (a.copyFromVersionId) await this.copyContent(tx, a.organisationId, a.copyFromVersionId, v.id);
     await this.audit(tx, { action: 'accounts.standard_version_created', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actor.userId, entityType: 'reporting_standard_version', entityId: v.id, after: standardVersionView(v) });
     return this.getVersion(tx, v.id);
   }
-  async updateVersion(tx: Tx, a: Ctx & { id: string; label?: string; effectiveFrom?: string; effectiveTo?: string | null; source?: Source; notes?: string | null }) {
+  async updateVersion(tx: Tx, a: Ctx & { id: string; label?: string; effectiveFrom?: string; effectiveTo?: string | null; source?: Source; notes?: string | null; turnoverLineKey?: string | null }) {
     await this.need(a.actor, 'accounts:rules-manage', a.companyId);
     const before = await this.editable(tx, a.id);
     const from = a.effectiveFrom ?? isoDay(before.effectiveFrom), to = a.effectiveTo === undefined ? (before.effectiveTo ? isoDay(before.effectiveTo) : null) : a.effectiveTo;
     if (to && to < from) throw unprocessable('effectiveTo cannot precede effectiveFrom', 'invalid_date');
+    if (a.turnoverLineKey && (await this.lineKeys(tx, a.id)).get(a.turnoverLineKey)?.statement !== 'PL')
+      throw unprocessable(`${a.turnoverLineKey} is not a profit and loss line of this version`, 'invalid_turnover_line');
     let after: VersionRow;
     try {
       after = await tx.reportingStandardVersion.update({ where: { id: a.id }, data: {
         ...(a.label !== undefined ? { label: a.label } : {}), effectiveFrom: toDate(from), effectiveTo: to ? toDate(to) : null,
         ...(a.source ? { sourceUrl: a.source.url, sourceReference: a.source.provision, sourceRetrievedOn: toDate(a.source.retrievedOn) } : {}),
-        ...(a.notes !== undefined ? { notes: a.notes } : {}) } });
+        ...(a.notes !== undefined ? { notes: a.notes } : {}), ...(a.turnoverLineKey !== undefined ? { turnoverLineKey: a.turnoverLineKey } : {}) } });
     } catch (e) { this.mapDb(e); }
     await this.audit(tx, { action: 'accounts.standard_version_changed', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actor.userId, entityType: 'reporting_standard_version', entityId: a.id, before: standardVersionView(before), after: standardVersionView(after) });
     return this.getVersion(tx, a.id);
@@ -198,7 +204,7 @@ export class StandardsService {
     if (v.createdByUserId === a.actor.userId) throw forbidden('A standard version must be verified by someone other than its author', 'self_verification_not_allowed');
     const c = await this.content(tx, a.id);
     const overrides = await tx.statutoryAccountOverride.findMany({ where: { versionId: a.id, endedAt: null }, select: { targetKey: true } });
-    const problems = versionProblems({ ...c, overrideTargets: overrides.map((o) => o.targetKey) });
+    const problems = versionProblems({ ...c, overrideTargets: overrides.map((o) => o.targetKey), turnoverLineKey: v.turnoverLineKey });
     if (problems.length) throw unprocessable('The version is not consistent and cannot be verified', 'version_inconsistent', { problems });
     const after = await tx.reportingStandardVersion.update({ where: { id: a.id }, data: { status: 'VERIFIED', verifiedByUserId: a.actor.userId, verifiedAt: new Date(), verificationNotes: a.notes } });
     await this.audit(tx, { action: 'accounts.standard_version_verified', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actor.userId, entityType: 'reporting_standard_version', entityId: a.id,
@@ -216,7 +222,8 @@ export class StandardsService {
     let v: VersionRow;
     try {
       v = await tx.reportingStandardVersion.create({ data: { id, organisationId: a.organisationId, standardId: old.standardId, label: a.label, effectiveFrom: toDate(a.effectiveFrom), effectiveTo: a.effectiveTo ? toDate(a.effectiveTo) : null,
-        sourceUrl: a.source.url, sourceReference: a.source.provision, sourceRetrievedOn: toDate(a.source.retrievedOn), notes: a.notes ?? null, copiedFromId: old.id, createdByUserId: a.actor.userId } });
+        sourceUrl: a.source.url, sourceReference: a.source.provision, sourceRetrievedOn: toDate(a.source.retrievedOn), notes: a.notes ?? null, copiedFromId: old.id, createdByUserId: a.actor.userId,
+        turnoverLineKey: old.turnoverLineKey } });
     } catch (e) { this.mapDb(e); }
     await this.copyContent(tx, a.organisationId, old.id, id);
     await this.audit(tx, { action: 'accounts.standard_version_superseded', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actor.userId, entityType: 'reporting_standard_version', entityId: old.id,
@@ -242,6 +249,7 @@ export class StandardsService {
       tx.statutoryAccountOverride.count({ where: { versionId, endedAt: null, targetKey: key } }),
     ]);
     const uses: string[] = [];
+    if ((await this.version(tx, versionId)).turnoverLineKey === key) uses.push('the turnover line of the size test');
     for (const l of lines) {
       if (l.parentKey === key) uses.push(`parent of ${l.key}`);
       if (((l.formula as Term[] | null) ?? []).some((t) => t.line === key)) uses.push(`in total ${l.key}`);

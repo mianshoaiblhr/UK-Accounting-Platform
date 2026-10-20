@@ -1,0 +1,42 @@
+{
+  "pack": "UK-SIZE-THRESHOLDS-DRAFT",
+  "status": "ENGINEERING DRAFT - UNVERIFIED (DEC-064 pattern, DEC-066). Written from engineering's knowledge on 2026-10-20; legislation.gov.uk could not be reached from the build environment, so nothing was retrieved. Import as UNVERIFIED; a holder of accounts:rule-verify who is not the importer checks every figure, date and the transitional rule against the instruments before verifying.",
+  "sets": [
+    {
+      "label": "Companies Act 2006 size thresholds from 2016 - engineering draft 0.1 (unverified)",
+      "effectiveFrom": "2016-01-01",
+      "effectiveTo": "2025-04-05",
+      "priorYearOnFirst": true,
+      "limits": {
+        "MICRO": { "turnover": "632000.00", "balanceSheetTotal": "316000.00", "employees": 10 },
+        "SMALL": { "turnover": "10200000.00", "balanceSheetTotal": "5100000.00", "employees": 50 },
+        "MEDIUM": { "turnover": "36000000.00", "balanceSheetTotal": "18000000.00", "employees": 250 }
+      },
+      "source": {
+        "url": "https://www.legislation.gov.uk/uksi/2015/980/contents",
+        "provision": "Companies Act 2006 ss.382, 384A and 465 as amended by SI 2015/980. Drafted, not retrieved: check every figure against the text in force",
+        "retrievedOn": "2026-10-20"
+      },
+      "notes": "Engineering draft (DEC-066). Governs financial years beginning on or after 1 January 2016 and before 6 April 2025. Early adoption for years beginning on or after 1 January 2015 is not modelled.",
+      "verifierNote": "Check the six money limits and the three employee limits against ss.382(3), 384A(4) and 465(3) as amended by SI 2015/980. priorYearOnFirst is set because engineering understands the 2015 regulations let a company apply the new thresholds to the preceding year when testing the first year they govern: confirm the transitional provision and its wording, or set it to false."
+    },
+    {
+      "label": "Companies Act 2006 size thresholds from 6 April 2025 - engineering draft 0.1 (unverified)",
+      "effectiveFrom": "2025-04-06",
+      "effectiveTo": null,
+      "priorYearOnFirst": true,
+      "limits": {
+        "MICRO": { "turnover": "1000000.00", "balanceSheetTotal": "500000.00", "employees": 10 },
+        "SMALL": { "turnover": "15000000.00", "balanceSheetTotal": "7500000.00", "employees": 50 },
+        "MEDIUM": { "turnover": "54000000.00", "balanceSheetTotal": "27000000.00", "employees": 250 }
+      },
+      "source": {
+        "url": "https://www.legislation.gov.uk/uksi/2024/1303/contents",
+        "provision": "Companies Act 2006 ss.382, 384A and 465 as amended by the Companies (Accounts and Reports) (Amendment and Transitional Provision) Regulations 2024 (SI 2024/1303). Drafted, not retrieved: check every figure against the text in force",
+        "retrievedOn": "2026-10-20"
+      },
+      "notes": "Engineering draft (DEC-066). Governs financial years beginning on or after 6 April 2025.",
+      "verifierNote": "Check the limits against ss.382(3), 384A(4) and 465(3) as amended by SI 2024/1303, and the commencement date. priorYearOnFirst is set because engineering understands the transitional provision of SI 2024/1303 lets a company apply the new thresholds to the preceding financial year when testing the first year beginning on or after 6 April 2025: confirm, or set it to false. LLPs have their own regulations and are not covered by this set."
+    }
+  ]
+}

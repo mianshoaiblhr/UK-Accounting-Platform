@@ -380,6 +380,7 @@ const sizes = z.array(z.enum(['MICRO', 'SMALL', 'MEDIUM', 'LARGE']));
 export const StandardVersion = z.object({
   id: uuid, standardId: uuid, label: z.string(), effectiveFrom: day, effectiveTo: day.nullable(), source, notes: z.string().nullable(), status: versionStatus, copiedFromId: uuid.nullable(),
   createdByUserId: uuid, createdAt: ts, verifiedByUserId: uuid.nullable(), verifiedAt: ts.nullable(), verificationNotes: z.string().nullable(), supersededById: uuid.nullable(),
+  turnoverLineKey: z.string().nullable().describe('V2-M5b: the P&L line the size test reads as turnover'),
 });
 export const StatutoryLine = z.object({
   id: uuid, key: z.string(), statement: z.enum(['PL', 'BS']), parentKey: z.string().nullable(), sort: z.number().int(), name: z.string(), kind: z.enum(['ACCOUNTS', 'TOTAL', 'RETAINED_PROFIT']),
@@ -533,3 +534,30 @@ export const AccountsDocument = z.object({
   omitted: z.array(z.object({ key: z.string(), title: z.string(), reason: z.enum(['NOT_APPLICABLE', 'EMPTY']) })),
   problems: z.array(z.string()), complete: z.boolean().describe('Verified rules, every fact present, statements placed, balanced and passing their error rules'), notices: z.array(z.string()),
 });
+
+// ───────────── V2-M5b the size test (DEC-066) ─────────────
+const classLimits = z.object({ turnover: amt, balanceSheetTotal: amt, employees: z.number().int() });
+export const ThresholdSet = z.object({
+  id: uuid, label: z.string(), effectiveFrom: day.describe('First day a governed financial year may begin'), effectiveTo: day.nullable(), priorYearOnFirst: z.boolean(),
+  limits: z.object({ MICRO: classLimits, SMALL: classLimits, MEDIUM: classLimits }), source, notes: z.string().nullable(), status: versionStatus, copiedFromId: uuid.nullable(),
+  createdByUserId: uuid, createdAt: ts, verifiedByUserId: uuid.nullable(), verifiedAt: ts.nullable(), verificationNotes: z.string().nullable(), supersededById: uuid.nullable(),
+});
+export const ThresholdSetList = z.object({ items: z.array(ThresholdSet) });
+const tri = z.boolean().nullable().describe('null: unknown (a figure, fact or set is missing)');
+const setRef = z.object({ id: uuid, label: z.string(), status: versionStatus }).nullable();
+export const SizeTest = z.object({
+  companyId: uuid, companyName: z.string(), currency: z.string(), year: z.object({ start: day, end: day }),
+  chosen: z.enum(['MICRO', 'SMALL', 'MEDIUM', 'LARGE']), qualifiesAs: z.enum(['MICRO', 'SMALL', 'MEDIUM', 'LARGE', 'UNKNOWN']),
+  fits: z.boolean().nullable().describe('false: the chosen entity size is smaller than the class the company qualifies as'),
+  verified: z.boolean().describe('false: a threshold set used is missing or unverified (DEC-052)'),
+  years: z.array(z.object({
+    start: day, end: day, days: z.number().int(), daysInTwelveMonths: z.number().int(), twelveMonths: z.boolean(), entitySize: z.enum(['MICRO', 'SMALL', 'MEDIUM', 'LARGE']),
+    thresholdSet: setRef, priorTestedAgainst: setRef,
+    prior: z.union([z.object({ source: z.literal('PLATFORM'), start: day, end: day }), z.object({ source: z.literal('FACTS'), met: z.string().nullable(), status: z.string().nullable() })]),
+    figures: z.object({ turnover: amt.nullable(), balanceSheetTotal: amt.nullable(), employees: z.number().int().nullable() }),
+    classes: z.array(z.object({ class: z.enum(['MICRO', 'SMALL', 'MEDIUM']), limits: classLimits.nullable().describe('The turnover limit is adjusted for a year that is not twelve months'),
+      conditions: z.object({ turnover: tri, balanceSheetTotal: tri, employees: tri }), met: tri, priorMet: tri, status: tri, basis: z.enum(['BOTH_YEARS', 'CARRIED_FORWARD', 'FIRST_YEAR']).nullable() })),
+  })).describe('The year asked for, then the preceding years its statuses needed'),
+  problems: z.array(z.string()), notices: z.array(z.string()),
+});
+

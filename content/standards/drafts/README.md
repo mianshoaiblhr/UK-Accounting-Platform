@@ -19,3 +19,16 @@ Run the import as a person holding `accounts:rules-manage`:
 3. They then verify it in the platform.
 
 Until then, every document built from a pack is a preview marked unverified and is never complete.
+
+## Draft size thresholds (DEC-066)
+`uk-size-thresholds.json` holds two draft sets of the Companies Act 2006 size limits (micro-entity, small and medium) that the size test reads (V2-M5b):
+* years beginning from 1 January 2016 to 5 April 2025;
+* years beginning on or after 6 April 2025.
+
+They were written from engineering's knowledge on 2026-10-20 and were not retrieved from legislation.gov.uk. Import them with the same script; each set lands **UNVERIFIED**:
+
+    node scripts/standards/import-pack.mjs --api https://<host>/api/v1 --org <organisationId> --company <companyId> --token <bearer token> content/standards/drafts/uk-size-thresholds.json
+
+The verifier checks every figure, the dates each set governs and the "prior year on first year" transitional rule against the instrument named, then verifies each set in the platform. The review workbook has them on its "Size thresholds" sheet.
+
+Each wording pack also names its turnover line (`turnoverLine`), which the importer sets on the version for the size test.

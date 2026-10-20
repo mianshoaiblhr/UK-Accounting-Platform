@@ -13,7 +13,7 @@ Everything in V1 plan section 1, plus: only the PostingService writes the ledger
 | V2-M2 | Fixed assets: classes, register, additions, disposals, depreciation methods, useful lives, residual values, tax vs accounting treatment, reconciliation to the ledger, depreciation runs | **built** (2026-10-18; `v2-m2-acceptance.md`) | Engineering | V2-M1 |
 | V2-M3 | Year-end adjustments: accruals, prepayments, deferred income, provisions with reversal; the year-end closing journal to retained earnings | split (DEC-059): **V2-M3a built** (2026-10-18; `v2-m3a-acceptance.md`); **V2-M3b built** (2026-10-19; `v2-m3b-acceptance.md`) | Engineering | V2-M2 |
 | V2-M4 | Director and shareholder balances (director loan movements flagged), related parties | **built** (2026-10-19; `v2-m4-acceptance.md`) | Engineering | V2-M3 |
-| V2-M5 | Statements and notes: FRS 105 micro-entity, then FRS 102 Section 1A, then full FRS 102; policies, comparatives, directors' sections; the size test | split (DEC-063): **V2-M5a built** (2026-10-19; `v2-m5a-acceptance.md`); V2-M5b the size test and cash flow next | Engineering; the named accountant | V2-M1, V2-M3, V2-M4 |
+| V2-M5 | Statements and notes: FRS 105 micro-entity, then FRS 102 Section 1A, then full FRS 102; policies, comparatives, directors' sections; the size test | split (DEC-063, DEC-066): **V2-M5a built** (2026-10-19; `v2-m5a-acceptance.md`); V2-M5b the size test (section 5f); V2-M5c the cash flow statement (full FRS 102) after it | Engineering; the named accountant | V2-M1, V2-M3, V2-M4 |
 | V2-M6 | Year-end workflow (the specification's 14 steps), review checklist and flags, partner review, client approval, filing-ready package | planned | Engineering | V2-M5 |
 | V2-M7 | Screens behind `accounts.production` | planned | Engineering (front end) | each API milestone |
 
@@ -278,6 +278,73 @@ How a pack is used:
 * It is verified only by the named accountant (DEC-052).
 * `tests/unit/standard-packs.test.ts` checks that it is well formed.
 * `tests/api/standard-packs.test.ts` checks that it imports and renders.
+
+## 5f. V2-M5b - The size test (specification; DEC-066)
+Recorded before code. DEC-066 splits V2-M5b again: V2-M5b is the size test; V2-M5c is the cash flow statement, with its own specification.
+
+### 5f.1 Data (one migration, additive)
+| Object | Holds | Rules (service and database) |
+|---|---|---|
+| `size_threshold_set` | Organisation-scoped. Label; governs years beginning from `effective_from` to `effective_to` (inclusive, open-ended when empty); limits for MICRO, SMALL and MEDIUM (turnover and balance-sheet total to 4 decimals, average employees as a whole number); `prior_year_on_first` (the preceding year is tested against this set when testing the first year it governs); source URL, provision and retrieval date; notes; status UNVERIFIED / VERIFIED / SUPERSEDED; author, verifier, verification time and notes; copied from, superseded by | Starts UNVERIFIED. Changes only while UNVERIFIED. Verified once, by a holder of `accounts:rule-verify` who is not the author, with notes of at least 10 characters. Only a VERIFIED set is superseded, by an UNVERIFIED copy. Current sets of an organisation never overlap. Limits are positive and nested (micro <= small <= medium per measure). Never deleted |
+| `reporting_standard_version.turnover_line_key` (new column) | The key of the version's turnover line | A P&L line of the version. Set while UNVERIFIED; frozen with the version; copied when superseded. A line that is the turnover line cannot be removed. Without one, the size test reports that the version names no turnover line |
+| `accounts_fact` (V2-M5a, two new keys) | `size.priorMet` (MICRO, SMALL, MEDIUM, LARGE) and `size.priorStatus` (MICRO, SMALL, MEDIUM, LARGE, FIRST_YEAR) | Typed by the service and the database; used only for the earliest framework year |
+
+All new objects: forced row-level security, no DELETE or TRUNCATE for the runtime role, and the V1 guard lists.
+
+### 5f.2 The test (DEC-066)
+For a framework year *n*, with the set *S(n)* governing its start date:
+1. **Figures**, from the statutory statements of the year on its own version (V2-M1):
+   * turnover is the turnover line;
+   * the balance-sheet total is the sum of the balance-sheet ACCOUNTS lines with natural side DEBIT;
+   * employees is the year's `employees.average`.
+2. **Turnover limit:** a year of exactly twelve months uses the set's limit. Any other length compares `turnover x D12 <= limit x D`, where D is the year's days and D12 is the days of the twelve months from its start. The adjusted limit is shown to 2 decimals.
+3. **met(C, n)**, for each class C, is three-valued:
+   * TRUE when at least two figures are within C's limits;
+   * FALSE when at least two exceed them;
+   * otherwise UNKNOWN (a missing figure).
+4. **The preceding year *n-1*:**
+   * **When the platform holds it** (a framework year ending the day before): its figures as in step 1, tested against S(n) if S(n) has `prior_year_on_first` and does not govern *n-1*, otherwise against S(n-1). Its status comes from the same test, recursively.
+   * **When it does not:** the facts `size.priorMet` and `size.priorStatus` of year *n*. FIRST_YEAR makes status(n) = met(n).
+5. **status(C, n)** = met(C, n) when met(C, n) = met(C, n-1); otherwise status(C, n-1). Either side UNKNOWN gives UNKNOWN. Each status records its basis: BOTH_YEARS, CARRIED_FORWARD or FIRST_YEAR.
+6. **Result:**
+   * `qualifiesAs` is the smallest class whose status is TRUE; LARGE when none is; UNKNOWN when it cannot be decided.
+   * `fits` is false when the chosen `entitySize` is smaller than `qualifiesAs` (MICRO < SMALL < MEDIUM < LARGE).
+   * A larger choice than needed fits, with a notice.
+   * `verified` is true only when every set used is verified.
+   * Problems name every missing set, fact or turnover line, and every unplaced account.
+
+### 5f.3 API (behind `accounts.production`)
+* `size-threshold-sets` GET (`ledger:read`) and POST (`accounts:rules-manage`).
+* `size-threshold-sets/{id}` GET (`ledger:read`) and PATCH (`accounts:rules-manage`, while unverified).
+* `size-threshold-sets/{id}/verify` POST (`accounts:rule-verify`, not the author).
+* `size-threshold-sets/{id}/supersede` POST (`accounts:rules-manage`).
+* The standard version PATCH and the version view take `turnoverLineKey`.
+* `size-test?yearStart` GET (`ledger:read`): the year and the preceding years used, each with figures, limits, conditions, met and status per class and basis, plus `qualifiesAs`, `chosen`, `fits`, `verified`, problems and notices.
+* All in OpenAPI; audited with before and after.
+
+### 5f.4 Draft thresholds (DEC-064 pattern)
+`content/standards/drafts/uk-size-thresholds.json` holds two draft sets, written from engineering's knowledge of the Companies Act 2006 sections 382, 384A and 465 as amended. They are imported by the same script as UNVERIFIED sets. The verifier checks the figures, dates and the transitional rule against the instruments.
+
+### 5f.5 Acceptance
+* **Golden (DEC-054):** `tests/golden/v2-m5b-size.json`, written by hand before the code and recomputed independently in a workbook.
+  * **The company:** a synthetic company with four framework years, 2024 to 2026 and a six-month 2027, on a verified synthetic version.
+  * **The thresholds:** two verified synthetic sets, the second testing the preceding year on its first year.
+  * **Expected output:**
+    * the earliest year carried from the preparer's facts (qualifies as SMALL, while MICRO was chosen: does not fit);
+    * a year exceeding the micro limits once, which carries the status;
+    * the transitional rule turning the company into a micro-entity;
+    * the short year's adjusted turnover limit deciding a condition;
+    * other income left out of turnover;
+    * closed years giving the same figures.
+* **Tests:**
+  * the three-valued conditions and the two-year rule (unit, every combination);
+  * thresholds verified by a second person and frozen (service and database);
+  * nesting and overlap refused;
+  * missing facts, sets and turnover line reported;
+  * permissions and tenancy;
+  * the draft thresholds import as UNVERIFIED;
+  * an architecture test (the size test reads, writes nothing);
+  * CI green, clean clone, the matrix rows moved with evidence.
 
 ## 6. Legal and standards context
 See `v2-proposal.md` section 6. The rules entered into the framework are the firm's, from the current text of FRS 102 and FRS 105 and the Companies Act 2006 accounts regulations, verified by its named accountant; engineering builds the mechanism and tests it on synthetic data.

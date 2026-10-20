@@ -1,0 +1,97 @@
+{
+  "id": "V2-M5B-GOLDEN-01",
+  "purpose": "DEC-054 golden for V2-M5b (DEC-066): the size test of a synthetic company over four framework years (2024, 2025, 2026 and a six-month 2027) under two verified synthetic threshold sets. It shows the two-or-more-of-three conditions, the two-consecutive-years rule carrying a status forward, the earliest year resting on the preparer's facts, a transitional rule that tests the preceding year against the new set, a short year whose turnover limit is adjusted, other income left out of turnover, and closed years giving the same figures. Every figure, condition and result was written by hand before the code.",
+  "disclaimer": "SYNTHETIC. The limits are test numbers chosen to make small ledgers cross them; they are not the Companies Act 2006 thresholds. The company and amounts are test choices.",
+  "linesFrom": "tests/golden/v2-m1-micro-synthetic.json",
+  "turnoverLineKey": "P.T",
+  "company": { "name": "Golden Size Ltd" },
+  "periods": [["2024-01-01", "2024-12-31"], ["2025-01-01", "2025-12-31"], ["2026-01-01", "2026-12-31"], ["2027-01-01", "2027-06-30"]],
+  "seed": [
+    { "date": "2024-03-31", "direction": "RECEIPT", "lines": [["4000", "25000.00"]], "description": "Sales 2024" },
+    { "date": "2024-09-30", "direction": "PAYMENT", "lines": [["6100", "17000.00"]], "description": "Rent 2024" },
+    { "date": "2025-03-31", "direction": "RECEIPT", "lines": [["4000", "22000.00"]], "description": "Sales 2025" },
+    { "date": "2025-09-30", "direction": "PAYMENT", "lines": [["6100", "18000.00"]], "description": "Rent 2025" },
+    { "date": "2026-03-31", "direction": "RECEIPT", "lines": [["4000", "28000.00"]], "description": "Sales 2026" },
+    { "date": "2026-04-30", "direction": "RECEIPT", "lines": [["4100", "5000.00"]], "description": "Other income 2026 (not turnover)" },
+    { "date": "2026-09-30", "direction": "PAYMENT", "lines": [["6100", "31000.00"]], "description": "Rent 2026" },
+    { "date": "2027-02-28", "direction": "RECEIPT", "lines": [["4000", "16000.00"]], "description": "Sales 2027" },
+    { "date": "2027-05-31", "direction": "PAYMENT", "lines": [["6100", "16000.00"]], "description": "Rent 2027" }
+  ],
+  "closes": [["2024-01-01", "2024-12-31"], ["2025-01-01", "2025-12-31"]],
+  "frameworks": [
+    { "yearStart": "2024-01-01", "yearEnd": "2024-12-31", "entitySize": "MICRO", "employees": "2" },
+    { "yearStart": "2025-01-01", "yearEnd": "2025-12-31", "entitySize": "SMALL", "employees": "2" },
+    { "yearStart": "2026-01-01", "yearEnd": "2026-12-31", "entitySize": "MICRO", "employees": "3" },
+    { "yearStart": "2027-01-01", "yearEnd": "2027-06-30", "entitySize": "MICRO", "employees": "4" }
+  ],
+  "earliestFacts": { "yearStart": "2024-01-01", "size.priorMet": "SMALL", "size.priorStatus": "SMALL" },
+  "source": { "url": "https://example.test/synthetic-size-limits", "provision": "Synthetic test limits (not the Companies Act thresholds)", "retrievedOn": "2026-10-20" },
+  "sets": [
+    { "key": "A", "label": "Synthetic limits A", "effectiveFrom": "2020-01-01", "effectiveTo": "2025-12-31", "priorYearOnFirst": false,
+      "limits": { "MICRO": { "turnover": "20000.00", "balanceSheetTotal": "10000.00", "employees": 3 }, "SMALL": { "turnover": "60000.00", "balanceSheetTotal": "30000.00", "employees": 10 }, "MEDIUM": { "turnover": "200000.00", "balanceSheetTotal": "100000.00", "employees": 50 } } },
+    { "key": "B", "label": "Synthetic limits B", "effectiveFrom": "2026-01-01", "effectiveTo": null, "priorYearOnFirst": true,
+      "limits": { "MICRO": { "turnover": "30000.00", "balanceSheetTotal": "15000.00", "employees": 3 }, "SMALL": { "turnover": "90000.00", "balanceSheetTotal": "45000.00", "employees": 10 }, "MEDIUM": { "turnover": "300000.00", "balanceSheetTotal": "150000.00", "employees": 50 } } }
+  ],
+  "workings": {
+    "bank": "Gross assets are the bank balance only (B.CA is the only debit balance-sheet line with a balance): 2024 25,000 - 17,000 = 8,000; 2025 8,000 + 22,000 - 18,000 = 12,000; 2026 12,000 + 28,000 + 5,000 - 31,000 = 14,000; 30.6.2027 14,000 + 16,000 - 16,000 = 14,000.",
+    "turnover": "P.T is fed by 4000 only. The 2026 other income of 5,000 (account 4100) lands on P.OI, so turnover is 28,000, not 33,000. The closes of 2024 and 2025 are closing journals, left out of every P&L line, so turnover stays 25,000 and 22,000.",
+    "shortYear": "2027-01-01 to 2027-06-30 is 181 days (31+28+31+30+31+30). The twelve months from 2027-01-01 have 365 days. Adjusted turnover limits: micro 30,000 x 181 / 365 = 14,876.7123 (shown 14,876.71); small 90,000 x 181 / 365 = 44,630.1370 (44,630.14); medium 300,000 x 181 / 365 = 148,767.1233 (148,767.12). Exact test for micro: 16,000 x 365 = 5,840,000 > 30,000 x 181 = 5,430,000, so exceeded. Unadjusted, 16,000 would be within 30,000 and the micro conditions would be met.",
+    "transitional": "Set B tests the preceding year against itself for the first year it governs (2026). 2025 against B: 22,000 <= 30,000, 12,000 <= 15,000, 2 <= 3, so met as micro; 2026 is met too, so 2026 is MICRO on both years. Without that rule 2025 would be tested against A (22,000 > 20,000 and 12,000 > 10,000: not met), the years would differ, 2025's micro status (false) would carry, and 2026 would be SMALL.",
+    "twoYears": "2024 meets the micro conditions (8,000 and 2 are within 10,000 and 3) but the preceding year did not (the facts say the smallest class met was SMALL), so the preceding status carries: not micro. 2025 exceeds two micro limits; 2024 met them; they differ, so 2024's micro status (false) carries again. 2027 exceeds two micro limits; 2026 met them; they differ, so 2026's micro status (true) carries: still a micro-entity."
+  },
+  "yearResults": {
+    "2024-01-01": {
+      "start": "2024-01-01", "end": "2024-12-31", "days": 366, "daysInTwelveMonths": 366, "twelveMonths": true,
+      "thresholdSet": "Synthetic limits A", "priorTestedAgainst": null, "prior": { "source": "FACTS", "met": "SMALL", "status": "SMALL" },
+      "figures": { "turnover": "25000.00", "balanceSheetTotal": "8000.00", "employees": 2 },
+      "classes": [
+        { "class": "MICRO", "limits": { "turnover": "20000.00", "balanceSheetTotal": "10000.00", "employees": 3 }, "conditions": { "turnover": false, "balanceSheetTotal": true, "employees": true }, "met": true, "priorMet": false, "status": false, "basis": "CARRIED_FORWARD" },
+        { "class": "SMALL", "limits": { "turnover": "60000.00", "balanceSheetTotal": "30000.00", "employees": 10 }, "conditions": { "turnover": true, "balanceSheetTotal": true, "employees": true }, "met": true, "priorMet": true, "status": true, "basis": "BOTH_YEARS" },
+        { "class": "MEDIUM", "limits": { "turnover": "200000.00", "balanceSheetTotal": "100000.00", "employees": 50 }, "conditions": { "turnover": true, "balanceSheetTotal": true, "employees": true }, "met": true, "priorMet": true, "status": true, "basis": "BOTH_YEARS" }
+      ]
+    },
+    "2025-01-01": {
+      "start": "2025-01-01", "end": "2025-12-31", "days": 365, "daysInTwelveMonths": 365, "twelveMonths": true,
+      "thresholdSet": "Synthetic limits A", "priorTestedAgainst": "Synthetic limits A", "prior": { "source": "PLATFORM", "start": "2024-01-01", "end": "2024-12-31" },
+      "figures": { "turnover": "22000.00", "balanceSheetTotal": "12000.00", "employees": 2 },
+      "classes": [
+        { "class": "MICRO", "limits": { "turnover": "20000.00", "balanceSheetTotal": "10000.00", "employees": 3 }, "conditions": { "turnover": false, "balanceSheetTotal": false, "employees": true }, "met": false, "priorMet": true, "status": false, "basis": "CARRIED_FORWARD" },
+        { "class": "SMALL", "limits": { "turnover": "60000.00", "balanceSheetTotal": "30000.00", "employees": 10 }, "conditions": { "turnover": true, "balanceSheetTotal": true, "employees": true }, "met": true, "priorMet": true, "status": true, "basis": "BOTH_YEARS" },
+        { "class": "MEDIUM", "limits": { "turnover": "200000.00", "balanceSheetTotal": "100000.00", "employees": 50 }, "conditions": { "turnover": true, "balanceSheetTotal": true, "employees": true }, "met": true, "priorMet": true, "status": true, "basis": "BOTH_YEARS" }
+      ]
+    },
+    "2026-01-01": {
+      "start": "2026-01-01", "end": "2026-12-31", "days": 365, "daysInTwelveMonths": 365, "twelveMonths": true,
+      "thresholdSet": "Synthetic limits B", "priorTestedAgainst": "Synthetic limits B", "prior": { "source": "PLATFORM", "start": "2025-01-01", "end": "2025-12-31" },
+      "figures": { "turnover": "28000.00", "balanceSheetTotal": "14000.00", "employees": 3 },
+      "classes": [
+        { "class": "MICRO", "limits": { "turnover": "30000.00", "balanceSheetTotal": "15000.00", "employees": 3 }, "conditions": { "turnover": true, "balanceSheetTotal": true, "employees": true }, "met": true, "priorMet": true, "status": true, "basis": "BOTH_YEARS" },
+        { "class": "SMALL", "limits": { "turnover": "90000.00", "balanceSheetTotal": "45000.00", "employees": 10 }, "conditions": { "turnover": true, "balanceSheetTotal": true, "employees": true }, "met": true, "priorMet": true, "status": true, "basis": "BOTH_YEARS" },
+        { "class": "MEDIUM", "limits": { "turnover": "300000.00", "balanceSheetTotal": "150000.00", "employees": 50 }, "conditions": { "turnover": true, "balanceSheetTotal": true, "employees": true }, "met": true, "priorMet": true, "status": true, "basis": "BOTH_YEARS" }
+      ]
+    },
+    "2027-01-01": {
+      "start": "2027-01-01", "end": "2027-06-30", "days": 181, "daysInTwelveMonths": 365, "twelveMonths": false,
+      "thresholdSet": "Synthetic limits B", "priorTestedAgainst": "Synthetic limits B", "prior": { "source": "PLATFORM", "start": "2026-01-01", "end": "2026-12-31" },
+      "figures": { "turnover": "16000.00", "balanceSheetTotal": "14000.00", "employees": 4 },
+      "classes": [
+        { "class": "MICRO", "limits": { "turnover": "14876.71", "balanceSheetTotal": "15000.00", "employees": 3 }, "conditions": { "turnover": false, "balanceSheetTotal": true, "employees": false }, "met": false, "priorMet": true, "status": true, "basis": "CARRIED_FORWARD" },
+        { "class": "SMALL", "limits": { "turnover": "44630.14", "balanceSheetTotal": "45000.00", "employees": 10 }, "conditions": { "turnover": true, "balanceSheetTotal": true, "employees": true }, "met": true, "priorMet": true, "status": true, "basis": "BOTH_YEARS" },
+        { "class": "MEDIUM", "limits": { "turnover": "148767.12", "balanceSheetTotal": "150000.00", "employees": 50 }, "conditions": { "turnover": true, "balanceSheetTotal": true, "employees": true }, "met": true, "priorMet": true, "status": true, "basis": "BOTH_YEARS" }
+      ]
+    }
+  },
+  "expected": [
+    { "yearStart": "2024-01-01", "chosen": "MICRO", "qualifiesAs": "SMALL", "fits": false, "years": ["2024-01-01"] },
+    { "yearStart": "2025-01-01", "chosen": "SMALL", "qualifiesAs": "SMALL", "fits": true, "years": ["2025-01-01", "2024-01-01"] },
+    { "yearStart": "2026-01-01", "chosen": "MICRO", "qualifiesAs": "MICRO", "fits": true, "years": ["2026-01-01"] },
+    { "yearStart": "2027-01-01", "chosen": "MICRO", "qualifiesAs": "MICRO", "fits": true, "years": ["2027-01-01", "2026-01-01"] }
+  ],
+  "notFitting": "The entity size chosen for the year (MICRO) is smaller than the class the company qualifies as (SMALL): the year cannot use the MICRO regime.",
+  "withoutFacts": {
+    "note": "Before the preparer enters the earliest year's facts. 2026 needs no history (both years meet every class), so it is decided; 2025's micro status needs 2024's, which needs the facts.",
+    "2026-01-01": { "qualifiesAs": "MICRO", "fits": true, "problems": [] },
+    "2025-01-01": { "qualifiesAs": "UNKNOWN", "fits": null, "problems": ["Year 2024-01-01: missing fact size.priorMet (no framework year on the platform precedes it)", "Year 2024-01-01: missing fact size.priorStatus (no framework year on the platform precedes it)"],
+      "micro2024": { "met": true, "priorMet": null, "status": null, "basis": null } }
+  }
+}

@@ -8,8 +8,8 @@ export const DOCUMENT_SECTIONS = ['POLICIES', 'NOTES', 'DIRECTORS_REPORT', 'BALA
 export type DocumentSection = (typeof DOCUMENT_SECTIONS)[number];
 /** Tables the platform draws from the ledger and the registers. */
 export const TABLE_FACTS = ['fixedAssets.movements', 'provisions.movements', 'directors.advances', 'relatedParties.transactions'] as const;
-/** Facts the preparer enters for a framework year, besides free wording under `text.*`. */
-export const ENTERED_FACTS = ['employees.average', 'employees.averagePrior', 'approval.date', 'approval.director'] as const;
+/** Facts the preparer enters for a framework year, besides free wording under `text.*`; the `size.*` facts are read by the size test (V2-M5b). */
+export const ENTERED_FACTS = ['employees.average', 'employees.averagePrior', 'approval.date', 'approval.director', 'size.priorMet', 'size.priorStatus'] as const;
 const TEXT_FACT = /^text\.[a-zA-Z][a-zA-Z0-9]{0,39}$/;
 export const isEnteredFact = (k: string) => (ENTERED_FACTS as readonly string[]).includes(k) || TEXT_FACT.test(k);
 const SCALARS: Record<string, readonly string[]> = { company: ['name', 'number'], year: ['start', 'end', 'priorEnd'], standard: ['name'], version: ['label'], directors: ['names'] };
@@ -63,7 +63,7 @@ export const accountsDocumentQuerySchema = z.object({ yearStart: isoDate }).stri
 export const accountsFactQuerySchema = z.object({ yearStart: isoDate }).strict();
 export const setAccountsFactSchema = z.object({
   yearStart: isoDate,
-  key: z.string().refine(isEnteredFact, 'Not a known fact: employees.average, employees.averagePrior, approval.date, approval.director or text.<name>'),
+  key: z.string().refine(isEnteredFact, 'Not a known fact: employees.average, employees.averagePrior, approval.date, approval.director, size.priorMet, size.priorStatus or text.<name>'),
   value: z.string().trim().min(1).max(5000),
   reason: z.string().trim().min(3).max(500),
 }).strict();

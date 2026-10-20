@@ -1,4 +1,4 @@
-import { DOCUMENT_SECTIONS, isEnteredFact, parseTemplate, type TemplateParagraph } from '@uk/contracts';
+import { DOCUMENT_SECTIONS, PRIOR_MET_VALUES, PRIOR_STATUS_VALUES, isEnteredFact, parseTemplate, type TemplateParagraph } from '@uk/contracts';
 import { forbidden, notFound, unprocessable } from '@uk/core';
 import type { Tx } from '@uk/db';
 import { auditRow } from '@uk/platform';
@@ -50,6 +50,8 @@ export class AccountsDocumentService {
     const bad = (why: string) => { throw unprocessable(`${a.key}: ${why}`, 'invalid_fact'); };
     if (a.key.startsWith('employees.') && !/^\d{1,7}$/.test(value)) bad('a whole number');
     if (a.key === 'approval.date' && (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(value)) || !new Date(value).toISOString().startsWith(value))) bad('a date (YYYY-MM-DD)');
+    if (a.key === 'size.priorMet' && !(PRIOR_MET_VALUES as readonly string[]).includes(value)) bad(`one of ${PRIOR_MET_VALUES.join(', ')}`);
+    if (a.key === 'size.priorStatus' && !(PRIOR_STATUS_VALUES as readonly string[]).includes(value)) bad(`one of ${PRIOR_STATUS_VALUES.join(', ')}`);
     if (a.key === 'approval.director' && (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
       || !(await tx.companyOfficer.findFirst({ where: { companyId: a.companyId, contactId: value, role: 'DIRECTOR' } })))) bad('a director of the company (a contact with a DIRECTOR appointment)');
     const row = await tx.accountsFact.create({ data: { organisationId: a.organisationId, companyId: a.companyId, frameworkId: fw.id, key: a.key, value, reason: a.reason.trim(), setByUserId: a.actor.userId! } });

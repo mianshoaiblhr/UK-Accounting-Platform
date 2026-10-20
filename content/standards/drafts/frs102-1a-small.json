@@ -8,6 +8,7 @@
     "source": { "url": "https://www.frc.org.uk/library/standards-codes-policy/accounting-and-reporting/uk-accounting-standards/", "provision": "FRS 102 Section 1A and Sections 11, 17, 23, 29; SI 2008/409 Sch 1 (format 1 balance sheet and profit and loss account, notes); Companies Act 2006 ss.411, 413, 414, 415-419, 475-477. Drafted, not retrieved: check every rule against the current text", "retrievedOn": "2026-10-19" },
     "notes": "Engineering draft (DEC-064). Balance sheet and profit and loss account in format 1 as engineering understands it. Prepayments sit within debtors and accruals within creditors. Investments, share premium, the revaluation reserve, distribution costs and provisions for liabilities have no V1 reporting line: place those accounts with company overrides. Retained earnings and dividends accounts map to other reserves in this draft; the verifier should decide their presentation. Amendments effective for periods beginning on or after 1 January 2026 have not been checked."
   },
+  "turnoverLine": "P.T",
   "lines": [
     { "key": "P.T", "statement": "PL", "sort": 10, "name": "Turnover", "kind": "ACCOUNTS", "naturalSide": "CREDIT" },
     { "key": "P.COS", "statement": "PL", "sort": 20, "name": "Cost of sales", "kind": "ACCOUNTS", "naturalSide": "DEBIT" },

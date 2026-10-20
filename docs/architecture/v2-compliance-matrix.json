@@ -60,14 +60,14 @@
     },
     "V2-M5": {
       "title": "Statements and notes (FRS 105, FRS 102 1A, FRS 102)",
-      "status": "SPLIT (DEC-063): V2-M5a the accounts document ACCEPTED under the delegation 2026-10-19 (v2-m5a-acceptance.md; CI 39271179477 on 1492ff6); V2-M5b the size test and the cash flow statement next",
+      "status": "SPLIT (DEC-063, DEC-066): V2-M5a the accounts document ACCEPTED under the delegation 2026-10-19 (v2-m5a-acceptance.md; CI 39271179477 on 1492ff6); V2-M5b the size test built 2026-10-20 (v2-m5b-acceptance.md); V2-M5c the cash flow statement next",
       "owner": "Engineering (build); qualified accountant (rules)",
       "depends": [
         "V2-M1",
         "V2-M3",
         "V2-M4"
       ],
-      "acceptance": "v2-plan.md section 5d.3; v2-m5a-acceptance.md (V2-M5a)",
+      "acceptance": "v2-plan.md sections 5d.3 and 5f.5; v2-m5a-acceptance.md (V2-M5a); v2-m5b-acceptance.md (V2-M5b)",
       "deferred": "iXBRL (V3)"
     },
     "V2-M6": {
@@ -333,8 +333,8 @@
       "req": "Statutory statements",
       "m": "V2-M5",
       "s": "P",
-      "ev": "tests/golden/v2-m5a-document.json (docs/architecture/v2-m5a-golden-workings.xlsx recomputes every figure, table and sentence independently: 62 checks, 0 differences); tests/api/accounts-document.test.ts; tests/unit/accounts-document.test.ts; tests/db/accounts-document.test.ts; tests/api/statutory.test.ts (V2-M1 golden)",
-      "note": "Statements in the layout of the chosen version (V2-M1 preview, now part of the accounts document with comparatives, V2-M5a). The cash flow statement where the standard requires it is V2-M5b. Proven on a verified synthetic version with synthetic wording; no real FRS 105, FRS 102 or Companies Act wording is entered or verified (DEC-052): that is for the named accountant.",
+      "ev": "tests/golden/v2-m5a-document.json (docs/architecture/v2-m5a-golden-workings.xlsx recomputes every figure, table and sentence independently: 62 checks, 0 differences); tests/api/accounts-document.test.ts; tests/unit/accounts-document.test.ts; tests/db/accounts-document.test.ts; tests/api/statutory.test.ts (V2-M1 golden); tests/golden/v2-m5b-size.json (docs/architecture/v2-m5b-golden-workings.xlsx recomputes every figure, limit, condition and status independently: 139 checks, 0 differences); tests/api/size-test.test.ts; tests/unit/size-test.test.ts; tests/db/size-test.test.ts",
+      "note": "Statements in the layout of the chosen version (V2-M1 preview, now part of the accounts document with comparatives, V2-M5a). The size test that decides which statements and notes a year may use is built in V2-M5b (DEC-066): company-law thresholds as sourced data verified by a second person, the two-or-more-of-three conditions, the two-consecutive-years rule, short years, and whether the chosen entity size fits; proven on synthetic limits, and the draft UK thresholds are unverified. The cash flow statement where the standard requires it is V2-M5c. Proven on a verified synthetic version with synthetic wording; no real FRS 105, FRS 102 or Companies Act wording is entered or verified (DEC-052): that is for the named accountant.",
       "owner": "Engineering (build); qualified accountant (rules)",
       "deps": "V2-M1",
       "accept": "P&L and balance sheet in the layout of the chosen standard version; cash flow where the standard requires it.",
@@ -866,8 +866,8 @@
       "req": "Golden trial balances and expected statutory outputs",
       "m": "V2-M1",
       "s": "P",
-      "ev": "tests/golden/v2-m1-micro-synthetic.json; tests/api/statutory.test.ts",
-      "note": "One micro-entity scenario with two layouts, written by hand first and matched to the cent. One hand figure (the broken-map net assets) was wrong on first run and recalculated by hand (recorded in the golden file). Remaining: scenarios for FRS 102 Section 1A and years with fixed assets and accruals (V2-M2..M5); review of the expected outputs by the named accountant before any real rule is verified.",
+      "ev": "tests/golden/v2-m1-micro-synthetic.json; tests/api/statutory.test.ts; tests/golden/v2-m2-fixed-assets.json; tests/golden/v2-m3a-adjustments.json; tests/golden/v2-m3b-close.json; tests/golden/v2-m4-directors.json; tests/golden/v2-m5a-document.json; tests/golden/v2-m5b-size.json (each recomputed independently in its docs/architecture/v2-m*-golden-workings.xlsx)",
+      "note": "One micro-entity scenario with two layouts, written by hand first and matched to the cent. One hand figure (the broken-map net assets) was wrong on first run and recalculated by hand (recorded in the golden file). Remaining: scenarios for FRS 102 Section 1A and years with fixed assets and accruals (V2-M2..M5); review of the expected outputs by the named accountant before any real rule is verified. Since then each milestone added a hand-written golden scenario with an independent workbook (V2-M2 to V2-M5b, the last being the size test over four years with two threshold sets); DEC-057 and DEC-061 record Shoaib's review of the V2-M1 to V2-M3b goldens. Still remaining: an FRS 102 Section 1A scenario and the named accountant's review of the V2-M4 to V2-M5b goldens.",
       "owner": "Engineering (build); qualified accountant (rules)",
       "deps": "DEC-054",
       "accept": "Each scenario's expected statements and notes are hand-written data in tests/golden/ and matched to the cent; the named accountant reviews them before verifying the rules they exercise.",
@@ -903,6 +903,7 @@
     "v1.7 (2026-10-19, V2-M5a, DEC-063): V2-M5 split; the accounts document built. Missing -> Implemented: V2-MOD-12, V2-OUT-01, V2-OUT-02, V2-OUT-04, V2-OUT-05, V2-OUT-07. Missing -> Partially: V2-MOD-13 (cash flow in V2-M5b). Mechanism proven on synthetic verified wording only; real standard wording remains the named accountant's (DEC-052).",
     "v1.7a (2026-10-19): V2-M5a evidence recorded (CI 39271179477 and CodeQL 39271179462 green on 1492ff6; clean clone 2163 tests, e2e 21/21, OpenAPI drift 0).",
     "v1.8 (2026-10-19, DEC-064): at the product owner's instruction engineering drafted FRS 105 (micro) and FRS 102 Section 1A (small) wording packs (content/standards/drafts), importable through the API as UNVERIFIED versions; review workbook v2-draft-wording-review.xlsx. No row changes status: the drafts are unverified and were not checked against the source text (DEC-052).",
-    "v1.8a (2026-10-19): draft wording packs evidence recorded (CI 39288936490 and CodeQL 39288936669 green on d08ecb3; clean clone 2175 tests, e2e 21/21, OpenAPI drift 0)."
+    "v1.8a (2026-10-19): draft wording packs evidence recorded (CI 39288936490 and CodeQL 39288936669 green on d08ecb3; clean clone 2175 tests, e2e 21/21, OpenAPI drift 0).",
+    "v1.9 (2026-10-20, V2-M5b, DEC-065/066): DEC-065 records the product owner's read of the draft wording packs (no verdicts; nothing verified). DEC-066 splits V2-M5 again (V2-M5c the cash flow statement) and builds the size test: threshold sets as sourced data verified by a second person, a version's turnover line, two facts for the earliest year, the size-test endpoint; draft UK thresholds importable as UNVERIFIED sets. No row changes status: V2-MOD-13 stays Partially implemented until the cash flow statement; V2-MOD-13 and V2-TEST-01 gain evidence."
   ]
 }

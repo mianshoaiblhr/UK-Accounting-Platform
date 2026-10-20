@@ -269,6 +269,8 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-062 | How V2-M4 is built: director and shareholder loan accounts, related parties (delegated, DEC-019; recorded before code) | Read-only registers over the ledger, no new journal source: a loan account per person on a dedicated non-control ledger account, its statement and review flags (thresholds are the firm's review settings, versioned, never legal values); a related-party register whose year report reads the counterparty's sales, purchase and cash journals and its year-end balances from the ledger |
 | DEC-063 | V2-M5 split; how V2-M5a is built: the accounts document (delegated, DEC-019; recorded before code) | V2-M5a renders the accounts document (statements, accounting policies, notes, directors' report and balance-sheet statements) from wording held as data in the standard version (verified like all its content) and from facts drawn from the ledger, the registers and a few facts the preparer enters. V2-M5b adds the size test (company-law thresholds as verified data) and the cash flow statement (full FRS 102) |
 | DEC-064 | Draft wording packs written by engineering at the product owner's instruction | On 2026-10-19 the product owner said "go add wordings yourself". Engineering drafts FRS 105 (micro-entity) and FRS 102 Section 1A (small) packs: statement lines, the map from V1 reporting lines, validation rules and wording. The packs live in the repository and are imported through the API as UNVERIFIED versions authored by the person running the import. They are never seeded by a migration and never verified by engineering. This amends DEC-052's "nothing is seeded" only to the extent of keeping importable drafts; DEC-052's verification rule is unchanged |
+| DEC-065 | Draft wording packs reviewed by the product owner | On 2026-10-20 the product owner (Shoaib, DEC-056) said "I have gone through documents" after receiving the DEC-064 packs and `v2-draft-wording-review.xlsx`. Recorded as the product owner's read of the drafts. No verdicts were returned and nothing is verified: the packs stay UNVERIFIED until a holder of `accounts:rule-verify` who is not the importer verifies them in the platform (DEC-052) |
+| DEC-066 | V2-M5b split again; how V2-M5b is built: the size test (delegated, DEC-019; recorded before code) | V2-M5b is the size test only; the cash flow statement moves to V2-M5c. Company-law size thresholds are organisation data in effective-dated threshold sets, each with a source, created UNVERIFIED and verified by a second person, never seeded. The test of a framework year applies the "two or more of three" conditions and the two-consecutive-years rule per class, with turnover adjusted for a year that is not twelve months, and reports whether the entity size chosen for the year fits. Amends DEC-063's split only; DEC-063 is not rewritten |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -639,4 +641,56 @@ These choices refine DEC-036. None of them is a tax rule; the VAT arithmetic is 
 * **Verification is unchanged (DEC-052):** Shoaib, or another holder of `accounts:rule-verify` who is not the author, checks each rule against the current FRS and Companies Act text, edits or removes what is wrong, and only then verifies. Until then every document from a pack is a preview marked unverified, and it is never complete.
 * **Audit trail:** DEC-052 said no real standard content is entered or seeded. This decision amends that only by allowing these importable drafts in the repository. DEC-052 itself is not rewritten.
 * **Not done:** FRS 102 in full (medium and large companies), charities (SORP), LLPs and groups.
+
+### DEC-065 - Draft wording packs reviewed by the product owner (2026-10-20)
+* **What happened:** after the DEC-064 packs and the wording review workbook were delivered, the product owner said "I have gone through documents / Now keep going".
+* **What it is recorded as:** the product owner's read of the drafts. The workbook's Verdict column came back with nothing in it, so no rule is accepted, changed or rejected by this record.
+* **What it is not:** verification. DEC-052 is unchanged. The packs become usable for filing-ready accounts only once they are imported and a holder of `accounts:rule-verify` who is not the importer verifies each version in the platform.
+
+### DEC-066 - V2-M5b split again; how V2-M5b is built: the size test (delegated, DEC-019; recorded before code)
+* **Split (amends DEC-063's split; DEC-063 is not rewritten):**
+  * V2-M5b is the size test.
+  * V2-M5c is the cash flow statement for full FRS 102. It gets its own specification before code.
+  * Reason: each part is proven on its own golden scenario and accepted on its own evidence.
+* **Thresholds are data, never code:**
+  * A **threshold set** belongs to the organisation. It holds:
+    * a label;
+    * the financial years it governs, by the date a year begins (from, and optionally to, both inclusive);
+    * the micro-entity, small and medium limits for turnover, balance-sheet total and average employees;
+    * whether, for the first year it governs, the preceding year is also tested against it (a transitional rule; the verifier decides from the instrument);
+    * a source (URL, provision, retrieval date), notes, its author, verifier and status.
+  * Statuses and rules are the same as standard versions (DEC-052, DEC-055):
+    * a set starts UNVERIFIED;
+    * a holder of `accounts:rule-verify` who is not its author verifies it;
+    * a verified set never changes and is replaced by superseding it;
+    * the current sets of an organisation never overlap.
+  * Limits are nested: micro, then small, then medium, for each measure.
+  * Nothing is seeded. Engineering may draft an importable set under the DEC-064 pattern. It is never verified by engineering.
+* **Figures of a framework year:**
+  * **Turnover:** the amount on the turnover line of the year's standard version. A version names its turnover line, a P&L line, while it is unverified. The line is verified with the version and frozen after. Closing journals are left out, as on every P&L line (DEC-060).
+  * **Balance-sheet total:** the sum of the year's balance-sheet accounts lines whose natural side is DEBIT, at the year end. These are the amounts shown as assets.
+  * **Employees:** the year's `employees.average` fact (V2-M5a).
+  * A year that is not twelve months has its turnover limit adjusted in proportion. The adjustment is by days, against the twelve months that begin on the year start. The comparison is exact, with no rounding.
+* **Conditions:** a class's conditions are met when two or more of the three figures are not more than the limits.
+  * A missing figure is unknown.
+  * The result is decided only when two known figures settle it either way.
+* **Two consecutive years, per class:**
+  * When this year and the preceding year agree, this year's result is the status.
+  * When they differ, the preceding year's status carries forward.
+  * The preceding year's figures are tested against its own set, or against this year's set when this year's set says so for its first year.
+  * When the preceding framework year exists on the platform, its figures and status are computed by the platform, recursively.
+  * For the earliest framework year, the preparer states two facts:
+    * `size.priorMet`: the smallest class whose conditions the preceding year met, or LARGE;
+    * `size.priorStatus`: the smallest class it qualified as, or FIRST_YEAR when this is the company's first financial year (the status is then this year's result).
+* **Result:**
+  * the smallest class the company qualifies as (MICRO, SMALL or MEDIUM), else LARGE;
+  * each figure, limit and condition, by class and year;
+  * the basis of each status;
+  * whether the entity size chosen for the year fits. It does not fit when the chosen size is smaller than the class the company qualifies as; choosing a larger size is allowed and said.
+  * The result is `verified` only when every set used is verified.
+  * Exclusions are not tested and are stated as a notice: public companies, banking, insurance and other excluded companies, micro-entity exclusions, and groups.
+* **Not in V2-M5b:**
+  * the cash flow statement (V2-M5c);
+  * gating approval or filing on the size test (V2-M6 reads it);
+  * groups, LLPs' separate regulations, and charities.
 
