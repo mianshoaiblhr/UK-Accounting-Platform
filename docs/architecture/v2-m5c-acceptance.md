@@ -1,5 +1,7 @@
 # V2 milestone V2-M5c - acceptance package (the cash flow statement)
 
+**Status:** ACCEPTED under the delegation on 2026-10-20 (DEC-019, DEC-051). The evidence is below. The cash-flow content remains unverified until Shoaib enters and verifies real content in the platform (DEC-052).
+
 Prepared under the product owner's delegation (DEC-019, DEC-051). The design is in DEC-067, recorded before code.
 
 This is milestone evidence only, **not production approval** (DEC-006). All data is synthetic, and so are the cash-flow classes, the map and the captions: no FRS 102 Section 7 classification or caption has been entered or verified. Entering and verifying them is the named accountant's work in the platform (DEC-052, DEC-056).
@@ -7,11 +9,11 @@ This is milestone evidence only, **not production approval** (DEC-006). All data
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | `@@COMMIT@@` (branch `claude/adoring-cori-mra6ze`); specification recorded before code in v2-plan section 5g and DEC-067 |
-| CI | @@CI@@ |
-| CodeQL | @@CODEQL@@ |
-| Clean clone | @@CLEAN@@ |
-| Local runs | @@LOCAL@@ |
+| Code baseline commit | `8fcee2c5d91c28fbb39a6a9186451a041365a84b` (branch `claude/adoring-cori-mra6ze`); specification recorded before code in v2-plan section 5g and DEC-067 |
+| CI | [run 39396072282](https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39396072282): every job green (migrations from scratch; dependency audit and secret scan; build, lint, typecheck, unit, integration, e2e; terraform; real S3 protocol and ClamAV; images) |
+| CodeQL | [run 39396072207](https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39396072207): green |
+| Clean clone | Fresh clone at 8fcee2c: install, build, typecheck and lint clean; 129 test files, 2,225 tests passed; e2e 21/21; OpenAPI drift 0 |
+| Local runs | Build, typecheck and lint clean; 129 test files, 2,225 tests passed (before the push; 2,204 before this milestone) |
 
 ## 2. What V2-M5c delivers (v2-plan section 5g)
 | Part | What it is |
