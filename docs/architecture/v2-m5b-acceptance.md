@@ -1,5 +1,7 @@
 # V2 milestone V2-M5b - acceptance package (the size test)
 
+**Status:** ACCEPTED under the delegation on 2026-10-20 (DEC-019, DEC-051). The evidence is below. Thresholds and wording remain unverified until Shoaib verifies them in the platform (DEC-052).
+
 Prepared under the product owner's delegation (DEC-019, DEC-051). The split and the design are in DEC-066, recorded before code; DEC-065 records the product owner's read of the draft wording packs.
 
 This is milestone evidence only, **not production approval** (DEC-006). All data is synthetic, and so are the limits the golden uses. The draft UK thresholds in `content/standards/drafts/uk-size-thresholds.json` were written from engineering's knowledge, were not retrieved from legislation.gov.uk, and are UNVERIFIED. Verifying them is the named accountant's work in the platform (DEC-052, DEC-056).
@@ -7,11 +9,11 @@ This is milestone evidence only, **not production approval** (DEC-006). All data
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | `@@COMMIT@@` (branch `claude/adoring-cori-mra6ze`); specification recorded before code in v2-plan section 5f and DEC-066 |
-| CI | @@CI@@ |
-| CodeQL | @@CODEQL@@ |
-| Clean clone | @@CLEAN@@ |
-| Local runs | @@LOCAL@@ |
+| Code baseline commit | `2277775711ed1381a380429701e51ca968a940f1` (branch `claude/adoring-cori-mra6ze`); specification recorded before code in v2-plan section 5f and DEC-066 |
+| CI | [run 39362598139](https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39362598139): every job green (migrations from scratch; dependency audit and secret scan; build, lint, typecheck, unit, integration, e2e; terraform; real S3 protocol and ClamAV; images) |
+| CodeQL | [run 39362598131](https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39362598131): green |
+| Clean clone | Fresh clone at 2277775: install, build, typecheck and lint clean; 126 test files, 2,204 tests passed; e2e 21/21; OpenAPI drift 0 |
+| Local runs | Build, typecheck and lint clean; 126 test files, 2,204 tests passed (before the push; 2,175 before this milestone) |
 
 ## 2. What V2-M5b delivers (v2-plan section 5f)
 | Part | What it is |

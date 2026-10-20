@@ -2,7 +2,7 @@
 
 Source requirements: docs/specifications/V2_Accounts_Production_FRS102_FRS105.md, 00_MASTER_IMPLEMENTATION_MANIFEST.md, decision-log.md DEC-051..054.
 
-Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
+Generated from `v2-compliance-matrix.json` at commit `2277775`; CI: <https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39362598139>. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
 
 ## Plan history (append-only)
 
@@ -22,6 +22,7 @@ Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence
 * v1.8 (2026-10-19, DEC-064): at the product owner's instruction engineering drafted FRS 105 (micro) and FRS 102 Section 1A (small) wording packs (content/standards/drafts), importable through the API as UNVERIFIED versions; review workbook v2-draft-wording-review.xlsx. No row changes status: the drafts are unverified and were not checked against the source text (DEC-052).
 * v1.8a (2026-10-19): draft wording packs evidence recorded (CI 39288936490 and CodeQL 39288936669 green on d08ecb3; clean clone 2175 tests, e2e 21/21, OpenAPI drift 0).
 * v1.9 (2026-10-20, V2-M5b, DEC-065/066): DEC-065 records the product owner's read of the draft wording packs (no verdicts; nothing verified). DEC-066 splits V2-M5 again (V2-M5c the cash flow statement) and builds the size test: threshold sets as sourced data verified by a second person, a version's turnover line, two facts for the earliest year, the size-test endpoint; draft UK thresholds importable as UNVERIFIED sets. No row changes status: V2-MOD-13 stays Partially implemented until the cash flow statement; V2-MOD-13 and V2-TEST-01 gain evidence.
+* v1.9a (2026-10-20): V2-M5b evidence recorded (CI 39362598139 and CodeQL 39362598131 green on 2277775; clean clone 2204 tests, e2e 21/21, OpenAPI drift 0).
 
 ## Summary
 
@@ -42,7 +43,7 @@ Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence
 | V2-M2 | Fixed assets and depreciation | ACCEPTED under the delegation 2026-10-18 (v2-m2-acceptance.md; CI 39159238749 on da32ffc) | Engineering | V2-M1 | 10 | 10 |
 | V2-M3 | Year-end adjustments and the closing journal | ACCEPTED under the delegation (DEC-059 split): V2-M3a 2026-10-18 (v2-m3a-acceptance.md; CI 39178258465 on f735149); V2-M3b 2026-10-19 (v2-m3b-acceptance.md; CI 39181318428 on 5ab27b8) | Engineering | V2-M2 | 5 | 5 |
 | V2-M4 | Director balances and related parties | ACCEPTED under the delegation 2026-10-19 (v2-m4-acceptance.md; CI 39251457210 on 87c8956) | Engineering | V2-M3 | 2 | 2 |
-| V2-M5 | Statements and notes (FRS 105, FRS 102 1A, FRS 102) | SPLIT (DEC-063, DEC-066): V2-M5a the accounts document ACCEPTED under the delegation 2026-10-19 (v2-m5a-acceptance.md; CI 39271179477 on 1492ff6); V2-M5b the size test built 2026-10-20 (v2-m5b-acceptance.md); V2-M5c the cash flow statement next | Engineering (build); qualified accountant (rules) | V2-M1; V2-M3; V2-M4 | 8 | 6 |
+| V2-M5 | Statements and notes (FRS 105, FRS 102 1A, FRS 102) | SPLIT (DEC-063, DEC-066): V2-M5a the accounts document ACCEPTED under the delegation 2026-10-19 (v2-m5a-acceptance.md; CI 39271179477 on 1492ff6); V2-M5b the size test ACCEPTED under the delegation 2026-10-20 (v2-m5b-acceptance.md; CI 39362598139 on 2277775); V2-M5c the cash flow statement next | Engineering (build); qualified accountant (rules) | V2-M1; V2-M3; V2-M4 | 8 | 6 |
 | V2-M6 | Year-end workflow, review, approval, filing-ready package | planned | Engineering | V2-M5 | 26 | 0 |
 | V2-M7 | Screens behind accounts.production | planned | Engineering (front end) | each API milestone | 1 | 0 |
 
@@ -131,7 +132,7 @@ A milestone is accepted on an acceptance package: commit SHA, CI run (every job)
 
 ## V2-M5 - Statements and notes (FRS 105, FRS 102 1A, FRS 102)
 
-**Status:** SPLIT (DEC-063, DEC-066): V2-M5a the accounts document ACCEPTED under the delegation 2026-10-19 (v2-m5a-acceptance.md; CI 39271179477 on 1492ff6); V2-M5b the size test built 2026-10-20 (v2-m5b-acceptance.md); V2-M5c the cash flow statement next  
+**Status:** SPLIT (DEC-063, DEC-066): V2-M5a the accounts document ACCEPTED under the delegation 2026-10-19 (v2-m5a-acceptance.md; CI 39271179477 on 1492ff6); V2-M5b the size test ACCEPTED under the delegation 2026-10-20 (v2-m5b-acceptance.md; CI 39362598139 on 2277775); V2-M5c the cash flow statement next  
 **Owner:** Engineering (build); qualified accountant (rules)  
 **Depends on:** V2-M1; V2-M3; V2-M4  
 **Acceptance:** v2-plan.md sections 5d.3 and 5f.5; v2-m5a-acceptance.md (V2-M5a); v2-m5b-acceptance.md (V2-M5b)  
