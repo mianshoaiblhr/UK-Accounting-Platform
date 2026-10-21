@@ -14,7 +14,7 @@ Everything in V1 plan section 1, plus: only the PostingService writes the ledger
 | V2-M3 | Year-end adjustments: accruals, prepayments, deferred income, provisions with reversal; the year-end closing journal to retained earnings | split (DEC-059): **V2-M3a built** (2026-10-18; `v2-m3a-acceptance.md`); **V2-M3b built** (2026-10-19; `v2-m3b-acceptance.md`) | Engineering | V2-M2 |
 | V2-M4 | Director and shareholder balances (director loan movements flagged), related parties | **built** (2026-10-19; `v2-m4-acceptance.md`) | Engineering | V2-M3 |
 | V2-M5 | Statements and notes: FRS 105 micro-entity, then FRS 102 Section 1A, then full FRS 102; policies, comparatives, directors' sections; the size test | **accepted** (all three parts, under the delegation); split (DEC-063, DEC-066): **V2-M5a built** (2026-10-19; `v2-m5a-acceptance.md`); **V2-M5b built** (2026-10-20; `v2-m5b-acceptance.md`, the size test, section 5f); **V2-M5c built** (2026-10-20; `v2-m5c-acceptance.md`, the cash flow statement, section 5g) | Engineering; the named accountant | V2-M1, V2-M3, V2-M4 |
-| V2-M6 | Year-end workflow (the specification's 14 steps), review checklist and flags, partner review, client approval, filing-ready package | planned | Engineering | V2-M5 |
+| V2-M6 | Year-end workflow (the specification's 14 steps), review checklist and flags, partner review, client approval, filing-ready package | split (DEC-068): **V2-M6a built** (2026-10-21; `v2-m6a-acceptance.md`, review flags and checklist, section 5h); V2-M6b the year-end workflow; V2-M6c approval, locking and the filing-ready package | Engineering | V2-M5 |
 | V2-M7 | Screens behind `accounts.production` | planned | Engineering (front end) | each API milestone |
 
 ## 3. V2-M1 - Reporting framework (specification; DEC-052, DEC-053)
@@ -397,6 +397,47 @@ The statement:
   * a small company's document without the statement;
   * permissions and tenancy;
   * an architecture test (reads only);
+  * CI green, clean clone, the matrix rows moved with evidence.
+
+## 5h. V2-M6a - Review flags and the review checklist (specification; DEC-068)
+Recorded before code. V2-M6 is split (DEC-068): V2-M6a review flags and the checklist; V2-M6b the 14-step workflow; V2-M6c approval, locking and the filing-ready package.
+
+### 5h.1 Data (one migration, additive)
+| Object | Holds | Rules (service and database) |
+|---|---|---|
+| `review_setting` | Per company, one row per change: unexplained-movement amount, material-change amount and percentage, old-item days (30, 60 or 90), evidence amount (each optional), reason, who and when | Written once; the latest applies; amounts positive |
+| `review_flag_response` | Per framework year and flag key: control, action (EXPLAIN, SIGN_OFF, REOPEN), note, the flag's figures, who and when | Written once. A SIGN_OFF needs an earlier EXPLAIN of the same flag with the same figures by another person |
+| Permission `accounts:review` | Held by owner, admin and partner | Granted by the migration to the system roles |
+
+### 5h.2 API (behind `accounts.production`)
+* `review-settings` GET (`ledger:read`) and POST (`accounts:prepare`).
+* `review-checklist?yearStart` GET (`ledger:read`): the nine controls with status, flags, figures, drill-down, responses, resolved flags and `complete`.
+* `review-flags/explain` POST (`accounts:prepare`); `review-flags/sign-off` and `review-flags/reopen` POST (`accounts:review`). Each takes the year and the flag key. The flag must be raised now, and the response is checked against its current figures.
+* All in OpenAPI and audited.
+
+### 5h.3 Acceptance
+* **Golden (DEC-054):** `tests/golden/v2-m6a-review.json`, written by hand before the code and recomputed independently in a workbook.
+  * **The company:** a synthetic company over 2025 and 2026, with every control raising at least one flag. It has:
+    * a manual journal above the setting, without evidence;
+    * another manual journal with evidence;
+    * an income account in debit and a debtor in credit;
+    * an invoice and a bill overdue;
+    * a director's overdrawn loan account;
+    * a suspense balance from the opening balances;
+    * a bank account without reconciliation;
+    * cash payments without evidence.
+  * **Expected output:** each control's flags and figures; the material changes on the turnover, current assets and retained profit lines.
+  * **Response flow:**
+    * a flag explained and signed off;
+    * the author refused as signer;
+    * an explanation lapsing when the figures change;
+    * a reopen;
+    * the controls without settings NOT_EVALUATED.
+* **Tests:**
+  * every control's rule (unit);
+  * responses written once and the second-person rule in the database;
+  * permissions and tenancy;
+  * an architecture test (the checklist reads; it writes only responses and settings);
   * CI green, clean clone, the matrix rows moved with evidence.
 
 ## 6. Legal and standards context

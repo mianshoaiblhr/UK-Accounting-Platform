@@ -1,0 +1,83 @@
+{
+  "id": "V2-M6A-GOLDEN-01",
+  "purpose": "DEC-054 golden for V2-M6a (DEC-068): the review checklist of a synthetic company's 2026 framework year, with 2025 as the comparative. Every one of the nine controls raises at least one flag; the expected flags and their figures were written by hand before the code, followed by a response flow (explain, sign off by a second person, an explanation lapsing when the figures change, a reopen).",
+  "disclaimer": "SYNTHETIC. The review settings are test choices of a firm, not legal values. The company, people and amounts are test choices.",
+  "linesFrom": "tests/golden/v2-m1-micro-synthetic.json",
+  "company": { "name": "Golden Review Ltd", "director": "Jordan Director", "appointedOn": "2020-01-01", "customer": "Late Payer Ltd", "supplier": "Slow Supplies Ltd" },
+  "periods": [["2025-01-01", "2025-12-31"], ["2026-01-01", "2026-12-31"]],
+  "openingBalance": { "date": "2025-01-01", "description": "Opening balances: unexplained difference held in suspense", "lines": [["9999", "300.00", "0.00"], ["3000", "0.00", "300.00"]] },
+  "cash": [
+    { "ref": "SALES25", "date": "2025-03-31", "direction": "RECEIPT", "lines": [["4000", "20000.00"]], "description": "Sales 2025" },
+    { "ref": "RENT25", "date": "2025-06-30", "direction": "PAYMENT", "lines": [["6100", "6000.00"]], "description": "Rent 2025" },
+    { "ref": "ADVANCE", "date": "2026-02-15", "direction": "PAYMENT", "lines": [["2230", "2000.00"]], "description": "Advance to Jordan Director" },
+    { "ref": "SALES26", "date": "2026-03-31", "direction": "RECEIPT", "lines": [["4000", "30000.00"]], "description": "Sales 2026" },
+    { "ref": "RENT26", "date": "2026-06-30", "direction": "PAYMENT", "lines": [["6100", "6500.00"]], "description": "Rent 2026" }
+  ],
+  "journals": [
+    { "ref": "TRAVEL", "date": "2026-07-31", "description": "Travel paid personally by Jordan Director", "lines": [["6400", "1200.00", "0.00"], ["2230", "0.00", "1200.00"]], "evidence": false },
+    { "ref": "FEES", "date": "2026-09-30", "description": "Accountancy fees accrued", "lines": [["6600", "800.00", "0.00"], ["2110", "0.00", "800.00"]], "evidence": true },
+    { "ref": "REFUND", "date": "2026-10-31", "description": "Other income refunded against other debtors", "lines": [["4100", "150.00", "0.00"], ["1110", "0.00", "150.00"]], "evidence": false }
+  ],
+  "invoice": { "ref": "INV1", "issueDate": "2026-08-01", "dueDate": "2026-08-31", "lines": [["4000", "2400.00"]] },
+  "bills": [
+    { "ref": "BILL-A", "issueDate": "2026-09-01", "dueDate": "2026-09-30", "supplierReference": "SS-101", "lines": [["6200", "900.00"]] },
+    { "ref": "BILL-B", "issueDate": "2026-11-15", "dueDate": "2026-12-15", "supplierReference": "SS-102", "lines": [["6310", "300.00"]] }
+  ],
+  "loanAccount": { "account": "2230", "openedOn": "2020-01-01", "kind": "DIRECTOR" },
+  "frameworks": [
+    { "yearStart": "2025-01-01", "yearEnd": "2025-12-31", "entitySize": "MICRO" },
+    { "yearStart": "2026-01-01", "yearEnd": "2026-12-31", "entitySize": "MICRO" }
+  ],
+  "settings": { "unexplainedAmount": "1000.00", "materialAmount": "5000.00", "materialPercent": "20.00", "oldItemDays": 60, "evidenceAmount": "500.00" },
+  "workings": {
+    "balances2026": "Bank 1200: 2025 20,000 - 6,000 = 14,000; 2026 + 30,000 - 6,500 - 2,000 = 35,500. Director 2230: debit 2,000 then credit 1,200, so 800 debit (overdrawn). 1110 other debtors: credit 150. 9999 suspense: debit 300 since the opening balances. 1100 trade debtors 2,400 (the invoice); 2100 trade creditors 1,200 (both bills); 2110 accruals 800.",
+    "rc01": "Manual journals of the year: TRAVEL 1,200 (>= 1,000, raised), FEES 800 and REFUND 150 (below). The opening balance journal is in 2025.",
+    "rc02": "Lines with accounts or the retained profit, 2026 against 2025, raised when the change is at least 5,000 and at least 20% of a non-zero comparative. P.T 32,400 (30,000 cash + 2,400 invoice) against 20,000: +12,400, 62%. P.OI -150 against 0: below 5,000. P.OC 9,700 (6,500 + 1,200 + 800 + 900 + 300) against 6,000: +3,700, below. B.CA 38,050 (35,500 + 2,400 - 150 + 300) against 14,300 (14,000 + 300): +23,750, 166.08%. B.CW 400 (1,200 - 800) against 0: below. B.ACCR 800: below. B.SC 300 both years. B.PLR 36,550 (14,000 + 22,550) against 14,000: +22,550, 161.07%. Totals are not raised: their parts are.",
+    "rc03": "4100 other income nets 150 debit for the year: income on the wrong side, -150.00 on its natural (credit) side.",
+    "rc04": "At 31.12.2026: 1110 (asset) is in credit, -150.00 on its natural side; 2230 (liability) is in debit, -800.00. Accumulated depreciation accounts are left out (their natural balance is credit).",
+    "rc05": "At 31.12.2026: the invoice due 31.8.2026 is 122 days overdue (over 90), 2,400; bill A due 30.9.2026 is 92 days overdue (over 90), 900; bill B due 15.12.2026 is 16 days overdue (1-30), below 60 days.",
+    "rc06": "The loan account on 2230 was 2,000 overdrawn from 15.2.2026 and 800 overdrawn from 31.7.2026 to the year end: overdrawn at the end and in the period, 320 days (15 February to 31 December). The firm's loan thresholds are not set, so the large-movement checks are not evaluated (V2-M4).",
+    "rc07": "Suspense 9999 holds 300 at the year end.",
+    "rc08": "The bank ledger account 1200 holds 35,500 and no bank account is set up for it, so it cannot have been reconciled. 1210 and 1220 hold nothing.",
+    "rc09": "Of at least 500 in the year: TRAVEL journal 1,200 (no evidence), FEES journal 800 (evidence linked: not raised), bill A 900 (no evidence), cash payments ADVANCE 2,000 and RENT26 6,500 (no evidence). Bill B 300 and REFUND 150 are below 500; receipts are not checked."
+  },
+  "expected": {
+    "yearStart": "2026-01-01",
+    "controls": {
+      "RC-01": [ { "subject": "journal:TRAVEL", "figures": { "date": "2026-07-31", "source": "MANUAL", "amount": "1200.00" } } ],
+      "RC-02": [
+        { "subject": "line:P.T", "figures": { "line": "P.T", "current": "32400.00", "comparative": "20000.00", "change": "12400.00", "percent": "62.00" } },
+        { "subject": "line:B.CA", "figures": { "line": "B.CA", "current": "38050.00", "comparative": "14300.00", "change": "23750.00", "percent": "166.08" } },
+        { "subject": "line:B.PLR", "figures": { "line": "B.PLR", "current": "36550.00", "comparative": "14000.00", "change": "22550.00", "percent": "161.07" } }
+      ],
+      "RC-03": [ { "subject": "account:4100", "figures": { "account": "4100", "balance": "-150.00" } } ],
+      "RC-04": [
+        { "subject": "account:1110", "figures": { "account": "1110", "balance": "-150.00" } },
+        { "subject": "account:2230", "figures": { "account": "2230", "balance": "-800.00" } }
+      ],
+      "RC-05": [
+        { "subject": "customer:Late Payer Ltd", "figures": { "party": "CUSTOMER", "currency": "GBP", "overdue": "2400.00", "beyondDays": 60 } },
+        { "subject": "supplier:Slow Supplies Ltd", "figures": { "party": "SUPPLIER", "currency": "GBP", "overdue": "900.00", "beyondDays": 60 } }
+      ],
+      "RC-06": [ { "subject": "loan:2230", "figures": { "closing": "-800.00", "lowest": "-2000.00", "daysOverdrawn": 320, "flags": ["OVERDRAWN_AT_END", "OVERDRAWN_IN_PERIOD"] } } ],
+      "RC-07": [ { "subject": "account:9999", "figures": { "account": "9999", "balance": "300.00" } } ],
+      "RC-08": [ { "subject": "account:1200", "figures": { "account": "1200", "reason": "NO_BANK_ACCOUNT", "ledgerBalance": "35500.00" } } ],
+      "RC-09": [
+        { "subject": "cash_transaction:ADVANCE", "figures": { "type": "cash_transaction", "date": "2026-02-15", "amount": "2000.00" } },
+        { "subject": "cash_transaction:RENT26", "figures": { "type": "cash_transaction", "date": "2026-06-30", "amount": "6500.00" } },
+        { "subject": "journal:TRAVEL", "figures": { "type": "journal", "date": "2026-07-31", "amount": "1200.00" } },
+        { "subject": "purchase_document:BILL-A", "figures": { "type": "purchase_document", "date": "2026-09-01", "amount": "900.00" } }
+      ]
+    },
+    "counts": { "RC-01": 1, "RC-02": 3, "RC-03": 1, "RC-04": 2, "RC-05": 2, "RC-06": 1, "RC-07": 1, "RC-08": 1, "RC-09": 4 },
+    "withoutSettings": { "NOT_EVALUATED": ["RC-01", "RC-02", "RC-05", "RC-09"], "OPEN": ["RC-03", "RC-04", "RC-06", "RC-07", "RC-08"] },
+    "flow": [
+      { "step": "explain RC-07 suspense", "by": "accountant", "expect": "RC-07 EXPLAINED" },
+      { "step": "the accountant cannot sign off (no accounts:review)", "by": "accountant", "expect": "403" },
+      { "step": "the partner signs off RC-07", "by": "partner", "expect": "RC-07 SIGNED_OFF" },
+      { "step": "the partner explains RC-03 and cannot sign off their own explanation", "by": "partner", "expect": "self_sign_off_not_allowed" },
+      { "step": "a further journal Dr 4100 50 / Cr 1110 50 changes RC-03 to -200.00 and RC-04 1110 to -200.00", "expect": "RC-03 OPEN, changed since explained" },
+      { "step": "the owner reopens RC-07", "by": "owner", "expect": "RC-07 OPEN" }
+    ]
+  }
+}

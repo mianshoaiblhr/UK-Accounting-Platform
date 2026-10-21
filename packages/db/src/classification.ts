@@ -101,6 +101,8 @@ export const TABLE_PROTECTION: Record<string, { protection: Protection; why: str
   release_run_line: { protection: 'RLS+APP', why: 'V2-M3a what a release run released from each schedule: written once (no UPDATE privilege, trigger).' },
   provision: { protection: 'RLS+APP', why: 'V2-M3a provisions with their accounts and basis: written once (no UPDATE privilege, trigger).' },
   provision_movement: { protection: 'RLS+APP', why: 'V2-M3a provision movements: dated in order, never below zero, the latest reversed once (trigger).' },
+  review_setting: { protection: 'RLS+APP', why: 'V2-M6a the firm\'s review settings per company, versioned rows (DEC-068); written once.' },
+  review_flag_response: { protection: 'RLS+APP', why: 'V2-M6a responses to review flags: explained, signed off by a second person, reopened (DEC-068); written once (trigger checks the second person).' },
   cash_flow_class: { protection: 'RLS+APP', why: 'V2-M5c cash-flow classes, version content verified with the version (DEC-052, DEC-067); frozen once verified (trigger).' },
   cash_flow_map_entry: { protection: 'RLS+APP', why: 'V2-M5c map from V1 reporting lines to cash-flow classes or cash, version content (DEC-067); frozen once verified (trigger).' },
   size_threshold_set: { protection: 'RLS+APP', why: 'V2-M5b company-law size thresholds as sourced data verified by a second person (DEC-052, DEC-066); immutable once verified (trigger).' },

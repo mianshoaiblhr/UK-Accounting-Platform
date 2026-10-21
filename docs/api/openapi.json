@@ -26377,6 +26377,452 @@
         ]
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/review-settings": {
+      "get": {
+        "operationId": "Review_settings",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The firm's review settings for the company (current and history): not legal values; a control whose setting is not set is not evaluated",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "Review_setSettings",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:prepare"
+        ],
+        "summary": "Change the review settings, with a reason; the history is kept",
+        "description": "**Requires permission:** `accounts:prepare`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetReviewSettingsRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/review-checklist": {
+      "get": {
+        "operationId": "Review_checklist",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "yearStart",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Checklist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewChecklist"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The review checklist of a framework year: the nine controls raised live from the ledger, registers and documents, each with its flags, figures, drill-down and responses; complete when every control is evaluated and every flag is signed off",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/review-flags/explain": {
+      "post": {
+        "operationId": "Review_explain",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Explained",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewChecklist"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:prepare"
+        ],
+        "summary": "Explain a raised flag (accounts:prepare); the explanation holds while the flag's figures do not change",
+        "description": "**Requires permission:** `accounts:prepare`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExplainReviewFlagRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/review-flags/sign-off": {
+      "post": {
+        "operationId": "Review_signOff",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed off",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewChecklist"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:review"
+        ],
+        "summary": "Sign off an explained flag (accounts:review; never the person who explained it)",
+        "description": "**Requires permission:** `accounts:review`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignOffReviewFlagRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/review-flags/reopen": {
+      "post": {
+        "operationId": "Review_reopen",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reopened",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewChecklist"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:review"
+        ],
+        "summary": "Reopen an explained or signed-off flag, with a reason (accounts:review)",
+        "description": "**Requires permission:** `accounts:review`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReopenReviewFlagRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -42736,6 +43182,497 @@
         ],
         "additionalProperties": false
       },
+      "ReviewSettings": {
+        "type": "object",
+        "properties": {
+          "current": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "unexplainedAmount": {
+                "type": "string",
+                "nullable": true,
+                "description": "Exact decimal"
+              },
+              "materialAmount": {
+                "type": "string",
+                "nullable": true,
+                "description": "Exact decimal"
+              },
+              "materialPercent": {
+                "type": "string",
+                "nullable": true,
+                "description": "Exact decimal"
+              },
+              "oldItemDays": {
+                "type": "integer",
+                "nullable": true
+              },
+              "evidenceAmount": {
+                "type": "string",
+                "nullable": true,
+                "description": "Exact decimal"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "setByUserId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "setAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "id",
+              "unexplainedAmount",
+              "materialAmount",
+              "materialPercent",
+              "oldItemDays",
+              "evidenceAmount",
+              "reason",
+              "setByUserId",
+              "setAt"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "unexplainedAmount": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Exact decimal"
+                },
+                "materialAmount": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Exact decimal"
+                },
+                "materialPercent": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Exact decimal"
+                },
+                "oldItemDays": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "evidenceAmount": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Exact decimal"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "setByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "setAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "unexplainedAmount",
+                "materialAmount",
+                "materialPercent",
+                "oldItemDays",
+                "evidenceAmount",
+                "reason",
+                "setByUserId",
+                "setAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "notice": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "current",
+          "history",
+          "notice"
+        ],
+        "additionalProperties": false
+      },
+      "ReviewChecklist": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "year": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "end": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "frameworkId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "start",
+              "end",
+              "frameworkId"
+            ],
+            "additionalProperties": false
+          },
+          "settings": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "unexplainedAmount": {
+                "type": "string",
+                "nullable": true,
+                "description": "Exact decimal"
+              },
+              "materialAmount": {
+                "type": "string",
+                "nullable": true,
+                "description": "Exact decimal"
+              },
+              "materialPercent": {
+                "type": "string",
+                "nullable": true,
+                "description": "Exact decimal"
+              },
+              "oldItemDays": {
+                "type": "integer",
+                "nullable": true
+              },
+              "evidenceAmount": {
+                "type": "string",
+                "nullable": true,
+                "description": "Exact decimal"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "setByUserId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "setAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "id",
+              "unexplainedAmount",
+              "materialAmount",
+              "materialPercent",
+              "oldItemDays",
+              "evidenceAmount",
+              "reason",
+              "setByUserId",
+              "setAt"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "controls": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "enum": [
+                    "RC-01",
+                    "RC-02",
+                    "RC-03",
+                    "RC-04",
+                    "RC-05",
+                    "RC-06",
+                    "RC-07",
+                    "RC-08",
+                    "RC-09"
+                  ]
+                },
+                "title": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "CLEAR",
+                    "OPEN",
+                    "EXPLAINED",
+                    "SIGNED_OFF",
+                    "NOT_EVALUATED"
+                  ]
+                },
+                "needs": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "counts": {
+                  "type": "object",
+                  "properties": {
+                    "open": {
+                      "type": "integer"
+                    },
+                    "explained": {
+                      "type": "integer"
+                    },
+                    "signedOff": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "open",
+                    "explained",
+                    "signedOff"
+                  ],
+                  "additionalProperties": false
+                },
+                "flags": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "key": {
+                        "type": "string"
+                      },
+                      "control": {
+                        "type": "string",
+                        "enum": [
+                          "RC-01",
+                          "RC-02",
+                          "RC-03",
+                          "RC-04",
+                          "RC-05",
+                          "RC-06",
+                          "RC-07",
+                          "RC-08",
+                          "RC-09"
+                        ]
+                      },
+                      "subject": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "id",
+                          "label"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "figures": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "drilldown": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "state": {
+                        "type": "string",
+                        "enum": [
+                          "OPEN",
+                          "EXPLAINED",
+                          "SIGNED_OFF"
+                        ]
+                      },
+                      "changedSinceResponse": {
+                        "type": "boolean",
+                        "description": "An explanation or sign-off lapsed because the figures changed"
+                      },
+                      "responses": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "action": {
+                              "type": "string",
+                              "enum": [
+                                "EXPLAIN",
+                                "SIGN_OFF",
+                                "REOPEN"
+                              ]
+                            },
+                            "note": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "figures": {
+                              "type": "object",
+                              "additionalProperties": {}
+                            },
+                            "byUserId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "at": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "action",
+                            "note",
+                            "figures",
+                            "byUserId",
+                            "at"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "key",
+                      "control",
+                      "subject",
+                      "figures",
+                      "state",
+                      "changedSinceResponse",
+                      "responses"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "code",
+                "title",
+                "status",
+                "needs",
+                "counts",
+                "flags"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "resolved": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "control": {
+                  "type": "string"
+                },
+                "lastAction": {
+                  "type": "string"
+                },
+                "responses": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "EXPLAIN",
+                          "SIGN_OFF",
+                          "REOPEN"
+                        ]
+                      },
+                      "note": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "figures": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "byUserId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "action",
+                      "note",
+                      "figures",
+                      "byUserId",
+                      "at"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "key",
+                "control",
+                "lastAction",
+                "responses"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Flags no longer raised, with their history"
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "notices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "companyId",
+          "year",
+          "settings",
+          "controls",
+          "resolved",
+          "complete",
+          "notices"
+        ],
+        "additionalProperties": false
+      },
       "ProfitAndLoss": {
         "type": "object",
         "properties": {
@@ -52161,6 +53098,7 @@
                 "accounts:rules-manage",
                 "accounts:rule-verify",
                 "accounts:prepare",
+                "accounts:review",
                 "assets:read",
                 "assets:manage"
               ]
@@ -58732,6 +59670,134 @@
           "limits",
           "source",
           "reason"
+        ],
+        "additionalProperties": false
+      },
+      "SetReviewSettingsRequest": {
+        "type": "object",
+        "properties": {
+          "unexplainedAmount": {
+            "type": "string",
+            "pattern": "^\\d{1,15}(\\.\\d{1,4})?$",
+            "nullable": true
+          },
+          "materialAmount": {
+            "type": "string",
+            "pattern": "^\\d{1,15}(\\.\\d{1,4})?$",
+            "nullable": true
+          },
+          "materialPercent": {
+            "type": "string",
+            "pattern": "^\\d{1,5}(\\.\\d{1,2})?$",
+            "nullable": true
+          },
+          "oldItemDays": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  30
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  60
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  90
+                ]
+              }
+            ],
+            "nullable": true
+          },
+          "evidenceAmount": {
+            "type": "string",
+            "pattern": "^\\d{1,15}(\\.\\d{1,4})?$",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "ExplainReviewFlagRequest": {
+        "type": "object",
+        "properties": {
+          "yearStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "flagKey": {
+            "type": "string",
+            "pattern": "^RC-0[1-9]:[a-z_]+:[A-Za-z0-9_.:-]{1,200}$"
+          },
+          "note": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "yearStart",
+          "flagKey",
+          "note"
+        ],
+        "additionalProperties": false
+      },
+      "SignOffReviewFlagRequest": {
+        "type": "object",
+        "properties": {
+          "yearStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "flagKey": {
+            "type": "string",
+            "pattern": "^RC-0[1-9]:[a-z_]+:[A-Za-z0-9_.:-]{1,200}$"
+          },
+          "note": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "yearStart",
+          "flagKey"
+        ],
+        "additionalProperties": false
+      },
+      "ReopenReviewFlagRequest": {
+        "type": "object",
+        "properties": {
+          "yearStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "flagKey": {
+            "type": "string",
+            "pattern": "^RC-0[1-9]:[a-z_]+:[A-Za-z0-9_.:-]{1,200}$"
+          },
+          "note": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "yearStart",
+          "flagKey",
+          "note"
         ],
         "additionalProperties": false
       },

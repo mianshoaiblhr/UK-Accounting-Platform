@@ -25,6 +25,7 @@ import { YearEndApiService, YearEndCloseController, YearEndController } from './
 import { DirectorsController } from './accounts/directors.controller';
 import { AccountsDocumentController } from './accounts/accounts-document.controller';
 import { SizeTestController } from './accounts/size-test.controller';
+import { ReviewController } from './accounts/review.controller';
 import { ReferenceController } from './master-data/reference.controller';
 import { FeatureFlagsController } from './features/features.controller';
 import { ProblemFilter } from './common/problem.filter';
@@ -50,7 +51,7 @@ import { OrganisationsController } from './organisations/organisations.controlle
 import { OrganisationsService } from './organisations/organisations.service';
 import { LedgerController } from './ledger/ledger.controller';
 import { LedgerApiService } from './ledger/ledger.service';
-import { AccountsDocumentService, CashFlowService, SizeTestService, SizeThresholdService, DirectorService, YearEndCloseService, YearEndService, DepreciationService, FixedAssetService, FrameworkService, StandardsService, StatutoryReportService, AlertService, DrillDownService, ReportService, BankService, CashService, ReconciliationService, PurchasesService, SalesService, VatService, AccountService, FxSettingsService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, RateService, RevaluationService } from '@uk/accounting';
+import { AccountsDocumentService, CashFlowService, ReviewService, SizeTestService, SizeThresholdService, DirectorService, YearEndCloseService, YearEndService, DepreciationService, FixedAssetService, FrameworkService, StandardsService, StatutoryReportService, AlertService, DrillDownService, ReportService, BankService, CashService, ReconciliationService, PurchasesService, SalesService, VatService, AccountService, FxSettingsService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, RateService, RevaluationService } from '@uk/accounting';
 
 @Module({})
 export class AppModule {
@@ -59,7 +60,7 @@ export class AppModule {
       module: AppModule,
       imports: [InfraModule.forRoot(config), AuditModule, AuthModule],
       controllers: [HealthController, OrganisationsController, CompaniesController, DocumentsController, FoldersController, EvidenceController, JobsController,
-        TasksController, PracticesController, FeatureFlagsController, MasterDataController, ReferenceController, WorkflowsController, NotificationsController, IntegrationsController, AiController, LedgerController, ContactRolesController, VatController, SalesController, PurchasesController, CashController, BankController, ReportsController, StandardsController, FixedAssetsController, YearEndController, YearEndCloseController, DirectorsController, AccountsDocumentController, SizeTestController],
+        TasksController, PracticesController, FeatureFlagsController, MasterDataController, ReferenceController, WorkflowsController, NotificationsController, IntegrationsController, AiController, LedgerController, ContactRolesController, VatController, SalesController, PurchasesController, CashController, BankController, ReportsController, StandardsController, FixedAssetsController, YearEndController, YearEndCloseController, DirectorsController, AccountsDocumentController, SizeTestController, ReviewController],
       providers: [
         { provide: PostingService, useFactory: () => new PostingService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: AccountService, useFactory: () => new AccountService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
@@ -74,6 +75,8 @@ export class AppModule {
         { provide: FixedAssetService, inject: [PostingService], useFactory: (posting: PostingService) => new FixedAssetService(posting, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: YearEndService, inject: [PostingService], useFactory: (posting: PostingService) => new YearEndService(posting, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) }, YearEndApiService,
         { provide: AccountsDocumentService, inject: [StatutoryReportService, DirectorService, YearEndService], useFactory: (st: StatutoryReportService, d: DirectorService, ye: YearEndService) => new AccountsDocumentService(st, d, ye, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
+        { provide: ReviewService, inject: [StatutoryReportService, SalesService, PurchasesService, DirectorService], useFactory: (st: StatutoryReportService, sa: SalesService, pu: PurchasesService, d: DirectorService) =>
+          new ReviewService(st, sa, pu, d, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: SizeThresholdService, useFactory: () => new SizeThresholdService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: SizeTestService, inject: [StatutoryReportService], useFactory: (st: StatutoryReportService) => new SizeTestService(st) },
         { provide: DirectorService, useFactory: () => new DirectorService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },

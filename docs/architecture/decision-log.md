@@ -272,6 +272,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-065 | Draft wording packs reviewed by the product owner | On 2026-10-20 the product owner (Shoaib, DEC-056) said "I have gone through documents" after receiving the DEC-064 packs and `v2-draft-wording-review.xlsx`. Recorded as the product owner's read of the drafts. No verdicts were returned and nothing is verified: the packs stay UNVERIFIED until a holder of `accounts:rule-verify` who is not the importer verifies them in the platform (DEC-052) |
 | DEC-066 | V2-M5b split again; how V2-M5b is built: the size test (delegated, DEC-019; recorded before code) | V2-M5b is the size test only; the cash flow statement moves to V2-M5c. Company-law size thresholds are organisation data in effective-dated threshold sets, each with a source, created UNVERIFIED and verified by a second person, never seeded. The test of a framework year applies the "two or more of three" conditions and the two-consecutive-years rule per class, with turnover adjusted for a year that is not twelve months, and reports whether the entity size chosen for the year fits. Amends DEC-063's split only; DEC-063 is not rewritten |
 | DEC-067 | How V2-M5c is built: the cash flow statement (delegated, DEC-019; recorded before code) | The cash flow statement is version content verified with the version (DEC-052): cash-flow classes (operating, investing, financing, with their captions), a map from V1 reporting lines to the classes or to cash, the sizes that need the statement and its captions. The figures come from the ledger by one exact identity: the change in cash equals minus the movement of every other account; investing and financing classes show their cash part (from journals that move cash), their non-cash part is an operating adjustment, and operating classes show their whole movement (the indirect method). The statement always reconciles to the ledger's cash; an account the map does not place is shown as unclassified and keeps the statement incomplete |
+| DEC-068 | V2-M6 split; how V2-M6a is built: review flags and the review checklist (delegated, DEC-019; recorded before code) | V2-M6a raises the nine review flags of a framework year live from the ledger, the registers and the documents, with the firm's review settings as versioned data; each flag is explained by a preparer and signed off by a second person holding a new `accounts:review` permission, and an explanation lapses when the flag's figures change. V2-M6b is the 14-step year-end workflow; V2-M6c partner review, client approval, locking and the filing-ready package |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -722,4 +723,49 @@ These choices refine DEC-036. None of them is a tax rule; the VAT arithmetic is 
   * the direct method;
   * the notes on cash flows (analysis of net debt);
   * any real FRS 102 classification or caption (never seeded; the named accountant enters and verifies them).
+
+### DEC-068 - V2-M6 split; how V2-M6a is built: review flags and the review checklist (delegated, DEC-019; recorded before code)
+* **Split:** each part has its own specification before code and its own acceptance package.
+  * **V2-M6a:** the review flags (V2-RC-01 to V2-RC-09) and the review checklist (V2-MOD-14).
+  * **V2-M6b:** the 14-step year-end workflow, each step showing its status from the existing control (V2-MOD-01, V2-YE-01 to V2-YE-11).
+  * **V2-M6c:** partner review, client approval, locking the year, and the filing-ready package (V2-MOD-15, V2-YE-12 to V2-YE-14), which is refused while anything it uses is unverified (V2-ARC-04).
+* **Flags are computed, not stored.** Each time the checklist is read, the flags of a framework year are raised from the ledger (closing journals left out), the registers and the documents. Each flag has a stable key (control, subject, id) and its figures.
+* **The nine controls:**
+
+  | Control | Raised when |
+  |---|---|
+  | RC-01 Unexplained movements | A manual or control-adjustment journal in the year totals at least the setting |
+  | RC-02 Material changes | A statutory line fed by accounts, or the retained profit, moves from the comparative by at least the amount setting and, when the comparative is not zero, by at least the percentage setting |
+  | RC-03 Unusual balances | A P&L account's net for the year is on the wrong side (income in debit, expense in credit) |
+  | RC-04 Negative balances | At the year end an asset account (other than accumulated depreciation) is in credit, or a liability account is in debit |
+  | RC-05 Old receivables and payables | A customer or supplier has amounts overdue by more than the setting (30, 60 or 90 days) at the year end, from the V1 aged reports |
+  | RC-06 Director loan movements | A director or shareholder loan account carries any V2-M4 flag for the year |
+  | RC-07 Suspense | A suspense account has a balance at the year end |
+  | RC-08 Unreconciled bank | An active bank account has no signed reconciliation at the year end, or one with a difference; or a bank ledger account with a balance has no bank account set up |
+  | RC-09 Missing supporting evidence | A manual or control-adjustment journal, an approved purchase bill or a cash payment in the year of at least the setting has no live evidence link to a document |
+
+* **Settings are the firm's, not law.** They are versioned per company, set with a reason by `accounts:prepare`:
+  * the unexplained-movement amount;
+  * the material-change amount and percentage;
+  * the old-item days;
+  * the evidence amount.
+
+  A control whose setting is not set is reported as NOT_EVALUATED and is never treated as passed (as in DEC-062).
+* **Responses are kept per flag, written once and never changed.**
+  * **EXPLAIN:** a preparer, with `accounts:prepare`, explains the flag in a note.
+  * **SIGN_OFF:** a reviewer accepts the explanation. The reviewer holds the new `accounts:review` permission and is not the person who explained it.
+  * **REOPEN:** a reviewer, with `accounts:review`, sends a flag back.
+  * Each response stores the flag's figures. An explanation or sign-off whose figures no longer match the flag lapses, and the flag is OPEN again and marked as changed.
+  * The database repeats the second-person rule.
+  * A flag that is no longer raised keeps its history, listed as resolved.
+* **The checklist:** the nine controls, each CLEAR, OPEN, EXPLAINED, SIGNED_OFF or NOT_EVALUATED, with its flags, their figures, drill-down and responses. It is complete when every control is evaluated and every flag is signed off.
+* **Permissions:**
+  * `accounts:review` is new, held by owner, admin and partner.
+  * Reading needs `ledger:read`.
+  * The routes sit behind `accounts.production`.
+* **Not in V2-M6a:**
+  * the year-end steps (V2-M6b);
+  * approval, locking and the package (V2-M6c);
+  * per-account materiality;
+  * analytical review beyond the comparative.
 

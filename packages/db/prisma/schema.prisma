@@ -2650,3 +2650,39 @@ model CashFlowMapEntry {
   @@map("cash_flow_map_entry")
 }
 
+/// V2-M6a (DEC-068): the firm's review settings for a company, one row per change; the latest applies. Not legal values.
+model ReviewSetting {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId    String   @map("organisation_id") @db.Uuid
+  companyId         String   @map("company_id") @db.Uuid
+  unexplainedAmount Decimal? @map("unexplained_amount") @db.Decimal(19, 4)
+  materialAmount    Decimal? @map("material_amount") @db.Decimal(19, 4)
+  materialPercent   Decimal? @map("material_percent") @db.Decimal(7, 2)
+  oldItemDays       Int?     @map("old_item_days")
+  evidenceAmount    Decimal? @map("evidence_amount") @db.Decimal(19, 4)
+  reason            String
+  setByUserId       String   @map("set_by_user_id") @db.Uuid
+  setAt             DateTime @default(now()) @map("set_at") @db.Timestamptz(3)
+
+  @@index([organisationId, companyId, setAt], map: "rs_company_idx")
+  @@map("review_setting")
+}
+
+/// V2-M6a (DEC-068): a response to a review flag of a framework year (explain, sign off, reopen), written once with the flag's figures.
+model ReviewFlagResponse {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  companyId      String   @map("company_id") @db.Uuid
+  frameworkId    String   @map("framework_id") @db.Uuid
+  flagKey        String   @map("flag_key")
+  control        String
+  action         String
+  note           String?
+  figures        Json
+  byUserId       String   @map("by_user_id") @db.Uuid
+  at             DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(3)
+
+  @@index([organisationId, frameworkId, flagKey, at], map: "rfr_flag_idx")
+  @@map("review_flag_response")
+}
+

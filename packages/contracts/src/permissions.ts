@@ -24,7 +24,7 @@ export const PERMISSIONS = [
   'purchases:read', 'purchases:manage', 'purchases:approve',
   'cash:read', 'cash:record',
   'bank:read', 'bank:manage', 'bank:transfer', 'bank:reconcile',
-  'accounts:rules-manage', 'accounts:rule-verify', 'accounts:prepare',
+  'accounts:rules-manage', 'accounts:rule-verify', 'accounts:prepare', 'accounts:review',
   'assets:read', 'assets:manage',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
@@ -57,7 +57,7 @@ export const PERMISSION_SCOPE: Record<Permission, PermissionScope> = {
   'purchases:read': 'COMPANY', 'purchases:manage': 'COMPANY', 'purchases:approve': 'COMPANY',
   'cash:read': 'COMPANY', 'cash:record': 'COMPANY',
   'bank:read': 'COMPANY', 'bank:manage': 'COMPANY', 'bank:transfer': 'COMPANY', 'bank:reconcile': 'COMPANY',
-  'accounts:rules-manage': 'COMPANY', 'accounts:rule-verify': 'COMPANY', 'accounts:prepare': 'COMPANY',
+  'accounts:rules-manage': 'COMPANY', 'accounts:rule-verify': 'COMPANY', 'accounts:prepare': 'COMPANY', 'accounts:review': 'COMPANY',
   'assets:read': 'COMPANY', 'assets:manage': 'COMPANY',
 };
 export const permissionsOfScope = (...scopes: PermissionScope[]): Permission[] => PERMISSIONS.filter((p) => scopes.includes(PERMISSION_SCOPE[p]));

@@ -585,3 +585,20 @@ export const CashFlowStatement = z.object({
   problems: z.array(z.string()), notices: z.array(z.string()),
 });
 
+// ───────────── V2-M6a review flags and the review checklist (DEC-068) ─────────────
+const reviewSettingsRow = z.object({ id: uuid, unexplainedAmount: amt.nullable(), materialAmount: amt.nullable(), materialPercent: amt.nullable(), oldItemDays: z.number().int().nullable(),
+  evidenceAmount: amt.nullable(), reason: z.string(), setByUserId: uuid, setAt: ts });
+export const ReviewSettings = z.object({ current: reviewSettingsRow.nullable(), history: z.array(reviewSettingsRow), notice: z.string() });
+const reviewResponse = z.object({ action: z.enum(['EXPLAIN', 'SIGN_OFF', 'REOPEN']), note: z.string().nullable(), figures: z.record(z.unknown()), byUserId: uuid, at: ts });
+const reviewControlCode = z.enum(['RC-01', 'RC-02', 'RC-03', 'RC-04', 'RC-05', 'RC-06', 'RC-07', 'RC-08', 'RC-09']);
+export const ReviewChecklist = z.object({
+  companyId: uuid, year: z.object({ start: day, end: day, frameworkId: uuid }), settings: reviewSettingsRow.nullable(),
+  controls: z.array(z.object({ code: reviewControlCode, title: z.string(), status: z.enum(['CLEAR', 'OPEN', 'EXPLAINED', 'SIGNED_OFF', 'NOT_EVALUATED']), needs: z.array(z.string()),
+    counts: z.object({ open: z.number().int(), explained: z.number().int(), signedOff: z.number().int() }),
+    flags: z.array(z.object({ key: z.string(), control: reviewControlCode, subject: z.object({ type: z.string(), id: z.string(), label: z.string() }), figures: z.record(z.unknown()),
+      drilldown: z.record(z.string().nullable()).optional(), state: z.enum(['OPEN', 'EXPLAINED', 'SIGNED_OFF']), changedSinceResponse: z.boolean().describe('An explanation or sign-off lapsed because the figures changed'),
+      responses: z.array(reviewResponse) })) })),
+  resolved: z.array(z.object({ key: z.string(), control: z.string(), lastAction: z.string(), responses: z.array(reviewResponse) })).describe('Flags no longer raised, with their history'),
+  complete: z.boolean(), notices: z.array(z.string()),
+});
+
