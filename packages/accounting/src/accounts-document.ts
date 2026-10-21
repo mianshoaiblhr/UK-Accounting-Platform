@@ -30,7 +30,7 @@ const humanise = (code: string) => code.charAt(0) + code.slice(1).toLowerCase().
 const names = (list: string[]) => (list.length <= 1 ? list.join('') : `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}`);
 type Ctx = { organisationId: string; companyId: string; actor: PostingActor };
 /** V2-M6c (DEC-070): the fingerprint of an accounts document - the SHA-256 of its canonical JSON without the notices; none while it is not complete. */
-export function accountsFingerprint(doc: { complete: boolean; notices?: unknown }): string | null {
+export function accountsFingerprint(doc: { complete: boolean; notices?: unknown; [k: string]: unknown }): string | null {
   if (!doc.complete) return null;
   const { notices: _notices, ...rest } = JSON.parse(JSON.stringify(doc)) as Record<string, unknown>;
   return createHash('sha256').update(canonicalJson(rest)).digest('hex');
