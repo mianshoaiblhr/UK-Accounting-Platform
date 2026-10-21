@@ -2,7 +2,7 @@
 
 Source requirements: docs/specifications/V2_Accounts_Production_FRS102_FRS105.md, 00_MASTER_IMPLEMENTATION_MANIFEST.md, decision-log.md DEC-051..054.
 
-Generated from `v2-compliance-matrix.json` at commit `23b366f`; CI: <https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39660002000>. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
+Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
 
 ## Plan history (append-only)
 
@@ -33,6 +33,7 @@ Generated from `v2-compliance-matrix.json` at commit `23b366f`; CI: <https://git
 * v2.3a (2026-10-21): V2-M6c evidence recorded (CI 39608223030 and CodeQL 39608218001 green on 120a949; clean clone 2302 tests, e2e 21/21, OpenAPI drift 0; the first push 0731c7e failed typecheck and was fixed in 120a949).
 * v2.4 (2026-10-21, V2-M7a, DEC-071): the year-end workspace screens built (workflow, review, accounts, approval and package) and proven in a real browser. V2-DOD-01 stays Missing until V2-M7b and V2-M7c; its note records the slice. No status change.
 * v2.4a (2026-10-21): V2-M7a evidence recorded (CI 39660002000 and CodeQL 39660002001 green on 23b366f; clean clone 2302 tests, e2e 26/26, OpenAPI drift 0).
+* v2.4b (2026-10-21, DEC-072): engineering's data check (a review, not verification). Goldens 905 checks with 0 differences; 44 journals balanced; V2-M1 statements recomputed; 610 evidence paths present; thresholds confirmed against secondary sources; one wording finding (NOTE.CREDLONG). No status change.
 
 ## Summary
 

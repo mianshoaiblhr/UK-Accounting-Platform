@@ -276,6 +276,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-069 | How V2-M6b is built: the 14-step year-end workflow (delegated, DEC-019; recorded before code) | Each step of the specification's year-end workflow reads its status from an existing control (bookkeeping cut-off, the review checklist's flags, the fixed-asset and year-end registers, the VAT workpaper, the accounts document and the size test). A preparer signs a step off with a note only when its control is ready and the steps it depends on are done; a sign-off lapses when its control stops being ready. Steps 12 to 14 are V2-M6c |
 | DEC-070 | How V2-M6c is built: partner review, client approval, locking and the filing-ready package (delegated, DEC-019; recorded before code) | A fingerprint of the accounts document ties the three records together. A second person holding `accounts:review` records the partner review of the accounts as signed off at step 11. The client's approval is recorded against the document's approval facts (the approving director and the date), with evidence. It needs a live partner review and every period of the year closed, and it locks the periods and the year's framework. Facts, flag responses and workflow sign-offs for the year are then refused. A preparer generates the filing-ready package once; it is refused unless the approved figures are unchanged and every rule it uses was verified by a second person (V2-ARC-04) |
 | DEC-071 | V2-M7 split; how V2-M7a is built: the year-end workspace screens (delegated, DEC-019; recorded before code) | V2-M7 is split like V1-M9: V2-M7a the year-end workspace (the 14-step workflow, the review checklist, the accounts document with its facts and size test, partner review, client approval and the package); V2-M7b the registers (fixed assets, year-end adjustments, the closing journal, director loan accounts and related parties); V2-M7c the reporting framework (standards and their content, verification, thresholds, the framework of each year, the statutory preview and cash flow). Each screen shows what the API returns and computes nothing; each slice is proven in a real browser (DEC-050) |
+| DEC-072 | Engineering's data check of V2, a review not a verification (2026-10-21) | At the product owner's request ("Check data yourself"), engineering checked the V2 data: the goldens re-derived, invariants recomputed, the draft size thresholds against the reachable sources, every reference in the wording packs, and the matrix evidence. One finding (NOTE.CREDLONG discloses after one year where the requirement cited is after five years and secured debts), five items to check, one limitation; nothing in the platform changed. Under DEC-052 this verifies nothing: engineering wrote the data |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -901,3 +902,39 @@ These choices refine DEC-036. None of them is a tax rule; the VAT arithmetic is 
   The acceptance lists each screen with its routes.
 * **Matrix:** V2-DOD-01 stays Missing until all three slices are accepted, and moves to Implemented with V2-M7c. Each slice records its screens against the row.
 * **Not in V2-M7a:** the registers (V2-M7b); the reporting framework (V2-M7c); a rendered PDF or iXBRL of the accounts (V3).
+
+### DEC-072 - Engineering's data check of V2, a review not a verification (2026-10-21)
+* **Request:** on 2026-10-21 the product owner said "Check data yourself". Engineering checked the V2 data itself. The result is `docs/architecture/v2-data-check.xlsx`, written by `scripts/docs/gen_v2_data_check.py`, which re-runs every check and fails on any difference.
+* **What was checked:**
+  * **The goldens:** all 11 workbook generators were re-run. They cover 905 checks, with 0 differences.
+  * **Invariants no author can bend:**
+    * all 44 hand-written journals in the goldens balance;
+    * the V2-M1 statements were recomputed line by line, as Excel formulas, in both layouts;
+    * cross-checks: profit and net assets agree across the layouts, net assets equal capital and reserves, and the profit and loss reserve moves by the year's profit.
+  * **The draft size thresholds:**
+    * the nine 2025 and the nine 2016 limits;
+    * the 6 April 2025 commencement with no early adoption;
+    * the 2025 transitional rule;
+    * two of the three conditions;
+    * "not more than", and the code's comparison;
+    * the turnover adjustment for a year that is not twelve months.
+
+    These were checked against the ACCA, ICAEW and PwC summaries reachable through web search. legislation.gov.uk and the professional bodies' pages could not be fetched from the build environment.
+  * **Every statutory or standard reference in the two wording packs**, with engineering's reading of each.
+  * **All 610 evidence paths** named by the V1 and V2 matrices: all exist.
+* **Findings:**
+  * **F1, a finding:** NOTE.CREDLONG (FRS 102 1A pack) discloses creditors due after more than one year. The Sch 1 requirement it cites is debts payable after more than five years, and debts on which security is given.
+  * **Items to check:**
+    * **F2:** "(including directors)" in the employees note;
+    * **F3:** the financial instruments policy asserts only basic instruments for every client;
+    * **F4:** the citations for the micro-entity statement and the compliance statement;
+    * **F5:** no wording for political donations and expenditure over £2,000 (Sch 7);
+    * **F7:** the balance sheet total is right only if every asset line holds assets.
+  * **F6, not confirmed:** the SI 2015/980 transitional treatment behind `priorYearOnFirst` on the 2016 set.
+  * **F8, a limitation:** groups and LLPs are not modelled.
+* **Status:**
+  * this is a **review**: engineering wrote this data, so under DEC-052 it verifies nothing;
+  * nothing in the platform changed;
+  * the findings go to the named accountant (DEC-056);
+  * content changes follow the DEC-064 pattern: a new draft, imported UNVERIFIED and verified by a second person;
+  * no case law is relied on.

@@ -915,6 +915,7 @@
     "v2.3 (2026-10-21, V2-M6c, DEC-070): partner review, client approval, locking and the filing-ready package built. Missing -> Implemented: V2-MOD-15, V2-YE-12 to V2-YE-14. Partially -> Implemented: V2-MOD-01 (all 14 steps) and V2-ARC-04 (the filing-ready refusal of unverified rules; the mechanism only, no real rule verified). V2-TEST-01 gains the V2-M6c golden. The V2-M6b golden is revised for steps 12 to 14, with the revision recorded in the file. Proven on synthetic data.",
     "v2.3a (2026-10-21): V2-M6c evidence recorded (CI 39608223030 and CodeQL 39608218001 green on 120a949; clean clone 2302 tests, e2e 21/21, OpenAPI drift 0; the first push 0731c7e failed typecheck and was fixed in 120a949).",
     "v2.4 (2026-10-21, V2-M7a, DEC-071): the year-end workspace screens built (workflow, review, accounts, approval and package) and proven in a real browser. V2-DOD-01 stays Missing until V2-M7b and V2-M7c; its note records the slice. No status change.",
-    "v2.4a (2026-10-21): V2-M7a evidence recorded (CI 39660002000 and CodeQL 39660002001 green on 23b366f; clean clone 2302 tests, e2e 26/26, OpenAPI drift 0)."
+    "v2.4a (2026-10-21): V2-M7a evidence recorded (CI 39660002000 and CodeQL 39660002001 green on 23b366f; clean clone 2302 tests, e2e 26/26, OpenAPI drift 0).",
+    "v2.4b (2026-10-21, DEC-072): engineering's data check (a review, not verification). Goldens 905 checks with 0 differences; 44 journals balanced; V2-M1 statements recomputed; 610 evidence paths present; thresholds confirmed against secondary sources; one wording finding (NOTE.CREDLONG). No status change."
   ]
 }
