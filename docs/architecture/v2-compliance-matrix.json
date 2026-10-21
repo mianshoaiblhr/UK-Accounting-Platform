@@ -72,7 +72,7 @@
     },
     "V2-M6": {
       "title": "Year-end workflow, review, approval, filing-ready package",
-      "status": "SPLIT (DEC-068): V2-M6a review flags and the review checklist built 2026-10-21 (v2-m6a-acceptance.md); V2-M6b the 14-step year-end workflow and V2-M6c approval, locking and the filing-ready package next",
+      "status": "SPLIT (DEC-068): V2-M6a review flags and the review checklist ACCEPTED under the delegation 2026-10-21 (v2-m6a-acceptance.md; CI 39575388052 on 8646c7e); V2-M6b the 14-step year-end workflow and V2-M6c approval, locking and the filing-ready package next",
       "owner": "Engineering",
       "depends": [
         "V2-M5"
@@ -908,6 +908,7 @@
     "v1.9a (2026-10-20): V2-M5b evidence recorded (CI 39362598139 and CodeQL 39362598131 green on 2277775; clean clone 2204 tests, e2e 21/21, OpenAPI drift 0).",
     "v2.0 (2026-10-20, V2-M5c, DEC-067): the cash flow statement built (indirect method from the ledger; classes, map and captions as version content verified with it). Missing -> Implemented: V2-OUT-03. Partially -> Implemented: V2-MOD-13. V2-TEST-01 gains the V2-M5c golden. Proven on synthetic content only; no real FRS 102 classification or caption is entered or verified (DEC-052).",
     "v2.0a (2026-10-20): V2-M5c evidence recorded (CI 39396072282 and CodeQL 39396072207 green on 8fcee2c; clean clone 2225 tests, e2e 21/21, OpenAPI drift 0).",
-    "v2.1 (2026-10-21, V2-M6a, DEC-068): V2-M6 split; review flags and the review checklist built. Missing -> Implemented: V2-RC-01 to V2-RC-09, V2-MOD-14. V2-TEST-01 gains the V2-M6a golden. Proven on synthetic data."
+    "v2.1 (2026-10-21, V2-M6a, DEC-068): V2-M6 split; review flags and the review checklist built. Missing -> Implemented: V2-RC-01 to V2-RC-09, V2-MOD-14. V2-TEST-01 gains the V2-M6a golden. Proven on synthetic data.",
+    "v2.1a (2026-10-21): V2-M6a evidence recorded (CI 39575388052 and CodeQL 39575387880 green on 8646c7e; clean clone 2256 tests, e2e 21/21, OpenAPI drift 0)."
   ]
 }

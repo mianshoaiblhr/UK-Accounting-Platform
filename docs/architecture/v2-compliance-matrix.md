@@ -2,7 +2,7 @@
 
 Source requirements: docs/specifications/V2_Accounts_Production_FRS102_FRS105.md, 00_MASTER_IMPLEMENTATION_MANIFEST.md, decision-log.md DEC-051..054.
 
-Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
+Generated from `v2-compliance-matrix.json` at commit `8646c7e`; CI: <https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39575388052>. **Statuses change only with evidence (code and passing tests); a requirement is never marked implemented because a table or flag exists.** Owners are roles, not people: *Engineering* builds, *product owner* decides scope and policy, *qualified tax reviewer* / *DPO / legal* verify rules the product cannot verify itself.
 
 ## Plan history (append-only)
 
@@ -26,6 +26,7 @@ Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence
 * v2.0 (2026-10-20, V2-M5c, DEC-067): the cash flow statement built (indirect method from the ledger; classes, map and captions as version content verified with it). Missing -> Implemented: V2-OUT-03. Partially -> Implemented: V2-MOD-13. V2-TEST-01 gains the V2-M5c golden. Proven on synthetic content only; no real FRS 102 classification or caption is entered or verified (DEC-052).
 * v2.0a (2026-10-20): V2-M5c evidence recorded (CI 39396072282 and CodeQL 39396072207 green on 8fcee2c; clean clone 2225 tests, e2e 21/21, OpenAPI drift 0).
 * v2.1 (2026-10-21, V2-M6a, DEC-068): V2-M6 split; review flags and the review checklist built. Missing -> Implemented: V2-RC-01 to V2-RC-09, V2-MOD-14. V2-TEST-01 gains the V2-M6a golden. Proven on synthetic data.
+* v2.1a (2026-10-21): V2-M6a evidence recorded (CI 39575388052 and CodeQL 39575387880 green on 8646c7e; clean clone 2256 tests, e2e 21/21, OpenAPI drift 0).
 
 ## Summary
 
@@ -47,7 +48,7 @@ Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence
 | V2-M3 | Year-end adjustments and the closing journal | ACCEPTED under the delegation (DEC-059 split): V2-M3a 2026-10-18 (v2-m3a-acceptance.md; CI 39178258465 on f735149); V2-M3b 2026-10-19 (v2-m3b-acceptance.md; CI 39181318428 on 5ab27b8) | Engineering | V2-M2 | 5 | 5 |
 | V2-M4 | Director balances and related parties | ACCEPTED under the delegation 2026-10-19 (v2-m4-acceptance.md; CI 39251457210 on 87c8956) | Engineering | V2-M3 | 2 | 2 |
 | V2-M5 | Statements and notes (FRS 105, FRS 102 1A, FRS 102) | ACCEPTED under the delegation (DEC-063, DEC-066 split): V2-M5a the accounts document 2026-10-19 (v2-m5a-acceptance.md; CI 39271179477 on 1492ff6); V2-M5b the size test 2026-10-20 (v2-m5b-acceptance.md; CI 39362598139 on 2277775); V2-M5c the cash flow statement 2026-10-20 (v2-m5c-acceptance.md; CI 39396072282 on 8fcee2c) | Engineering (build); qualified accountant (rules) | V2-M1; V2-M3; V2-M4 | 8 | 8 |
-| V2-M6 | Year-end workflow, review, approval, filing-ready package | SPLIT (DEC-068): V2-M6a review flags and the review checklist built 2026-10-21 (v2-m6a-acceptance.md); V2-M6b the 14-step year-end workflow and V2-M6c approval, locking and the filing-ready package next | Engineering | V2-M5 | 26 | 10 |
+| V2-M6 | Year-end workflow, review, approval, filing-ready package | SPLIT (DEC-068): V2-M6a review flags and the review checklist ACCEPTED under the delegation 2026-10-21 (v2-m6a-acceptance.md; CI 39575388052 on 8646c7e); V2-M6b the 14-step year-end workflow and V2-M6c approval, locking and the filing-ready package next | Engineering | V2-M5 | 26 | 10 |
 | V2-M7 | Screens behind accounts.production | planned | Engineering (front end) | each API milestone | 1 | 0 |
 
 A milestone is accepted on an acceptance package: commit SHA, CI run (every job), test results, migrations, security/permission checks, matrix changes, known limitations (DEC-007). Under the delegation (DEC-019, DEC-051) engineering records acceptance; rules stay unverified until the named accountant verifies them (DEC-052).
@@ -154,7 +155,7 @@ A milestone is accepted on an acceptance package: commit SHA, CI run (every job)
 
 ## V2-M6 - Year-end workflow, review, approval, filing-ready package
 
-**Status:** SPLIT (DEC-068): V2-M6a review flags and the review checklist built 2026-10-21 (v2-m6a-acceptance.md); V2-M6b the 14-step year-end workflow and V2-M6c approval, locking and the filing-ready package next  
+**Status:** SPLIT (DEC-068): V2-M6a review flags and the review checklist ACCEPTED under the delegation 2026-10-21 (v2-m6a-acceptance.md; CI 39575388052 on 8646c7e); V2-M6b the 14-step year-end workflow and V2-M6c approval, locking and the filing-ready package next  
 **Owner:** Engineering  
 **Depends on:** V2-M5  
 **Acceptance:** v2-plan.md section 5h.3; v2-m6a-acceptance.md (V2-M6a)  

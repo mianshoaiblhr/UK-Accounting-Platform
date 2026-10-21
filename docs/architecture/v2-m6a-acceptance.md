@@ -1,5 +1,7 @@
 # V2 milestone V2-M6a - acceptance package (review flags and the review checklist)
 
+**Status:** ACCEPTED under the delegation on 2026-10-21 (DEC-019, DEC-051). The evidence is below.
+
 Prepared under the product owner's delegation (DEC-019, DEC-051). The split and the design are in DEC-068, recorded before code.
 
 This is milestone evidence only, **not production approval** (DEC-006). All data is synthetic. The review settings are the firm's choices, not legal values.
@@ -7,11 +9,11 @@ This is milestone evidence only, **not production approval** (DEC-006). All data
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | `@@COMMIT@@` (branch `claude/adoring-cori-mra6ze`); specification recorded before code in v2-plan section 5h and DEC-068 |
-| CI | @@CI@@ |
-| CodeQL | @@CODEQL@@ |
-| Clean clone | @@CLEAN@@ |
-| Local runs | @@LOCAL@@ |
+| Code baseline commit | `8646c7e0db1b3a63d7645738727a4f2c8ffc1f10` (branch `claude/adoring-cori-mra6ze`); specification recorded before code in v2-plan section 5h and DEC-068 |
+| CI | [run 39575388052](https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39575388052): every job green (migrations from scratch; dependency audit and secret scan; build, lint, typecheck, unit, integration, e2e; terraform; real S3 protocol and ClamAV; images) |
+| CodeQL | [run 39575387880](https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39575387880): green |
+| Clean clone | Fresh clone at 8646c7e: install, build, typecheck and lint clean; 132 test files, 2,256 tests passed; e2e 21/21; OpenAPI drift 0 |
+| Local runs | Build, typecheck and lint clean; 132 test files, 2,256 tests (one V2-M1 test that lists the system roles' accounts permissions updated on purpose for accounts:review, then passing); 2,225 before this milestone |
 
 ## 2. What V2-M6a delivers (v2-plan section 5h)
 | Part | What it is |
