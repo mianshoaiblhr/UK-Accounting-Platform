@@ -2686,3 +2686,20 @@ model ReviewFlagResponse {
   @@map("review_flag_response")
 }
 
+/// V2-M6b (DEC-069): a sign-off or reopen of one step of a framework year's year-end workflow, written once with the control's status at the time.
+model YearEndStepSignoff {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  companyId      String   @map("company_id") @db.Uuid
+  frameworkId    String   @map("framework_id") @db.Uuid
+  step           Int
+  action         String
+  note           String?
+  control        Json
+  byUserId       String   @map("by_user_id") @db.Uuid
+  at             DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(3)
+
+  @@index([organisationId, frameworkId, step, at], map: "yess_step_idx")
+  @@map("year_end_step_signoff")
+}
+

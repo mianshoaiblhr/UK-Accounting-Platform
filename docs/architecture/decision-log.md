@@ -273,6 +273,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-066 | V2-M5b split again; how V2-M5b is built: the size test (delegated, DEC-019; recorded before code) | V2-M5b is the size test only; the cash flow statement moves to V2-M5c. Company-law size thresholds are organisation data in effective-dated threshold sets, each with a source, created UNVERIFIED and verified by a second person, never seeded. The test of a framework year applies the "two or more of three" conditions and the two-consecutive-years rule per class, with turnover adjusted for a year that is not twelve months, and reports whether the entity size chosen for the year fits. Amends DEC-063's split only; DEC-063 is not rewritten |
 | DEC-067 | How V2-M5c is built: the cash flow statement (delegated, DEC-019; recorded before code) | The cash flow statement is version content verified with the version (DEC-052): cash-flow classes (operating, investing, financing, with their captions), a map from V1 reporting lines to the classes or to cash, the sizes that need the statement and its captions. The figures come from the ledger by one exact identity: the change in cash equals minus the movement of every other account; investing and financing classes show their cash part (from journals that move cash), their non-cash part is an operating adjustment, and operating classes show their whole movement (the indirect method). The statement always reconciles to the ledger's cash; an account the map does not place is shown as unclassified and keeps the statement incomplete |
 | DEC-068 | V2-M6 split; how V2-M6a is built: review flags and the review checklist (delegated, DEC-019; recorded before code) | V2-M6a raises the nine review flags of a framework year live from the ledger, the registers and the documents, with the firm's review settings as versioned data; each flag is explained by a preparer and signed off by a second person holding a new `accounts:review` permission, and an explanation lapses when the flag's figures change. V2-M6b is the 14-step year-end workflow; V2-M6c partner review, client approval, locking and the filing-ready package |
+| DEC-069 | How V2-M6b is built: the 14-step year-end workflow (delegated, DEC-019; recorded before code) | Each step of the specification's year-end workflow reads its status from an existing control (bookkeeping cut-off, the review checklist's flags, the fixed-asset and year-end registers, the VAT workpaper, the accounts document and the size test). A preparer signs a step off with a note only when its control is ready and the steps it depends on are done; a sign-off lapses when its control stops being ready. Steps 12 to 14 are V2-M6c |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -768,4 +769,48 @@ These choices refine DEC-036. None of them is a tax rule; the VAT arithmetic is 
   * approval, locking and the package (V2-M6c);
   * per-account materiality;
   * analytical review beyond the comparative.
+
+### DEC-069 - How V2-M6b is built: the 14-step year-end workflow (delegated, DEC-019; recorded before code)
+* **Steps and their controls:** each control is READY, ATTENTION (with what needs doing) or NOT_APPLICABLE.
+
+  | Step | Control |
+  |---|---|
+  | 1 Lock/confirm period | The year's accounting periods cover it without gaps; no draft sales or purchase documents and no pending journal requests are dated in it. The periods themselves are locked at approval (V2-M6c), because the year-end adjustments still post into them |
+  | 2 Bank reconciliation | Review control RC-08 is CLEAR or SIGNED_OFF |
+  | 3 Receivables review | The customer flags of RC-05 are none or all signed off, and RC-05 is evaluated |
+  | 4 Payables review | The supplier flags of RC-05 are none or all signed off, and RC-05 is evaluated |
+  | 5 Fixed asset review | The V2-M2 register reconciles to the ledger at the year end, and when any asset is active, a live depreciation run as at the year end exists |
+  | 6 Accrual/prepayment review | The V2-M3a register reconciles to the ledger at the year end |
+  | 7 Director balances | RC-06 is CLEAR or SIGNED_OFF |
+  | 8 VAT reconciliation | NOT_APPLICABLE when the company is not VAT registered; otherwise the year's VAT workpaper reconciliation has no unexplained difference |
+  | 9 Suspense clearance | RC-07 is CLEAR or SIGNED_OFF |
+  | 10 Review adjustments | The review checklist (V2-M6a) is complete |
+  | 11 Generate accounts | The accounts document is complete (V2-M5a) and the size test is verified and fits (V2-M5b) |
+  | 12 to 14 | Partner review, client approval and the filing-ready package: V2-M6c |
+
+* **Order:**
+  * Step 1 comes first.
+  * Steps 2 to 9 may be done in any order after it.
+  * Step 10 needs steps 1 to 9.
+  * Step 11 needs step 10.
+  * Steps 12, 13 and 14 follow in order (V2-M6c).
+* **Sign-off:** a preparer with `accounts:prepare` signs a step off with an optional note.
+  * Only when its control is READY or NOT_APPLICABLE and every step it depends on is DONE.
+  * The sign-off stores the control's status and summary.
+  * A step is reopened with a reason.
+  * Rows are written once. The database checks the step number, the year and the note on a reopen.
+* **State of a step:**
+  * LATER: steps 12 to 14 until V2-M6c;
+  * DONE: signed off and its control still ready;
+  * LAPSED: signed off, but its control is no longer ready;
+  * BLOCKED: a step it depends on is not DONE;
+  * TODO: its control is ready;
+  * ATTENTION: otherwise.
+
+  The current step is the first that is not DONE.
+* **Second-person control stays where it already is:**
+  * the review flags' sign-off (`accounts:review`, DEC-068);
+  * the standard versions and thresholds (`accounts:rule-verify`, DEC-052);
+  * partner review and client approval (V2-M6c).
+* **Not in V2-M6b:** steps 12 to 14, locking, approval and the package (V2-M6c); screens (V2-M7).
 

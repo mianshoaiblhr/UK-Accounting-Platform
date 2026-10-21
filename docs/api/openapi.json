@@ -26823,6 +26823,239 @@
         }
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/year-end-workflow": {
+      "get": {
+        "operationId": "YearEndWorkflow_get",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "yearStart",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workflow",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YearEndWorkflow"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The 14-step year-end workflow of a framework year: each step with its control read from an existing control, its dependencies, its state and its sign-offs; the current step",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/year-end-workflow/sign-off": {
+      "post": {
+        "operationId": "YearEndWorkflow_signOff",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed off",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YearEndWorkflow"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:prepare"
+        ],
+        "summary": "Sign off a step (accounts:prepare) when its control is ready and the steps it depends on are done; the sign-off lapses if the control stops being ready",
+        "description": "**Requires permission:** `accounts:prepare`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignOffYearEndStepRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/year-end-workflow/reopen": {
+      "post": {
+        "operationId": "YearEndWorkflow_reopen",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reopened",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YearEndWorkflow"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:prepare"
+        ],
+        "summary": "Reopen a signed-off step with a reason (accounts:prepare)",
+        "description": "**Requires permission:** `accounts:prepare`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReopenYearEndStepRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -43673,6 +43906,163 @@
         ],
         "additionalProperties": false
       },
+      "YearEndWorkflow": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "year": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "end": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "frameworkId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "start",
+              "end",
+              "frameworkId"
+            ],
+            "additionalProperties": false
+          },
+          "current": {
+            "type": "integer",
+            "nullable": true,
+            "description": "The first step that is not DONE"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "step": {
+                  "type": "integer"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "dependsOn": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                "control": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "READY",
+                        "ATTENTION",
+                        "NOT_APPLICABLE"
+                      ],
+                      "nullable": true
+                    },
+                    "summary": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "summary",
+                    "details"
+                  ],
+                  "additionalProperties": false
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "LATER",
+                    "DONE",
+                    "LAPSED",
+                    "BLOCKED",
+                    "TODO",
+                    "ATTENTION"
+                  ]
+                },
+                "signOffs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "SIGN_OFF",
+                          "REOPEN"
+                        ]
+                      },
+                      "note": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "control": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "byUserId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "action",
+                      "note",
+                      "control",
+                      "byUserId",
+                      "at"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "step",
+                "title",
+                "dependsOn",
+                "control",
+                "state",
+                "signOffs"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "notices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "companyId",
+          "year",
+          "current",
+          "steps",
+          "notices"
+        ],
+        "additionalProperties": false
+      },
       "ProfitAndLoss": {
         "type": "object",
         "properties": {
@@ -59797,6 +60187,55 @@
         "required": [
           "yearStart",
           "flagKey",
+          "note"
+        ],
+        "additionalProperties": false
+      },
+      "SignOffYearEndStepRequest": {
+        "type": "object",
+        "properties": {
+          "yearStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "step": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 14
+          },
+          "note": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "yearStart",
+          "step"
+        ],
+        "additionalProperties": false
+      },
+      "ReopenYearEndStepRequest": {
+        "type": "object",
+        "properties": {
+          "yearStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "step": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 14
+          },
+          "note": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "yearStart",
+          "step",
           "note"
         ],
         "additionalProperties": false

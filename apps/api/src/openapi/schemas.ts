@@ -602,3 +602,13 @@ export const ReviewChecklist = z.object({
   complete: z.boolean(), notices: z.array(z.string()),
 });
 
+// ───────────── V2-M6b the 14-step year-end workflow (DEC-069) ─────────────
+export const YearEndWorkflow = z.object({
+  companyId: uuid, year: z.object({ start: day, end: day, frameworkId: uuid }), current: z.number().int().nullable().describe('The first step that is not DONE'),
+  steps: z.array(z.object({ step: z.number().int(), title: z.string(), dependsOn: z.array(z.number().int()),
+    control: z.object({ status: z.enum(['READY', 'ATTENTION', 'NOT_APPLICABLE']).nullable(), summary: z.string(), details: z.record(z.unknown()) }),
+    state: z.enum(['LATER', 'DONE', 'LAPSED', 'BLOCKED', 'TODO', 'ATTENTION']),
+    signOffs: z.array(z.object({ action: z.enum(['SIGN_OFF', 'REOPEN']), note: z.string().nullable(), control: z.record(z.unknown()), byUserId: uuid, at: ts })) })),
+  notices: z.array(z.string()),
+});
+

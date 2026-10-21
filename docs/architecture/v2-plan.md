@@ -14,7 +14,7 @@ Everything in V1 plan section 1, plus: only the PostingService writes the ledger
 | V2-M3 | Year-end adjustments: accruals, prepayments, deferred income, provisions with reversal; the year-end closing journal to retained earnings | split (DEC-059): **V2-M3a built** (2026-10-18; `v2-m3a-acceptance.md`); **V2-M3b built** (2026-10-19; `v2-m3b-acceptance.md`) | Engineering | V2-M2 |
 | V2-M4 | Director and shareholder balances (director loan movements flagged), related parties | **built** (2026-10-19; `v2-m4-acceptance.md`) | Engineering | V2-M3 |
 | V2-M5 | Statements and notes: FRS 105 micro-entity, then FRS 102 Section 1A, then full FRS 102; policies, comparatives, directors' sections; the size test | **accepted** (all three parts, under the delegation); split (DEC-063, DEC-066): **V2-M5a built** (2026-10-19; `v2-m5a-acceptance.md`); **V2-M5b built** (2026-10-20; `v2-m5b-acceptance.md`, the size test, section 5f); **V2-M5c built** (2026-10-20; `v2-m5c-acceptance.md`, the cash flow statement, section 5g) | Engineering; the named accountant | V2-M1, V2-M3, V2-M4 |
-| V2-M6 | Year-end workflow (the specification's 14 steps), review checklist and flags, partner review, client approval, filing-ready package | split (DEC-068): **V2-M6a built** (2026-10-21; `v2-m6a-acceptance.md`, review flags and checklist, section 5h); V2-M6b the year-end workflow; V2-M6c approval, locking and the filing-ready package | Engineering | V2-M5 |
+| V2-M6 | Year-end workflow (the specification's 14 steps), review checklist and flags, partner review, client approval, filing-ready package | split (DEC-068): **V2-M6a built** (2026-10-21; `v2-m6a-acceptance.md`, review flags and checklist, section 5h); **V2-M6b built** (2026-10-21; `v2-m6b-acceptance.md`, the 14-step year-end workflow, section 5i); V2-M6c approval, locking and the filing-ready package | Engineering | V2-M5 |
 | V2-M7 | Screens behind `accounts.production` | planned | Engineering (front end) | each API milestone |
 
 ## 3. V2-M1 - Reporting framework (specification; DEC-052, DEC-053)
@@ -438,6 +438,57 @@ Recorded before code. V2-M6 is split (DEC-068): V2-M6a review flags and the chec
   * responses written once and the second-person rule in the database;
   * permissions and tenancy;
   * an architecture test (the checklist reads; it writes only responses and settings);
+  * CI green, clean clone, the matrix rows moved with evidence.
+
+## 5i. V2-M6b - The 14-step year-end workflow (specification; DEC-069)
+Recorded before code.
+
+### 5i.1 Data (one migration, additive)
+| Object | Holds | Rules |
+|---|---|---|
+| `year_end_step_signoff` | Per framework year and step (1 to 14): action SIGN_OFF or REOPEN, note, the control's status and summary at the time, who and when | Written once; the step is 1 to 14; a reopen has a reason; the framework year belongs to the company |
+
+### 5i.2 The workflow (DEC-069)
+* **Each step:** number, title, control (status, summary, details), dependencies, state, sign-offs.
+* **Controls:** each reads an existing service; nothing is recomputed here:
+  * the periods and documents;
+  * the review checklist;
+  * the fixed-asset and year-end registers;
+  * the VAT workpaper;
+  * the accounts document;
+  * the size test.
+* **States:** LATER, DONE, LAPSED, BLOCKED, TODO and ATTENTION, as in DEC-069. The current step is the first that is not DONE.
+
+### 5i.3 API (behind `accounts.production`)
+* `year-end-workflow?yearStart` GET (`ledger:read`).
+* `year-end-workflow/sign-off` POST (`accounts:prepare`): the year, the step and an optional note. Refused when the step is LATER, its control is not ready, or a step it depends on is not done.
+* `year-end-workflow/reopen` POST (`accounts:prepare`): the year, the step and a reason. Refused when the step is not signed off.
+* All in OpenAPI and audited.
+
+### 5i.4 Acceptance
+* **Golden (DEC-054):** `tests/golden/v2-m6b-workflow.json`, written by hand before the code. The workbook re-derives every state from the scenario with an independent implementation of the rules.
+  * **The company:** a synthetic company's year with:
+    * a draft invoice;
+    * a bank balance raising RC-08;
+    * a fixed asset without a year-end depreciation run;
+    * no review settings;
+    * no VAT registration.
+  * **Phases, each with the 14 expected states:**
+    1. the start;
+    2. the cut-off fixed and step 1 signed off;
+    3. settings set, the asset depreciated and the bank flag signed off;
+    4. steps 2 to 11 signed off in order;
+    5. a new draft bill making step 1 lapse.
+  * **Refusals:**
+    * a step signed off before it is ready;
+    * a step signed off before its dependencies are done;
+    * steps 12 to 14;
+    * a reopen without a sign-off.
+* **Tests:**
+  * the state rules on every combination (unit);
+  * rows written once (database);
+  * permissions and tenancy;
+  * an architecture test (the workflow reads; it writes only its sign-offs);
   * CI green, clean clone, the matrix rows moved with evidence.
 
 ## 6. Legal and standards context

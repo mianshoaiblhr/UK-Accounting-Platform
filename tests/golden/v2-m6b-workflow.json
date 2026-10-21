@@ -1,0 +1,48 @@
+{
+  "id": "V2-M6B-GOLDEN-01",
+  "purpose": "DEC-054 golden for V2-M6b (DEC-069): the 14-step year-end workflow of a synthetic company's 2026 year through five phases. For each phase the control status and the state of every step were written by hand before the code, from the rules of DEC-069 and the scenario's facts.",
+  "disclaimer": "SYNTHETIC. The company, amounts, thresholds and review settings are test choices.",
+  "linesFrom": "tests/golden/v2-m1-micro-synthetic.json",
+  "company": { "name": "Golden Workflow Ltd", "customer": "Year End Customer Ltd", "supplier": "Year End Supplier Ltd" },
+  "year": { "yearStart": "2026-01-01", "yearEnd": "2026-12-31", "entitySize": "MICRO" },
+  "setup": {
+    "shares": { "date": "2026-01-02", "amount": "10000.00" },
+    "asset": { "class": { "code": "OFFICE", "name": "Office equipment", "costAccount": "0030", "depreciationAccount": "0031", "expenseAccount": "6900", "disposalAccount": "6950",
+      "method": "STRAIGHT_LINE", "lifeMonths": 36, "convention": "MONTHLY" }, "description": "Laptops", "acquiredOn": "2026-01-01", "cost": "3600.00" },
+    "draftInvoice": { "issueDate": "2026-12-01", "dueDate": "2026-12-31", "account": "4000", "amount": "1200.00" },
+    "thresholds": { "label": "Synthetic limits", "effectiveFrom": "2020-01-01", "priorYearOnFirst": false,
+      "limits": { "MICRO": { "turnover": "100000.00", "balanceSheetTotal": "50000.00", "employees": 10 }, "SMALL": { "turnover": "500000.00", "balanceSheetTotal": "250000.00", "employees": 50 }, "MEDIUM": { "turnover": "2000000.00", "balanceSheetTotal": "1000000.00", "employees": 250 } } },
+    "facts": [["employees.average", "1"], ["size.priorStatus", "FIRST_YEAR"]],
+    "settings": { "unexplainedAmount": "1000000.00", "materialAmount": "1000000.00", "materialPercent": "10.00", "oldItemDays": 90, "evidenceAmount": "1000000.00" },
+    "depreciationRun": { "asAt": "2026-12-31", "total": "1200.00" },
+    "draftBill": { "issueDate": "2026-12-15", "dueDate": "2027-01-14", "account": "6310", "amount": "300.00" }
+  },
+  "workings": {
+    "bank": "Bank 1200: 10,000 shares received less 3,600 laptops = 6,400 at the year end, with no bank account set up, so review control RC-08 raises it until it is explained and signed off.",
+    "assets": "The laptops are added from the cash payment (a linked addition), so the register reconciles to the ledger; the step needs a live depreciation run as at 31.12.2026 because an asset is active: 3,600 / 36 x 12 = 1,200.",
+    "cutoff": "Step 1: the draft invoice (and later the draft bill) is dated in the year. The single 2026 period covers the year.",
+    "settings": "Without review settings RC-05 is not evaluated, so steps 3 and 4 need attention. The settings chosen are large enough that nothing else is raised in a first year whose comparative is all zero.",
+    "accounts": "Step 11 reads the accounts document (a verified synthetic version without wording rules: complete) and the size test (a verified synthetic threshold set, the turnover line P.T, one employee, the company's first year): MICRO, and MICRO is chosen, so it fits.",
+    "lapse": "Phase 5: a draft bill dated 15.12.2026 makes step 1's control need attention again; its sign-off lapses. Steps 2 to 11 keep their own controls and stay DONE. Step 9 reopened: its dependency (step 1) is not DONE, so it is BLOCKED."
+  },
+  "phases": [
+    { "name": "start", "current": 1,
+      "steps": [["ATTENTION", "ATTENTION"], ["ATTENTION", "BLOCKED"], ["ATTENTION", "BLOCKED"], ["ATTENTION", "BLOCKED"], ["ATTENTION", "BLOCKED"], ["READY", "BLOCKED"], ["READY", "BLOCKED"],
+        ["NOT_APPLICABLE", "BLOCKED"], ["READY", "BLOCKED"], ["ATTENTION", "BLOCKED"], ["READY", "BLOCKED"], [null, "LATER"], [null, "LATER"], [null, "LATER"]] },
+    { "name": "cut-off fixed, step 1 signed off", "current": 2,
+      "steps": [["READY", "DONE"], ["ATTENTION", "ATTENTION"], ["ATTENTION", "ATTENTION"], ["ATTENTION", "ATTENTION"], ["ATTENTION", "ATTENTION"], ["READY", "TODO"], ["READY", "TODO"],
+        ["NOT_APPLICABLE", "TODO"], ["READY", "TODO"], ["ATTENTION", "BLOCKED"], ["READY", "BLOCKED"], [null, "LATER"], [null, "LATER"], [null, "LATER"]],
+      "refusals": [{ "step": 2, "code": "step_not_ready" }, { "step": 10, "code": "step_blocked" }] },
+    { "name": "settings, depreciation, bank flag signed off", "current": 2,
+      "steps": [["READY", "DONE"], ["READY", "TODO"], ["READY", "TODO"], ["READY", "TODO"], ["READY", "TODO"], ["READY", "TODO"], ["READY", "TODO"],
+        ["NOT_APPLICABLE", "TODO"], ["READY", "TODO"], ["READY", "BLOCKED"], ["READY", "BLOCKED"], [null, "LATER"], [null, "LATER"], [null, "LATER"]] },
+    { "name": "steps 2 to 11 signed off", "current": 12,
+      "steps": [["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"],
+        ["NOT_APPLICABLE", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], [null, "LATER"], [null, "LATER"], [null, "LATER"]],
+      "refusals": [{ "step": 12, "code": "step_later" }] },
+    { "name": "a draft bill makes step 1 lapse; step 9 reopened", "current": 1,
+      "steps": [["ATTENTION", "LAPSED"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"],
+        ["NOT_APPLICABLE", "DONE"], ["READY", "BLOCKED"], ["READY", "DONE"], ["READY", "DONE"], [null, "LATER"], [null, "LATER"], [null, "LATER"]],
+      "refusals": [{ "step": 9, "code": "step_not_signed_off", "action": "reopen" }] }
+  ]
+}
