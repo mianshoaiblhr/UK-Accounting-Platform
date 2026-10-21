@@ -17,7 +17,7 @@ export const useWorkspace = () => {
   return w;
 };
 
-const SECTIONS: { href: string; label: string; permission: string }[] = [
+const SECTIONS: { href: string; label: string; permission: string; feature?: string }[] = [
   { href: '', label: 'Dashboard', permission: 'ledger:read' },
   { href: '/accounts', label: 'Accounts', permission: 'account:read' },
   { href: '/journals', label: 'Journals', permission: 'ledger:read' },
@@ -29,9 +29,12 @@ const SECTIONS: { href: string; label: string; permission: string }[] = [
   { href: '/purchases', label: 'Purchases', permission: 'purchases:read' },
   { href: '/bank', label: 'Bank', permission: 'bank:read' },
   { href: '/cash', label: 'Cash', permission: 'cash:read' },
+  // V2-M7 (DEC-071): accounts production, shown only while its feature is on
+  { href: '/year-end', label: 'Year end', permission: 'ledger:read', feature: 'accounts.production' },
 ];
 
-export function WorkspaceShell({ children, need }: { children: ReactNode; need?: string }) {
+/** `feature`: a further feature the page needs besides bookkeeping (V2 screens: `accounts.production`); while it is off the page says so and renders nothing that calls the API. */
+export function WorkspaceShell({ children, need, feature }: { children: ReactNode; need?: string; feature?: string }) {
   const { orgId, companyId } = useParams<{ orgId: string; companyId: string }>();
   const router = useRouter();
   const pathname = usePathname();
@@ -72,11 +75,16 @@ export function WorkspaceShell({ children, need }: { children: ReactNode; need?:
         ) : (
           <>
             <nav className="tabs" aria-label="Bookkeeping">
-              {SECTIONS.filter((s) => can(s.permission)).map((s) => (
-                <Link key={s.href} href={`${base}${s.href}`} aria-current={pathname === `${base}${s.href}` ? 'page' : undefined}>{s.label}</Link>
+              {SECTIONS.filter((s) => can(s.permission) && (!s.feature || state.access.features[s.feature] === true)).map((s) => (
+                <Link key={s.href} href={`${base}${s.href}`} aria-current={pathname === `${base}${s.href}` || (s.href === '/year-end' && pathname.startsWith(`${base}/year-end`)) ? 'page' : undefined}>{s.label}</Link>
               ))}
             </nav>
-            {need && !can(need) ? <div className="card"><p className="muted" role="status">You do not have access to this section ({need}).</p></div> : children}
+            {feature && state.access.features[feature] !== true ? (
+              <div className="card" role="status" data-testid="feature-off">
+                <h1>Accounts production is not enabled</h1>
+                <p>These screens are not enabled for this organisation yet. An owner can turn on the &quot;{feature}&quot; feature.</p>
+              </div>
+            ) : need && !can(need) ? <div className="card"><p className="muted" role="status">You do not have access to this section ({need}).</p></div> : children}
           </>
         )}
       </main>
