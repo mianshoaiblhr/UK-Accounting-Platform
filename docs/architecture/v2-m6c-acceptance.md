@@ -1,5 +1,7 @@
 # V2 milestone V2-M6c - acceptance package (partner review, client approval, locking and the filing-ready package)
 
+**Status:** ACCEPTED under the delegation on 2026-10-21 (DEC-019, DEC-051). The evidence is below.
+
 Prepared under the product owner's delegation (DEC-019, DEC-051). The design is in DEC-070, recorded before code.
 
 This is milestone evidence only, **not production approval** (DEC-006). All data is synthetic. The filing-ready package is **not a filing**: iXBRL tagging and submission to Companies House are V3.
@@ -7,11 +9,11 @@ This is milestone evidence only, **not production approval** (DEC-006). All data
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | @@COMMIT@@ (branch `claude/adoring-cori-mra6ze`); specification recorded before code in v2-plan section 5j and DEC-070 |
-| CI | @@CI@@ |
-| CodeQL | @@CODEQL@@ |
-| Clean clone | @@CLEAN@@ |
-| Local runs | @@LOCAL@@ |
+| Code baseline commit | `120a94950d119b3d0296b4c1eccb0b57dffd189a`. The first push, `0731c7e`, failed CI at typecheck: a new unit test passed a richer object than the fingerprint function's parameter type allowed. The fix in 120a949 types that input as any document; nothing else changed (branch `claude/adoring-cori-mra6ze`); specification recorded before code in v2-plan section 5j and DEC-070 |
+| CI | [run 39608223030](https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39608223030): every job green (migrations from scratch; dependency audit and secret scan; build, lint, typecheck, unit, integration, e2e; terraform; real S3 protocol and ClamAV; images). The earlier [run 39607558538](https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39607558538) on 0731c7e failed only at `pnpm typecheck`; every other job passed or was skipped after it |
+| CodeQL | [run 39608218001](https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39608218001): green |
+| Clean clone | Fresh clone at 120a949: install, build, typecheck and lint clean; 138 test files, 2,302 tests passed; e2e 21/21; OpenAPI drift 0 |
+| Local runs | Build, typecheck and lint clean; 2,302 tests (2,275 before this milestone). The first full local run failed one V2-M1 database test that locked a year directly as a fixture, which DEC-070 now refuses. That test now asserts the refusal and arranges the lock with triggers bypassed |
 
 ## 2. What V2-M6c delivers (v2-plan section 5j)
 | Part | What it is |
