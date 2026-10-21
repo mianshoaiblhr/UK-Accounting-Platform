@@ -590,6 +590,14 @@ export class FrameworkService {
     return frameworkView(after, v);
   }
 
+  /** V2-M6c (DEC-070): locks the framework of a year as its client approval is recorded (the database allows it only then); never unlocked. */
+  async lock(tx: Tx, a: { organisationId: string; companyId: string; frameworkId: string; actorUserId: string; approvalId: string }) {
+    const upd = await tx.companyReportingFramework.updateMany({ where: { id: a.frameworkId, companyId: a.companyId, lockedAt: null }, data: { lockedAt: new Date() } });
+    if (upd.count !== 1) throw conflict('The reporting framework of this year is already locked', 'framework_locked');
+    await this.audit(tx, { action: 'accounts.framework_locked', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actorUserId, entityType: 'company_reporting_framework',
+      entityId: a.frameworkId, before: { locked: false }, after: { locked: true }, metadata: { approvalId: a.approvalId } });
+  }
+
   async listOverrides(tx: Tx, companyId: string, q: { versionId?: string; includeEnded: boolean }) {
     const rows = await tx.statutoryAccountOverride.findMany({ where: { companyId, ...(q.versionId ? { versionId: q.versionId } : {}), ...(q.includeEnded ? {} : { endedAt: null }) }, orderBy: { createdAt: 'asc' } });
     return { items: rows.map(overrideView) };

@@ -27056,6 +27056,389 @@
         }
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/accounts-approval": {
+      "get": {
+        "operationId": "AccountsApproval_get",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "yearStart",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Approval status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountsApproval"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The partner reviews, the client approval and the package of a framework year against the fingerprint of the accounts as they stand (DEC-070)",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/accounts-approval/partner-review": {
+      "post": {
+        "operationId": "AccountsApproval_review",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reviewed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountsApproval"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:review"
+        ],
+        "summary": "Record the partner review of the accounts (accounts:review; a second person to the one who signed off step 11); it lapses when the accounts change",
+        "description": "**Requires permission:** `accounts:review`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerReviewRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/accounts-approval/client-approval": {
+      "post": {
+        "operationId": "AccountsApproval_approve",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Approved and locked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountsApproval"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:review",
+          "period:lock"
+        ],
+        "summary": "Record the client's approval (accounts:review and period:lock): the director and date the accounts state, with evidence; locks the year's periods and framework",
+        "description": "**Requires permission:** `accounts:review`, `period:lock`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientApprovalRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/accounts-package": {
+      "get": {
+        "operationId": "AccountsApproval_package",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "yearStart",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Package",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountsPackage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The filing-ready package of a framework year",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "AccountsApproval_generate",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Generated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountsPackage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Accounts production"
+        ],
+        "x-required-feature": "accounts.production",
+        "x-required-permissions": [
+          "accounts:prepare"
+        ],
+        "summary": "Generate the filing-ready package once (accounts:prepare); refused unless the year is approved, the accounts unchanged and every rule verified by a second person (V2-ARC-04). Not a filing",
+        "description": "**Requires permission:** `accounts:prepare`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeneratePackageRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -43936,6 +44319,15 @@
             ],
             "additionalProperties": false
           },
+          "locked": {
+            "type": "boolean",
+            "description": "The client approved the accounts; the year is locked (DEC-070)"
+          },
+          "fingerprint": {
+            "type": "string",
+            "nullable": true,
+            "description": "SHA-256 of the accounts document; null while it is not complete"
+          },
           "current": {
             "type": "integer",
             "nullable": true,
@@ -43988,7 +44380,6 @@
                 "state": {
                   "type": "string",
                   "enum": [
-                    "LATER",
                     "DONE",
                     "LAPSED",
                     "BLOCKED",
@@ -44057,9 +44448,297 @@
         "required": [
           "companyId",
           "year",
+          "locked",
+          "fingerprint",
           "current",
           "steps",
           "notices"
+        ],
+        "additionalProperties": false
+      },
+      "AccountsApproval": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "year": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "end": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "frameworkId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "start",
+              "end",
+              "frameworkId"
+            ],
+            "additionalProperties": false
+          },
+          "fingerprint": {
+            "type": "string",
+            "nullable": true
+          },
+          "locked": {
+            "type": "boolean"
+          },
+          "lockedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "step": {
+                  "type": "integer"
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "DONE",
+                    "LAPSED",
+                    "BLOCKED",
+                    "TODO",
+                    "ATTENTION"
+                  ]
+                },
+                "control": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "READY",
+                        "ATTENTION",
+                        "NOT_APPLICABLE"
+                      ],
+                      "nullable": true
+                    },
+                    "summary": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "summary",
+                    "details"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "step",
+                "state",
+                "control"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "partnerReviews": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "fingerprint": {
+                  "type": "string"
+                },
+                "live": {
+                  "type": "boolean",
+                  "description": "The latest review, of the accounts as they stand"
+                },
+                "note": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "byUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "fingerprint",
+                "live",
+                "note",
+                "byUserId",
+                "at"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "clientApproval": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "fingerprint": {
+                "type": "string"
+              },
+              "current": {
+                "type": "boolean"
+              },
+              "directorContactId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "approvedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "evidenceDocumentId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "note": {
+                "type": "string",
+                "nullable": true
+              },
+              "byUserId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "id",
+              "fingerprint",
+              "current",
+              "directorContactId",
+              "approvedOn",
+              "evidenceDocumentId",
+              "note",
+              "byUserId",
+              "at"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "package": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "fingerprint": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string"
+              },
+              "byUserId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "id",
+              "fingerprint",
+              "sha256",
+              "byUserId",
+              "at"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          }
+        },
+        "required": [
+          "companyId",
+          "year",
+          "fingerprint",
+          "locked",
+          "lockedAt",
+          "steps",
+          "partnerReviews",
+          "clientApproval",
+          "package"
+        ],
+        "additionalProperties": false
+      },
+      "AccountsPackage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "yearStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "frameworkId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fingerprint": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "byUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "content": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "The package (format uk-accounts-package/1): the approved accounts document, the framework and its verification, the size test, the partner review and the client approval"
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "yearStart",
+          "frameworkId",
+          "fingerprint",
+          "sha256",
+          "byUserId",
+          "at",
+          "content"
         ],
         "additionalProperties": false
       },
@@ -60237,6 +60916,70 @@
           "yearStart",
           "step",
           "note"
+        ],
+        "additionalProperties": false
+      },
+      "PartnerReviewRequest": {
+        "type": "object",
+        "properties": {
+          "yearStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "note": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "yearStart"
+        ],
+        "additionalProperties": false
+      },
+      "ClientApprovalRequest": {
+        "type": "object",
+        "properties": {
+          "yearStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "directorContactId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "approvedOn": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "evidenceDocumentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "note": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "yearStart",
+          "directorContactId",
+          "approvedOn",
+          "evidenceDocumentId"
+        ],
+        "additionalProperties": false
+      },
+      "GeneratePackageRequest": {
+        "type": "object",
+        "properties": {
+          "yearStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          }
+        },
+        "required": [
+          "yearStart"
         ],
         "additionalProperties": false
       },

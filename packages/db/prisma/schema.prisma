@@ -2703,3 +2703,38 @@ model YearEndStepSignoff {
   @@map("year_end_step_signoff")
 }
 
+/// V2-M6c (DEC-070): a partner review or the client's approval of a framework year's accounts, with the accounts' fingerprint; written once.
+model AccountsApproval {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId     String    @map("organisation_id") @db.Uuid
+  companyId          String    @map("company_id") @db.Uuid
+  frameworkId        String    @map("framework_id") @db.Uuid
+  stage              String
+  fingerprint        String
+  note               String?
+  directorContactId  String?   @map("director_contact_id") @db.Uuid
+  approvedOn         DateTime? @map("approved_on") @db.Date
+  evidenceDocumentId String?   @map("evidence_document_id") @db.Uuid
+  byUserId           String    @map("by_user_id") @db.Uuid
+  at                 DateTime  @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(3)
+
+  @@index([organisationId, frameworkId, stage, at], map: "aap_framework_idx")
+  @@map("accounts_approval")
+}
+
+/// V2-M6c (DEC-070): the filing-ready package of an approved year; one per year, written once (V2-ARC-04).
+model AccountsPackage {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  companyId      String   @map("company_id") @db.Uuid
+  frameworkId    String   @map("framework_id") @db.Uuid
+  fingerprint    String
+  sha256         String
+  content        Json
+  byUserId       String   @map("by_user_id") @db.Uuid
+  at             DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(3)
+
+  @@unique([organisationId, frameworkId], map: "apk_framework_key")
+  @@map("accounts_package")
+}
+

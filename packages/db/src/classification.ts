@@ -102,6 +102,8 @@ export const TABLE_PROTECTION: Record<string, { protection: Protection; why: str
   provision: { protection: 'RLS+APP', why: 'V2-M3a provisions with their accounts and basis: written once (no UPDATE privilege, trigger).' },
   provision_movement: { protection: 'RLS+APP', why: 'V2-M3a provision movements: dated in order, never below zero, the latest reversed once (trigger).' },
   year_end_step_signoff: { protection: 'RLS+APP', why: 'V2-M6b sign-offs and reopens of the year-end workflow steps (DEC-069); written once.' },
+  accounts_approval: { protection: 'RLS+APP', why: 'V2-M6c partner reviews and client approvals of a year\'s accounts with their fingerprint (DEC-070); written once; the approval locks the year.' },
+  accounts_package: { protection: 'RLS+APP', why: 'V2-M6c filing-ready package of an approved year (DEC-070, V2-ARC-04); one per year, written once.' },
   review_setting: { protection: 'RLS+APP', why: 'V2-M6a the firm\'s review settings per company, versioned rows (DEC-068); written once.' },
   review_flag_response: { protection: 'RLS+APP', why: 'V2-M6a responses to review flags: explained, signed off by a second person, reopened (DEC-068); written once (trigger checks the second person).' },
   cash_flow_class: { protection: 'RLS+APP', why: 'V2-M5c cash-flow classes, version content verified with the version (DEC-052, DEC-067); frozen once verified (trigger).' },

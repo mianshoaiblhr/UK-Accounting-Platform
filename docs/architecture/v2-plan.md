@@ -14,7 +14,7 @@ Everything in V1 plan section 1, plus: only the PostingService writes the ledger
 | V2-M3 | Year-end adjustments: accruals, prepayments, deferred income, provisions with reversal; the year-end closing journal to retained earnings | split (DEC-059): **V2-M3a built** (2026-10-18; `v2-m3a-acceptance.md`); **V2-M3b built** (2026-10-19; `v2-m3b-acceptance.md`) | Engineering | V2-M2 |
 | V2-M4 | Director and shareholder balances (director loan movements flagged), related parties | **built** (2026-10-19; `v2-m4-acceptance.md`) | Engineering | V2-M3 |
 | V2-M5 | Statements and notes: FRS 105 micro-entity, then FRS 102 Section 1A, then full FRS 102; policies, comparatives, directors' sections; the size test | **accepted** (all three parts, under the delegation); split (DEC-063, DEC-066): **V2-M5a built** (2026-10-19; `v2-m5a-acceptance.md`); **V2-M5b built** (2026-10-20; `v2-m5b-acceptance.md`, the size test, section 5f); **V2-M5c built** (2026-10-20; `v2-m5c-acceptance.md`, the cash flow statement, section 5g) | Engineering; the named accountant | V2-M1, V2-M3, V2-M4 |
-| V2-M6 | Year-end workflow (the specification's 14 steps), review checklist and flags, partner review, client approval, filing-ready package | split (DEC-068): **V2-M6a built** (2026-10-21; `v2-m6a-acceptance.md`, review flags and checklist, section 5h); **V2-M6b built** (2026-10-21; `v2-m6b-acceptance.md`, the 14-step year-end workflow, section 5i); V2-M6c approval, locking and the filing-ready package | Engineering | V2-M5 |
+| V2-M6 | Year-end workflow (the specification's 14 steps), review checklist and flags, partner review, client approval, filing-ready package | split (DEC-068): **V2-M6a built** (2026-10-21; `v2-m6a-acceptance.md`, review flags and checklist, section 5h); **V2-M6b built** (2026-10-21; `v2-m6b-acceptance.md`, the 14-step year-end workflow, section 5i); **V2-M6c built** (2026-10-21; `v2-m6c-acceptance.md`, partner review, client approval, locking and the filing-ready package, section 5j, DEC-070) | Engineering | V2-M5 |
 | V2-M7 | Screens behind `accounts.production` | planned | Engineering (front end) | each API milestone |
 
 ## 3. V2-M1 - Reporting framework (specification; DEC-052, DEC-053)
@@ -490,6 +490,74 @@ Recorded before code.
   * permissions and tenancy;
   * an architecture test (the workflow reads; it writes only its sign-offs);
   * CI green, clean clone, the matrix rows moved with evidence.
+
+## 5j. V2-M6c - Partner review, client approval, locking and the filing-ready package (specification; DEC-070)
+Recorded before code.
+
+### 5j.1 Data (one migration, additive)
+| Object | Holds | Rules (service and database) |
+|---|---|---|
+| `accounts_approval` | Per framework year: stage (PARTNER_REVIEW or CLIENT_APPROVAL), the document fingerprint, note, who and when. For a client approval also the approving director, the approval date and the evidence document | Written once. A partner review's author is not the person whose live sign-off of step 11 generated the accounts. A client approval needs an earlier partner review of the same fingerprint, has the director, date and evidence, and is one per year. Nothing is added to a locked year |
+| `accounts_package` | Per framework year (one): the package (JSON), its SHA-256, the fingerprint, who and when | Written once; only for a locked framework with a client approval of the same fingerprint and a version verified by a second person |
+| `company_reporting_framework.locked_at` (exists, V2-M1) | Set at client approval | The database sets it only when a client approval of the framework exists; a locked framework never changes |
+| Year locks | Triggers on `accounts_fact`, `review_flag_response` and `year_end_step_signoff` | Refuse rows for a locked framework year |
+| Period lock | A trigger on `accounting_period` | Refuses leaving LOCKED while a locked framework year overlaps the period |
+
+### 5j.2 The records (DEC-070)
+* **Fingerprint:** the SHA-256 of the accounts document in canonical JSON, without its notices; only while the document is complete.
+* **Partner review:**
+  * needs `accounts:review`;
+  * needs step 11 DONE;
+  * the reviewer must be a second person;
+  * it is live while the fingerprint is unchanged.
+* **Client approval:**
+  * needs `accounts:review` and `period:lock`, and a live partner review;
+  * the director and date must equal the approval facts (Companies Act 2006 s.414);
+  * the date must be after the year end and not in the future;
+  * the director must have been serving on that date;
+  * the evidence must be clean and the company's;
+  * every period of the year must be closed or locked.
+  * It locks the periods (through the period service) and the framework in the same transaction.
+* **Package:**
+  * needs `accounts:prepare`, once per year;
+  * refused unless the year is approved, the fingerprint is unchanged, the document is complete, and the version and threshold sets were verified by a second person, with the size test verified and fitting (V2-ARC-04).
+  * It is not a filing.
+* **Workflow:** steps 12 to 14 are DONE through these records; their sign-off and reopen in the workflow are refused (`step_own_record`).
+
+### 5j.3 API (behind `accounts.production`)
+* `accounts-approval?yearStart` GET (`ledger:read`): the current fingerprint, the partner reviews (live or lapsed), the client approval, whether the year is locked, and the package summary.
+* `accounts-approval/partner-review` POST (`accounts:review`): the year and an optional note.
+* `accounts-approval/client-approval` POST (`accounts:review` and `period:lock`): the year, the director, the approval date, the evidence document and an optional note.
+* `accounts-package` POST (`accounts:prepare`): the year. GET `accounts-package?yearStart` (`ledger:read`).
+* All in OpenAPI and audited.
+
+### 5j.4 Acceptance
+* **Golden (DEC-054):** `tests/golden/v2-m6c-approval.json`, written by hand before the code. The workbook re-derives every state with an independent implementation of the rules.
+  * **The company:** the V2-M6b company, with:
+    * a director;
+    * the approval facts;
+    * steps 1 to 10 signed off by the accountant and step 11 by the partner.
+  * **Phases, each with the 14 expected states:**
+    1. accounts generated;
+    2. partner review by the owner;
+    3. a fact changed, so the review lapses;
+    4. reviewed again;
+    5. the period closed and the client's approval recorded, which locks the year;
+    6. the package generated.
+  * **Refusals:**
+    * the step-11 signer as partner reviewer;
+    * approval with a lapsed review;
+    * approval while the period is open;
+    * a director or date differing from the facts;
+    * a fact, a sign-off or an unlock after approval;
+    * a second package;
+    * steps 12 to 14 through the workflow's sign-off.
+* **Tests:**
+  * the package gate and the state rules (unit);
+  * rows written once, the second-person rule, the year locks, the period lock and the package's database refusal of an unverified version (database);
+  * permissions and tenancy;
+  * an architecture test (the approval service writes only approvals and packages; it locks periods through the period service and the framework through the statutory service);
+  * CI green, clean clone, the matrix rows moved with evidence: V2-MOD-15, V2-YE-12 to V2-YE-14 and V2-MOD-01 to Implemented; V2-ARC-04 to Implemented.
 
 ## 6. Legal and standards context
 See `v2-proposal.md` section 6. The rules entered into the framework are the firm's, from the current text of FRS 102 and FRS 105 and the Companies Act 2006 accounts regulations, verified by its named accountant; engineering builds the mechanism and tests it on synthetic data.

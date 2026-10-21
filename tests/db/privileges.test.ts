@@ -80,6 +80,8 @@ const FORBIDDEN: Record<string, string[]> = {
   director_loan_threshold: ['UPDATE', 'DELETE', 'TRUNCATE'],    // versioned rows, written once
   related_party: ['DELETE', 'TRUNCATE'],
   year_end_step_signoff: ['UPDATE', 'DELETE', 'TRUNCATE'],      // written once; a reopen is a new row
+  accounts_approval: ['UPDATE', 'DELETE', 'TRUNCATE'],          // written once; a lapsed review is followed by a new one
+  accounts_package: ['UPDATE', 'DELETE', 'TRUNCATE'],           // one per year, written once
   review_setting: ['UPDATE', 'DELETE', 'TRUNCATE'],             // the latest row applies
   review_flag_response: ['UPDATE', 'DELETE', 'TRUNCATE'],       // written once; the second-person rule in a trigger
   cash_flow_class: ['DELETE', 'TRUNCATE'],                      // version content; frozen once the version is verified (trigger)

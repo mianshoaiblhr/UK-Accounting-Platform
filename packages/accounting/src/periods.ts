@@ -48,7 +48,14 @@ export class PeriodService {
         if (!a.acknowledgeSuspenseBalance) throw conflict(`The suspense account holds ${s.bal} at the period end. Clear it, or lock with acknowledgeSuspenseBalance = true and a reason`, 'suspense_balance', { balance: s.bal });
       }
     }
-    const upd = await tx.accountingPeriod.updateMany({ where: { id: p.id, status: rule.from }, data: { status: rule.to, statusChangedAt: new Date(), statusChangedByUserId: a.userId, statusReason: a.reason?.trim() ?? null } });
+    let upd: { count: number };
+    try {
+      upd = await tx.accountingPeriod.updateMany({ where: { id: p.id, status: rule.from }, data: { status: rule.to, statusChangedAt: new Date(), statusChangedByUserId: a.userId, statusReason: a.reason?.trim() ?? null } });
+    } catch (e) {
+      // V2-M6c (DEC-070): the database keeps a period of a year whose accounts the client approved locked
+      if (e instanceof Error && e.message.includes('its periods stay locked')) throw conflict('The accounts of this year are approved; its periods stay locked', 'year_approved');
+      throw e;
+    }
     if (upd.count !== 1) throw conflict('The period changed concurrently', 'invalid_period_state');
     await tx.auditEvent.createMany({ data: [auditRow({ action: AUDIT_ACTION[a.action], organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.userId, entityType: 'accounting_period', entityId: p.id,
       before: { status: p.status }, after: { status: rule.to }, reason: a.reason, metadata: { startDate: isoDay(p.startDate), endDate: isoDay(p.endDate), ...(drafts > 0 ? { acknowledgedDraftDocuments: drafts } : {}), ...(unreconciled > 0 ? { acknowledgedUnreconciledBankLines: unreconciled } : {}), ...(suspense ? { acknowledgedSuspenseBalance: suspense } : {}) } }, this.opts.captureDeviceMetadata)] });

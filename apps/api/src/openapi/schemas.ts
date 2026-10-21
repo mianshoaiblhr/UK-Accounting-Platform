@@ -603,12 +603,26 @@ export const ReviewChecklist = z.object({
 });
 
 // ───────────── V2-M6b the 14-step year-end workflow (DEC-069) ─────────────
+const stepControl = z.object({ status: z.enum(['READY', 'ATTENTION', 'NOT_APPLICABLE']).nullable(), summary: z.string(), details: z.record(z.unknown()) });
+const stepState = z.enum(['DONE', 'LAPSED', 'BLOCKED', 'TODO', 'ATTENTION']);
 export const YearEndWorkflow = z.object({
-  companyId: uuid, year: z.object({ start: day, end: day, frameworkId: uuid }), current: z.number().int().nullable().describe('The first step that is not DONE'),
+  companyId: uuid, year: z.object({ start: day, end: day, frameworkId: uuid }), locked: z.boolean().describe('The client approved the accounts; the year is locked (DEC-070)'),
+  fingerprint: z.string().nullable().describe('SHA-256 of the accounts document; null while it is not complete'), current: z.number().int().nullable().describe('The first step that is not DONE'),
   steps: z.array(z.object({ step: z.number().int(), title: z.string(), dependsOn: z.array(z.number().int()),
-    control: z.object({ status: z.enum(['READY', 'ATTENTION', 'NOT_APPLICABLE']).nullable(), summary: z.string(), details: z.record(z.unknown()) }),
-    state: z.enum(['LATER', 'DONE', 'LAPSED', 'BLOCKED', 'TODO', 'ATTENTION']),
+    control: stepControl,
+    state: stepState,
     signOffs: z.array(z.object({ action: z.enum(['SIGN_OFF', 'REOPEN']), note: z.string().nullable(), control: z.record(z.unknown()), byUserId: uuid, at: ts })) })),
   notices: z.array(z.string()),
 });
 
+// ───────────── V2-M6c partner review, client approval, locking and the filing-ready package (DEC-070) ─────────────
+const packageSummary = z.object({ id: uuid, fingerprint: z.string(), sha256: z.string(), byUserId: uuid, at: ts });
+export const AccountsApproval = z.object({
+  companyId: uuid, year: z.object({ start: day, end: day, frameworkId: uuid }), fingerprint: z.string().nullable(), locked: z.boolean(), lockedAt: ts.nullable(),
+  steps: z.array(z.object({ step: z.number().int(), state: stepState, control: stepControl })),
+  partnerReviews: z.array(z.object({ id: uuid, fingerprint: z.string(), live: z.boolean().describe('The latest review, of the accounts as they stand'), note: z.string().nullable(), byUserId: uuid, at: ts })),
+  clientApproval: z.object({ id: uuid, fingerprint: z.string(), current: z.boolean(), directorContactId: uuid, approvedOn: day, evidenceDocumentId: uuid, note: z.string().nullable(), byUserId: uuid, at: ts }).nullable(),
+  package: packageSummary.nullable(),
+});
+export const AccountsPackage = z.object({ id: uuid, companyId: uuid, yearStart: day, frameworkId: uuid, fingerprint: z.string(), sha256: z.string(), byUserId: uuid, at: ts,
+  content: z.record(z.unknown()).describe('The package (format uk-accounts-package/1): the approved accounts document, the framework and its verification, the size test, the partner review and the client approval') });

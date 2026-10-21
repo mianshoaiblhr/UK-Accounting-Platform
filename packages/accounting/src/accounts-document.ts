@@ -1,5 +1,6 @@
-import { DOCUMENT_SECTIONS, PRIOR_MET_VALUES, PRIOR_STATUS_VALUES, isEnteredFact, parseTemplate, type TemplateParagraph } from '@uk/contracts';
-import { forbidden, notFound, unprocessable } from '@uk/core';
+import { createHash } from 'node:crypto';
+import { DOCUMENT_SECTIONS, PRIOR_MET_VALUES, PRIOR_STATUS_VALUES, canonicalJson, isEnteredFact, parseTemplate, type TemplateParagraph } from '@uk/contracts';
+import { conflict, forbidden, notFound, unprocessable } from '@uk/core';
 import type { Tx } from '@uk/db';
 import { auditRow } from '@uk/platform';
 import { CashFlowService } from './cash-flow';
@@ -28,6 +29,16 @@ export const textAmount = (v: Money | string) => {
 const humanise = (code: string) => code.charAt(0) + code.slice(1).toLowerCase().replace(/_/g, ' ');
 const names = (list: string[]) => (list.length <= 1 ? list.join('') : `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}`);
 type Ctx = { organisationId: string; companyId: string; actor: PostingActor };
+/** V2-M6c (DEC-070): the fingerprint of an accounts document - the SHA-256 of its canonical JSON without the notices; none while it is not complete. */
+export function accountsFingerprint(doc: { complete: boolean; notices?: unknown }): string | null {
+  if (!doc.complete) return null;
+  const { notices: _notices, ...rest } = JSON.parse(JSON.stringify(doc)) as Record<string, unknown>;
+  return createHash('sha256').update(canonicalJson(rest)).digest('hex');
+}
+/** V2-M6c (DEC-070): nothing more is recorded for a year whose accounts the client approved. */
+export function assertYearOpen(fw: { lockedAt: Date | null }) {
+  if (fw.lockedAt) throw conflict('The accounts of this year are approved; the year is locked', 'year_approved');
+}
 type Table = { columns: string[]; rows: string[][] };
 type Block = { type: 'text'; text: string } | { type: 'table'; key: string; columns: string[]; rows: string[][] };
 
@@ -48,6 +59,7 @@ export class AccountsDocumentService {
     if (a.actor.kind !== 'USER') throw forbidden('Only a person can enter facts for the accounts', 'ai_cannot_write');
     if (!(await a.actor.can('accounts:prepare', a.companyId))) throw forbidden('Requires permission accounts:prepare', 'permission_denied');
     const fw = await this.framework(tx, a.companyId, a.yearStart);
+    assertYearOpen(fw);
     if (!isEnteredFact(a.key)) throw unprocessable('Not a known fact', 'unknown_fact');
     const value = a.value.trim();
     const bad = (why: string) => { throw unprocessable(`${a.key}: ${why}`, 'invalid_fact'); };

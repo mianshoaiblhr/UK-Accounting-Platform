@@ -1,0 +1,95 @@
+{
+  "id": "v2-m6c-approval",
+  "purpose": "DEC-054 golden for V2-M6c (DEC-070): partner review, client approval, locking and the filing-ready package of a synthetic company's 2025 year, through six phases. For each phase the control status and the state of all 14 steps, the current step and the refusals were written by hand before the code, from the rules of DEC-069 and DEC-070 and the scenario's facts.",
+  "disclaimer": "SYNTHETIC. The company, the director, the amounts, the thresholds, the review settings and the two wording rules are test choices. The wording rules are not the firm's wording; the firm's wording is verified by its named accountant (DEC-056).",
+  "linesFrom": "tests/golden/v2-m1-micro-synthetic.json",
+  "company": { "name": "Golden Approval Ltd", "customer": "Approval Customer Ltd", "supplier": "Approval Supplier Ltd", "director": "Synthetic Director", "appointedOn": "2024-06-01", "notADirector": "Synthetic Shareholder" },
+  "year": { "yearStart": "2025-01-01", "yearEnd": "2025-12-31", "entitySize": "MICRO" },
+  "setup": {
+    "shares": { "date": "2025-01-02", "amount": "10000.00" },
+    "asset": {
+      "class": { "code": "OFFICE", "name": "Office equipment", "costAccount": "0030", "depreciationAccount": "0031", "expenseAccount": "6900", "disposalAccount": "6950", "method": "STRAIGHT_LINE", "lifeMonths": 36, "convention": "MONTHLY" },
+      "description": "Laptops", "acquiredOn": "2025-01-01", "cost": "3600.00"
+    },
+    "invoice": { "issueDate": "2025-12-01", "dueDate": "2025-12-31", "account": "4000", "amount": "1200.00" },
+    "thresholds": {
+      "label": "Synthetic limits", "effectiveFrom": "2020-01-01", "priorYearOnFirst": false,
+      "limits": {
+        "MICRO": { "turnover": "100000.00", "balanceSheetTotal": "50000.00", "employees": 10 },
+        "SMALL": { "turnover": "500000.00", "balanceSheetTotal": "250000.00", "employees": 50 },
+        "MEDIUM": { "turnover": "2000000.00", "balanceSheetTotal": "1000000.00", "employees": 250 }
+      }
+    },
+    "rules": [
+      { "key": "NOTE.EMP", "section": "NOTES", "sort": 10, "title": "Employees", "appliesTo": ["MICRO"], "body": "The average number of employees during the year was {{fact:employees.average}}." },
+      { "key": "BS.APPROVAL", "section": "BALANCE_SHEET_STATEMENTS", "sort": 10, "title": "Approval", "appliesTo": ["MICRO"], "body": "The financial statements were approved by the board of directors on {{fact:approval.date}} and signed on its behalf by:\n{{fact:approval.director}}, Director" }
+    ],
+    "facts": [["employees.average", "1"], ["size.priorStatus", "FIRST_YEAR"], ["approval.date", "2026-03-16"], ["approval.director", "@director"]],
+    "settings": { "unexplainedAmount": "1000000.00", "materialAmount": "1000000.00", "materialPercent": "10.00", "oldItemDays": 90, "evidenceAmount": "1000000.00" },
+    "depreciationRun": { "asAt": "2025-12-31", "total": "1200.00" },
+    "factChange": ["employees.average", "2"],
+    "approval": { "director": "@director", "approvedOn": "2026-03-16" }
+  },
+  "workings": {
+    "base": "The V2-M6b company moved back one year, so that an approval date after the year end is not in the future: shares 10,000 and laptops 3,600 from the bank; the invoice of 1,200 approved; review settings set; the laptops depreciated 3,600 / 36 x 12 = 1,200 to 31.12.2025; the bank flag RC-08 explained by the accountant and signed off by the partner. Steps 1 to 10 are signed off by the accountant and step 11 by the partner.",
+    "wording": "Two synthetic wording rules put the employees fact and the approval facts into the document, so the fingerprint changes when a fact changes, and the accounts state the approval (Companies Act 2006 s.414).",
+    "step12": "Partner review needs accounts:review, steps 1 to 11 DONE and a second person: the partner signed off step 11, so the partner is refused; the owner reviews.",
+    "step13": "Client approval needs a live partner review, the periods closed or locked and the approval facts set. Its director and date must equal the facts; the evidence is an uploaded clean document of the company.",
+    "lock": "Approval locks the single 2025 period (CLOSED to LOCKED) and the year's framework. After it: facts, flag responses, workflow sign-offs and reviews for the year are refused (year_approved); the period cannot be unlocked (year_approved); a journal dated in the year is refused because the period is locked (period_locked).",
+    "step14": "The package needs the approval, the fingerprint unchanged since it, and every rule verified by a second person (the synthetic version and threshold set are verified in the setup). Once per year.",
+    "fingerprints": "Phases 1 and 2 share fingerprint A. The employees fact changed from 1 to 2 gives fingerprint B; the second review, the approval and the package all carry B."
+  },
+  "phases": [
+    { "name": "accounts generated: steps 1 to 11 signed off", "current": 12,
+      "steps": [["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["NOT_APPLICABLE", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "TODO"], ["ATTENTION", "BLOCKED"], ["ATTENTION", "BLOCKED"]],
+      "refusals": [
+        { "action": "partner-review", "by": "partner", "code": "second_person_required" },
+        { "action": "client-approval", "by": "partner", "code": "step_blocked" },
+        { "action": "package", "by": "accountant", "code": "step_blocked" },
+        { "action": "sign-off", "step": 12, "by": "accountant", "code": "step_own_record" }
+      ] },
+    { "name": "partner review by the owner", "current": 13,
+      "steps": [["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["NOT_APPLICABLE", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["ATTENTION", "ATTENTION"], ["ATTENTION", "BLOCKED"]],
+      "refusals": [
+        { "action": "client-approval", "by": "partner", "code": "step_not_ready" },
+        { "action": "partner-review", "by": "owner", "code": "already_reviewed" }
+      ] },
+    { "name": "a fact changed: the review lapses", "current": 12,
+      "steps": [["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["NOT_APPLICABLE", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["ATTENTION", "LAPSED"], ["ATTENTION", "BLOCKED"], ["ATTENTION", "BLOCKED"]],
+      "refusals": [
+        { "action": "client-approval", "by": "partner", "code": "step_blocked" },
+        { "action": "reopen", "step": 12, "by": "accountant", "code": "step_own_record" }
+      ] },
+    { "name": "reviewed again by the owner; the period closed", "current": 13,
+      "steps": [["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["NOT_APPLICABLE", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "TODO"], ["ATTENTION", "BLOCKED"]],
+      "refusals": [
+        { "action": "client-approval", "by": "partner", "director": "@notADirector", "code": "approval_mismatch" },
+        { "action": "client-approval", "by": "partner", "approvedOn": "2026-03-17", "code": "approval_mismatch" },
+        { "action": "client-approval", "by": "partner", "evidence": "missing", "code": "evidence_invalid" },
+        { "action": "client-approval", "by": "accountant", "status": 403 }
+      ] },
+    { "name": "the client's approval recorded: the year is locked", "current": 14,
+      "steps": [["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["NOT_APPLICABLE", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "TODO"]],
+      "periodStatus": "LOCKED",
+      "refusals": [
+        { "action": "fact", "by": "accountant", "code": "year_approved" },
+        { "action": "reopen", "step": 2, "by": "accountant", "code": "year_approved" },
+        { "action": "partner-review", "by": "owner", "code": "year_approved" },
+        { "action": "flag-reopen", "by": "partner", "code": "year_approved" },
+        { "action": "unlock", "by": "owner", "code": "year_approved" },
+        { "action": "journal", "by": "accountant", "code": "period_locked" }
+      ] },
+    { "name": "the filing-ready package generated", "current": null,
+      "steps": [["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["NOT_APPLICABLE", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"]],
+      "refusals": [
+        { "action": "package", "by": "accountant", "code": "package_exists" }
+      ] }
+  ],
+  "package": {
+    "format": "uk-accounts-package/1",
+    "approval": { "director": "Synthetic Director", "approvedOn": "2026-03-16" },
+    "wording": ["The average number of employees during the year was 2.", "The financial statements were approved by the board of directors on 16 March 2026 and signed on its behalf by:", "Synthetic Director, Director"],
+    "correction": "Corrected by hand after the first run: the wording's line break starts a new paragraph (V2-M5a), so the approval statement is two text blocks, not one text holding a line break. Every step state and refusal code matched on the first run.",
+    "notice": "Filing-ready output, not a filing: iXBRL tagging and submission to Companies House are V3."
+  }
+}

@@ -274,6 +274,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-067 | How V2-M5c is built: the cash flow statement (delegated, DEC-019; recorded before code) | The cash flow statement is version content verified with the version (DEC-052): cash-flow classes (operating, investing, financing, with their captions), a map from V1 reporting lines to the classes or to cash, the sizes that need the statement and its captions. The figures come from the ledger by one exact identity: the change in cash equals minus the movement of every other account; investing and financing classes show their cash part (from journals that move cash), their non-cash part is an operating adjustment, and operating classes show their whole movement (the indirect method). The statement always reconciles to the ledger's cash; an account the map does not place is shown as unclassified and keeps the statement incomplete |
 | DEC-068 | V2-M6 split; how V2-M6a is built: review flags and the review checklist (delegated, DEC-019; recorded before code) | V2-M6a raises the nine review flags of a framework year live from the ledger, the registers and the documents, with the firm's review settings as versioned data; each flag is explained by a preparer and signed off by a second person holding a new `accounts:review` permission, and an explanation lapses when the flag's figures change. V2-M6b is the 14-step year-end workflow; V2-M6c partner review, client approval, locking and the filing-ready package |
 | DEC-069 | How V2-M6b is built: the 14-step year-end workflow (delegated, DEC-019; recorded before code) | Each step of the specification's year-end workflow reads its status from an existing control (bookkeeping cut-off, the review checklist's flags, the fixed-asset and year-end registers, the VAT workpaper, the accounts document and the size test). A preparer signs a step off with a note only when its control is ready and the steps it depends on are done; a sign-off lapses when its control stops being ready. Steps 12 to 14 are V2-M6c |
+| DEC-070 | How V2-M6c is built: partner review, client approval, locking and the filing-ready package (delegated, DEC-019; recorded before code) | A fingerprint of the accounts document ties the three records together. A second person holding `accounts:review` records the partner review of the accounts as signed off at step 11. The client's approval is recorded against the document's approval facts (the approving director and the date), with evidence. It needs a live partner review and every period of the year closed, and it locks the periods and the year's framework. Facts, flag responses and workflow sign-offs for the year are then refused. A preparer generates the filing-ready package once; it is refused unless the approved figures are unchanged and every rule it uses was verified by a second person (V2-ARC-04) |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -814,3 +815,57 @@ These choices refine DEC-036. None of them is a tax rule; the VAT arithmetic is 
   * partner review and client approval (V2-M6c).
 * **Not in V2-M6b:** steps 12 to 14, locking, approval and the package (V2-M6c); screens (V2-M7).
 
+### DEC-070 - How V2-M6c is built: partner review, client approval, locking and the filing-ready package (delegated, DEC-019; recorded before code)
+* **The fingerprint:** the SHA-256 of the accounts document (V2-M5a) in canonical JSON (keys sorted), without its notices. It exists only while the document is complete. Any change to a figure, a fact, the wording, the company's name or number, or the directors changes it.
+* **Partner review (step 12):**
+  * Recorded by a holder of `accounts:review`, with an optional note, once step 11 is DONE.
+  * The reviewer must not be the person whose live sign-off of step 11 generated the accounts (second person; service and database).
+  * It stores the fingerprint. It is live while the fingerprint is unchanged; when the accounts change it LAPSES, and a new review is recorded.
+* **Client approval (step 13):**
+  * Recorded by a holder of `accounts:review` and `period:lock`, because it locks the periods.
+  * It names the approving director, the approval date and an evidence document (the signed approval, uploaded to the company and scanned clean), with an optional note.
+  * It is refused unless:
+    * step 12 is DONE (a live partner review of the same fingerprint);
+    * the director and date equal the facts `approval.director` and `approval.date`, which the accounts state (Companies Act 2006 s.414);
+    * the date is after the year end and not in the future. It is not compared with the partner review's date: an approval that happened before the accounts reached the platform is recorded with both dates;
+    * the director was serving on that date;
+    * every accounting period of the year is CLOSED or LOCKED, because the close controls run when a period closes.
+  * One per year.
+* **Locking, in the same transaction as the approval:**
+  * each CLOSED period of the year is locked through the period service, audited with the approval as its reason;
+  * the year's reporting framework gets `locked_at`, which the database allows only when a client approval of that framework exists. A locked framework never changes (V2-M1).
+* **After approval:**
+  * a period of the year cannot be unlocked (service and database);
+  * new accounts facts, review-flag responses, workflow sign-offs and approvals for the year are refused (`year_approved`; service and database);
+  * postings into the year are refused because its periods are locked (V1).
+  * Inputs outside the year's records (the company's name, its officers, the prior year's ledger) are not locked. A change to them changes the fingerprint, which shows steps 12 to 14 as LAPSED and refuses the package.
+* **The filing-ready package (step 14):**
+  * Generated once per year by a holder of `accounts:prepare`. It is stored write-once with its own SHA-256.
+  * It holds:
+    * the approved accounts document;
+    * the fingerprint;
+    * the framework: standard, version, and who verified it and when;
+    * the size test and its threshold sets, with who verified them;
+    * the partner review;
+    * the client approval: the director's name, the date, the evidence document, who recorded it and when.
+  * Refused (V2-ARC-04) unless:
+    * the year is approved and the current fingerprint equals the approved one;
+    * the accounts document is complete;
+    * the standard version and every threshold set the size test uses were verified by a second person;
+    * the size test is verified and fits.
+  * The database refuses a package for a framework that is not locked, has no client approval of the same fingerprint, or whose version was never verified.
+  * It is the platform's filing-ready output, **not a filing**: iXBRL tagging and submission to Companies House are V3.
+* **Workflow:**
+  * Steps 12 to 14 are no longer LATER, and the LATER state is removed.
+  * Step 12 now depends on steps 1 to 11, not on step 11 alone as in DEC-069, so a lapse anywhere blocks the partner review. Steps 13 and 14 still follow in turn.
+  * The V2-M6b golden is revised to match, and the revision is recorded in the golden file. Its acceptance evidence at 9868fbc stands as it was.
+  * Each is DONE through its own record (the partner review, the client approval, the package) and is not signed off or reopened in the workflow (`step_own_record`).
+  * Their controls:
+    * 12: the document is complete and, once reviewed, unchanged since the review;
+    * 13: the review is live, the periods are closed and the approval facts are set; once approved, the figures are unchanged since the approval;
+    * 14: approved, unchanged since the approval and every rule verified; once generated, unchanged since the package.
+* **Not in V2-M6c:**
+  * withdrawing an approval and amended accounts (a later decision);
+  * filing deadlines (Companies Act 2006 s.442), which are legal rules to be entered as verified data later;
+  * iXBRL and filing (V3);
+  * screens (V2-M7).

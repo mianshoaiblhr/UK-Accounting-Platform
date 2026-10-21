@@ -15,8 +15,9 @@ def check(step, item, got, exp):
     ok = got == exp
     bad += not ok; rows.append([step, item, json.dumps(got), json.dumps(exp), "OK" if ok else "DIFFERS"])
 
-DEPS = {1: [], **{n: [1] for n in range(2, 10)}, 10: list(range(1, 10)), 11: [10], 12: [11], 13: [12], 14: [13]}
-LATER = {12, 13, 14}
+# DEC-069 as amended by DEC-070: step 12 waits for steps 1 to 11; steps 12 to 14 are done through their own records (none in this scenario)
+DEPS = {1: [], **{n: [1] for n in range(2, 10)}, 10: list(range(1, 10)), 11: [10], 12: list(range(1, 12)), 13: [12], 14: [13]}
+OWN_RECORD = {12, 13, 14}
 
 # ── the facts of each phase, from the scenario (what the platform's controls will read) ──
 facts = [
@@ -33,7 +34,8 @@ def controls(f):
     r = lambda ok: "READY" if ok else "ATTENTION"
     return {1: r(f["drafts"] == 0), 2: r(f["rc08"] in ("CLEAR", "SIGNED_OFF")), 3: r(f["settings"]), 4: r(f["settings"]), 5: r(f["run"]), 6: "READY",
             7: r(f["loans_flagged"] == 0), 8: "NOT_APPLICABLE" if not f["vat"] else "READY", 9: r(f["suspense"] == 0), 10: r(f["checklist_complete"]), 11: r(f["accounts_complete"]),
-            12: None, 13: None, 14: None}
+            # 12: the document is complete (no review yet); 13: no live review, the period open, no approval facts; 14: no client approval
+            12: r(f["accounts_complete"]), 13: "ATTENTION", 14: "ATTENTION"}
 
 for i, (phase, f) in enumerate(zip(G["phases"], facts)):
     c = controls(f)
@@ -43,8 +45,7 @@ for i, (phase, f) in enumerate(zip(G["phases"], facts)):
     state = {}
     ok = lambda s: c[s] in ("READY", "NOT_APPLICABLE")
     for n in range(1, 15):
-        if n in LATER: state[n] = "LATER"
-        elif signed.get(n): state[n] = "DONE" if ok(n) else "LAPSED"
+        if signed.get(n): state[n] = "DONE" if ok(n) else "LAPSED"
         else: state[n] = None
     for n in range(1, 15):
         if state[n] is None:
@@ -57,13 +58,13 @@ for i, (phase, f) in enumerate(zip(G["phases"], facts)):
     for rf in phase.get("refusals", []):
         n, action = rf["step"], rf.get("action", "sign-off")
         if action == "reopen": got = "step_not_signed_off" if not signed.get(n) else "allowed"
-        else: got = "step_later" if n in LATER else "step_blocked" if any(state[d] != "DONE" for d in DEPS[n]) else "step_not_ready" if not ok(n) else "allowed"
+        else: got = "step_own_record" if n in OWN_RECORD else "step_blocked" if any(state[d] != "DONE" for d in DEPS[n]) else "step_not_ready" if not ok(n) else "allowed"
         check(phase["name"], f"refusal {action} step {n}", got, rf["code"])
 
 wb = Workbook(); ws = wb.active; ws.title = "Read me"
 for line in ["V2-M6b golden year-end workflow - workings (SYNTHETIC)", "", G["purpose"], "", G["disclaimer"], "",
-             "Each phase's control statuses are derived from the scenario's facts and each step's state from an independent implementation of the DEC-069 rules (order, sign-offs, lapses), then compared with the hand-written expectations. The platform's API test matches the same states exactly.",
-             "", *[f"{k}: {v}" for k, v in G["workings"].items()]]:
+             "Each phase's control statuses are derived from the scenario's facts and each step's state from an independent implementation of the DEC-069 rules as amended by DEC-070 (order, sign-offs, lapses; steps 12 to 14 through their own records), then compared with the hand-written expectations. The platform's API test matches the same states exactly.",
+             "", *[f"{k}: {v}" for k, v in G["workings"].items()], "", *[f"Revision: {r}" for r in G.get("revisions", [])]]:
     ws.append([line])
 ws.column_dimensions["A"].width = 150; ws["A1"].font = Font(bold=True, size=14)
 for r in ws.iter_rows():

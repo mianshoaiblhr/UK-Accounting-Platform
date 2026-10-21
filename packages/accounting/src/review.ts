@@ -2,6 +2,7 @@ import { CLOSING_SOURCES, REVIEW_CONTROL_CODES, REVIEW_CONTROLS, type ReviewCont
 import { conflict, forbidden, notFound, unprocessable } from '@uk/core';
 import type { Tx } from '@uk/db';
 import { auditRow } from '@uk/platform';
+import { assertYearOpen } from './accounts-document';
 import type { DirectorService } from './directors';
 import { ZERO, money, type Money } from './money';
 import type { PostingActor } from './posting';
@@ -217,6 +218,7 @@ export class ReviewService {
   // ───── Responses ─────
   private async current(tx: Tx, companyId: string, yearStart: string, flagKey: string) {
     const fw = await this.framework(tx, companyId, yearStart);
+    assertYearOpen(fw);
     const { flags } = await this.raise(tx, companyId, fw, await this.currentSettings(tx, companyId));
     const flag = flags.find((f) => f.key === flagKey);
     if (!flag) throw notFound('This flag is not raised for the year (it may have been resolved, or its control is not evaluated)', 'flag_not_raised');

@@ -18,7 +18,9 @@ type In<S extends z.ZodTypeAny> = z.output<S>;
 export class YearEndApiService {
   constructor(@Inject(DB) private readonly db: Database) {}
   run<T>(org: OrgAccess, companyId: string, fn: (tx: Tx, ctx: { organisationId: string; companyId: string; actor: PostingActor }) => Promise<T>) {
-    const actor: PostingActor = { kind: 'USER', userId: org.userId, can: (p, c) => org.access.can(p as Permission, { companyId: c }) };
+    // canReadDocument: per-document visibility for evidence the year-end services read (ADR-32; the V2-M6c approval evidence)
+    const actor: PostingActor & { canReadDocument(d: { id: string; companyId: string | null; visibility: string; createdByUserId: string | null }): Promise<boolean> } = {
+      kind: 'USER', userId: org.userId, can: (p, c) => org.access.can(p as Permission, { companyId: c }), canReadDocument: (d) => org.access.canReadDocument({ ...d, createdByUserId: d.createdByUserId ?? '' }) };
     return this.db.tenant({ organisationId: org.organisationId, userId: org.userId }, (tx) => fn(tx, { organisationId: org.organisationId, companyId, actor }));
   }
 }

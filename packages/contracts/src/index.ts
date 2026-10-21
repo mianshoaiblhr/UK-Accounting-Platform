@@ -25,3 +25,4 @@ export * from './accounts-document';
 export * from './size-test';
 export * from './review';
 export * from './year-end-workflow';
+export * from './accounts-approval';

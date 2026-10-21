@@ -25,24 +25,25 @@
     "accounts": "Step 11 reads the accounts document (a verified synthetic version without wording rules: complete) and the size test (a verified synthetic threshold set, the turnover line P.T, one employee, the company's first year): MICRO, and MICRO is chosen, so it fits.",
     "lapse": "Phase 5: a draft bill dated 15.12.2026 makes step 1's control need attention again; its sign-off lapses. Steps 2 to 11 keep their own controls and stay DONE. Step 9 reopened: its dependency (step 1) is not DONE, so it is BLOCKED."
   },
+  "revisions": ["2026-10-21, V2-M6c (DEC-070): steps 12 to 14 are no longer LATER. Step 12 (partner review) depends on steps 1 to 11, and its control is READY because the accounts document is complete: TODO in phase 4, BLOCKED otherwise. Step 13 (client approval) needs attention: no live partner review, the 2026 period is open and the approval facts are not set. Step 14 (the package) needs attention: no client approval. Both are BLOCKED. Signing off step 12 through the workflow is refused as step_own_record (was step_later). Steps 1 to 11 and the current step of every phase are unchanged. The V2-M6b acceptance evidence at 9868fbc stands as recorded."],
   "phases": [
     { "name": "start", "current": 1,
       "steps": [["ATTENTION", "ATTENTION"], ["ATTENTION", "BLOCKED"], ["ATTENTION", "BLOCKED"], ["ATTENTION", "BLOCKED"], ["ATTENTION", "BLOCKED"], ["READY", "BLOCKED"], ["READY", "BLOCKED"],
-        ["NOT_APPLICABLE", "BLOCKED"], ["READY", "BLOCKED"], ["ATTENTION", "BLOCKED"], ["READY", "BLOCKED"], [null, "LATER"], [null, "LATER"], [null, "LATER"]] },
+        ["NOT_APPLICABLE", "BLOCKED"], ["READY", "BLOCKED"], ["ATTENTION", "BLOCKED"], ["READY", "BLOCKED"], ["READY", "BLOCKED"], ["ATTENTION", "BLOCKED"], ["ATTENTION", "BLOCKED"]] },
     { "name": "cut-off fixed, step 1 signed off", "current": 2,
       "steps": [["READY", "DONE"], ["ATTENTION", "ATTENTION"], ["ATTENTION", "ATTENTION"], ["ATTENTION", "ATTENTION"], ["ATTENTION", "ATTENTION"], ["READY", "TODO"], ["READY", "TODO"],
-        ["NOT_APPLICABLE", "TODO"], ["READY", "TODO"], ["ATTENTION", "BLOCKED"], ["READY", "BLOCKED"], [null, "LATER"], [null, "LATER"], [null, "LATER"]],
+        ["NOT_APPLICABLE", "TODO"], ["READY", "TODO"], ["ATTENTION", "BLOCKED"], ["READY", "BLOCKED"], ["READY", "BLOCKED"], ["ATTENTION", "BLOCKED"], ["ATTENTION", "BLOCKED"]],
       "refusals": [{ "step": 2, "code": "step_not_ready" }, { "step": 10, "code": "step_blocked" }] },
     { "name": "settings, depreciation, bank flag signed off", "current": 2,
       "steps": [["READY", "DONE"], ["READY", "TODO"], ["READY", "TODO"], ["READY", "TODO"], ["READY", "TODO"], ["READY", "TODO"], ["READY", "TODO"],
-        ["NOT_APPLICABLE", "TODO"], ["READY", "TODO"], ["READY", "BLOCKED"], ["READY", "BLOCKED"], [null, "LATER"], [null, "LATER"], [null, "LATER"]] },
+        ["NOT_APPLICABLE", "TODO"], ["READY", "TODO"], ["READY", "BLOCKED"], ["READY", "BLOCKED"], ["READY", "BLOCKED"], ["ATTENTION", "BLOCKED"], ["ATTENTION", "BLOCKED"]] },
     { "name": "steps 2 to 11 signed off", "current": 12,
       "steps": [["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"],
-        ["NOT_APPLICABLE", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], [null, "LATER"], [null, "LATER"], [null, "LATER"]],
-      "refusals": [{ "step": 12, "code": "step_later" }] },
+        ["NOT_APPLICABLE", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "TODO"], ["ATTENTION", "BLOCKED"], ["ATTENTION", "BLOCKED"]],
+      "refusals": [{ "step": 12, "code": "step_own_record" }] },
     { "name": "a draft bill makes step 1 lapse; step 9 reopened", "current": 1,
       "steps": [["ATTENTION", "LAPSED"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "DONE"],
-        ["NOT_APPLICABLE", "DONE"], ["READY", "BLOCKED"], ["READY", "DONE"], ["READY", "DONE"], [null, "LATER"], [null, "LATER"], [null, "LATER"]],
+        ["NOT_APPLICABLE", "DONE"], ["READY", "BLOCKED"], ["READY", "DONE"], ["READY", "DONE"], ["READY", "BLOCKED"], ["ATTENTION", "BLOCKED"], ["ATTENTION", "BLOCKED"]],
       "refusals": [{ "step": 9, "code": "step_not_signed_off", "action": "reopen" }] }
   ]
 }

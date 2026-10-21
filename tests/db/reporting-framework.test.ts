@@ -112,7 +112,9 @@ describe('per company', () => {
     await expect(tx([f('2041-01-01', '2043-01-01')])).rejects.toThrow(/range_ck|violates check/);           // not longer than 18 months
     await expect(tx([`UPDATE company_reporting_framework SET year_start='2040-01-02' WHERE company_id='${co}' AND year_start='2040-01-01'`])).rejects.toThrow(/starts on one date/);
     await tx([`UPDATE company_reporting_framework SET entity_size='SMALL', year_end='2040-12-30' WHERE company_id='${co}' AND year_start='2040-01-01'`]);
-    sql(`UPDATE company_reporting_framework SET locked_at=now() WHERE company_id='${co}' AND year_start='2040-01-01'`);  // V2-M6 will lock approved years
+    // since V2-M6c (DEC-070) only a client approval locks a year (tests/db/accounts-approval.test.ts); here the lock is arranged with triggers bypassed
+    await expect(tx([`UPDATE company_reporting_framework SET locked_at=now() WHERE company_id='${co}' AND year_start='2040-01-01'`])).rejects.toThrow(/locked only by the client approval/);
+    sql(`SET session_replication_role = replica; UPDATE company_reporting_framework SET locked_at=now() WHERE company_id='${co}' AND year_start='2040-01-01'`);
     await expect(tx([`UPDATE company_reporting_framework SET entity_size='MICRO' WHERE company_id='${co}' AND year_start='2040-01-01'`])).rejects.toThrow(/locked/);
     await expect(tx([`DELETE FROM company_reporting_framework WHERE company_id='${co}'`])).rejects.toThrow(/permission denied/);
   });

@@ -27,6 +27,7 @@ import { AccountsDocumentController } from './accounts/accounts-document.control
 import { SizeTestController } from './accounts/size-test.controller';
 import { ReviewController } from './accounts/review.controller';
 import { YearEndWorkflowController } from './accounts/year-end-workflow.controller';
+import { AccountsApprovalController } from './accounts/accounts-approval.controller';
 import { ReferenceController } from './master-data/reference.controller';
 import { FeatureFlagsController } from './features/features.controller';
 import { ProblemFilter } from './common/problem.filter';
@@ -52,7 +53,7 @@ import { OrganisationsController } from './organisations/organisations.controlle
 import { OrganisationsService } from './organisations/organisations.service';
 import { LedgerController } from './ledger/ledger.controller';
 import { LedgerApiService } from './ledger/ledger.service';
-import { AccountsDocumentService, CashFlowService, ReviewService, YearEndWorkflowService, SizeTestService, SizeThresholdService, DirectorService, YearEndCloseService, YearEndService, DepreciationService, FixedAssetService, FrameworkService, StandardsService, StatutoryReportService, AlertService, DrillDownService, ReportService, BankService, CashService, ReconciliationService, PurchasesService, SalesService, VatService, AccountService, FxSettingsService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, RateService, RevaluationService } from '@uk/accounting';
+import { AccountsApprovalService, AccountsDocumentService, CashFlowService, ReviewService, YearEndWorkflowService, SizeTestService, SizeThresholdService, DirectorService, YearEndCloseService, YearEndService, DepreciationService, FixedAssetService, FrameworkService, StandardsService, StatutoryReportService, AlertService, DrillDownService, ReportService, BankService, CashService, ReconciliationService, PurchasesService, SalesService, VatService, AccountService, FxSettingsService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, RateService, RevaluationService } from '@uk/accounting';
 
 @Module({})
 export class AppModule {
@@ -61,7 +62,7 @@ export class AppModule {
       module: AppModule,
       imports: [InfraModule.forRoot(config), AuditModule, AuthModule],
       controllers: [HealthController, OrganisationsController, CompaniesController, DocumentsController, FoldersController, EvidenceController, JobsController,
-        TasksController, PracticesController, FeatureFlagsController, MasterDataController, ReferenceController, WorkflowsController, NotificationsController, IntegrationsController, AiController, LedgerController, ContactRolesController, VatController, SalesController, PurchasesController, CashController, BankController, ReportsController, StandardsController, FixedAssetsController, YearEndController, YearEndCloseController, DirectorsController, AccountsDocumentController, SizeTestController, ReviewController, YearEndWorkflowController],
+        TasksController, PracticesController, FeatureFlagsController, MasterDataController, ReferenceController, WorkflowsController, NotificationsController, IntegrationsController, AiController, LedgerController, ContactRolesController, VatController, SalesController, PurchasesController, CashController, BankController, ReportsController, StandardsController, FixedAssetsController, YearEndController, YearEndCloseController, DirectorsController, AccountsDocumentController, SizeTestController, ReviewController, YearEndWorkflowController, AccountsApprovalController],
       providers: [
         { provide: PostingService, useFactory: () => new PostingService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: AccountService, useFactory: () => new AccountService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
@@ -81,6 +82,8 @@ export class AppModule {
         { provide: YearEndWorkflowService, inject: [ReviewService, FixedAssetService, YearEndService, VatService, AccountsDocumentService, SizeTestService],
           useFactory: (r: ReviewService, fa: FixedAssetService, ye: YearEndService, v: VatService, d: AccountsDocumentService, sz: SizeTestService) =>
             new YearEndWorkflowService(r, fa, ye, v, d, sz, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
+        { provide: AccountsApprovalService, inject: [YearEndWorkflowService, PeriodService, FrameworkService], useFactory: (w: YearEndWorkflowService, p: PeriodService, f: FrameworkService) =>
+          new AccountsApprovalService(w, p, f, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: SizeThresholdService, useFactory: () => new SizeThresholdService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: SizeTestService, inject: [StatutoryReportService], useFactory: (st: StatutoryReportService) => new SizeTestService(st) },
         { provide: DirectorService, useFactory: () => new DirectorService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
