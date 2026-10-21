@@ -1,5 +1,7 @@
 # V2 milestone V2-M7a - acceptance package (the year-end workspace screens)
 
+**Status:** ACCEPTED under the delegation on 2026-10-21 (DEC-019, DEC-051). The evidence is below.
+
 Prepared under the product owner's delegation (DEC-019, DEC-051). The design is in DEC-071 and v2-plan section 5k, recorded and pushed before code (760daaf).
 
 This is milestone evidence only, **not production approval** (DEC-006). All data is synthetic. The screens show what the API returns; they compute no figure, state or fingerprint (DEC-048 applied to V2).
@@ -7,11 +9,11 @@ This is milestone evidence only, **not production approval** (DEC-006). All data
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | @@COMMIT@@ (branch `claude/adoring-cori-mra6ze`) |
-| CI | @@CI@@ |
-| CodeQL | @@CODEQL@@ |
-| Clean clone | @@CLEAN@@ |
-| Local runs | @@LOCAL@@ |
+| Code baseline commit | `23b366fdaf7c16c353fa019e60a55a23ac6cedf1` (branch `claude/adoring-cori-mra6ze`) |
+| CI | [run 39660002000](https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39660002000): every job green (migrations from scratch; dependency audit and secret scan; build, lint, typecheck, unit, integration, e2e; terraform; real S3 protocol and ClamAV; images) |
+| CodeQL | [run 39660002001](https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39660002001): green |
+| Clean clone | Fresh clone at 23b366f: install, build, typecheck and lint clean; 2,302 tests passed; e2e 26/26 (21 before this slice); OpenAPI drift 0 |
+| Local runs | Web typecheck and lint clean; repository typecheck and lint clean; e2e 26/26 (`tests/e2e/year-end.test.ts` 5/5). No API code changed, so the unit and integration suites are unchanged (2,302) |
 
 ## 2. Screens and the routes each uses (DEC-050)
 Every screen sits in the company workspace under "Year end", which shows only while `accounts.production` is on and the person holds `ledger:read`. Each screen reads with `ledger:read`. An action button shows only to a person holding the route's permission, and the API enforces every route.
