@@ -15,7 +15,7 @@ Everything in V1 plan section 1, plus: only the PostingService writes the ledger
 | V2-M4 | Director and shareholder balances (director loan movements flagged), related parties | **built** (2026-10-19; `v2-m4-acceptance.md`) | Engineering | V2-M3 |
 | V2-M5 | Statements and notes: FRS 105 micro-entity, then FRS 102 Section 1A, then full FRS 102; policies, comparatives, directors' sections; the size test | **accepted** (all three parts, under the delegation); split (DEC-063, DEC-066): **V2-M5a built** (2026-10-19; `v2-m5a-acceptance.md`); **V2-M5b built** (2026-10-20; `v2-m5b-acceptance.md`, the size test, section 5f); **V2-M5c built** (2026-10-20; `v2-m5c-acceptance.md`, the cash flow statement, section 5g) | Engineering; the named accountant | V2-M1, V2-M3, V2-M4 |
 | V2-M6 | Year-end workflow (the specification's 14 steps), review checklist and flags, partner review, client approval, filing-ready package | split (DEC-068): **V2-M6a built** (2026-10-21; `v2-m6a-acceptance.md`, review flags and checklist, section 5h); **V2-M6b built** (2026-10-21; `v2-m6b-acceptance.md`, the 14-step year-end workflow, section 5i); **V2-M6c built** (2026-10-21; `v2-m6c-acceptance.md`, partner review, client approval, locking and the filing-ready package, section 5j, DEC-070) | Engineering | V2-M5 |
-| V2-M7 | Screens behind `accounts.production` | planned | Engineering (front end) | each API milestone |
+| V2-M7 | Screens behind `accounts.production` | split (DEC-071): V2-M7a the year-end workspace (section 5k, in progress); V2-M7b the registers; V2-M7c the reporting framework | Engineering (front end) | each API milestone |
 
 ## 3. V2-M1 - Reporting framework (specification; DEC-052, DEC-053)
 Recorded before code.
@@ -558,6 +558,46 @@ Recorded before code.
   * permissions and tenancy;
   * an architecture test (the approval service writes only approvals and packages; it locks periods through the period service and the framework through the statutory service);
   * CI green, clean clone, the matrix rows moved with evidence: V2-MOD-15, V2-YE-12 to V2-YE-14 and V2-MOD-01 to Implemented; V2-ARC-04 to Implemented.
+
+## 5k. V2-M7 - Screens (specification; DEC-071)
+Recorded before code. V2-M7 is split (DEC-071): V2-M7a the year-end workspace; V2-M7b the registers; V2-M7c the reporting framework. Each slice gets its own section of screens and routes before its code; V2-M7b and V2-M7c are specified when they start.
+
+### 5k.1 V2-M7a - the year-end workspace
+* **Navigation:** an "Accounts production" group in the company workspace, shown when `accounts.production` is on and the person holds `ledger:read`. With the feature off, a V2 page says so and calls no V2 route.
+* **Screens** (each reads `ledger:read`; actions need the route's permission, and a button shows only to a person who holds it):
+  * **Year end** (`/year-end?year=`):
+    * the years from `reporting-frameworks`;
+    * the workflow from `year-end-workflow`: steps, controls, states, dependencies, sign-offs, the current step and whether the year is locked;
+    * sign-off and reopen for steps 1 to 11 (`accounts:prepare`);
+    * steps 12 to 14 link to Approval.
+  * **Review** (`/year-end/review?year=`):
+    * the checklist from `review-checklist`;
+    * explain (`accounts:prepare`), and sign off or reopen (`accounts:review`);
+    * the review settings from `review-settings`, set by a preparer.
+  * **Accounts** (`/year-end/accounts?year=`):
+    * the accounts document from `accounts-document`: the statements, the sections with their text and tables, omitted items, problems and notices;
+    * the facts from `accounts-facts`, set by a preparer;
+    * the size test from `size-test`.
+  * **Approval** (`/year-end/approval?year=`):
+    * steps 12 to 14, the partner reviews, the client approval and the package summary from `accounts-approval`;
+    * a partner review (`accounts:review`);
+    * the client approval (`accounts:review` and `period:lock`), with the director chosen from `officers` and the evidence from the company's `documents`;
+    * generate the package (`accounts:prepare`), view it from `accounts-package`, and save its JSON.
+* **No screen computes:** states, controls, figures, wording, fingerprints and refusals all come from the API.
+
+### 5k.2 V2-M7a acceptance (DEC-050)
+* **Real-browser tests** (`tests/e2e/year-end.test.ts`) over the real stack. The synthetic year is built through the API up to step 10; the browser does the rest:
+  * the preparer signs off step 11;
+  * the owner records the partner review;
+  * the partner is refused as reviewer, and the screen shows the API's words;
+  * the period is closed on the periods screen;
+  * the partner records the client approval, choosing the director and the evidence;
+  * the preparer generates the package and sees its fingerprint and SHA-256;
+  * the review screen explains and signs off a flag through the browser;
+  * a reviewer sees every screen and no action button;
+  * with `accounts.production` off, the pages say so.
+* **CI:** the web typecheck and production build, and the e2e job.
+* **Evidence:** the acceptance lists each screen with its routes. CI green, clean clone, and the matrix records the slice against V2-DOD-01.
 
 ## 6. Legal and standards context
 See `v2-proposal.md` section 6. The rules entered into the framework are the firm's, from the current text of FRS 102 and FRS 105 and the Companies Act 2006 accounts regulations, verified by its named accountant; engineering builds the mechanism and tests it on synthetic data.

@@ -82,12 +82,12 @@
     },
     "V2-M7": {
       "title": "Screens behind accounts.production",
-      "status": "planned",
+      "status": "SPLIT (DEC-071): V2-M7a the year-end workspace in progress (specified in v2-plan 5k); V2-M7b the registers and V2-M7c the reporting framework to be specified before their code",
       "owner": "Engineering (front end)",
       "depends": [
         "each API milestone"
       ],
-      "acceptance": "to be specified before code",
+      "acceptance": "v2-plan.md section 5k (V2-M7a); DEC-050 real-browser proof per slice",
       "deferred": "-"
     }
   },

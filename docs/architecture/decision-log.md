@@ -275,6 +275,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-068 | V2-M6 split; how V2-M6a is built: review flags and the review checklist (delegated, DEC-019; recorded before code) | V2-M6a raises the nine review flags of a framework year live from the ledger, the registers and the documents, with the firm's review settings as versioned data; each flag is explained by a preparer and signed off by a second person holding a new `accounts:review` permission, and an explanation lapses when the flag's figures change. V2-M6b is the 14-step year-end workflow; V2-M6c partner review, client approval, locking and the filing-ready package |
 | DEC-069 | How V2-M6b is built: the 14-step year-end workflow (delegated, DEC-019; recorded before code) | Each step of the specification's year-end workflow reads its status from an existing control (bookkeeping cut-off, the review checklist's flags, the fixed-asset and year-end registers, the VAT workpaper, the accounts document and the size test). A preparer signs a step off with a note only when its control is ready and the steps it depends on are done; a sign-off lapses when its control stops being ready. Steps 12 to 14 are V2-M6c |
 | DEC-070 | How V2-M6c is built: partner review, client approval, locking and the filing-ready package (delegated, DEC-019; recorded before code) | A fingerprint of the accounts document ties the three records together. A second person holding `accounts:review` records the partner review of the accounts as signed off at step 11. The client's approval is recorded against the document's approval facts (the approving director and the date), with evidence. It needs a live partner review and every period of the year closed, and it locks the periods and the year's framework. Facts, flag responses and workflow sign-offs for the year are then refused. A preparer generates the filing-ready package once; it is refused unless the approved figures are unchanged and every rule it uses was verified by a second person (V2-ARC-04) |
+| DEC-071 | V2-M7 split; how V2-M7a is built: the year-end workspace screens (delegated, DEC-019; recorded before code) | V2-M7 is split like V1-M9: V2-M7a the year-end workspace (the 14-step workflow, the review checklist, the accounts document with its facts and size test, partner review, client approval and the package); V2-M7b the registers (fixed assets, year-end adjustments, the closing journal, director loan accounts and related parties); V2-M7c the reporting framework (standards and their content, verification, thresholds, the framework of each year, the statutory preview and cash flow). Each screen shows what the API returns and computes nothing; each slice is proven in a real browser (DEC-050) |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -869,3 +870,34 @@ These choices refine DEC-036. None of them is a tax rule; the VAT arithmetic is 
   * filing deadlines (Companies Act 2006 s.442), which are legal rules to be entered as verified data later;
   * iXBRL and filing (V3);
   * screens (V2-M7).
+
+### DEC-071 - V2-M7 split; how V2-M7a is built: the year-end workspace screens (delegated, DEC-019; recorded before code)
+* **Split:** V2-M7 covers every V2 module, so it is split into three slices, like V1-M9. Each slice is accepted on its own.
+  * **V2-M7a, the year-end workspace:** the workflow, the review checklist, the accounts document and its facts, and the approval and package.
+  * **V2-M7b, the registers:** fixed assets and depreciation, year-end adjustments and release runs, provisions, the closing journal, director loan accounts and related parties.
+  * **V2-M7c, the reporting framework:** standards, versions and their content, verification, size-threshold sets, the framework of each year, overrides, the statutory preview and the cash flow statement.
+* **Where the screens live:** in the company workspace, as an "Accounts production" navigation shown only when the `accounts.production` feature is on and the person holds `ledger:read`. With the feature off, a V2 page says so and calls no V2 route. The API stays the only enforcement.
+* **What a screen does (DEC-048 applied to V2):**
+  * it shows what the API returns: states, controls, figures, wording, problems and notices, with every PREVIEW ONLY notice on its face;
+  * it computes no figure, state or fingerprint;
+  * an action button shows only to a person holding the permission the route needs;
+  * a refusal is shown in the API's words.
+* **V2-M7a screens:**
+
+  | Screen | What it shows and does | API routes |
+  |---|---|---|
+  | Year end | The years from the reporting frameworks; for the chosen year the 14 steps with control, state, dependencies and sign-offs, the current step and whether the year is locked. Steps 1 to 11 can be signed off or reopened; steps 12 to 14 link to Approval | `reporting-frameworks`, `year-end-workflow`, `year-end-workflow/sign-off`, `year-end-workflow/reopen` |
+  | Review | The nine controls with status, flags, figures and responses, and the review settings. A flag can be explained (`accounts:prepare`), or signed off or reopened (`accounts:review`); the settings can be set | `review-checklist`, `review-flags/explain`, `review-flags/sign-off`, `review-flags/reopen`, `review-settings` |
+  | Accounts | The accounts document: statements, sections, omitted items, problems and notices; the facts, which can be set; the size test result | `accounts-document`, `accounts-facts`, `size-test` |
+  | Approval | Steps 12 to 14, the partner reviews (live or lapsed), the client approval and the package. Actions: record a partner review; record the client approval, choosing the director from the officers and the evidence from the company's documents; generate the package; view the package and save its JSON | `accounts-approval`, `accounts-approval/partner-review`, `accounts-approval/client-approval`, `accounts-package`, `officers`, `documents` |
+
+* **Proof (DEC-050):** real-browser tests over the real stack, on synthetic books built through the API. They cover:
+  * the main path from the workflow to the package;
+  * a refusal shown in the API's words: the step-11 signer as partner reviewer;
+  * a reader (the reviewer role) who sees the screens and no action button;
+  * the feature switched off;
+  * the web typecheck and production build in CI.
+
+  The acceptance lists each screen with its routes.
+* **Matrix:** V2-DOD-01 stays Missing until all three slices are accepted, and moves to Implemented with V2-M7c. Each slice records its screens against the row.
+* **Not in V2-M7a:** the registers (V2-M7b); the reporting framework (V2-M7c); a rendered PDF or iXBRL of the accounts (V3).
