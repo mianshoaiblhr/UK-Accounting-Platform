@@ -31,6 +31,7 @@ const SECTIONS: { href: string; label: string; permission: string; feature?: str
   { href: '/cash', label: 'Cash', permission: 'cash:read' },
   // V2-M7 (DEC-071): accounts production, shown only while its feature is on
   { href: '/year-end', label: 'Year end', permission: 'ledger:read', feature: 'accounts.production' },
+  { href: '/registers', label: 'Registers', permission: 'ledger:read', feature: 'accounts.production' },
 ];
 
 /** `feature`: a further feature the page needs besides bookkeeping (V2 screens: `accounts.production`); while it is off the page says so and renders nothing that calls the API. */
@@ -76,7 +77,7 @@ export function WorkspaceShell({ children, need, feature }: { children: ReactNod
           <>
             <nav className="tabs" aria-label="Bookkeeping">
               {SECTIONS.filter((s) => can(s.permission) && (!s.feature || state.access.features[s.feature] === true)).map((s) => (
-                <Link key={s.href} href={`${base}${s.href}`} aria-current={pathname === `${base}${s.href}` || (s.href === '/year-end' && pathname.startsWith(`${base}/year-end`)) ? 'page' : undefined}>{s.label}</Link>
+                <Link key={s.href} href={`${base}${s.href}`} aria-current={pathname === `${base}${s.href}` || (s.href !== '' && ['/year-end', '/registers'].includes(s.href) && pathname.startsWith(`${base}${s.href}`)) ? 'page' : undefined}>{s.label}</Link>
               ))}
             </nav>
             {feature && state.access.features[feature] !== true ? (

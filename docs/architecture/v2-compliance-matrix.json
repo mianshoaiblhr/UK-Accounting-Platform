@@ -82,12 +82,12 @@
     },
     "V2-M7": {
       "title": "Screens behind accounts.production",
-      "status": "SPLIT (DEC-071): V2-M7a the year-end workspace ACCEPTED 2026-10-21 (v2-m7a-acceptance.md; CI 39660002000 on 23b366f); V2-M7b the registers in progress (specified in v2-plan 5k.3, DEC-074); V2-M7c the reporting framework to be specified before its code",
+      "status": "SPLIT (DEC-071): V2-M7a the year-end workspace ACCEPTED 2026-10-21 (v2-m7a-acceptance.md; CI 39660002000 on 23b366f); V2-M7b the registers BUILT 2026-10-22 (v2-m7b-acceptance.md, DEC-074), evidence pending; V2-M7c the reporting framework to be specified before its code",
       "owner": "Engineering (front end)",
       "depends": [
         "each API milestone"
       ],
-      "acceptance": "v2-plan.md section 5k (V2-M7a); v2-m7a-acceptance.md; DEC-050 real-browser proof per slice; v2-plan.md section 5k.3 (V2-M7b)",
+      "acceptance": "v2-plan.md section 5k (V2-M7a); v2-m7a-acceptance.md; DEC-050 real-browser proof per slice; v2-plan.md section 5k.3 (V2-M7b); v2-m7b-acceptance.md",
       "deferred": "-"
     }
   },
@@ -879,8 +879,8 @@
       "req": "V2 workflows usable in screens",
       "m": "V2-M7",
       "s": "M",
-      "ev": "tests/e2e/year-end.test.ts (V2-M7a: the year-end workspace, five real-browser tests); docs/architecture/v2-m7a-acceptance.md (each screen with its API routes)",
-      "note": "Split into three slices (DEC-071). V2-M7a, the year-end workspace, is built: the workflow, the review checklist and settings, the accounts document with its facts and size test, and the approval and package. It is behind accounts.production and proven in a real browser (DEC-050): the main path from step 11 to the package, a refusal shown in the API's words, a reviewer with no action button, and the feature off. Still missing: V2-M7b, the registers (fixed assets, year-end adjustments, the closing journal, director loans and related parties), and V2-M7c, the reporting framework (standards, verification, thresholds, the framework of each year, the statutory preview and cash flow). Those modules work through the API only, so the row stays Missing until all three slices are accepted.",
+      "ev": "tests/e2e/year-end.test.ts (V2-M7a: the year-end workspace, five real-browser tests); docs/architecture/v2-m7a-acceptance.md (each screen with its API routes); tests/e2e/registers.test.ts (V2-M7b: the registers, six real-browser tests); docs/architecture/v2-m7b-acceptance.md",
+      "note": "Split into three slices (DEC-071). V2-M7a, the year-end workspace, is built: the workflow, the review checklist and settings, the accounts document with its facts and size test, and the approval and package. It is behind accounts.production and proven in a real browser (DEC-050): the main path from step 11 to the package, a refusal shown in the API's words, a reviewer with no action button, and the feature off. V2-M7b, the registers, is built: fixed assets and each asset, depreciation, year-end adjustments and release runs, provisions, the closing journal, director loan accounts and related parties. Proven in a real browser: each register's main action, a refusal shown in the API's words, and a reviewer with no action button. Still missing: V2-M7c, the reporting framework (standards, verification, thresholds, the framework of each year, the statutory preview and cash flow). Those modules work through the API only, so the row stays Missing until V2-M7c is accepted.",
       "owner": "Engineering",
       "deps": "V2-M1..M6",
       "accept": "Every V2 module has screens behind accounts.production, real-browser tested (DEC-050 pattern).",
@@ -916,6 +916,7 @@
     "v2.3a (2026-10-21): V2-M6c evidence recorded (CI 39608223030 and CodeQL 39608218001 green on 120a949; clean clone 2302 tests, e2e 21/21, OpenAPI drift 0; the first push 0731c7e failed typecheck and was fixed in 120a949).",
     "v2.4 (2026-10-21, V2-M7a, DEC-071): the year-end workspace screens built (workflow, review, accounts, approval and package) and proven in a real browser. V2-DOD-01 stays Missing until V2-M7b and V2-M7c; its note records the slice. No status change.",
     "v2.4a (2026-10-21): V2-M7a evidence recorded (CI 39660002000 and CodeQL 39660002001 green on 23b366f; clean clone 2302 tests, e2e 26/26, OpenAPI drift 0).",
-    "v2.4b (2026-10-21, DEC-072): engineering's data check (a review, not verification). Goldens 905 checks with 0 differences; 44 journals balanced; V2-M1 statements recomputed; 610 evidence paths present; thresholds confirmed against secondary sources; one wording finding (NOTE.CREDLONG). No status change."
+    "v2.4b (2026-10-21, DEC-072): engineering's data check (a review, not verification). Goldens 905 checks with 0 differences; 44 journals balanced; V2-M1 statements recomputed; 610 evidence paths present; thresholds confirmed against secondary sources; one wording finding (NOTE.CREDLONG). No status change.",
+    "v2.5 (2026-10-22, V2-M7b, DEC-074): the register screens built (fixed assets, depreciation, adjustments, provisions, closing journal, directors, related parties) and proven in a real browser. V2-DOD-01 stays Missing until V2-M7c; its note records the slice. No status change."
   ]
 }
