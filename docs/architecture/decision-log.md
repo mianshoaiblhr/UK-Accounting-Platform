@@ -278,6 +278,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-071 | V2-M7 split; how V2-M7a is built: the year-end workspace screens (delegated, DEC-019; recorded before code) | V2-M7 is split like V1-M9: V2-M7a the year-end workspace (the 14-step workflow, the review checklist, the accounts document with its facts and size test, partner review, client approval and the package); V2-M7b the registers (fixed assets, year-end adjustments, the closing journal, director loan accounts and related parties); V2-M7c the reporting framework (standards and their content, verification, thresholds, the framework of each year, the statutory preview and cash flow). Each screen shows what the API returns and computes nothing; each slice is proven in a real browser (DEC-050) |
 | DEC-072 | Engineering's data check of V2, a review not a verification (2026-10-21) | At the product owner's request ("Check data yourself"), engineering checked the V2 data: the goldens re-derived, invariants recomputed, the draft size thresholds against the reachable sources, every reference in the wording packs, and the matrix evidence. One finding (NOTE.CREDLONG discloses after one year where the requirement cited is after five years and secured debts), five items to check, one limitation; nothing in the platform changed. Under DEC-052 this verifies nothing: engineering wrote the data |
 | DEC-073 | Draft wording packs 0.2: findings F1 to F3 of the data check reworded (2026-10-22) | After the data check (DEC-072), engineering reworded three rules of the draft packs. NOTE.CREDLONG now discloses the debts payable after more than five years and the secured debts, from facts. NOTE.EMPLOYEES no longer says "(including directors)". POL.FININST no longer asserts only basic financial instruments. Both packs are now draft 0.2 and still UNVERIFIED; nothing is imported or verified by this |
+| DEC-074 | How V2-M7b is built: the register screens (delegated, DEC-019; recorded before code) | A "Registers" section behind `accounts.production` with the fixed-asset register, classes and assets (add, estimate, tax fields, dispose, reverse), depreciation runs, year-end adjustments and release runs, provisions and their movements, the closing journal, director loan accounts (statements, report, thresholds) and related parties (report). The screens show what the API returns and compute nothing; proven in a real browser (DEC-050) |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -963,3 +964,35 @@ These choices refine DEC-036. None of them is a tax rule; the VAT arithmetic is 
 * **Evidence:**
   * `tests/api/standard-packs.test.ts` imports and renders both packs (5/5);
   * `docs/architecture/v2-draft-wording-review.xlsx` and `docs/architecture/v2-data-check.xlsx` are regenerated; F1 to F3 now show as DRAFTED.
+
+### DEC-074 - How V2-M7b is built: the register screens (delegated, DEC-019; recorded before code)
+* **Where:** a "Registers" section in the company workspace, shown only while `accounts.production` is on and the person holds `ledger:read` or `assets:read`. It has its own sub-navigation. With the feature off, the pages say so and call no V2 route (DEC-071).
+* **Rules as in DEC-071:**
+  * a screen shows what the API returns and computes no figure;
+  * an action button shows only to a person holding the route's permission;
+  * refusals are shown in the API's words;
+  * a reversal or cancellation always asks for the reason the API requires.
+* **Screens:**
+
+  | Screen | Shows | Actions (permission) | API routes |
+  |---|---|---|---|
+  | Fixed assets | The register as at a date, with its reconciliation to the ledger; the classes; the assets with status | Create a class or change its defaults; add an asset, as POSTED, LINKED to an existing posting, or TAKEN_ON with accumulated depreciation (`assets:manage`) | `fixed-asset-register`, `fixed-asset-classes`, `fixed-assets` |
+  | Asset | One asset: cost, schedule, events, tax fields | Change the estimate; change the tax fields; dispose; reverse a disposal or an addition (`assets:manage`) | `fixed-assets/{id}`, `/estimate`, `/tax`, `/dispose`, `/reverse-disposal`, `/reverse-addition` |
+  | Depreciation | The runs; a preview as at a date; a run's lines | Post a run; reverse a run (`assets:manage`) | `depreciation-runs`, `/preview`, `/{id}`, `/{id}/reverse` |
+  | Adjustments | Accruals, accrued income, prepayments and deferred income with status; the release runs and a preview; the year-end register as at a date | Create an item; cancel it; post or reverse a release run (`accounts:prepare`) | `year-end-items`, `/{id}/cancel`, `release-runs`, `/preview`, `/{id}/reverse`, `year-end-register` |
+  | Provisions | The provisions with their movements; the report for a range | Create a provision; make, use or release (a movement); reverse a movement (`accounts:prepare`) | `provisions`, `/{id}`, `/{id}/movements`, `provision-movements/{id}/reverse`, `provisions/report` |
+  | Closing journal | The year-end closes; a preview for a year | Post the close; reverse it (`accounts:prepare`) | `year-end-closes`, `/preview`, `/{id}/reverse` |
+  | Directors | The loan accounts with flags; a statement for a range; the report; the thresholds | Open an account; close one; set the thresholds (`accounts:prepare`) | `director-loan-accounts`, `/report`, `/{id}/statement`, `/{id}/close`, `director-loan-thresholds` |
+  | Related parties | The parties; the report for a range | Record a party; end one (`accounts:prepare`) | `related-parties`, `/report`, `/{id}/end` |
+
+* **Proof (DEC-050):** real-browser tests over the real stack, on synthetic books built through the API. They cover:
+  * a fixed-asset class and an asset added in the browser, depreciated by a run posted in the browser, with the register reconciled;
+  * a prepayment created and released by a run;
+  * a provision made and used;
+  * the closing journal previewed and posted;
+  * a director loan account opened with its statement;
+  * a related party recorded with its report;
+  * a refusal shown in the API's words: a disposal dated before the asset was acquired;
+  * a reviewer who sees every register and no action button.
+* **Matrix:** V2-DOD-01 stays Missing until V2-M7c (DEC-071).
+* **Not in V2-M7b:** the reporting framework (V2-M7c); editing the tax fields beyond the API's own rules (capital allowances are V4).

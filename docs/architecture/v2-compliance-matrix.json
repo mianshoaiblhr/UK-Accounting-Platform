@@ -82,12 +82,12 @@
     },
     "V2-M7": {
       "title": "Screens behind accounts.production",
-      "status": "SPLIT (DEC-071): V2-M7a the year-end workspace ACCEPTED 2026-10-21 (v2-m7a-acceptance.md; CI 39660002000 on 23b366f); V2-M7b the registers and V2-M7c the reporting framework to be specified before their code",
+      "status": "SPLIT (DEC-071): V2-M7a the year-end workspace ACCEPTED 2026-10-21 (v2-m7a-acceptance.md; CI 39660002000 on 23b366f); V2-M7b the registers in progress (specified in v2-plan 5k.3, DEC-074); V2-M7c the reporting framework to be specified before its code",
       "owner": "Engineering (front end)",
       "depends": [
         "each API milestone"
       ],
-      "acceptance": "v2-plan.md section 5k (V2-M7a); v2-m7a-acceptance.md; DEC-050 real-browser proof per slice",
+      "acceptance": "v2-plan.md section 5k (V2-M7a); v2-m7a-acceptance.md; DEC-050 real-browser proof per slice; v2-plan.md section 5k.3 (V2-M7b)",
       "deferred": "-"
     }
   },

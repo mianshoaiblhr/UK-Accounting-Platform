@@ -15,7 +15,7 @@ Everything in V1 plan section 1, plus: only the PostingService writes the ledger
 | V2-M4 | Director and shareholder balances (director loan movements flagged), related parties | **built** (2026-10-19; `v2-m4-acceptance.md`) | Engineering | V2-M3 |
 | V2-M5 | Statements and notes: FRS 105 micro-entity, then FRS 102 Section 1A, then full FRS 102; policies, comparatives, directors' sections; the size test | **accepted** (all three parts, under the delegation); split (DEC-063, DEC-066): **V2-M5a built** (2026-10-19; `v2-m5a-acceptance.md`); **V2-M5b built** (2026-10-20; `v2-m5b-acceptance.md`, the size test, section 5f); **V2-M5c built** (2026-10-20; `v2-m5c-acceptance.md`, the cash flow statement, section 5g) | Engineering; the named accountant | V2-M1, V2-M3, V2-M4 |
 | V2-M6 | Year-end workflow (the specification's 14 steps), review checklist and flags, partner review, client approval, filing-ready package | split (DEC-068): **V2-M6a built** (2026-10-21; `v2-m6a-acceptance.md`, review flags and checklist, section 5h); **V2-M6b built** (2026-10-21; `v2-m6b-acceptance.md`, the 14-step year-end workflow, section 5i); **V2-M6c built** (2026-10-21; `v2-m6c-acceptance.md`, partner review, client approval, locking and the filing-ready package, section 5j, DEC-070) | Engineering | V2-M5 |
-| V2-M7 | Screens behind `accounts.production` | split (DEC-071): **V2-M7a built** (2026-10-21; `v2-m7a-acceptance.md`, the year-end workspace, section 5k); V2-M7b the registers; V2-M7c the reporting framework | Engineering (front end) | each API milestone |
+| V2-M7 | Screens behind `accounts.production` | split (DEC-071): **V2-M7a built** (2026-10-21; `v2-m7a-acceptance.md`, the year-end workspace, section 5k); V2-M7b the registers (section 5k.3, DEC-074, in progress); V2-M7c the reporting framework | Engineering (front end) | each API milestone |
 
 ## 3. V2-M1 - Reporting framework (specification; DEC-052, DEC-053)
 Recorded before code.
@@ -598,6 +598,22 @@ Recorded before code. V2-M7 is split (DEC-071): V2-M7a the year-end workspace; V
   * with `accounts.production` off, the pages say so.
 * **CI:** the web typecheck and production build, and the e2e job.
 * **Evidence:** the acceptance lists each screen with its routes. CI green, clean clone, and the matrix records the slice against V2-DOD-01.
+
+### 5k.3 V2-M7b - the registers (DEC-074)
+* **Navigation:** "Registers" in the company workspace, behind `accounts.production`, with a sub-navigation:
+  * Fixed assets (and each asset);
+  * Depreciation;
+  * Adjustments;
+  * Provisions;
+  * Closing journal;
+  * Directors;
+  * Related parties.
+* **Screens and routes:** as in DEC-074. Every list, figure, schedule, preview and reconciliation is the API's, and every action needs the route's permission.
+* **Acceptance:**
+  * real-browser tests (`tests/e2e/registers.test.ts`) over the real stack. They cover each register's main action in the browser, a refusal shown in the API's words, and a reviewer with no action button;
+  * the web typecheck and production build;
+  * CI green and a clean clone;
+  * the acceptance document lists each screen with its routes.
 
 ## 6. Legal and standards context
 See `v2-proposal.md` section 6. The rules entered into the framework are the firm's, from the current text of FRS 102 and FRS 105 and the Companies Act 2006 accounts regulations, verified by its named accountant; engineering builds the mechanism and tests it on synthetic data.

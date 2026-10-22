@@ -56,7 +56,7 @@ Generated from `v2-compliance-matrix.json`. **Statuses change only with evidence
 | V2-M4 | Director balances and related parties | ACCEPTED under the delegation 2026-10-19 (v2-m4-acceptance.md; CI 39251457210 on 87c8956) | Engineering | V2-M3 | 2 | 2 |
 | V2-M5 | Statements and notes (FRS 105, FRS 102 1A, FRS 102) | ACCEPTED under the delegation (DEC-063, DEC-066 split): V2-M5a the accounts document 2026-10-19 (v2-m5a-acceptance.md; CI 39271179477 on 1492ff6); V2-M5b the size test 2026-10-20 (v2-m5b-acceptance.md; CI 39362598139 on 2277775); V2-M5c the cash flow statement 2026-10-20 (v2-m5c-acceptance.md; CI 39396072282 on 8fcee2c) | Engineering (build); qualified accountant (rules) | V2-M1; V2-M3; V2-M4 | 8 | 8 |
 | V2-M6 | Year-end workflow, review, approval, filing-ready package | SPLIT (DEC-068): V2-M6a review flags and the review checklist ACCEPTED 2026-10-21 (v2-m6a-acceptance.md; CI 39575388052 on 8646c7e); V2-M6b the 14-step year-end workflow ACCEPTED 2026-10-21 (v2-m6b-acceptance.md; CI 39595091384 on 9868fbc); V2-M6c partner review, client approval, locking and the filing-ready package ACCEPTED 2026-10-21 (v2-m6c-acceptance.md, DEC-070; CI 39608223030 on 120a949) | Engineering | V2-M5 | 26 | 26 |
-| V2-M7 | Screens behind accounts.production | SPLIT (DEC-071): V2-M7a the year-end workspace ACCEPTED 2026-10-21 (v2-m7a-acceptance.md; CI 39660002000 on 23b366f); V2-M7b the registers and V2-M7c the reporting framework to be specified before their code | Engineering (front end) | each API milestone | 1 | 0 |
+| V2-M7 | Screens behind accounts.production | SPLIT (DEC-071): V2-M7a the year-end workspace ACCEPTED 2026-10-21 (v2-m7a-acceptance.md; CI 39660002000 on 23b366f); V2-M7b the registers in progress (specified in v2-plan 5k.3, DEC-074); V2-M7c the reporting framework to be specified before its code | Engineering (front end) | each API milestone | 1 | 0 |
 
 A milestone is accepted on an acceptance package: commit SHA, CI run (every job), test results, migrations, security/permission checks, matrix changes, known limitations (DEC-007). Under the delegation (DEC-019, DEC-051) engineering records acceptance; rules stay unverified until the named accountant verifies them (DEC-052).
 
@@ -199,10 +199,10 @@ A milestone is accepted on an acceptance package: commit SHA, CI run (every job)
 
 ## V2-M7 - Screens behind accounts.production
 
-**Status:** SPLIT (DEC-071): V2-M7a the year-end workspace ACCEPTED 2026-10-21 (v2-m7a-acceptance.md; CI 39660002000 on 23b366f); V2-M7b the registers and V2-M7c the reporting framework to be specified before their code  
+**Status:** SPLIT (DEC-071): V2-M7a the year-end workspace ACCEPTED 2026-10-21 (v2-m7a-acceptance.md; CI 39660002000 on 23b366f); V2-M7b the registers in progress (specified in v2-plan 5k.3, DEC-074); V2-M7c the reporting framework to be specified before its code  
 **Owner:** Engineering (front end)  
 **Depends on:** each API milestone  
-**Acceptance:** v2-plan.md section 5k (V2-M7a); v2-m7a-acceptance.md; DEC-050 real-browser proof per slice  
+**Acceptance:** v2-plan.md section 5k (V2-M7a); v2-m7a-acceptance.md; DEC-050 real-browser proof per slice; v2-plan.md section 5k.3 (V2-M7b)  
 **Deferred scope:** -
 
 | ID | Reference | Requirement | Status | Owner | Dependencies | Acceptance criteria | Deferred scope | Evidence | Notes |
