@@ -75,7 +75,7 @@ describe('a document from the unverified FRS 105 draft', () => {
     const line = (k: string) => [...d.statements.profitAndLoss, ...d.statements.balanceSheet].find((l: any) => l.key === k).amount;
     expect([line('P.T'), line('P.OC'), line('P.PROFIT'), line('B.CA'), line('B.NA'), line('B.CR')]).toEqual(['20000.00', '7500.00', '12500.00', '12600.00', '12600.00', '12600.00']);
     expect(d.sections.map((x: any) => x.section)).toEqual(['NOTES', 'BALANCE_SHEET_STATEMENTS']);
-    expect(text(d, 'NOTE.EMPLOYEES')).toEqual(['The average number of persons employed by the company (including directors) during the year was 1 (31 December 2025: 1).']);
+    expect(text(d, 'NOTE.EMPLOYEES')).toEqual(['The average number of persons employed by the company during the year was 1 (31 December 2025: 1).']);
     expect(text(d, 'BSS.AUDIT')![0]).toBe('For the year ending 31 December 2026 the company was entitled to exemption from audit under section 477 of the Companies Act 2006 relating to small companies.');
     expect(text(d, 'BSS.APPROVAL')).toEqual(['The financial statements were approved by the board of directors on 28 February 2027 and signed on its behalf by:', 'Robin Director, Director']);
     expect(d.omitted).toEqual([{ key: 'NOTE.ADV', title: 'Advances, credits and guarantees granted to directors', reason: 'EMPTY' }]);

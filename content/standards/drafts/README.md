@@ -3,7 +3,7 @@
 * `frs105-micro.json`: FRS 105, for micro-entities.
 * `frs102-1a-small.json`: FRS 102 Section 1A, for small entities.
 
-These are **engineering drafts**, written on 2026-10-19 at the product owner's instruction. They were written from engineering's knowledge: the FRC's and legislation.gov.uk's sites could not be reached from the build environment, so no text was retrieved. Every rule names the provision it is meant to reflect, with a note for the verifier. The review workbook is `docs/architecture/v2-draft-wording-review.xlsx`; regenerate it with `python3 scripts/docs/gen_wording_review.py`.
+These are **engineering drafts** (now draft 0.2: three rules reworded on 2026-10-22 after the data check, DEC-072 and DEC-073), first written on 2026-10-19 at the product owner's instruction. They were written from engineering's knowledge: the FRC's and legislation.gov.uk's sites could not be reached from the build environment, so no text was retrieved. Every rule names the provision it is meant to reflect, with a note for the verifier. The review workbook is `docs/architecture/v2-draft-wording-review.xlsx`; regenerate it with `python3 scripts/docs/gen_wording_review.py`.
 
 ## Importing
 Run the import as a person holding `accounts:rules-manage`:

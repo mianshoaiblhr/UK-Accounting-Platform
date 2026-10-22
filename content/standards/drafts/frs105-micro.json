@@ -3,11 +3,12 @@
   "status": "DRAFT - written by engineering from its knowledge on 2026-10-19 at the product owner's instruction (DEC-064). Not retrieved from or checked against the FRC's or legislation.gov.uk's text (both unreachable from the build environment). Import it as an UNVERIFIED version; a holder of accounts:rule-verify who is not the importer checks every rule against the current text before verifying (DEC-052).",
   "standard": { "code": "FRS105", "name": "FRS 105 The Financial Reporting Standard applicable to the Micro-entities Regime" },
   "version": {
-    "label": "FRS 105 micro-entity - engineering draft 0.1 (unverified)",
+    "label": "FRS 105 micro-entity - engineering draft 0.2 (unverified)",
     "effectiveFrom": "2026-01-01",
     "source": { "url": "https://www.frc.org.uk/library/standards-codes-policy/accounting-and-reporting/uk-accounting-standards/", "provision": "FRS 105; SI 2008/409 Sch 1 (micro-entity formats and notes); Companies Act 2006 ss.384A, 411, 413, 414, 475-477. Drafted, not retrieved: check every rule against the current text", "retrievedOn": "2026-10-19" },
     "notes": "Engineering draft (DEC-064). Formats follow the micro-entity balance sheet and profit and loss formats as engineering understands them. Staff costs, called up share capital not paid and provisions for liabilities have no V1 reporting line: place those accounts with company overrides. No accounting-policy note is drafted: the micro-entity provisions do not require one (verifier to confirm)."
   },
+  "revisions": ["2026-10-22, engineering draft 0.2 (DEC-073), after engineering's data check (DEC-072): NOTE.EMPLOYEES no longer says \"(including directors)\" (F2). Still UNVERIFIED."],
   "turnoverLine": "P.T",
   "lines": [
     { "key": "P.T", "statement": "PL", "sort": 10, "name": "Turnover", "kind": "ACCOUNTS", "naturalSide": "CREDIT" },
@@ -47,8 +48,8 @@
   ],
   "rules": [
     { "key": "NOTE.EMPLOYEES", "section": "NOTES", "sort": 10, "title": "Employees", "appliesTo": ["MICRO"],
-      "body": "The average number of persons employed by the company (including directors) during the year was {{fact:employees.average}} ({{year:priorEnd}}: {{fact:employees.averagePrior}}).",
-      "source": "Companies Act 2006 s.411 (average number of employees), as applied to micro-entities", "verifierNote": "Confirm the requirement applies to micro-entities for the periods in scope, and whether directors are counted." },
+      "body": "The average number of persons employed by the company during the year was {{fact:employees.average}} ({{year:priorEnd}}: {{fact:employees.averagePrior}}).",
+      "source": "Companies Act 2006 s.411 (average number of employees), as applied to micro-entities", "verifierNote": "Confirm the requirement applies to micro-entities for the periods in scope. s.411(5)-(6) counts the persons employed under contracts of service; a director is counted only if employed under one, so the wording no longer says \"(including directors)\" (DEC-072 F2). If the firm wants to state whether directors are included, add it before verifying." },
     { "key": "NOTE.ADV", "section": "NOTES", "sort": 20, "title": "Advances, credits and guarantees granted to directors", "appliesTo": ["MICRO"], "omitWhenEmpty": true,
       "body": "{{table:directors.advances}}\n{{fact:text.directorAdvanceTerms}}",
       "source": "Companies Act 2006 s.413", "verifierNote": "s.413 asks for the amount, the interest rate, the main conditions, amounts repaid and amounts written off or waived; the table gives the amounts and text.directorAdvanceTerms the rest. Guarantees are not in the table: add them to the wording if any." },

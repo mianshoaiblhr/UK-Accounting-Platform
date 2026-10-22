@@ -73,7 +73,7 @@ PACKS = {p: json.load(open(f'content/standards/drafts/{p}.json')) for p in ['frs
 
 wb = Workbook()
 H = Font(bold=True, color='FFFFFF'); HF = PatternFill('solid', fgColor='1F3864')
-FILL = {'OK': 'C6EFCE', 'CONFIRMED': 'C6EFCE', 'FINDING': 'FFC7CE', 'DIFFERS': 'FFC7CE', 'UNBALANCED': 'FFC7CE', 'CHECK': 'FFEB9C', 'NOT CONFIRMED': 'FFEB9C', 'LIMITATION': 'DDEBF7'}
+FILL = {'DRAFTED': 'E2EFDA', 'OK': 'C6EFCE', 'CONFIRMED': 'C6EFCE', 'FINDING': 'FFC7CE', 'DIFFERS': 'FFC7CE', 'UNBALANCED': 'FFC7CE', 'CHECK': 'FFEB9C', 'NOT CONFIRMED': 'FFEB9C', 'LIMITATION': 'DDEBF7'}
 def sheet(title, header, rows, widths, status_col=None):
     ws = wb.create_sheet(title); ws.append(header)
     for c in ws[1]: c.font = H; c.fill = HF; c.alignment = Alignment(wrap_text=True, vertical='top')
@@ -176,7 +176,7 @@ th_rows += [
 
 # Wording references, assessed one by one (engineering's reading; legal text not retrievable here)
 ASSESS = {
-    'NOTE.EMPLOYEES': ('CHECK', 'The average number of persons employed is right (s.411(1)). "(including directors)" is true only for directors employed under contracts of service (s.411(5)-(6)); a director without one is not counted. Suggest wording without the bracket, or a fact saying whether directors are included.'),
+    'NOTE.EMPLOYEES': ('DRAFTED', 'The average number of persons employed (s.411(1)). Draft 0.1 said "(including directors)", true only for directors employed under contracts of service (s.411(5)-(6)); draft 0.2 (DEC-073) drops the bracket. To verify.'),
     'NOTE.ADV': ('OK', 's.413 requires advances and credits granted to directors and guarantees on their behalf, with the main terms; the table and a terms fact cover it.'),
     'NOTE.COMMIT': ('OK', 'Financial commitments, guarantees and contingencies not in the balance sheet are a required note for small and micro companies (SI 2008/409 Sch 1).'),
     'BSS.AUDIT': ('OK', 'The three statements s.475(2)-(3) require: exempt under s.477; members have not required an audit under s.476; the directors\' responsibilities.'),
@@ -188,11 +188,11 @@ ASSESS = {
     'POL.GC': ('OK', 'Going concern wording is a fact the preparer writes (FRS 102 3.8-3.9); the platform does not assert it.'),
     'POL.TURNOVER': ('OK', 'Revenue policy in Section 23 terms; the firm adapts it to the client.'),
     'POL.FA': ('OK', 'Section 17 measurement; the rates are a fact.'),
-    'POL.FININST': ('CHECK', 'States the company has ONLY basic financial instruments: true for many small companies, not all. Make it conditional, or a fact the preparer confirms.'),
+    'POL.FININST': ('DRAFTED', 'Draft 0.1 asserted ONLY basic financial instruments for every client; draft 0.2 (DEC-073) states the basic-instrument policy and takes the position on other instruments from a fact (text.otherFinancialInstruments). To verify.'),
     'POL.TAX': ('OK', 'Current and deferred tax on timing differences (Section 29).'),
     'NOTE.FA': ('OK', 'Movements in cost and depreciation of fixed assets (Sch 1).'),
     'NOTE.PROV': ('OK', 'Movements on provisions (Sch 1; Section 21).'),
-    'NOTE.CREDLONG': ('FINDING', 'The cited Sch 1 requirement is the aggregate of debts payable (or by instalments) after more than FIVE years, and debts on which security is given with its nature. The wording discloses creditors due after more than ONE year, which is a different figure. Engineering\'s data cannot split it today: it needs a five-year fact (or line) and the secured-debts fact, and a reworded body.'),
+    'NOTE.CREDLONG': ('DRAFTED', 'The Sch 1 requirement is the debts payable (or by instalments) after more than FIVE years and the debts on which security is given, with its nature. Draft 0.1 disclosed only the after-ONE-year figure; draft 0.2 (DEC-073) keeps that line for context and adds both disclosures from facts (text.debtsAfterFiveYears, text.securedDebts). To verify.'),
     'NOTE.EVENTS': ('OK', 'Post balance sheet events as a preparer\'s fact (Sch 1; Section 32).'),
     'NOTE.RP': ('OK', 'Related party transactions not concluded under normal market conditions (Sch 1; 1AC); the table shows all transactions with the parties, which is more than the minimum.'),
     'DR.INTRO': ('OK', 'Directors\' report (s.415).'),
@@ -211,9 +211,9 @@ for pack, d in PACKS.items():
 wr_rows.append(['frs102-1a-small', '(not in the pack)', 'Political donations and expenditure', 'SMALL', '', 'Companies Act 2006 Sch 7 (SI 2008/410 Sch 7 Part 1)', 'CHECK', 'A small company\'s directors\' report must disclose political donations and expenditure over £2,000 in the year. The pack has no wording for it; add conditional wording or a fact.', 'https://www.legislation.gov.uk/uksi/2008/410/schedule/7'])
 
 findings = [
-    ['F1', 'FINDING', 'NOTE.CREDLONG (FRS 102 1A pack)', 'The wording discloses creditors after more than one year, but the requirement it cites is debts payable after more than five years and secured debts.', 'Shoaib (content); engineering adds the facts', 'Reword the body; add facts for debts after five years and for secured debts; re-run the wording review.'],
-    ['F2', 'CHECK', 'NOTE.EMPLOYEES (both packs)', '"(including directors)" is true only where directors have contracts of service.', 'Shoaib (content)', 'Remove the bracket or make it a fact.'],
-    ['F3', 'CHECK', 'POL.FININST (FRS 102 1A pack)', 'The policy asserts only basic financial instruments for every client.', 'Shoaib (content)', 'Make it conditional or a confirmed fact.'],
+    ['F1', 'DRAFTED', 'NOTE.CREDLONG (FRS 102 1A pack)', 'Draft 0.1 disclosed creditors after more than one year; the requirement cited is debts payable after more than five years and secured debts.', 'Engineering (done, draft 0.2, DEC-073); Shoaib verifies', 'Reworded with two facts in draft 0.2; verify the wording and the Sch 1 paragraph.'],
+    ['F2', 'DRAFTED', 'NOTE.EMPLOYEES (both packs)', '"(including directors)" was true only where directors have contracts of service.', 'Engineering (done, draft 0.2, DEC-073); Shoaib verifies', 'Bracket removed in draft 0.2; verify.'],
+    ['F3', 'DRAFTED', 'POL.FININST (FRS 102 1A pack)', 'The policy asserted only basic financial instruments for every client.', 'Engineering (done, draft 0.2, DEC-073); Shoaib verifies', 'The position on other instruments is now a fact in draft 0.2; verify.'],
     ['F4', 'CHECK', 'BSS.MICRO, POL.COMPLIANCE', 'The provision cited for the micro-entity statement and the FRS 102 paragraph for the compliance statement need confirming against the text.', 'Shoaib (content)', 'Confirm and correct the citations before verifying.'],
     ['F5', 'CHECK', 'Directors\' report (FRS 102 1A pack)', 'No wording for political donations and expenditure over £2,000 (Sch 7).', 'Shoaib (content)', 'Add conditional wording or a fact if the firm wants the pack to cover it.'],
     ['F6', 'NOT CONFIRMED', '2016 threshold set: priorYearOnFirst', 'The SI 2015/980 transitional treatment could not be confirmed from any reachable source; early adoption from 1 January 2015 is not modelled.', 'Shoaib (verification)', 'Confirm against SI 2015/980 or set it to false; it matters only for years beginning in 2016.'],
@@ -231,7 +231,7 @@ for line in [
     f'Invariants: {sum(j[1] for j in journals)} hand-written journals, {sum(j[2] for j in journals)} unbalanced; the V2-M1 statements recomputed in {len(recomputed)} formula lines (both years) and {len(cross)} cross-checks, all agreeing.',
     f'Matrix evidence: {sum(m[2] for m in matrix)} paths in the V1 and V2 matrices, {sum(m[3] for m in matrix)} missing.',
     f'Thresholds: {sum(1 for r in th_rows if r[6] == "CONFIRMED")} items confirmed against reachable sources, {sum(1 for r in th_rows if r[6] in ("CHECK", "NOT CONFIRMED"))} to check, {sum(1 for r in th_rows if r[6] == "LIMITATION")} limitation.',
-    f'Wording references: {len(wr_rows)} rows; {sum(1 for r in wr_rows if r[6] == "FINDING")} finding, {sum(1 for r in wr_rows if r[6] == "CHECK")} to check, the rest consistent with the provision cited.', '',
+    f'Wording references: {len(wr_rows)} rows; {sum(1 for r in wr_rows if r[6] == "FINDING")} open finding, {sum(1 for r in wr_rows if r[6] == "DRAFTED")} reworded in draft 0.2 (DEC-073, to verify), {sum(1 for r in wr_rows if r[6] == "CHECK")} to check, the rest consistent with the provision cited.', '',
     'Sources: legislation.gov.uk could not be reached from the build environment (DNS refused), nor could the professional bodies\' pages directly. The thresholds were checked through web search results summarising ACCA, ICAEW and PwC guidance; the links are on each row. The statute links are to legislation.gov.uk for the verifier.',
     'Case law: none is relied on; the thresholds and statements are statutory, and no case was found or needed for these points.',
     'Nothing here changes data in the platform. The findings go to the named accountant; content changes follow the DEC-064 pattern (a new draft, imported UNVERIFIED, verified by a second person).']:

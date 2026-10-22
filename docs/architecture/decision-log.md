@@ -277,6 +277,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-070 | How V2-M6c is built: partner review, client approval, locking and the filing-ready package (delegated, DEC-019; recorded before code) | A fingerprint of the accounts document ties the three records together. A second person holding `accounts:review` records the partner review of the accounts as signed off at step 11. The client's approval is recorded against the document's approval facts (the approving director and the date), with evidence. It needs a live partner review and every period of the year closed, and it locks the periods and the year's framework. Facts, flag responses and workflow sign-offs for the year are then refused. A preparer generates the filing-ready package once; it is refused unless the approved figures are unchanged and every rule it uses was verified by a second person (V2-ARC-04) |
 | DEC-071 | V2-M7 split; how V2-M7a is built: the year-end workspace screens (delegated, DEC-019; recorded before code) | V2-M7 is split like V1-M9: V2-M7a the year-end workspace (the 14-step workflow, the review checklist, the accounts document with its facts and size test, partner review, client approval and the package); V2-M7b the registers (fixed assets, year-end adjustments, the closing journal, director loan accounts and related parties); V2-M7c the reporting framework (standards and their content, verification, thresholds, the framework of each year, the statutory preview and cash flow). Each screen shows what the API returns and computes nothing; each slice is proven in a real browser (DEC-050) |
 | DEC-072 | Engineering's data check of V2, a review not a verification (2026-10-21) | At the product owner's request ("Check data yourself"), engineering checked the V2 data: the goldens re-derived, invariants recomputed, the draft size thresholds against the reachable sources, every reference in the wording packs, and the matrix evidence. One finding (NOTE.CREDLONG discloses after one year where the requirement cited is after five years and secured debts), five items to check, one limitation; nothing in the platform changed. Under DEC-052 this verifies nothing: engineering wrote the data |
+| DEC-073 | Draft wording packs 0.2: findings F1 to F3 of the data check reworded (2026-10-22) | After the data check (DEC-072), engineering reworded three rules of the draft packs. NOTE.CREDLONG now discloses the debts payable after more than five years and the secured debts, from facts. NOTE.EMPLOYEES no longer says "(including directors)". POL.FININST no longer asserts only basic financial instruments. Both packs are now draft 0.2 and still UNVERIFIED; nothing is imported or verified by this |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -938,3 +939,27 @@ These choices refine DEC-036. None of them is a tax rule; the VAT arithmetic is 
   * the findings go to the named accountant (DEC-056);
   * content changes follow the DEC-064 pattern: a new draft, imported UNVERIFIED and verified by a second person;
   * no case law is relied on.
+
+### DEC-073 - Draft wording packs 0.2: findings F1 to F3 of the data check reworded (2026-10-22)
+* **Request:** after the data check (DEC-072), engineering offered to draft corrected wording for F1 to F3, and the product owner said "go".
+* **Changes**, in `content/standards/drafts/`, each recorded in the pack's `revisions`:
+  * **NOTE.CREDLONG** (FRS 102 1A, F1). The after-one-year line stays for context and so that the note is left out when there are no such creditors. Two disclosures are added, each from a new fact:
+    * the debts payable after more than five years (`text.debtsAfterFiveYears`);
+    * the debts on which security is given, with its nature (`text.securedDebts`).
+
+    The source now names both requirements of SI 2008/409 Sch 1.
+  * **NOTE.EMPLOYEES** (both packs, F2): "(including directors)" is removed. s.411 counts persons employed under contracts of service, so a director without one is not counted.
+  * **POL.FININST** (FRS 102 1A, F3): the policy states how basic financial instruments are measured. The position on any other instruments comes from a new fact, `text.otherFinancialInstruments`, instead of asserting that every client has only basic instruments.
+* **Status:**
+  * both packs are labelled "engineering draft 0.2 (unverified)";
+  * the text of 0.1 stays in git history;
+  * nothing is imported or verified by this; the verifier checks the new wording and its citations like any other rule (DEC-052).
+* **Open from DEC-072:**
+  * F4: the citations for the micro-entity and compliance statements;
+  * F5: political donations (Sch 7);
+  * F6: the SI 2015/980 transitional rule;
+  * F7: the balance sheet total and asset lines;
+  * F8: groups and LLPs.
+* **Evidence:**
+  * `tests/api/standard-packs.test.ts` imports and renders both packs (5/5);
+  * `docs/architecture/v2-draft-wording-review.xlsx` and `docs/architecture/v2-data-check.xlsx` are regenerated; F1 to F3 now show as DRAFTED.
