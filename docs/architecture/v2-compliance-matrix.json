@@ -82,7 +82,7 @@
     },
     "V2-M7": {
       "title": "Screens behind accounts.production",
-      "status": "SPLIT (DEC-071): V2-M7a the year-end workspace ACCEPTED 2026-10-21 (v2-m7a-acceptance.md; CI 39660002000 on 23b366f); V2-M7b the registers BUILT 2026-10-22 (v2-m7b-acceptance.md, DEC-074), evidence pending; V2-M7c the reporting framework to be specified before its code",
+      "status": "SPLIT (DEC-071): V2-M7a the year-end workspace ACCEPTED 2026-10-21 (v2-m7a-acceptance.md; CI 39660002000 on 23b366f); V2-M7b the registers ACCEPTED 2026-10-22 (v2-m7b-acceptance.md, DEC-074; CI 39776060443 on 2d53914); V2-M7c the reporting framework to be specified before its code",
       "owner": "Engineering (front end)",
       "depends": [
         "each API milestone"
@@ -917,6 +917,7 @@
     "v2.4 (2026-10-21, V2-M7a, DEC-071): the year-end workspace screens built (workflow, review, accounts, approval and package) and proven in a real browser. V2-DOD-01 stays Missing until V2-M7b and V2-M7c; its note records the slice. No status change.",
     "v2.4a (2026-10-21): V2-M7a evidence recorded (CI 39660002000 and CodeQL 39660002001 green on 23b366f; clean clone 2302 tests, e2e 26/26, OpenAPI drift 0).",
     "v2.4b (2026-10-21, DEC-072): engineering's data check (a review, not verification). Goldens 905 checks with 0 differences; 44 journals balanced; V2-M1 statements recomputed; 610 evidence paths present; thresholds confirmed against secondary sources; one wording finding (NOTE.CREDLONG). No status change.",
-    "v2.5 (2026-10-22, V2-M7b, DEC-074): the register screens built (fixed assets, depreciation, adjustments, provisions, closing journal, directors, related parties) and proven in a real browser. V2-DOD-01 stays Missing until V2-M7c; its note records the slice. No status change."
+    "v2.5 (2026-10-22, V2-M7b, DEC-074): the register screens built (fixed assets, depreciation, adjustments, provisions, closing journal, directors, related parties) and proven in a real browser. V2-DOD-01 stays Missing until V2-M7c; its note records the slice. No status change.",
+    "v2.5a (2026-10-22): V2-M7b evidence recorded (CI 39776060443 and CodeQL 39776060387 green on 2d53914; clean clone 2302 tests, e2e 32/32, OpenAPI drift 0)."
   ]
 }

@@ -1,5 +1,7 @@
 # V2 milestone V2-M7b - acceptance package (the register screens)
 
+**Status:** ACCEPTED under the delegation on 2026-10-22 (DEC-019, DEC-051). The evidence is below.
+
 Prepared under the product owner's delegation (DEC-019, DEC-051). The design is in DEC-074 and v2-plan section 5k.3, recorded and pushed before code (b8d8445).
 
 This is milestone evidence only, **not production approval** (DEC-006). All data is synthetic. The screens show what the API returns; they compute no figure (DEC-048, DEC-071).
@@ -7,11 +9,11 @@ This is milestone evidence only, **not production approval** (DEC-006). All data
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | @@COMMIT@@ (branch `claude/adoring-cori-mra6ze`) |
-| CI | @@CI@@ |
-| CodeQL | @@CODEQL@@ |
-| Clean clone | @@CLEAN@@ |
-| Local runs | @@LOCAL@@ |
+| Code baseline commit | `2d53914f2c34d0a47ce57934fa06a26169d84d2b` (branch `claude/adoring-cori-mra6ze`) |
+| CI | [run 39776060443](https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39776060443): every job green (migrations from scratch; dependency audit and secret scan; build, lint, typecheck, unit, integration, e2e; terraform; real S3 protocol and ClamAV; images) |
+| CodeQL | [run 39776060387](https://github.com/mianshoaiblhr/uk-accounting-platform/actions/runs/39776060387): green |
+| Clean clone | Fresh clone at 2d53914: install, build, typecheck and lint clean; 2,302 tests passed; e2e 32/32 (26 before this slice); OpenAPI drift 0 |
+| Local runs | Web and repository typecheck and lint clean; e2e 32/32 (`tests/e2e/registers.test.ts` 6/6). No API code changed, so the unit and integration suites are unchanged (2,302) |
 
 ## 2. Screens and the routes each uses (DEC-050)
 "Registers" sits in the company workspace, shown only while `accounts.production` is on and the person holds `ledger:read`. Each screen also has its own read permission:
