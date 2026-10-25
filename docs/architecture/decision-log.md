@@ -280,6 +280,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-073 | Draft wording packs 0.2: findings F1 to F3 of the data check reworded (2026-10-22) | After the data check (DEC-072), engineering reworded three rules of the draft packs. NOTE.CREDLONG now discloses the debts payable after more than five years and the secured debts, from facts. NOTE.EMPLOYEES no longer says "(including directors)". POL.FININST no longer asserts only basic financial instruments. Both packs are now draft 0.2 and still UNVERIFIED; nothing is imported or verified by this |
 | DEC-074 | How V2-M7b is built: the register screens (delegated, DEC-019; recorded before code) | A "Registers" section behind `accounts.production` with the fixed-asset register, classes and assets (add, estimate, tax fields, dispose, reverse), depreciation runs, year-end adjustments and release runs, provisions and their movements, the closing journal, director loan accounts (statements, report, thresholds) and related parties (report). The screens show what the API returns and compute nothing; proven in a real browser (DEC-050) |
 | DEC-075 | The product owner's design stack installed in the repository (2026-10-25) | The product owner attached their design-stack file and the frontend-design skill and chose to install the stack and redesign the screens. Five skills were installed into `.claude/skills/` and committed: design-taste-frontend v2, frontend-design, senior-frontend, ui-design-system and ui-ux-pro-max. The file is saved as `CLAUDE.md`, with what was and was not installed. The vendored skill code is excluded from lint and CodeQL. framer-motion and gsap are added only if a screen needs them; the MCP servers are per machine and need the owner's key or sign-in |
+| DEC-076 | UI-1: the platform's visual system (delegated, DEC-019; recorded before code) | Following the owner's frontend-design skill and the dealt Achromatic-ledger style, every screen gets one visual system: a ledger blue-grey ground, blue-black ink, Geist bundled with the app, one signal-blue hue on the main data element, red ink only for what is wrong, an open-plane sidebar with the product, the company and the sections, and the accountant's ruled totals (a single rule above a total, a double rule under the final one). Nothing a screen shows changes; the 32 browser tests pass unchanged |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -1014,3 +1015,34 @@ These choices refine DEC-036. None of them is a tax rule; the VAT arithmetic is 
   * **The two MCP servers:** they are set up per machine, outside the repository. 21st.dev needs the owner's API key, and Higgsfield an interactive sign-in.
 * **`CLAUDE.md`:** the owner's file, saved unchanged as the project's `CLAUDE.md`, with a section appended recording this installation. It also records that the project's own rules still govern screen work (DEC-048, DEC-050, DEC-071).
 * **Restart:** skills load when a session starts, so they are active from the next session.
+
+### DEC-076 - UI-1: the platform's visual system (delegated, DEC-019; recorded before code)
+* **Why:** the product owner chose to redesign the screens with their design stack (DEC-075). The screens built in V1-M9 and V2-M7 share a 27-line stylesheet of browser defaults. UI-1 gives them one visual system without changing what any screen shows.
+* **The plan:** `docs/design/visual-system.md`, written before code with the frontend-design skill's two passes (plan, then review against the brief) and the design-taste-frontend skill's app-screen run.
+  * **The style:** Achromatic ledger (light), on an Open plane shell, dealt by the skill's own draw (seed 117641326), not chosen from habit.
+  * **Tokens:**
+    * ledger ground `#f2f4f7` and white sheets;
+    * blue-black ink `#172231` and pencil `#566170`;
+    * rules in three steps;
+    * one signal blue `#1d5fbf`, on the main data element only;
+    * red ink `#b3261e`, only for what is wrong;
+    * settled green `#276b2b`;
+    * pale status pills;
+    * true-neutral dark mode.
+  * **Contrast:** every text colour reaches 4.5:1 on each surface it sits on. `scripts/docs/check_contrast.py` checks all 37 pairs.
+  * **Type:** Geist, bundled from the `geist` package (no request to Google); tabular figures on every amount. Geist Mono only for identifiers a person compares.
+  * **Shell:** a 256px labelled sidebar on the ground holds the product's mark and name, the company and its currency, the sections in groups, and the person with Sign out. The canvas is fluid, with sheets that have a 1px edge, an 8px radius and no shadow.
+  * **The memorable thing:** the accountant's ruled totals. A single ink rule sits above each total, and a double rule under a statement's final total.
+  * **Removed tells:** the review against the brief replaced the sheet's `#0a0a0a` ink, the middle-dot sub-navigation and the default `#f8f8f8` ground (plan section 7).
+* **What does not change:**
+  * every figure, word, state, route, permission and action (DEC-048, DEC-071);
+  * the accessible names and test ids.
+
+  The CSS gains no utility framework, and no animation library is added.
+* **Acceptance:**
+  * the 32 existing e2e tests pass unchanged;
+  * the web typecheck, lint and production build;
+  * the contrast check passes;
+  * screenshots of the main screens at 1440 and 390 wide, before and after, are taken with the real stack and kept in `docs/design/screens/`;
+  * keyboard focus is visible, and reduced motion is respected;
+  * CI green and a clean clone.
