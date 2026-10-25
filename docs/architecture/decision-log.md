@@ -282,6 +282,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-075 | The product owner's design stack installed in the repository (2026-10-25) | The product owner attached their design-stack file and the frontend-design skill and chose to install the stack and redesign the screens. Five skills were installed into `.claude/skills/` and committed: design-taste-frontend v2, frontend-design, senior-frontend, ui-design-system and ui-ux-pro-max. The file is saved as `CLAUDE.md`, with what was and was not installed. The vendored skill code is excluded from lint and CodeQL. framer-motion and gsap are added only if a screen needs them; the MCP servers are per machine and need the owner's key or sign-in |
 | DEC-076 | UI-1: the platform's visual system (delegated, DEC-019; recorded before code) | Following the owner's frontend-design skill and the dealt Achromatic-ledger style, every screen gets one visual system: a ledger blue-grey ground, blue-black ink, Geist bundled with the app, one signal-blue hue on the main data element, red ink only for what is wrong, an open-plane sidebar with the product, the company and the sections, and the accountant's ruled totals (a single rule above a total, a double rule under the final one). Nothing a screen shows changes; the 32 browser tests pass unchanged |
 | DEC-077 | October 2026 dependency advisories (2026-10-25) | CI's dependency audit began failing on advisories published after the last green run, none from UI-1. Updated next to 15.5.28 (a critical remote-code-execution and a denial of service), vitest to 4.1.12, and through overrides body-parser 2.4, multer 2.5, undici 8.12.3 and fast-uri 3.1.9. Zod's advisory (GHSA-mrhx-c7xc-m3w5) is patched only in Zod 4; the platform uses Zod 3, which has the same unbounded issue list. The API now refuses any request array over 5,000 items before validation, a test proves no limited schema allows more, and the advisory is listed in the audit's ignore list with this record. Moving to Zod 4 is left for its own milestone |
+| DEC-078 | UI-1 build record (2026-10-25) | Building DEC-076 refined it without changing its intent: the ruled total sits over the figures only; the mark is an "=" (the ledger in balance); the sidebar groups are Books, Reports, Money and Accounts production; dark-mode pills added (41 contrast pairs pass); wide tables keep a minimum width on a phone. Three pieces of the platform's own chrome changed wording ("Dashboard" to "Companies" in the top bar; the breadcrumb became the sidebar's company block; middle dots left the sub-navigation). No word, figure or state from the API changed. A new browser test holds the quality floor |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -1063,3 +1064,25 @@ These choices refine DEC-036. None of them is a tax rule; the VAT arithmetic is 
   * **Not done:** moving to Zod 4 changes the validation layer of every route. It is not done here and is left as its own milestone.
 * **Not changed:** API behaviour, except the new refusal; no schema, route or permission changes.
 
+### DEC-078 - UI-1 build record (2026-10-25)
+DEC-076 is unchanged. This records what building it refined; the detail is in `docs/design/visual-system.md` section 9.
+
+* **The ruled total sits over the figures only.** A 1px ink rule runs above each total's amounts, and a 3px double rule runs under the final total's amounts on the statements and the trial balance. That is how signed accounts rule them. The first build ruled the whole row, where the grey row rule hid the ink.
+* **The mark** is an "=" on an ink square: the two sides of the ledger in balance. A three-rule draft read as a menu button.
+* **The sidebar's groups** are Books, Reports, Money and Accounts production, so no group shares a section's name.
+* **Dark-mode pills** were added with the same rule as the light ones; the contrast check now has 41 pairs, all passing.
+* **Phone tables:** a table of four or more columns keeps a minimum width and scrolls inside its sheet, and its first two columns stay on one line.
+* **Chrome words.** No word, figure or state from the API changed. Three pieces of the platform's own chrome did:
+  * the top bar's "Dashboard" link to the company list reads "Companies";
+  * the workspace breadcrumb became the sidebar's company block: the name, "Base currency GBP" and "Change company";
+  * the sub-navigation rows lost their middle dots.
+
+  The middle dots inside data lines stay: they are what the screens say, and tests read them.
+* **The quality floor test:** a new browser test, `tests/e2e/visual.test.ts`, checks:
+  * visible focus;
+  * reduced motion;
+  * the sidebar outside `main`;
+  * the current section marked;
+  * no sideways scroll at 390px.
+
+  The evidence is in `docs/design/ui-1-acceptance.md`.

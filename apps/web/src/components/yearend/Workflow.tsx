@@ -15,7 +15,7 @@ interface Workflow { year: { start: string; end: string }; locked: boolean; fing
 /** Steps 12 to 14 are done through their own records on the approval screen (DEC-070). */
 const OWN_RECORD = [12, 13, 14];
 
-function StepRow({ s, yearStart, locked, onDone }: { s: Step; yearStart: string; locked: boolean; onDone: () => Promise<void> }) {
+function StepRow({ s, yearStart, locked, current, onDone }: { s: Step; yearStart: string; locked: boolean; current: boolean; onDone: () => Promise<void> }) {
   const w = useWorkspace();
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
@@ -30,7 +30,7 @@ function StepRow({ s, yearStart, locked, onDone }: { s: Step; yearStart: string;
     } catch (e) { setError(errorText(e)); } finally { setBusy(false); }
   }
   return (
-    <tr data-step={s.step}>
+    <tr data-step={s.step} className={current ? 'current' : undefined} aria-current={current ? 'step' : undefined}>
       <td>{s.step}</td>
       <td>{s.title}{s.dependsOn.length > 0 && <div className="muted">after {s.dependsOn.join(', ')}</div>}</td>
       <td data-testid="step-state"><span className="badge">{s.state}</span></td>
@@ -63,7 +63,7 @@ export function WorkflowScreen() {
           <p data-testid="current-step">{data.current ? `Current step: ${data.current} (${data.steps[data.current - 1]!.title})` : 'Every step is done.'}{data.locked ? ' The client approved the accounts; the year is locked.' : ''}</p>
           <table data-testid="workflow">
             <thead><tr><th>#</th><th>Step</th><th>State</th><th>Control</th><th>Sign-offs</th><th>Actions</th></tr></thead>
-            <tbody>{data.steps.map((s) => <StepRow key={s.step} s={s} yearStart={year.yearStart} locked={data.locked} onDone={reload} />)}</tbody>
+            <tbody>{data.steps.map((s) => <StepRow key={s.step} s={s} yearStart={year.yearStart} locked={data.locked} current={s.step === data.current} onDone={reload} />)}</tbody>
           </table>
           <Notices notices={data.notices} />
         </>

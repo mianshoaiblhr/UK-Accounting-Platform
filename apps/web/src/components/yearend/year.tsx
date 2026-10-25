@@ -49,11 +49,11 @@ export function YearBar({ title, locked }: { title: string; locked?: boolean }) 
           {(locked ?? !!year.lockedAt) && <span className="badge" data-testid="year-locked">Approved and locked</span>}
         </div>
       )}
-      <p className="muted" data-testid="year-end-nav">
-        {PAGES.map((p, i) => (
-          <span key={p.href}>{i > 0 && ' · '}{pathname === `${base}${p.href}` ? <strong>{p.label}</strong> : <Link href={`${base}${p.href}${qs({ year: year?.yearStart })}`}>{p.label}</Link>}</span>
-        ))}
-      </p>
+      <nav className="subnav" aria-label="Year end" data-testid="year-end-nav">
+        {PAGES.map((p) => pathname === `${base}${p.href}`
+          ? <span key={p.href} aria-current="page">{p.label}</span>
+          : <Link key={p.href} href={`${base}${p.href}${qs({ year: year?.yearStart })}`}>{p.label}</Link>)}
+      </nav>
     </>
   );
 }

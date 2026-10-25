@@ -15,7 +15,9 @@ DARK = {'ground': '#0c0d0f', 'sheet': '#15171a', 'active': '#23272d'}
 TEXT_LIGHT = {'ink': '#172231', 'pencil': '#566170', 'signal': '#1d5fbf', 'red': '#b3261e', 'green': '#276b2b'}
 TEXT_DARK = {'ink': '#f2f4f7', 'pencil': '#aab2bd', 'signal': '#6d9eea', 'red': '#f08a80', 'green': '#5bbf73'}
 PILLS = [('positive', '#04250e', '#dcfae5'), ('negative', '#831c1e', '#ffedea'), ('notice', '#92400e', '#fffbeb'), ('neutral', '#3a4553', '#e9edf2'),
-         ('red ink on its error tint', '#b3261e', '#ffedea'), ('primary label', '#ffffff', '#172231'), ('dark primary label', '#15171a', '#f2f4f7')]
+         ('red ink on its error tint', '#b3261e', '#ffedea'), ('primary label', '#ffffff', '#172231'), ('dark primary label', '#15171a', '#f2f4f7'),
+         # the dark-mode pills (UI-1 build): pale ink on a deep tint of the same hue
+         ('dark positive', '#8fdca5', '#172a1d'), ('dark negative', '#f6b0a9', '#2c1a1c'), ('dark notice', '#f3c87a', '#2a2214'), ('dark neutral', '#c9d0d9', '#23272d')]
 bad = 0
 for theme, surfaces, texts in (('light', LIGHT, TEXT_LIGHT), ('dark', DARK, TEXT_DARK)):
     for t, tc in texts.items():

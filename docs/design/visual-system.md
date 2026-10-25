@@ -143,3 +143,35 @@ The plan also keeps clear of the other defaults:
 * The accessible names and test ids the real-browser tests use.
 
 The 32 existing e2e tests must pass unchanged.
+
+## 9. Build record (DEC-078; added when the plan was built, sections 1 to 8 are unchanged as recorded before code)
+Building the plan and reviewing it in screenshots of the real stack led to these refinements. Each one keeps to the plan's intent.
+* **The ruled total sits over the figures only.** Signed accounts rule the amount column, not the whole line. So:
+  * the 1px ink rule runs above each total's figures;
+  * the 3px double rule runs under the final total's figures (the statements and the trial balance).
+  The first build ruled the whole row, and in a collapsed table the row's grey rule hid the ink one.
+* **The mark is the double rule alone** (an "=" on an ink square: the two sides of the ledger in balance). A first draft with three rules read as a menu button.
+* **The sidebar's groups** are Books, Reports, Money and Accounts production. "Year end" is a section's name, so it does not also name its group.
+* **Dark-mode pills** were not in the plan's token table. They are deep tints with pale ink of the same hue:
+  * positive `#172a1d` / `#8fdca5`;
+  * negative `#2c1a1c` / `#f6b0a9`;
+  * notice `#2a2214` / `#f3c87a`;
+  * neutral `#23272d` / `#c9d0d9`.
+  The contrast check now covers 41 pairs, and all pass.
+* **Phone tables:**
+  * a table of four or more columns keeps a minimum width (560px; 720px from six columns) and scrolls inside its sheet;
+  * its first two columns (number, date, code) stay on one line, so a date never breaks at its hyphens.
+* **Smaller fixes:**
+  * date fields are capped at 220px;
+  * a statement line's disclosure button is a 22px square;
+  * table cells align on the text baseline;
+  * links in tables keep their underline.
+* **Chrome words.** No word, figure or state from the API changed. Three pieces of the platform's own chrome did:
+  * the top bar's "Dashboard" link to the company list is now "Companies";
+  * the workspace breadcrumb "Companies / name (GBP)" is now the sidebar's company block: the name, "Base currency GBP" and "Change company";
+  * the sub-navigation rows lost their middle dots.
+
+  The middle dots inside data lines (a document's status and dates, a bank account's summary) stay. They are what the screens say, and the e2e tests read them.
+* **The current section and page:**
+  * the sidebar marks the current section with `aria-current="page"`;
+  * the year end's current step row carries `aria-current="step"`, in signal blue.

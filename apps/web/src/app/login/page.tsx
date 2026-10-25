@@ -32,7 +32,7 @@ export default function Login() {
           <Field label="Code" name="code" value={code} onChange={setCode} autoComplete="one-time-code" />
         </Form>
       )}
-      <p className="muted"><Link href="/forgot-password">Forgot password?</Link> · <Link href="/register">Create an account</Link></p>
+      <p className="muted inline-links"><Link href="/forgot-password">Forgot password?</Link><Link href="/register">Create an account</Link></p>
     </main>
   );
 }

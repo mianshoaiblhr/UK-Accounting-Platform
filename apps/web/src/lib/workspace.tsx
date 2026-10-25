@@ -1,8 +1,8 @@
 'use client';
 import Link from 'next/link';
 import { useParams, usePathname, useRouter } from 'next/navigation';
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { Nav } from '@/components/Nav';
+import { Fragment, createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Product, SignOut } from '@/components/Nav';
 import { ApiError, api, errorText, type Company, type CompanyAccess, type Me } from '@/lib/api';
 
 /**
@@ -17,21 +17,22 @@ export const useWorkspace = () => {
   return w;
 };
 
-const SECTIONS: { href: string; label: string; permission: string; feature?: string }[] = [
-  { href: '', label: 'Dashboard', permission: 'ledger:read' },
-  { href: '/accounts', label: 'Accounts', permission: 'account:read' },
-  { href: '/journals', label: 'Journals', permission: 'ledger:read' },
-  { href: '/trial-balance', label: 'Trial balance', permission: 'ledger:read' },
-  { href: '/reports/profit-and-loss', label: 'Profit and loss', permission: 'ledger:read' },
-  { href: '/reports/balance-sheet', label: 'Balance sheet', permission: 'ledger:read' },
-  { href: '/periods', label: 'Periods', permission: 'period:read' },
-  { href: '/sales', label: 'Sales', permission: 'sales:read' },
-  { href: '/purchases', label: 'Purchases', permission: 'purchases:read' },
-  { href: '/bank', label: 'Bank', permission: 'bank:read' },
-  { href: '/cash', label: 'Cash', permission: 'cash:read' },
+/** The sections, in the sidebar's groups (UI-1, DEC-076); a group with no section the person may open is not shown. */
+const SECTIONS: { href: string; label: string; permission: string; group: string; feature?: string }[] = [
+  { href: '', label: 'Dashboard', permission: 'ledger:read', group: 'Books' },
+  { href: '/accounts', label: 'Accounts', permission: 'account:read', group: 'Books' },
+  { href: '/journals', label: 'Journals', permission: 'ledger:read', group: 'Books' },
+  { href: '/trial-balance', label: 'Trial balance', permission: 'ledger:read', group: 'Books' },
+  { href: '/periods', label: 'Periods', permission: 'period:read', group: 'Books' },
+  { href: '/reports/profit-and-loss', label: 'Profit and loss', permission: 'ledger:read', group: 'Reports' },
+  { href: '/reports/balance-sheet', label: 'Balance sheet', permission: 'ledger:read', group: 'Reports' },
+  { href: '/sales', label: 'Sales', permission: 'sales:read', group: 'Money' },
+  { href: '/purchases', label: 'Purchases', permission: 'purchases:read', group: 'Money' },
+  { href: '/bank', label: 'Bank', permission: 'bank:read', group: 'Money' },
+  { href: '/cash', label: 'Cash', permission: 'cash:read', group: 'Money' },
   // V2-M7 (DEC-071): accounts production, shown only while its feature is on
-  { href: '/year-end', label: 'Year end', permission: 'ledger:read', feature: 'accounts.production' },
-  { href: '/registers', label: 'Registers', permission: 'ledger:read', feature: 'accounts.production' },
+  { href: '/year-end', label: 'Year end', permission: 'ledger:read', group: 'Accounts production', feature: 'accounts.production' },
+  { href: '/registers', label: 'Registers', permission: 'ledger:read', group: 'Accounts production', feature: 'accounts.production' },
 ];
 
 /** `feature`: a further feature the page needs besides bookkeeping (V2 screens: `accounts.production`); while it is off the page says so and renders nothing that calls the API. */
@@ -63,32 +64,50 @@ export function WorkspaceShell({ children, need, feature }: { children: ReactNod
   const can = (p: string) => state.access.permissions.includes(p);
   const enabled = state.access.features['bookkeeping.core'] === true;
   const w: Workspace = { ...state, orgId, can, base, path: (p) => `/organisations/${orgId}/companies/${companyId}${p}` };
+  const sections = SECTIONS.filter((s) => can(s.permission) && (!s.feature || state.access.features[s.feature] === true));
+  // a section with pages under it (a document, a register, a year-end screen) stays current on each of them
+  const current = (s: { href: string }) => pathname === `${base}${s.href}` || (['/year-end', '/registers', '/sales', '/purchases', '/bank'].includes(s.href) && pathname.startsWith(`${base}${s.href}/`));
   return (
     <Ctx.Provider value={w}>
-      <Nav me={state.me} />
-      <main className="wide">
-        <p className="muted"><Link href="/">Companies</Link> / <strong>{state.company.name}</strong> <span className="muted">({state.company.baseCurrency})</span></p>
-        {!enabled ? (
-          <div className="card" role="status" data-testid="feature-off">
-            <h1>Bookkeeping is not enabled</h1>
-            <p>The bookkeeping screens are not enabled for this organisation yet. An owner can turn on the &quot;bookkeeping.core&quot; feature.</p>
+      <div className="shell">
+        <aside>
+          <Product />
+          <div className="scope">
+            <strong>{state.company.name}</strong>
+            <span className="muted">Base currency {state.company.baseCurrency}</span>
+            <span className="muted"><Link href="/">Change company</Link></span>
           </div>
-        ) : (
-          <>
-            <nav className="tabs" aria-label="Bookkeeping">
-              {SECTIONS.filter((s) => can(s.permission) && (!s.feature || state.access.features[s.feature] === true)).map((s) => (
-                <Link key={s.href} href={`${base}${s.href}`} aria-current={pathname === `${base}${s.href}` || (s.href !== '' && ['/year-end', '/registers'].includes(s.href) && pathname.startsWith(`${base}${s.href}`)) ? 'page' : undefined}>{s.label}</Link>
+          {enabled && (
+            <nav className="sections" aria-label="Bookkeeping">
+              {[...new Set(sections.map((s) => s.group))].map((g) => (
+                <Fragment key={g}>
+                  <div className="group">{g}</div>
+                  {sections.filter((s) => s.group === g).map((s) => (
+                    <Link key={s.href} href={`${base}${s.href}`} aria-current={current(s) ? 'page' : undefined}>{s.label}</Link>
+                  ))}
+                </Fragment>
               ))}
             </nav>
-            {feature && state.access.features[feature] !== true ? (
-              <div className="card" role="status" data-testid="feature-off">
-                <h1>Accounts production is not enabled</h1>
-                <p>These screens are not enabled for this organisation yet. An owner can turn on the &quot;{feature}&quot; feature.</p>
-              </div>
-            ) : need && !can(need) ? <div className="card"><p className="muted" role="status">You do not have access to this section ({need}).</p></div> : children}
-          </>
-        )}
-      </main>
+          )}
+          <div className="person">
+            <span className="who" title={state.me.user.email}>{state.me.user.email}</span>
+            <span className="links"><Link href="/security">Security</Link><SignOut /></span>
+          </div>
+        </aside>
+        <main>
+          {!enabled ? (
+            <div className="card" role="status" data-testid="feature-off">
+              <h1>Bookkeeping is not enabled</h1>
+              <p>The bookkeeping screens are not enabled for this organisation yet. An owner can turn on the &quot;bookkeeping.core&quot; feature.</p>
+            </div>
+          ) : feature && state.access.features[feature] !== true ? (
+            <div className="card" role="status" data-testid="feature-off">
+              <h1>Accounts production is not enabled</h1>
+              <p>These screens are not enabled for this organisation yet. An owner can turn on the &quot;{feature}&quot; feature.</p>
+            </div>
+          ) : need && !can(need) ? <div className="card"><p className="muted" role="status">You do not have access to this section ({need}).</p></div> : children}
+        </main>
+      </div>
     </Ctx.Provider>
   );
 }

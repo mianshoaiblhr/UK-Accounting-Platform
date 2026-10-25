@@ -15,7 +15,7 @@ export function Statement({ lines, base, currency, compareLabel, label }: { line
         {lines.map((l) => (
           <Fragment key={l.key}>
             <tr className={l.total ? 'total' : undefined} data-key={l.key}>
-              <td>{l.accounts?.length ? <button className="secondary" style={{ margin: 0, padding: '0 6px' }} aria-expanded={!!open[l.key]} onClick={() => setOpen({ ...open, [l.key]: !open[l.key] })}>{open[l.key] ? '−' : '+'}</button> : null} {l.name}</td>
+              <td>{l.accounts?.length ? <button className="secondary disclose" aria-expanded={!!open[l.key]} onClick={() => setOpen({ ...open, [l.key]: !open[l.key] })}>{open[l.key] ? '−' : '+'}</button> : null} {l.name}</td>
               <td className="num">{l.amount}</td>
               {compareLabel ? <td className="num">{l.comparative ?? ''}</td> : null}
             </tr>

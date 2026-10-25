@@ -27,9 +27,9 @@ export function RegistersNav() {
   const pathname = usePathname();
   const base = `${w.base}/registers`;
   return (
-    <p className="muted" data-testid="registers-nav">
-      {PAGES.map((p, i) => <span key={p.href}>{i > 0 && ' · '}{pathname === `${base}${p.href}` ? <strong>{p.label}</strong> : <Link href={`${base}${p.href}`}>{p.label}</Link>}</span>)}
-    </p>
+    <nav className="subnav" aria-label="Registers" data-testid="registers-nav">
+      {PAGES.map((p) => pathname === `${base}${p.href}` ? <span key={p.href} aria-current="page">{p.label}</span> : <Link key={p.href} href={`${base}${p.href}`}>{p.label}</Link>)}
+    </nav>
   );
 }
 

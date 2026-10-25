@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { api, errorText } from '@/lib/api';
 import { useApi, useWorkspace } from '@/lib/workspace';
@@ -10,12 +11,14 @@ interface Account { id: string; code: string; name: string; type: string; subtyp
 
 export function BankNav() {
   const w = useWorkspace();
+  const pathname = usePathname();
+  const at = (href: string) => (pathname === href ? 'page' : undefined);
   return (
-    <p className="muted" data-testid="bank-nav">
-      <Link href={`${w.base}/bank`}>Bank accounts</Link>
-      {w.can('cash:read') && <>{' · '}<Link href={`${w.base}/cash`}>Cash transactions</Link></>}
-      {' · '}<Link href={`${w.base}/bank/transfers`}>Transfers</Link>
-    </p>
+    <nav className="subnav" aria-label="Bank" data-testid="bank-nav">
+      <Link href={`${w.base}/bank`} aria-current={at(`${w.base}/bank`)}>Bank accounts</Link>
+      {w.can('cash:read') && <Link href={`${w.base}/cash`} aria-current={at(`${w.base}/cash`)}>Cash transactions</Link>}
+      <Link href={`${w.base}/bank/transfers`} aria-current={at(`${w.base}/bank/transfers`)}>Transfers</Link>
+    </nav>
   );
 }
 
