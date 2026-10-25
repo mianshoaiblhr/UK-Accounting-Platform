@@ -2,7 +2,7 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/.next/**', '**/node_modules/**', '**/generated/**', 'infra/**', '**/next-env.d.ts'] },
+  { ignores: ['**/dist/**', '**/.next/**', '**/node_modules/**', '**/generated/**', 'infra/**', '**/next-env.d.ts', '.claude/**'] },   // .claude: vendored design skills for the assistant (DEC-075), never shipped
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

@@ -1,0 +1,5 @@
+# CodeQL scope (DEC-075): the platform's own code. .claude/ holds vendored design skills for the assistant (third-party, never built or
+# shipped with the app); it is excluded so its alerts do not mix with the platform's.
+name: platform
+paths-ignore:
+  - .claude/**
