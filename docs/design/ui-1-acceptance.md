@@ -53,6 +53,7 @@ The same visual test also checks the shell:
   * `body-parser`, `multer`, `undici`, `fast-uri` and `vitest` are updated;
   * the API refuses any request array over 5,000 items before validation, against Zod's unbounded issue list (GHSA-mrhx-c7xc-m3w5);
   * `pnpm audit --audit-level=high` passes, with only that advisory listed in the ignore list against its record.
+  * the CI image scan (Trivy) flagged the same packages on the spec commit's run (ff85ed8, run 40225726782): `next`, `body-parser`, `multer`, `undici` and Zod's CVE-2023-54404. The updates fix all but Zod. `.trivyignore` lists Zod's two identifiers against DEC-077 and is mounted into the scan; nothing else is ignored.
 
 ## 5. Compliance matrix and migrations
 * No requirement in the V2 matrix changes status; UI-1 is not a matrix milestone. The matrix stays at v2.5a: 59 Implemented, 1 Partially (V2-TEST-01) and 1 Missing (V2-DOD-01, until V2-M7c).

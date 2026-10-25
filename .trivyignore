@@ -1,0 +1,5 @@
+# DEC-077 (docs/architecture/decision-log.md): Zod's unbounded issue list on array validation. Patched only in Zod 4; the platform uses
+# Zod 3. Mitigated by ZodPipe refusing any request array over 5,000 items before validation (tests/unit/request-arrays.test.ts).
+# The same advisory is in package.json pnpm.auditConfig.ignoreGhsas. Remove both when the platform moves to Zod 4.
+CVE-2023-54404
+GHSA-mrhx-c7xc-m3w5
