@@ -8,6 +8,14 @@
     "typecheck": "tsc --noEmit",
     "start": "next start -p 3000"
   },
-  "dependencies": { "next": "^15.5.0", "react": "^19.0.0", "react-dom": "^19.0.0" },
-  "devDependencies": { "@types/react": "^19.0.0", "@types/react-dom": "^19.0.0" }
+  "dependencies": {
+    "geist": "1.8.2",
+    "next": "^15.5.28",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0"
+  }
 }
