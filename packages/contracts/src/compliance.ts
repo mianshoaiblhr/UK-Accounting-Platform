@@ -82,10 +82,12 @@ export const verifyDeadlineRuleSchema = z.object({
 }).strict();
 
 export const complianceProfileSchema = z.object({
-  /** The confirmation date (the end of the review period) the next confirmation statement is made up to. */
-  confirmationDate: isoDate.nullable(),
+  /** The confirmation date (the end of the review period) the next confirmation statement is made up to; null clears it, absent leaves it. */
+  confirmationDate: isoDate.nullable().optional(),
+  /** V7-M2 (DEC-089): the member who manages the client; null clears it, absent leaves it. */
+  clientManagerUserId: uuid.nullable().optional(),
   reason: z.string().trim().min(10).max(1000),
-}).strict();
+}).strict().refine((p) => p.confirmationDate !== undefined || p.clientManagerUserId !== undefined, { message: 'Nothing to change', path: ['reason'] });
 
 export const generateObligationsSchema = z.object({
   /** Anchors from this date (default: one year before `through`). */
@@ -130,4 +132,13 @@ export const companyObligationQuerySchema = z.object({
   due: z.enum(DUE_WINDOWS).default('all'),
   status: z.enum(OBLIGATION_STATUSES).optional(),
   kind: z.enum(OBLIGATION_KINDS).optional(),
+}).strict();
+
+/** V7-M2 (DEC-089): the practice's client list, over the clients the caller may read. */
+export const clientListQuerySchema = z.object({
+  q: z.string().trim().min(1).max(100).optional(),
+  legalForm: z.enum(LEGAL_FORMS).optional(),
+  manager: z.union([z.literal('me'), uuid]).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  cursor: z.string().max(400).optional(),
 }).strict();

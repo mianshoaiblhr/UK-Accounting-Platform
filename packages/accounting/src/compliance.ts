@@ -128,16 +128,22 @@ export class ComplianceService {
   // ───── A client's profile ─────
   async getProfile(tx: Tx, companyId: string) {
     const p = await tx.companyComplianceProfile.findFirst({ where: { companyId } });
-    return { companyId, confirmationDate: p?.confirmationDate ? isoDay(p.confirmationDate) : null, updatedByUserId: p?.updatedByUserId ?? null, updatedAt: p?.updatedAt ?? null };
+    return { companyId, confirmationDate: p?.confirmationDate ? isoDay(p.confirmationDate) : null, clientManagerUserId: p?.clientManagerUserId ?? null,
+      updatedByUserId: p?.updatedByUserId ?? null, updatedAt: p?.updatedAt ?? null };
   }
-  async setProfile(tx: Tx, a: { organisationId: string; companyId: string; actor: ComplianceActor; confirmationDate: string | null; reason: string }) {
+  /** A field left out stays as it is; null clears it (V7-M2 adds the client manager, DEC-089). */
+  async setProfile(tx: Tx, a: { organisationId: string; companyId: string; actor: ComplianceActor; confirmationDate?: string | null; clientManagerUserId?: string | null; reason: string }) {
     await this.need(a.actor, 'compliance:manage', a.companyId);
+    if (a.clientManagerUserId) await this.activeMember(tx, a.clientManagerUserId);
     const before = await this.getProfile(tx, a.companyId);
-    const data = { confirmationDate: a.confirmationDate ? toDate(a.confirmationDate) : null, updatedByUserId: a.actor.userId, updatedAt: new Date() };
+    const confirmationDate = a.confirmationDate !== undefined ? a.confirmationDate : before.confirmationDate;
+    const clientManagerUserId = a.clientManagerUserId !== undefined ? a.clientManagerUserId : before.clientManagerUserId;
+    const data = { confirmationDate: confirmationDate ? toDate(confirmationDate) : null, clientManagerUserId, updatedByUserId: a.actor.userId, updatedAt: new Date() };
     await tx.companyComplianceProfile.upsert({ where: { organisationId_companyId: { organisationId: a.organisationId, companyId: a.companyId } },
       create: { organisationId: a.organisationId, companyId: a.companyId, ...data }, update: data });
     await this.audit(tx, { action: 'compliance.profile_set', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actor.userId, entityType: 'company_compliance_profile',
-      entityId: a.companyId, before: { confirmationDate: before.confirmationDate }, after: { confirmationDate: a.confirmationDate }, reason: a.reason });
+      entityId: a.companyId, before: { confirmationDate: before.confirmationDate, clientManagerUserId: before.clientManagerUserId },
+      after: { confirmationDate, clientManagerUserId }, reason: a.reason });
     return this.getProfile(tx, a.companyId);
   }
 
@@ -292,5 +298,66 @@ export class ComplianceService {
       count(dueWindowWhere('overdue', today)), count(dueWindowWhere('next14', today)), count({ status: 'WAITING_ON_CLIENT' }), count({ status: 'READY' }),
     ]);
     return { today, overdue, dueNext14, waitingOnClient, ready };
+  }
+
+  // ───── V7-M2 (DEC-089): open work and the client list, over the readable clients only ─────
+  async work(tx: Tx, companyIds: string[] | 'ALL') {
+    const zero = { byStatus: {} as Record<string, number>, byKind: {} as Record<string, number>, total: 0 };
+    if (companyIds !== 'ALL' && companyIds.length === 0) return zero;
+    const where: Prisma.ComplianceObligationWhereInput = { ...(companyIds === 'ALL' ? {} : { companyId: { in: companyIds } }), status: { notIn: [...FINAL_STATUSES] } };
+    const [byStatus, byKind] = await Promise.all([
+      tx.complianceObligation.groupBy({ by: ['status'], where, _count: { _all: true } }),
+      tx.complianceObligation.groupBy({ by: ['kind'], where, _count: { _all: true } }),
+    ]);
+    return {
+      byStatus: Object.fromEntries(byStatus.map((r) => [r.status, r._count._all])),
+      byKind: Object.fromEntries(byKind.map((r) => [r.kind, r._count._all])),
+      total: byStatus.reduce((s, r) => s + r._count._all, 0),
+    };
+  }
+
+  async clients(tx: Tx, companyIds: string[] | 'ALL', q: { q?: string; legalForm?: string; managerUserId?: string; limit: number; cursor?: string }, today = ukToday()) {
+    if (companyIds !== 'ALL' && companyIds.length === 0) return { today, items: [], nextCursor: null };
+    let after: Prisma.CompanyWhereInput = {};
+    if (q.cursor) {
+      const sep = q.cursor.lastIndexOf('|');
+      const name = q.cursor.slice(0, sep), id = q.cursor.slice(sep + 1);
+      if (sep < 1 || !/^[0-9a-f-]{36}$/.test(id)) throw unprocessable('Invalid cursor', 'invalid_cursor');
+      after = { OR: [{ name: { gt: name } }, { name, id: { gt: id } }] };
+    }
+    const managed = q.managerUserId ? (await tx.companyComplianceProfile.findMany({ where: { clientManagerUserId: q.managerUserId }, select: { companyId: true } })).map((p) => p.companyId) : null;
+    const rows = await tx.company.findMany({
+      where: { AND: [companyIds === 'ALL' ? {} : { id: { in: companyIds } }, managed ? { id: { in: managed } } : {}, after,
+        q.q ? { name: { contains: q.q, mode: 'insensitive' } } : {}, q.legalForm ? { legalForm: q.legalForm } : {}] },
+      orderBy: [{ name: 'asc' }, { id: 'asc' }], take: q.limit + 1,
+      select: { id: true, name: true, companyNumber: true, legalForm: true, yearEndMonth: true, yearEndDay: true },
+    });
+    const page = rows.slice(0, q.limit), ids = page.map((c) => c.id);
+    const [vat, profiles, open] = await Promise.all([
+      tx.companyVatSetting.findMany({ where: { companyId: { in: ids } }, select: { companyId: true, registered: true, periodMonths: true } }),
+      tx.companyComplianceProfile.findMany({ where: { companyId: { in: ids } }, select: { companyId: true, clientManagerUserId: true } }),
+      tx.complianceObligation.findMany({ where: { companyId: { in: ids }, status: { notIn: [...FINAL_STATUSES] } }, orderBy: [{ dueDate: 'asc' }, { id: 'asc' }] }),
+    ]);
+    const managerIds = [...new Set(profiles.map((p) => p.clientManagerUserId).filter((x): x is string => !!x))];
+    const names = new Map((await tx.organisationMembership.findMany({ where: { userId: { in: managerIds } }, select: { userId: true, user: { select: { displayName: true } } } }))
+      .map((m) => [m.userId, m.user.displayName]));
+    const last = page[page.length - 1];
+    return {
+      today,
+      items: page.map((c) => {
+        const mine = open.filter((o) => o.companyId === c.id);
+        const v = vat.find((x) => x.companyId === c.id), p = profiles.find((x) => x.companyId === c.id);
+        const next = mine[0] ? obligationView(mine[0], today) : null;
+        return {
+          id: c.id, name: c.name, companyNumber: c.companyNumber, legalForm: c.legalForm,
+          yearEnd: c.yearEndMonth && c.yearEndDay ? { month: c.yearEndMonth, day: c.yearEndDay } : null,
+          vat: v?.registered ? { registered: true, periodMonths: v.periodMonths } : { registered: false, periodMonths: null },
+          nextDeadline: next ? { id: next.id, kind: next.kind, title: next.title, dueDate: next.dueDate, status: next.status, overdue: next.overdue } : null,
+          openCount: mine.length, overdueCount: mine.filter((o) => isOverdue({ dueDate: isoDay(o.dueDate), status: o.status }, today)).length,
+          clientManager: p?.clientManagerUserId ? { userId: p.clientManagerUserId, displayName: names.get(p.clientManagerUserId) ?? null } : null,
+        };
+      }),
+      nextCursor: rows.length > q.limit && last ? `${last.name}|${last.id}` : null,
+    };
   }
 }

@@ -139,6 +139,9 @@ table[data-testid^=statement] tbody tr:last-child td, table[data-testid=trial-ba
 .badge.status-DONE, .badge.status-READY { background: var(--pill-pos-bg); color: var(--pill-pos-ink); }
 .badge.status-WAITING_ON_CLIENT { background: var(--pill-note-bg); color: var(--pill-note-ink); box-shadow: inset 0 0 0 1px var(--pill-note-edge); }
 .pills { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+/* V7-M2 overview: the deadlines beside the work and the connections; one column on a phone */
+.split { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: var(--gap); align-items: start; }
+@media (max-width: 960px) { .split { grid-template-columns: minmax(0, 1fr); } }
 /* V7-M1 counts: a row of sheets, each one figure from the API */
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--gap); margin: 0 0 var(--gap); }
 .tiles .card { margin: 0; padding: 16px 20px; }

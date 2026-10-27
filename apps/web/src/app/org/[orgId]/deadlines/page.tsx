@@ -1,48 +1,40 @@
 'use client';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { Nav } from '@/components/Nav';
+import { PracticeShell } from '@/components/PracticeShell';
 import { StatusPill, periodText, workName, type Obligation } from '@/components/compliance/common';
-import { ApiError, api, errorText, type Me } from '@/lib/api';
+import { ApiError, api, errorText } from '@/lib/api';
 
 /**
  * V7-M1 (DEC-088): the practice's deadlines across the clients the person may read. The counts and the list are the API's, filtered by the
  * person's compliance:read on each client; nothing is counted or worked out here. The layout follows the prototype's overview (DEC-079).
  */
 interface Summary { today: string; overdue: number; dueNext14: number; waitingOnClient: number; ready: number }
-interface Page { today: string; items: Obligation[]; nextCursor: string | null }
+interface DeadlinePage { today: string; items: Obligation[]; nextCursor: string | null }
 const WINDOWS: [string, string][] = [['soon', 'Overdue and next 14 days'], ['next90', 'Next 90 days'], ['open', 'All open']];
 
-export default function Deadlines() {
+function Deadlines() {
   const { orgId } = useParams<{ orgId: string }>();
-  const router = useRouter();
-  const [me, setMe] = useState<Me>();
   const [due, setDue] = useState('soon');
   const [summary, setSummary] = useState<Summary>();
-  const [page, setPage] = useState<Page>();
+  const [page, setPage] = useState<DeadlinePage>();
   const [error, setError] = useState<{ text: string; off: boolean }>();
 
-  useEffect(() => {
-    api<Me>('/auth/me').then(setMe).catch((e) => { if (e instanceof ApiError && e.status === 401) router.push('/login'); });
-  }, [router]);
   const load = useCallback(async () => {
     setError(undefined);
     try {
       const [s, p] = await Promise.all([
         api<Summary>(`/organisations/${orgId}/compliance/summary`),
-        api<Page>(`/organisations/${orgId}/compliance/obligations?due=${due}&limit=200`),
+        api<DeadlinePage>(`/organisations/${orgId}/compliance/obligations?due=${due}&limit=200`),
       ]);
       setSummary(s); setPage(p);
     } catch (e) { setError({ text: errorText(e), off: e instanceof ApiError && e.code === 'feature_disabled' }); }
   }, [orgId, due]);
   useEffect(() => { void load(); }, [load]);
 
-  if (!me) return <main><p>Loading…</p></main>;
   return (
     <>
-      <Nav me={me} />
-      <main className="wide">
         <h1>Deadlines</h1>
         {error && (error.off ? (
           <div className="card" role="status" data-testid="feature-off">
@@ -80,7 +72,8 @@ export default function Deadlines() {
             {page.nextCursor && <p className="muted">Showing the first 200; narrow the window to see the rest.</p>}
           </div>
         )}
-      </main>
     </>
   );
 }
+
+export default function Page() { return <PracticeShell>{() => <Deadlines />}</PracticeShell>; }

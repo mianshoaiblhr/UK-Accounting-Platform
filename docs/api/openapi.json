@@ -27932,6 +27932,169 @@
         ]
       }
     },
+    "/api/v1/organisations/{organisationId}/compliance/work": {
+      "get": {
+        "operationId": "Compliance_work",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplianceWork"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Compliance"
+        ],
+        "x-required-feature": "practice.management",
+        "x-required-permissions": [
+          "compliance:read"
+        ],
+        "summary": "Open obligations (neither done nor not required) by status and by kind, over the clients the caller may read (V7-M2)",
+        "description": "**Requires permission:** `compliance:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/compliance/clients": {
+      "get": {
+        "operationId": "Compliance_clients",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "legalForm",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "LTD",
+                "LLP",
+                "SOLE_TRADER",
+                "PARTNERSHIP",
+                "CHARITY",
+                "OTHER"
+              ]
+            }
+          },
+          {
+            "name": "manager",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "me"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 400
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Compliance"
+        ],
+        "x-required-feature": "practice.management",
+        "x-required-permissions": [
+          "compliance:read"
+        ],
+        "summary": "The clients the caller may read (compliance:read), by name: year end, VAT, the next open deadline, open and overdue counts, the client manager (V7-M2)",
+        "description": "**Requires permission:** `compliance:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/organisations/{organisationId}/companies/{companyId}/compliance/profile": {
       "get": {
         "operationId": "CompanyCompliance_profile",
@@ -28035,7 +28198,7 @@
         "x-required-permissions": [
           "compliance:manage"
         ],
-        "summary": "Set the confirmation date (compliance:manage, reason required)",
+        "summary": "Set the confirmation date and the client manager, an active member (compliance:manage, reason required); a field left out stays as it is",
         "description": "**Requires permission:** `compliance:manage`",
         "security": [
           {
@@ -46533,6 +46696,12 @@
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
             "nullable": true
           },
+          "clientManagerUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "V7-M2: the member who manages the client"
+          },
           "updatedByUserId": {
             "type": "string",
             "format": "uuid",
@@ -46547,6 +46716,7 @@
         "required": [
           "companyId",
           "confirmationDate",
+          "clientManagerUserId",
           "updatedByUserId",
           "updatedAt"
         ],
@@ -46774,6 +46944,200 @@
           "existing",
           "skipped",
           "notApplicable"
+        ],
+        "additionalProperties": false
+      },
+      "ComplianceWork": {
+        "type": "object",
+        "properties": {
+          "byStatus": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Open obligations by status"
+          },
+          "byKind": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Open obligations by kind"
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "byStatus",
+          "byKind",
+          "total"
+        ],
+        "additionalProperties": false
+      },
+      "ClientPage": {
+        "type": "object",
+        "properties": {
+          "today": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "companyNumber": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "legalForm": {
+                  "type": "string"
+                },
+                "yearEnd": {
+                  "type": "object",
+                  "properties": {
+                    "month": {
+                      "type": "integer"
+                    },
+                    "day": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "month",
+                    "day"
+                  ],
+                  "additionalProperties": false,
+                  "nullable": true
+                },
+                "vat": {
+                  "type": "object",
+                  "properties": {
+                    "registered": {
+                      "type": "boolean"
+                    },
+                    "periodMonths": {
+                      "type": "integer",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "registered",
+                    "periodMonths"
+                  ],
+                  "additionalProperties": false
+                },
+                "nextDeadline": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "ACCOUNTS_FILING",
+                        "CT_PAYMENT",
+                        "CT_RETURN",
+                        "CONFIRMATION_STATEMENT",
+                        "VAT_RETURN",
+                        "OTHER"
+                      ]
+                    },
+                    "title": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "dueDate": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "NOT_STARTED",
+                        "IN_PROGRESS",
+                        "WAITING_ON_CLIENT",
+                        "READY",
+                        "DONE",
+                        "NOT_REQUIRED"
+                      ]
+                    },
+                    "overdue": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "kind",
+                    "title",
+                    "dueDate",
+                    "status",
+                    "overdue"
+                  ],
+                  "additionalProperties": false,
+                  "nullable": true,
+                  "description": "The earliest open obligation"
+                },
+                "openCount": {
+                  "type": "integer"
+                },
+                "overdueCount": {
+                  "type": "integer"
+                },
+                "clientManager": {
+                  "type": "object",
+                  "properties": {
+                    "userId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "displayName": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "userId",
+                    "displayName"
+                  ],
+                  "additionalProperties": false,
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "companyNumber",
+                "legalForm",
+                "yearEnd",
+                "vat",
+                "nextDeadline",
+                "openCount",
+                "overdueCount",
+                "clientManager"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "today",
+          "items",
+          "nextCursor"
         ],
         "additionalProperties": false
       },
@@ -63240,6 +63604,11 @@
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
             "nullable": true
           },
+          "clientManagerUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
           "reason": {
             "type": "string",
             "minLength": 10,
@@ -63247,7 +63616,6 @@
           }
         },
         "required": [
-          "confirmationDate",
           "reason"
         ],
         "additionalProperties": false

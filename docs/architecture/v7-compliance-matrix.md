@@ -8,16 +8,21 @@ Source requirements: `docs/specifications/V7_Practice_Management_Client_Portal_C
 * v1.0 (2026-10-27, V7-M1, DEC-086/088): matrix created from the V7 specification; 38 rows. The compliance calendar is built.
   * Missing -> Implemented: V7-CAL-01, V7-CAL-02, V7-CAL-03, V7-CAL-05, V7-CAL-07.
   * Missing -> Partially: V7-DASH-02 and V7-DASH-03 (the practice deadlines page and its counts; the full dashboard is V7-M2).
+* v1.1 (2026-10-27, V7-M2, DEC-089): the practice overview, the client list and the practice shell are built.
+  * Missing -> Implemented: V7-DASH-01, V7-DASH-04.
+  * Partially -> Implemented: V7-DASH-02.
+  * V7-DASH-03 stays Partially: overdue obligations are counted; overdue tasks wait for the task record (V7-M3).
+  * V7-DASH-05 and V7-DASH-06 move to V5-M2 and V7-M3: filings and the review queue need the filing and task records.
 
 ## Requirements
 | Id | Requirement (specification) | Status | Milestone | Evidence or note |
 |---|---|---|---|---|
-| V7-DASH-01 | Dashboard: clients | Missing | V7-M2 | |
-| V7-DASH-02 | Dashboard: deadlines | Partially | V7-M1, V7-M2 | Practice deadlines page with the deadline list across readable clients (`tests/e2e/compliance.test.ts`); the overview layout is V7-M2 |
-| V7-DASH-03 | Dashboard: overdue tasks | Partially | V7-M1, V7-M2 | Overdue obligations counted per person (`GET compliance/summary`); overdue tasks are V7-M2 |
-| V7-DASH-04 | Dashboard: work in progress | Missing | V7-M2 | |
-| V7-DASH-05 | Dashboard: filings | Missing | V7-M2 | |
-| V7-DASH-06 | Dashboard: review queue | Missing | V7-M2 | |
+| V7-DASH-01 | Dashboard: clients | Implemented | V7-M2 | Client list with next deadline, counts and manager over readable clients (`tests/api/practice-overview.test.ts`, `tests/e2e/practice.test.ts`) |
+| V7-DASH-02 | Dashboard: deadlines | Implemented | V7-M1, V7-M2 | Practice deadlines page (`tests/e2e/compliance.test.ts`); the overview's deadlines due soon (`tests/e2e/practice.test.ts`) |
+| V7-DASH-03 | Dashboard: overdue tasks | Partially | V7-M1, V7-M3 | Overdue obligations counted per person on the overview (`GET compliance/summary`); overdue tasks wait for the task record |
+| V7-DASH-04 | Dashboard: work in progress | Implemented | V7-M2 | Open obligations by status and kind over readable clients (`GET compliance/work`; `tests/api/practice-overview.test.ts`, `tests/e2e/practice.test.ts`) |
+| V7-DASH-05 | Dashboard: filings | Missing | V5-M2 | Needs the filing record |
+| V7-DASH-06 | Dashboard: review queue | Missing | V7-M3 | Needs the task record |
 | V7-DASH-07 | Dashboard: client risk | Missing | V7-M3 | |
 | V7-DASH-08 | Dashboard: compliance health | Missing | V7-M5 | |
 | V7-ONB-01 | Onboarding: KYC / anti-money-laundering workflow | Missing | V7-M3 | |

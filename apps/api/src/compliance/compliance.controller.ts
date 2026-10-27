@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, Inject, Injectable, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import { z } from 'zod';
 import {
-  companyObligationQuerySchema, complianceProfileSchema, createDeadlineRuleSchema, createObligationSchema, generateObligationsSchema, obligationListQuerySchema,
+  clientListQuerySchema, companyObligationQuerySchema, complianceProfileSchema, createDeadlineRuleSchema, createObligationSchema, generateObligationsSchema, obligationListQuerySchema,
   supersedeDeadlineRuleSchema, updateObligationSchema, verifyDeadlineRuleSchema, type Permission,
 } from '@uk/contracts';
 import type { Database, Tx } from '@uk/db';
@@ -60,6 +60,19 @@ export class ComplianceController {
   async summary(@Org() org: OrgAccess) {
     const ids = await org.access.companyIds('compliance:read');
     return this.api.run(org, (tx) => this.svc.summary(tx, ids));
+  }
+  /** V7-M2 (DEC-089): open obligations by status and kind. */
+  @Get('work') @RequirePermissions('compliance:read')
+  async work(@Org() org: OrgAccess) {
+    const ids = await org.access.companyIds('compliance:read');
+    return this.api.run(org, (tx) => this.svc.work(tx, ids));
+  }
+  /** V7-M2 (DEC-089): the client list. */
+  @Get('clients') @RequirePermissions('compliance:read')
+  async clients(@Org() org: OrgAccess, @Query(new ZodPipe(clientListQuerySchema)) q: z.output<typeof clientListQuerySchema>) {
+    const ids = await org.access.companyIds('compliance:read');
+    const managerUserId = q.manager === 'me' ? org.userId : q.manager;
+    return this.api.run(org, (tx) => this.svc.clients(tx, ids, { ...q, managerUserId }));
   }
 }
 

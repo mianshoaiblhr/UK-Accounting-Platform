@@ -2774,6 +2774,8 @@ model CompanyComplianceProfile {
   organisationId   String    @map("organisation_id") @db.Uuid
   companyId        String    @map("company_id") @db.Uuid
   confirmationDate DateTime? @map("confirmation_date") @db.Date
+  /// V7-M2 (DEC-089): the member who manages the client.
+  clientManagerUserId String? @map("client_manager_user_id") @db.Uuid
   updatedByUserId  String    @map("updated_by_user_id") @db.Uuid
   updatedAt        DateTime  @default(now()) @map("updated_at") @db.Timestamptz(3)
 

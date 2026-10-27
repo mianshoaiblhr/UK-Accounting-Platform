@@ -648,9 +648,20 @@ export const Obligation = z.object({
 export const ObligationList = z.object({ today: day.describe('The UK date the list was computed for'), items: z.array(Obligation) });
 export const ObligationPage = ObligationList.extend({ nextCursor: z.string().nullable() });
 export const ComplianceSummary = z.object({ today: day, overdue: z.number().int(), dueNext14: z.number().int(), waitingOnClient: z.number().int(), ready: z.number().int() });
-export const ComplianceProfile = z.object({ companyId: uuid, confirmationDate: day.nullable(), updatedByUserId: uuid.nullable(), updatedAt: ts.nullable() });
+export const ComplianceProfile = z.object({ companyId: uuid, confirmationDate: day.nullable(), clientManagerUserId: uuid.nullable().describe('V7-M2: the member who manages the client'), updatedByUserId: uuid.nullable(), updatedAt: ts.nullable() });
 export const GenerationResult = z.object({
   from: day, through: day, created: z.array(Obligation), existing: z.number().int().describe('Generated before; left as they are'),
   skipped: z.array(z.object({ kind: ruleKind, anchor: day, reason: z.enum(['rule_unverified', 'no_rule_for_date']) })),
   notApplicable: z.array(z.object({ kind: ruleKind, reason: z.string() })),
 });
+
+// ───────────── V7-M2 practice overview and client list (DEC-089) ─────────────
+export const ComplianceWork = z.object({ byStatus: z.record(z.number().int()).describe('Open obligations by status'), byKind: z.record(z.number().int()).describe('Open obligations by kind'), total: z.number().int() });
+export const ClientSummary = z.object({
+  id: uuid, name: z.string(), companyNumber: z.string().nullable(), legalForm: z.string(), yearEnd: z.object({ month: z.number().int(), day: z.number().int() }).nullable(),
+  vat: z.object({ registered: z.boolean(), periodMonths: z.number().int().nullable() }),
+  nextDeadline: z.object({ id: uuid, kind: obligationKind, title: z.string().nullable(), dueDate: day, status: obligationStatus, overdue: z.boolean() }).nullable().describe('The earliest open obligation'),
+  openCount: z.number().int(), overdueCount: z.number().int(),
+  clientManager: z.object({ userId: uuid, displayName: z.string().nullable() }).nullable(),
+});
+export const ClientPage = z.object({ today: day, items: z.array(ClientSummary), nextCursor: z.string().nullable() });
