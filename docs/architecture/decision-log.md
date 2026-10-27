@@ -293,6 +293,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-086 | Build order: V7, then V5, then V3 and V4 (2026-10-27) | The owner asked to build. V7 (practice layer) is split into five milestones, starting with the compliance calendar; V5 (VAT) follows, with the HMRC connection built against the fake adapter only, as DEC-082 does for V13; then V3 (iXBRL, Companies House) and V4 (Corporation Tax) |
 | DEC-087 | Correction to DEC-080: VAT accounts in chart templates version 2 (2026-10-27) | DEC-080 said the VAT engine posts to one control account. It does not: the VAT settings name an output and an input account, which may differ (M4b). The templates therefore use Sage's three VAT accounts: 2200 output VAT, 2201 input VAT, 2202 VAT liability. Account counts become 111, 105, 106 and 38 |
 | DEC-088 | How V7-M1 is built: the compliance calendar (delegated, DEC-019; recorded before code) | Deadline rules are sourced, versioned organisation data, verified by a second person before use. Obligations per client are generated from its accounting periods, VAT settings and confirmation-statement date, or entered by hand; each has a status, an owner and filing evidence. A practice-wide list and counts cover only the clients the caller may read. Behind the new flag `practice.management` and four new permissions |
+| DEC-089 | How V7-M2 is built: the practice overview and the client list (delegated, DEC-019; recorded before code) | A practice shell with the prototype's sidebar (DEC-079); an overview of the counts, the deadlines due soon and the open work by status; a client list with year end, VAT, the next deadline and the client manager, over the clients the caller may read. A client manager is set on the compliance profile. Behind `practice.management` |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -1278,5 +1279,33 @@ The first V7 milestone (`docs/architecture/v7-plan.md`). It records what a pract
   * database tests of every guard;
   * API tests of the rule lifecycle, generation, updates, the practice views, permissions and tenancy;
   * a real-browser test (DEC-050);
+  * the OpenAPI contract regenerated;
+  * CI green.
+
+### DEC-089 - How V7-M2 is built: the practice overview and the client list (delegated, DEC-019; recorded before code)
+The second V7 milestone (`docs/architecture/v7-plan.md`). The screens follow the prototype (DEC-079) and show only what the API returns.
+* **The practice shell:**
+  * a sidebar like the client workspace's: the product's mark, the organisation, and the sections in groups;
+  * the Practice group holds Overview, Clients and Deadlines; the person and Sign out stay at the bottom;
+  * the overview, the client list and the V7-M1 deadlines page all use it, in place of the top bar.
+* **The overview** (`/org/{org}/overview`):
+  * the four V7-M1 counts;
+  * the deadlines due soon (overdue and the next 14 days);
+  * the open work by status and by kind, from a new count over the open obligations of the clients the caller may read;
+  * the connections, stated as the decisions stand: no HMRC or Companies House connection is built (DEC-082, DEC-086).
+* **Work in progress** (`GET compliance/work`): open obligations (neither DONE nor NOT_REQUIRED) counted by status and by kind, over the readable clients only. The year-end workflow's stage per client is not used here: computing every client's 14 controls on one page is too heavy, and the obligations already say where the work stands.
+* **The client list** (`GET compliance/clients`, `/org/{org}/clients`). For each client the caller may read with `compliance:read`, it shows:
+  * the name, company number, legal form and year end;
+  * VAT registration and its period length;
+  * the next open deadline, with its kind, due date and the API's overdue flag;
+  * the open and overdue counts;
+  * the client manager.
+
+  The list is searchable by name and filtered by legal form and manager, with cursor pages by name. Services, the engagement and the anti-money-laundering status wait for V7-M3.
+* **The client manager:** a new optional field on the compliance profile (`clientManagerUserId`), an active member of the organisation, set with `compliance:manage` and a reason, audited. The list names the manager by the member's display name.
+* **Permissions:** no new permission. The new routes need `compliance:read`, and setting the manager needs `compliance:manage`.
+* **Acceptance:**
+  * API tests of the new counts, the list (visibility, search, filters, pages) and the manager;
+  * a real-browser test of the overview, the client list and the shell, including a reader with no action;
   * the OpenAPI contract regenerated;
   * CI green.

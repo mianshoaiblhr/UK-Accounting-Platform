@@ -1,4 +1,7 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { importDeadlineRules } from '../../scripts/compliance/import-deadline-rules.mjs';
 import { adminSql } from '../helpers/db';
 import { addMember, bearer, createUser, makeCompany, orgPath, startStack, uploadDoc, type Stack, type TestUser } from '../helpers/stack';
 
@@ -258,5 +261,20 @@ describe('practice-wide views: only the clients a person may read', () => {
     expect((await s.api().put(`/api/v1/organisations/${outsider.organisationId}/feature-flags/practice.management`).set(bearer(outsider.token)).send({ enabled: false, reason: 'Off for the test' })).status).toBe(200);
     expect((await s.api().get(`/api/v1/organisations/${outsider.organisationId}/companies/${theirs.id}/compliance/obligations`).set(bearer(outsider.token))).body.code).toBe('feature_disabled');
     expect((await s.api().get(`/api/v1/organisations/${outsider.organisationId}/compliance/summary`).set(bearer(outsider.token))).body.code).toBe('feature_disabled');
+  });
+});
+
+describe('the draft deadline pack (content/compliance/drafts, DEC-088)', () => {
+  const pack = JSON.parse(readFileSync(resolve(__dirname, '../../content/compliance/drafts/uk-deadline-rules.json'), 'utf8'));
+  it('imports through the API as UNVERIFIED versions; the tool verifies nothing; it needs compliance:rules-manage', async () => {
+    const fresh = await createUser(s, { type: 'PRACTICE' });
+    const call = (u: TestUser) => (m: 'get' | 'post' | 'put' | 'patch', p: string, b?: object) => s.api()[m](orgPath(fresh, p)).set(bearer(u.token)).send(b);
+    const helper = await addMember(s, fresh, 'accountant');
+    await expect(importDeadlineRules(call(helper), pack)).rejects.toThrow(/HTTP 403/);
+    const r = await importDeadlineRules(call(fresh), pack);
+    expect(r.rules.map((x) => x.kind).sort()).toEqual(['ACCOUNTS_FILING', 'CONFIRMATION_STATEMENT', 'CT_PAYMENT', 'CT_RETURN', 'VAT_RETURN']);
+    expect(r.rules.every((x) => x.verificationStatus === 'UNVERIFIED')).toBe(true);
+    expect(pack.status).toMatch(/UNVERIFIED/);
+    for (const rule of pack.rules) expect(rule.source.provision, rule.kind).toMatch(/Drafted, not retrieved/);
   });
 });

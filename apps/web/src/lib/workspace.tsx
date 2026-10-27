@@ -33,7 +33,11 @@ const SECTIONS: { href: string; label: string; permission: string; group: string
   // V2-M7 (DEC-071): accounts production, shown only while its feature is on
   { href: '/year-end', label: 'Year end', permission: 'ledger:read', group: 'Accounts production', feature: 'accounts.production' },
   { href: '/registers', label: 'Registers', permission: 'ledger:read', group: 'Accounts production', feature: 'accounts.production' },
+  // V7-M1 (DEC-088): the client's deadlines, shown only while practice management is on
+  { href: '/compliance', label: 'Deadlines', permission: 'compliance:read', group: 'Compliance', feature: 'practice.management' },
 ];
+/** How a feature that gates a page is named when it is off. */
+const FEATURE_NAMES: Record<string, string> = { 'accounts.production': 'Accounts production', 'practice.management': 'Practice management' };
 
 /** `feature`: a further feature the page needs besides bookkeeping (V2 screens: `accounts.production`); while it is off the page says so and renders nothing that calls the API. */
 export function WorkspaceShell({ children, need, feature }: { children: ReactNode; need?: string; feature?: string }) {
@@ -66,7 +70,7 @@ export function WorkspaceShell({ children, need, feature }: { children: ReactNod
   const w: Workspace = { ...state, orgId, can, base, path: (p) => `/organisations/${orgId}/companies/${companyId}${p}` };
   const sections = SECTIONS.filter((s) => can(s.permission) && (!s.feature || state.access.features[s.feature] === true));
   // a section with pages under it (a document, a register, a year-end screen) stays current on each of them
-  const current = (s: { href: string }) => pathname === `${base}${s.href}` || (['/year-end', '/registers', '/sales', '/purchases', '/bank'].includes(s.href) && pathname.startsWith(`${base}${s.href}/`));
+  const current = (s: { href: string }) => pathname === `${base}${s.href}` || (['/year-end', '/registers', '/sales', '/purchases', '/bank', '/compliance'].includes(s.href) && pathname.startsWith(`${base}${s.href}/`));
   return (
     <Ctx.Provider value={w}>
       <div className="shell">
@@ -102,7 +106,7 @@ export function WorkspaceShell({ children, need, feature }: { children: ReactNod
             </div>
           ) : feature && state.access.features[feature] !== true ? (
             <div className="card" role="status" data-testid="feature-off">
-              <h1>Accounts production is not enabled</h1>
+              <h1>{FEATURE_NAMES[feature] ?? 'This section'} is not enabled</h1>
               <p>These screens are not enabled for this organisation yet. An owner can turn on the &quot;{feature}&quot; feature.</p>
             </div>
           ) : need && !can(need) ? <div className="card"><p className="muted" role="status">You do not have access to this section ({need}).</p></div> : children}

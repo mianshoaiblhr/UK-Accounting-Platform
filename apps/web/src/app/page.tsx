@@ -44,6 +44,7 @@ export default function Dashboard() {
         </div>
         <div className="card">
           <h2>{org?.type === 'PRACTICE' ? 'Client companies' : 'Companies'}</h2>
+          {orgId && <p><Link href={`/org/${orgId}/deadlines`}>Deadlines across these {org?.type === 'PRACTICE' ? 'clients' : 'companies'}</Link></p>}
           {companies.length === 0 ? <p className="muted">No companies yet.</p> : (
             <table data-testid="companies">
               <thead><tr><th>Name</th><th>Number</th><th>Type</th></tr></thead>

@@ -1,0 +1,98 @@
+{
+  "pack": "UK-DEADLINE-RULES-DRAFT",
+  "status": "ENGINEERING DRAFT - UNVERIFIED (DEC-088, the DEC-064 pattern). Written from engineering's knowledge on 2026-10-27; legislation.gov.uk and gov.uk could not be reached from the build environment, so nothing was retrieved. Import as UNVERIFIED; a holder of compliance:rule-verify who is not the importer checks each rule against the provision before verifying.",
+  "rules": [
+    {
+      "kind": "ACCOUNTS_FILING",
+      "legalForms": [
+        "LTD",
+        "LLP"
+      ],
+      "daysBeforeMonths": 0,
+      "months": 9,
+      "daysAfterMonths": 0,
+      "monthEndRule": true,
+      "effectiveFrom": "2010-01-01",
+      "source": {
+        "url": "https://www.legislation.gov.uk/ukpga/2006/46/section/442",
+        "provision": "Companies Act 2006 s.442(2)(a) (private company: 9 months after the end of the accounting reference period) and s.443 (month-end rule); applied to LLPs by SI 2008/1911. Drafted, not retrieved: check the period, the month-end treatment and the dates it governs against the text in force",
+        "retrievedOn": "2026-10-27"
+      },
+      "verifierNote": "Private companies and LLPs only. A public company has 6 months (s.442(2)(b)) and is not modelled. First accounts (s.442(3), 21 months from incorporation) and shortened or extended periods are entered by hand with a reason (DEC-088)."
+    },
+    {
+      "kind": "CT_PAYMENT",
+      "legalForms": [
+        "LTD"
+      ],
+      "daysBeforeMonths": 1,
+      "months": 9,
+      "daysAfterMonths": 0,
+      "monthEndRule": false,
+      "effectiveFrom": "2010-01-01",
+      "source": {
+        "url": "https://www.legislation.gov.uk/ukpga/1970/9/section/59D",
+        "provision": "Taxes Management Act 1970 s.59D (Corporation Tax due 9 months and 1 day after the end of the accounting period). Drafted, not retrieved: check the period, the month-end treatment and the dates it governs against the text in force",
+        "retrievedOn": "2026-10-27"
+      },
+      "verifierNote": "Companies that are not large. Large and very large companies pay by quarterly instalments (SI 1998/3175), which are not modelled. LLPs do not pay Corporation Tax."
+    },
+    {
+      "kind": "CT_RETURN",
+      "legalForms": [
+        "LTD"
+      ],
+      "daysBeforeMonths": 0,
+      "months": 12,
+      "daysAfterMonths": 0,
+      "monthEndRule": false,
+      "effectiveFrom": "2010-01-01",
+      "source": {
+        "url": "https://www.legislation.gov.uk/ukpga/1998/36/schedule/18/paragraph/14",
+        "provision": "Finance Act 1998 Sch 18 para 14 (Company Tax Return filing date: 12 months from the end of the period for which the return is made). Drafted, not retrieved: check the period, the month-end treatment and the dates it governs against the text in force",
+        "retrievedOn": "2026-10-27"
+      },
+      "verifierNote": "Check whether para 14's later dates (3 months after the notice, long periods of account) need entering by hand. No month-end rule is assumed: check the treatment of 28 February."
+    },
+    {
+      "kind": "CONFIRMATION_STATEMENT",
+      "legalForms": [
+        "LTD",
+        "LLP"
+      ],
+      "daysBeforeMonths": 0,
+      "months": 0,
+      "daysAfterMonths": 14,
+      "monthEndRule": false,
+      "effectiveFrom": "2016-06-30",
+      "source": {
+        "url": "https://www.legislation.gov.uk/ukpga/2006/46/section/853A",
+        "provision": "Companies Act 2006 s.853A (confirmation statement delivered within 14 days after the end of the review period). Drafted, not retrieved: check the period, the month-end treatment and the dates it governs against the text in force",
+        "retrievedOn": "2026-10-27"
+      },
+      "verifierNote": "The anchor is the confirmation date on the client's compliance profile (the end of the review period). Check the commencement date of the confirmation-statement regime."
+    },
+    {
+      "kind": "VAT_RETURN",
+      "legalForms": [
+        "LTD",
+        "LLP",
+        "SOLE_TRADER",
+        "PARTNERSHIP",
+        "CHARITY",
+        "OTHER"
+      ],
+      "daysBeforeMonths": 0,
+      "months": 1,
+      "daysAfterMonths": 7,
+      "monthEndRule": true,
+      "effectiveFrom": "2010-01-01",
+      "source": {
+        "url": "https://www.legislation.gov.uk/uksi/1995/2518/regulation/25",
+        "provision": "VAT Regulations 1995 reg 25(1) (return by the end of the month after the period) and HMRC's 7 extra days for electronic returns (Notice 700/12). Drafted, not retrieved: check the period, the month-end treatment and the dates it governs against the text in force",
+        "retrievedOn": "2026-10-27"
+      },
+      "verifierNote": "Quarterly and monthly returns. The annual accounting scheme and payments on account are not modelled. Check that the 7-day extension applies to every client using the rule."
+    }
+  ]
+}

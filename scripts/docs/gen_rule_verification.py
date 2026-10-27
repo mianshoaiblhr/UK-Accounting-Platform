@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Writes docs/legal/rule-verification-worksheet.xlsx: what the named verifier (DEC-056) checks in the platform before real use (DEC-083):
-the VAT codes and rate versions a practice enters, the draft FRS 105 / FRS 102 Section 1A packs and the size thresholds. Every figure and
+the VAT codes and rate versions a practice enters, the draft FRS 105 / FRS 102 Section 1A packs, the size thresholds and the draft deadline rules (V7-M1). Every figure and
 box mapping here is a PROPOSAL to be checked against the provision named; nothing in this workbook is verified, and neither engineering
 nor AI verifies. Usage: python3 scripts/docs/gen_rule_verification.py (needs openpyxl)."""
 import json
@@ -38,7 +38,8 @@ STEPS = [
     ("3", "Open each rate version, check the rate, the dates and the boxes against the provision, and verify it with notes on what was checked.", "Shoaib, with tax:rule-verify", "The platform refuses a verifier who entered the rate (DEC-021)"),
     ("4", "Import content/standards/drafts/frs105-micro.json, frs102-1a-small.json and uk-size-thresholds.json with scripts/standards/import-pack.mjs.", "A person with accounts:rules-manage who is NOT the verifier", "Each lands UNVERIFIED"),
     ("5", "Check every line, map entry, rule and threshold against the standard and the Companies Act provisions, using docs/architecture/v2-draft-wording-review.xlsx; correct or remove rules, then verify each version.", "Shoaib, with accounts:rule-verify", "The platform refuses a verifier who imported the version (DEC-052)"),
-    ("6", "Fill in the 'Sign-off' sheet with the platform's record of each verification.", "Shoaib", "Evidence for the go-live checklist (DEC-085, item 3)"),
+    ("6", "Import content/compliance/drafts/uk-deadline-rules.json with scripts/compliance/import-deadline-rules.mjs, then check each rule on the 'Deadline rules' sheet and verify it, or supersede it with a corrected version first.", "Import: a person with compliance:rules-manage; verify: Shoaib, with compliance:rule-verify", "The platform refuses a verifier who entered the rule (DEC-088)"),
+    ("7", "Fill in the 'Sign-off' sheet with the platform's record of each verification.", "Shoaib", "Evidence for the go-live checklist (DEC-085, item 3)"),
 ]
 LAW = [
     ("Value Added Tax Act 1994, ss.1, 2, 4, 8, 24-26, 29A, 30, 31 and 55A", "The charge, the rates, input tax, reverse charges", LEG + "contents"),
@@ -47,6 +48,8 @@ LAW = [
     ("VAT Notice 700/12", "How each box of the return is filled", "https://www.gov.uk/guidance/how-to-fill-in-and-submit-your-vat-return-vat-notice-70012"),
     ("VAT Notice 700 (the VAT guide)", "Rounding of VAT (the platform rounds each line half-up, DEC-025)", "https://www.gov.uk/guidance/vat-guide-notice-700"),
     ("Companies Act 2006, ss.382-384 and 384A-384B", "Small companies and micro-entities: the size tests", "https://www.legislation.gov.uk/ukpga/2006/46/section/382"),
+    ("Companies Act 2006, ss.442-443 and 853A", "Deadlines: filing accounts, the month-end rule, the confirmation statement", "https://www.legislation.gov.uk/ukpga/2006/46/section/442"),
+    ("Taxes Management Act 1970, s.59D; Finance Act 1998, Sch 18 para 14", "Deadlines: Corporation Tax payment and the Company Tax Return", "https://www.legislation.gov.uk/ukpga/1970/9/section/59D"),
     ("Small Companies and Groups (Accounts and Directors' Report) Regulations 2008, SI 2008/409", "Formats and notes for small and micro-entity accounts", "https://www.legislation.gov.uk/uksi/2008/409/contents"),
     ("FRS 105 and FRS 102 Section 1A (Financial Reporting Council)", "The standards the draft packs follow", "https://www.frc.org.uk/accountants/accounting-and-reporting-policy/uk-accounting-standards"),
     ("Card Protection Plan Ltd v Customs and Excise Commissioners (C-349/96)", "Single or multiple supplies: decides which code a sale takes", "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:61996CJ0349"),
@@ -112,8 +115,20 @@ srows = [
 table(std, "Draft standards and thresholds to import and verify", "Each lands UNVERIFIED on import (DEC-052); the review workbook holds every line for checking.",
       ["Item", "File", "Contents", "Where to review it", "Verified version id", "Verified on", "Verifier's notes"], srows, [36, 46, 52, 50, 22, 14, 40], input_cols=(5, 6, 7))
 
+# V7-M1 (DEC-088): the draft deadline rules, read from the pack itself so the sheet cannot drift from it
+pack = json.loads((root / "content/compliance/drafts/uk-deadline-rules.json").read_text())
+drows = [(r["kind"], ", ".join(r["legalForms"]), r["daysBeforeMonths"], r["months"], r["daysAfterMonths"], "yes" if r["monthEndRule"] else "no", r["effectiveFrom"],
+          r["source"]["provision"], r["source"]["url"], r["verifierNote"], "", "", "") for r in pack["rules"]]
+ded = wb.create_sheet("Deadline rules")
+table(ded, "Draft deadline rules (V7-M1, DEC-088)",
+      "Due date = anchor + days before, then + months (month-end rule: a month-end anchor stays a month end), then + days after. Import with scripts/compliance/import-deadline-rules.mjs; each lands UNVERIFIED.",
+      ["Kind", "Legal forms", "Days before", "Months", "Days after", "Month-end rule", "Governs anchors from", "Provision to check", "Source", "What the rule does not model",
+       "Verified (yes / corrected)", "Verified on", "Verifier's notes"],
+      drows, [22, 30, 8, 8, 8, 10, 14, 60, 44, 60, 18, 14, 40], link_cols=(9,), input_cols=(11, 12, 13))
+
 sign = wb.create_sheet("Sign-off")
-sign_rows = [(r[0], "Rate version", "", "", "") for r in VAT_CODES] + [(r[0], "Standard version", "", "", "") for r in srows]
+sign_rows = ([(r[0], "Rate version", "", "", "") for r in VAT_CODES] + [(r[0], "Standard version", "", "", "") for r in srows]
+             + [(r["kind"], "Deadline rule", "", "", "") for r in pack["rules"]])
 table(sign, "Sign-off", "Filled in by the verifier from the platform's records.", ["Item", "Kind", "Platform record id", "Verified by", "Date"],
       sign_rows, [40, 18, 40, 20, 14], input_cols=(3, 4, 5))
 

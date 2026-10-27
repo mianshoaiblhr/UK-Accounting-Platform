@@ -135,6 +135,16 @@ table[data-testid^=statement] tbody tr:last-child td, table[data-testid=trial-ba
 .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; line-height: 16px; font-weight: 500; background: var(--pill-bg); color: var(--pill-ink); white-space: nowrap; }
 .badge.HIGH { background: var(--pill-neg-bg); color: var(--pill-neg-ink); }
 .badge.MEDIUM { background: var(--pill-note-bg); color: var(--pill-note-ink); box-shadow: inset 0 0 0 1px var(--pill-note-edge); }
+/* V7-M1 obligation statuses: settled green for done and ready, a notice for waiting on the client, neutral otherwise */
+.badge.status-DONE, .badge.status-READY { background: var(--pill-pos-bg); color: var(--pill-pos-ink); }
+.badge.status-WAITING_ON_CLIENT { background: var(--pill-note-bg); color: var(--pill-note-ink); box-shadow: inset 0 0 0 1px var(--pill-note-edge); }
+.pills { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+/* V7-M1 counts: a row of sheets, each one figure from the API */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--gap); margin: 0 0 var(--gap); }
+.tiles .card { margin: 0; padding: 16px 20px; }
+.tiles .card span { display: block; color: var(--pencil); }
+.tiles .card strong { display: block; font-size: 24px; line-height: 32px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.tiles .card strong.alert { color: var(--red); }
 
 /* ── The one hue: the main data element (the current step of the year end) ── */
 tr.current td:first-child, tr.current td:nth-child(2) { color: var(--signal); font-weight: 500; }
