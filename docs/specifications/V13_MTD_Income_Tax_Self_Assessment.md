@@ -1,6 +1,6 @@
 # V13 — MTD Income Tax / Self Assessment
 
-Added by DEC-081 (2026-10-27). The product owner decided to write this specification now and build it against HMRC's sandbox. No earlier version (V0 to V12) covers Income Tax for individuals.
+Added by DEC-081 (2026-10-27) and amended by DEC-082. The product owner decided to write this specification now. Later the same day they set HMRC's test environment (the sandbox) aside: V13 is not connected to HMRC, sandbox or live. No earlier version (V0 to V12) covers Income Tax for individuals.
 
 ## Objective
 Give an accounting practice one place to keep the records of its sole-trader and landlord clients, and to send what HMRC requires for Income Tax:
@@ -31,7 +31,7 @@ Every date, threshold, category and box reference in this document is **UNVERIFI
    * encrypted token storage per client;
    * HMRC's fraud-prevention headers with the connection method `WEB_APP_VIA_SERVER`;
    * a fake adapter for tests;
-   * a sandbox implementation, proven against HMRC's Test Fraud Prevention Headers API.
+   * no implementation that calls HMRC, sandbox or live: that waits for the owner's decision on HMRC access (DEC-082).
 
    If V5 has not built the adapter yet, V13-M0 builds it to V5's interface.
 2. **V13-M1, the taxpayer and income sources:**
@@ -83,18 +83,16 @@ Every date, threshold, category and box reference in this document is **UNVERIFI
 * **Audit:**
   * every HMRC call is logged with its request id, fraud-prevention headers, the payload hash and the response, in the audit trail;
   * personal data is masked in logs.
-* **Production:** production access is an explicit gate, like DEC-006. The blueprint reports that HMRC has paused new production-access requests for MTD IT software for 2026/27 (UNVERIFIED). Until the owner records otherwise, V13 runs in the sandbox only, behind a feature flag that is off.
+* **Production:** production access is an explicit gate, like DEC-006. The blueprint reports that HMRC has paused new production-access requests for MTD IT software for 2026/27 (UNVERIFIED). V13 is not connected to HMRC (DEC-082), and its feature flag stays off.
 
 ## Acceptance
 * **Tests:** unit and integration tests against the fake adapter, following the posting-rule coverage registry pattern (DEC-047).
-* **Sandbox contract tests:** these run only where HMRC sandbox credentials and network access exist, and are reported as skipped elsewhere. They are never faked as passing.
+* **HMRC connection:** not tested against HMRC (DEC-082). Nothing in the acceptance package may claim it was.
 * **Golden workings:** a hand-calculated synthetic sole trader and landlord, with the expected category totals for each cumulative update, reviewed by the named accountant (DEC-054 pattern).
 * **Screens:** real-browser tests for the main path, a refusal and a read-only user (DEC-050).
 
 ## Blockers the owner must clear
-1. **Sandbox credentials:** a sandbox application on HMRC's Developer Hub, subscribed to the MTD IT APIs and the test-user and fraud-prevention test APIs. Its client id and secret go into the environment's secrets, never into the repository.
-2. **Network access:** the build environment must be allowed to reach HMRC's sandbox host (`test-api.service.hmrc.gov.uk`). Its network policy blocks it today.
-3. **Production:** HMRC's production-access route for MTD IT software once HMRC reopens it.
+1. **HMRC access:** whether and when the platform connects to HMRC: the sandbox, then production access once HMRC reopens it for MTD IT software. Set aside for now (DEC-082).
 
 ## Legal basis
 Primary sources were not read in this environment. Each link must be checked before a rule is verified. This is not legal advice.
