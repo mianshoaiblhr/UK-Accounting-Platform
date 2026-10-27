@@ -20,15 +20,16 @@ describe('legal verification schedule', () => {
       }
     }
   });
-  it('is explicit that nothing is verified or approved, and flags IP address / user agent for privacy review', () => {
-    expect(schedule).toMatch(/UNVERIFIED and NOT APPROVED/);
+  it('records the owner\'s confirmation (DEC-084) without claiming the sources were verified', () => {
+    expect(schedule).toMatch(/periods CONFIRMED by the product owner on 2026-10-27 \(DEC-084\); sources UNVERIFIED/);
     expect(schedule).toMatch(/not legal advice/i);
     expect(schedule).toMatch(/IP address and user agent - flagged for privacy review/);
-    expect(schedule).toMatch(/Lawful basis:\*\* not decided/);
+    expect(schedule).toMatch(/Lawful basis:\*\* legitimate interests \(UK GDPR Art 6\(1\)\(f\)\)/);
     expect(schedule).not.toMatch(/\| Verification status \| (VERIFIED|CONFIRMED|APPROVED)/);
   });
-  it('every retention category in the registry is still PROVISIONAL (no silent approval)', () => {
-    expect(RETENTION_CATEGORIES.filter((c) => c.status !== 'PROVISIONAL')).toEqual([]);
+  it('every retention category is CONFIRMED, and only because DEC-084 records it', () => {
+    expect(RETENTION_CATEGORIES.filter((c) => c.status !== 'CONFIRMED')).toEqual([]);
+    expect(log).toMatch(/### DEC-084 - Retention and privacy approved/);
   });
 });
 
@@ -41,5 +42,9 @@ describe('decision log', () => {
   it('keeps S4(b) frozen and development on synthetic data until the decisions are made', () => {
     expect(log).toMatch(/S4\(b\) is frozen/);
     expect(log).toMatch(/synthetic\/test data only/);
+  });
+  it('unfreezes S4(b) only through DEC-084, and keeps real client data out of everything but production after go-live (DEC-085)', () => {
+    expect(log).toMatch(/\*\*S4\(b\) is unfrozen\.\*\* Purge jobs/);
+    expect(log).toMatch(/DEC-014's synthetic-data rule\*\* stays in force everywhere except production after go-live/);
   });
 });

@@ -28,8 +28,11 @@ describe('retention registry (ADR-39)', () => {
       expect(c.basis.length, c.code).toBeGreaterThan(20);
     }
   });
-  it('is honest about its status: nothing is CONFIRMED until the DPO/legal decision is recorded', () => {
-    expect(RETENTION_CATEGORIES.filter((c) => c.status !== 'PROVISIONAL').map((c) => c.code)).toEqual([]);
+  it('every category is CONFIRMED, as the owner decided (DEC-084)', () => {
+    expect(RETENTION_CATEGORIES.filter((c) => c.status !== 'CONFIRMED').map((c) => c.code)).toEqual([]);
+  });
+  it('keeps data held while active for 6 years after the relationship ends (DEC-084)', () => {
+    expect(cat('WHILE_ACTIVE')).toMatchObject({ kind: 'PERIOD', years: 6, days: null, trigger: 'RELATIONSHIP_END' });
   });
   it('agrees with the rules the platform already applies', () => {
     expect(cat('FILING_EVIDENCE').years).toBe(EVIDENCE_DEFAULT_RETENTION_YEARS);
@@ -49,7 +52,8 @@ describe('retainUntil', () => {
   });
   it('adds days for day-based periods', () => expect(retainUntil(cat('OPERATIONAL_JOBS'), d('2026-01-01T00:00:00Z'))?.toISOString()).toBe('2026-04-01T00:00:00.000Z'));
   it('has no date for categories without a fixed period', () => {
-    expect(retainUntil(cat('WHILE_ACTIVE'), new Date())).toBeNull();
     expect(retainUntil(cat('REFERENCE_DATA'), new Date())).toBeNull();
   });
+  it('runs the WHILE_ACTIVE period from the end of the relationship', () =>
+    expect(retainUntil(cat('WHILE_ACTIVE'), d('2026-10-27T00:00:00Z'))?.toISOString()).toBe('2032-10-27T00:00:00.000Z'));
 });

@@ -13,15 +13,15 @@ beforeAll(async () => {
 afterAll(() => s.stop());
 
 describe('GET /reference/retention-categories', () => {
-  it('lists the classification with provisional periods and the document types in each category; read-only', async () => {
+  it('lists the classification with its confirmed periods (DEC-084) and the document types in each category; read-only', async () => {
     const r = await s.api().get(orgPath(owner, '/reference/retention-categories')).set(bearer(viewer.token)); // any member
     expect(r.status).toBe(200);
     expect(r.body.items.map((c: { code: string }) => c.code).sort()).toEqual(RETENTION_CATEGORIES.map((c) => c.code).sort()); // sorted here: the API orders by database collation
     const acc = r.body.items.find((c: { code: string }) => c.code === 'ACCOUNTING_RECORDS');
-    expect(acc).toMatchObject({ kind: 'PERIOD', years: 6, days: null, trigger: 'ACCOUNTING_PERIOD_END', status: 'PROVISIONAL' });
+    expect(acc).toMatchObject({ kind: 'PERIOD', years: 6, days: null, trigger: 'ACCOUNTING_PERIOD_END', status: 'CONFIRMED' });
     expect(acc.documentTypes).toEqual(expect.arrayContaining(['BANK_STATEMENT', 'SALES_INVOICE', 'VAT_WORKING']));
     expect(acc.basis).toMatch(/Companies Act 2006/);
-    expect(r.body.items.every((c: { status: string }) => c.status === 'PROVISIONAL')).toBe(true);
+    expect(r.body.items.every((c: { status: string }) => c.status === 'CONFIRMED')).toBe(true);
     // table names are internal: the API exposes document types only
     expect(JSON.stringify(r.body)).not.toMatch(/audit_event|job_record/);
     for (const m of ['post', 'put', 'patch', 'delete'] as const) expect((await s.api()[m](orgPath(owner, '/reference/retention-categories')).set(bearer(owner.token)).send({})).status).toBeGreaterThanOrEqual(404);

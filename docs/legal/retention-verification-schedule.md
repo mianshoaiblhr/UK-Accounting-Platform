@@ -1,8 +1,8 @@
 # Legal verification schedule - record retention and IP / user-agent data
 
-**Status: UNVERIFIED and NOT APPROVED.** Prepared 2026-10-09 for the product owner's review (decision DEC-003 in `docs/architecture/decision-log.md`). This is an engineering working document, **not legal advice**. Every provision, period and link below must be checked by a qualified person against the official source before any period is marked CONFIRMED. The sources were **not opened** when this was written (the build environment cannot reach them), so citations are from memory of the legislation and may contain errors in paragraph numbers - they are flagged where known.
+**Status: periods CONFIRMED by the product owner on 2026-10-27 (DEC-084); sources UNVERIFIED.** First prepared 2026-10-09 for the product owner's review (DEC-003). The owner confirmed every period below and answered the open decisions in section 4. This remains an engineering working document, **not legal advice**: the provisions and links were not opened from the build environment, and the reviewer's questions in each row stay open for the next review. The `.xlsx` copy beside this file is the 2026-10-09 version; this file is current.
 
-No retention period and no lawful basis in this document is approved. Until a decision is recorded: all periods stay PROVISIONAL, S4(b) (purge jobs, irreversible erasure rules, production retention enforcement) stays disabled, and development uses synthetic/test data only.
+Since DEC-084: every period is CONFIRMED; the practice is the controller of its clients' data and the platform operator its processor; IP address and user agent are processed on legitimate interests and minimised (section 2). Nothing is deleted yet: purge and erasure are milestone PRIV-1, and development and staging use synthetic/test data only (DEC-085).
 
 Review date for every row: Before the production retention gate (date to be set by the reviewer), then every 12 months and on any change in law or guidance. Reviewer, decision and decision date are left blank on purpose.
 
@@ -13,7 +13,7 @@ One row per category in `packages/contracts/src/retention.ts` (a test keeps this
 
 | Field | Content |
 |---|---|
-| Provisional period | **6 years** (PROVISIONAL) |
+| Provisional period | **6 years** (CONFIRMED, DEC-084) |
 | Record / entity types | Document types BANK_STATEMENT, SALES_INVOICE, PURCHASE_INVOICE, CREDIT_NOTE, RECEIPT, VAT_WORKING, STATUTORY_ACCOUNTS; tables document, document_version, document_extraction, document_folder, document_access, evidence_link, accounting_period. V1 will add journals, ledger lines, invoices, bank transactions. |
 | Statutory provisions | Companies Act 2006 s.386 (duty to keep accounting records) and s.388 (preservation: private company 3 years, public company 6 years); Finance Act 1998 Sch 18 para 21 (company tax return records: 6 years after the end of the accounting period); Value Added Tax Act 1994 Sch 11 para 6 (VAT records: up to 6 years) and HMRC VAT Notice 700/21 |
 | Official sources | <https://www.legislation.gov.uk/ukpga/2006/46/section/386> ; <https://www.legislation.gov.uk/ukpga/2006/46/section/388> ; <https://www.legislation.gov.uk/ukpga/1998/36/schedule/18/paragraph/21> ; <https://www.legislation.gov.uk/ukpga/1994/23/schedule/11/paragraph/6> ; <https://www.gov.uk/guidance/vat-record-keeping> |
@@ -22,13 +22,13 @@ One row per category in `packages/contracts/src/retention.ts` (a test keeps this
 | Questions for the reviewer | Confirm the clock-start event per record type (period end vs transaction date); confirm whether to keep the longest period for all customers or let the controller choose. |
 | Verification status | UNVERIFIED |
 | Review date | Before the production retention gate (date to be set by the reviewer), then every 12 months and on any change in law or guidance |
-| Reviewer / decision / date | (blank) |
+| Reviewer / decision / date | Product owner / period confirmed / 2026-10-27 (DEC-084) |
 
 ### FILING_EVIDENCE - Statutory filing evidence
 
 | Field | Content |
 |---|---|
-| Provisional period | **6 years** (PROVISIONAL) |
+| Provisional period | **6 years** (CONFIRMED, DEC-084) |
 | Record / entity types | Document type FILING_EVIDENCE; later versions: submitted returns, receipts and acknowledgements (V3 Companies House, V4 corporation tax, V5 VAT). Enforced today: evidence is locked (database triggers) until its retention date; default 6 years. |
 | Statutory provisions | Same provisions as ACCOUNTING_RECORDS (a filed return is part of the records supporting it); Taxes Management Act 1970 ss.34-36 for the assessment windows within which a filing may be challenged |
 | Official sources | <https://www.legislation.gov.uk/ukpga/1998/36/schedule/18/paragraph/21> ; <https://www.legislation.gov.uk/ukpga/1970/9/section/34> ; <https://www.legislation.gov.uk/ukpga/1970/9/section/36> |
@@ -37,13 +37,13 @@ One row per category in `packages/contracts/src/retention.ts` (a test keeps this
 | Questions for the reviewer | Which start event is correct (filing date vs period end)? The platform's lock uses filing date today. |
 | Verification status | UNVERIFIED |
 | Review date | Before the production retention gate (date to be set by the reviewer), then every 12 months and on any change in law or guidance |
-| Reviewer / decision / date | (blank) |
+| Reviewer / decision / date | Product owner / period confirmed / 2026-10-27 (DEC-084) |
 
 ### PAYROLL_RECORDS - Payroll records
 
 | Field | Content |
 |---|---|
-| Provisional period | **6 years** (PROVISIONAL) |
+| Provisional period | **6 years** (CONFIRMED, DEC-084) |
 | Record / entity types | Document type PAYROLL_RECORD; later versions: payroll journals and employee pay records if introduced. |
 | Statutory provisions | Income Tax (PAYE) Regulations 2003 reg 97 (PAYE records: at least 3 years after the end of the tax year); automatic-enrolment record-keeping under the Occupational and Personal Pension Schemes (Automatic Enrolment) Regulations 2010 (6 years - exact regulation to be confirmed by the reviewer); National Minimum Wage Regulations 2015 (pay records - regulation to be confirmed) |
 | Official sources | <https://www.legislation.gov.uk/uksi/2003/2682/regulation/97> ; <https://www.legislation.gov.uk/uksi/2010/772/contents> ; <https://www.legislation.gov.uk/uksi/2015/621/contents> |
@@ -52,13 +52,13 @@ One row per category in `packages/contracts/src/retention.ts` (a test keeps this
 | Questions for the reviewer | Is payroll data in scope of the product at all (the specification names payroll only as an integration in V11)? Confirm exact regulations. |
 | Verification status | UNVERIFIED |
 | Review date | Before the production retention gate (date to be set by the reviewer), then every 12 months and on any change in law or guidance |
-| Reviewer / decision / date | (blank) |
+| Reviewer / decision / date | Product owner / period confirmed / 2026-10-27 (DEC-084) |
 
 ### TAX_CORRESPONDENCE - Tax correspondence
 
 | Field | Content |
 |---|---|
-| Provisional period | **6 years** (PROVISIONAL) |
+| Provisional period | **6 years** (CONFIRMED, DEC-084) |
 | Record / entity types | Document type TAX_CORRESPONDENCE. |
 | Statutory provisions | Taxes Management Act 1970 ss.34 (ordinary time limit 4 years), 36 (6 years where loss of tax is brought about carelessly, 20 years if deliberately); Finance Act 1998 Sch 18 para 21 |
 | Official sources | <https://www.legislation.gov.uk/ukpga/1970/9/section/34> ; <https://www.legislation.gov.uk/ukpga/1970/9/section/36> ; <https://www.legislation.gov.uk/ukpga/1998/36/schedule/18/paragraph/21> |
@@ -67,13 +67,13 @@ One row per category in `packages/contracts/src/retention.ts` (a test keeps this
 | Questions for the reviewer | Should deliberate-conduct exposure (20 years) ever be reflected, or is 6 years the policy? |
 | Verification status | UNVERIFIED |
 | Review date | Before the production retention gate (date to be set by the reviewer), then every 12 months and on any change in law or guidance |
-| Reviewer / decision / date | (blank) |
+| Reviewer / decision / date | Product owner / period confirmed / 2026-10-27 (DEC-084) |
 
 ### CONTRACTS_ENGAGEMENT - Contracts and engagement letters
 
 | Field | Content |
 |---|---|
-| Provisional period | **6 years** (PROVISIONAL) |
+| Provisional period | **6 years** (CONFIRMED, DEC-084) |
 | Record / entity types | Document types CONTRACT, LETTER_OF_ENGAGEMENT. |
 | Statutory provisions | Limitation Act 1980 s.5 (contract: 6 years), s.8 (specialty/deeds: 12 years), s.2 (tort: 6 years), ss.14A-14B (latent damage in negligence: 3 years from knowledge, 15-year longstop), s.32 (concealment). Professional-body and professional-indemnity-insurer record requirements are outside the statute and must be checked separately. |
 | Official sources | <https://www.legislation.gov.uk/ukpga/1980/58/section/5> ; <https://www.legislation.gov.uk/ukpga/1980/58/section/8> ; <https://www.legislation.gov.uk/ukpga/1980/58/section/2> ; <https://www.legislation.gov.uk/ukpga/1980/58/section/14A> ; <https://www.legislation.gov.uk/ukpga/1980/58/section/14B> ; <https://www.legislation.gov.uk/ukpga/1980/58/section/32> |
@@ -82,13 +82,13 @@ One row per category in `packages/contracts/src/retention.ts` (a test keeps this
 | Questions for the reviewer | Does the controller (the accounting firm) need a longer period for professional-negligence exposure? Who decides: platform or firm? |
 | Verification status | UNVERIFIED |
 | Review date | Before the production retention gate (date to be set by the reviewer), then every 12 months and on any change in law or guidance |
-| Reviewer / decision / date | (blank) |
+| Reviewer / decision / date | Product owner / period confirmed / 2026-10-27 (DEC-084) |
 
 ### IDENTITY_VERIFICATION - Identity verification (anti-money-laundering)
 
 | Field | Content |
 |---|---|
-| Provisional period | **5 years** (PROVISIONAL) |
+| Provisional period | **5 years** (CONFIRMED, DEC-084) |
 | Record / entity types | Document type IDENTITY_VERIFICATION; later versions: customer due diligence records. |
 | Statutory provisions | Money Laundering, Terrorist Financing and Transfer of Funds (Information on the Payer) Regulations 2017 reg 40: records kept for 5 years from the end of the business relationship (or occasional transaction); the regulation also requires deletion of personal data after that period unless an exception applies (reviewer to confirm the exact paragraphs) |
 | Official sources | <https://www.legislation.gov.uk/uksi/2017/692/regulation/40> |
@@ -97,13 +97,13 @@ One row per category in `packages/contracts/src/retention.ts` (a test keeps this
 | Questions for the reviewer | This is the one category where deletion is a legal duty, not only a limit: confirm the process and the exceptions before S4(b). |
 | Verification status | UNVERIFIED |
 | Review date | Before the production retention gate (date to be set by the reviewer), then every 12 months and on any change in law or guidance |
-| Reviewer / decision / date | (blank) |
+| Reviewer / decision / date | Product owner / period confirmed / 2026-10-27 (DEC-084) |
 
 ### CORPORATE_RECORDS - Minutes and resolutions
 
 | Field | Content |
 |---|---|
-| Provisional period | **10 years** (PROVISIONAL) |
+| Provisional period | **10 years** (CONFIRMED, DEC-084) |
 | Record / entity types | Document type MINUTES. |
 | Statutory provisions | Companies Act 2006 s.248 (minutes of directors' meetings: at least 10 years from the date of the meeting) and s.355 (records of members' resolutions and meetings: 10 years) |
 | Official sources | <https://www.legislation.gov.uk/ukpga/2006/46/section/248> ; <https://www.legislation.gov.uk/ukpga/2006/46/section/355> |
@@ -112,13 +112,13 @@ One row per category in `packages/contracts/src/retention.ts` (a test keeps this
 | Questions for the reviewer | Confirm the platform is not the statutory record and that 10 years is the minimum a firm should apply. |
 | Verification status | UNVERIFIED |
 | Review date | Before the production retention gate (date to be set by the reviewer), then every 12 months and on any change in law or guidance |
-| Reviewer / decision / date | (blank) |
+| Reviewer / decision / date | Product owner / period confirmed / 2026-10-27 (DEC-084) |
 
 ### GENERAL_BUSINESS - General business documents
 
 | Field | Content |
 |---|---|
-| Provisional period | **6 years (policy)** (PROVISIONAL) |
+| Provisional period | **6 years (policy)** (CONFIRMED, DEC-084) |
 | Record / entity types | Document types GENERAL, OTHER; any document type later added without a specific rule. |
 | Statutory provisions | No specific statutory period. UK GDPR Art 5(1)(e) (storage limitation) requires a defined period and a justification; Limitation Act 1980 s.5 used only as a backstop |
 | Official sources | <https://www.legislation.gov.uk/eur/2016/679/article/5> ; <https://www.legislation.gov.uk/ukpga/1980/58/section/5> |
@@ -127,13 +127,13 @@ One row per category in `packages/contracts/src/retention.ts` (a test keeps this
 | Questions for the reviewer | Is a blanket 6-year default defensible under storage limitation, or should uncategorised documents have a shorter period? |
 | Verification status | UNVERIFIED |
 | Review date | Before the production retention gate (date to be set by the reviewer), then every 12 months and on any change in law or guidance |
-| Reviewer / decision / date | (blank) |
+| Reviewer / decision / date | Product owner / period confirmed / 2026-10-27 (DEC-084) |
 
 ### AUDIT_TRAIL - Audit trail
 
 | Field | Content |
 |---|---|
-| Provisional period | **7 years (policy)** (PROVISIONAL) |
+| Provisional period | **7 years (policy)** (CONFIRMED, DEC-084) |
 | Record / entity types | Table audit_event (append-only). Contains actor, action, entity, before/after snapshots (redacted), reason, correlation id, and - unless the privacy switch is off - IP address and user agent. |
 | Statutory provisions | No statute prescribes a period for a software audit trail. Accountability and storage limitation: UK GDPR Art 5(1)(e) and Art 5(2). The period was chosen as the accounting-records period plus one year (policy, not law). |
 | Official sources | <https://www.legislation.gov.uk/eur/2016/679/article/5> |
@@ -142,13 +142,13 @@ One row per category in `packages/contracts/src/retention.ts` (a test keeps this
 | Questions for the reviewer | Is 7 years proportionate for the personal-data parts of the trail (IP, user agent, names)? See section 2: it may justify a shorter period for those fields only. |
 | Verification status | UNVERIFIED |
 | Review date | Before the production retention gate (date to be set by the reviewer), then every 12 months and on any change in law or guidance |
-| Reviewer / decision / date | (blank) |
+| Reviewer / decision / date | Product owner / period confirmed / 2026-10-27 (DEC-084) |
 
 ### OPERATIONAL_JOBS - Background job and idempotency records
 
 | Field | Content |
 |---|---|
-| Provisional period | **90 days (policy)** (PROVISIONAL) |
+| Provisional period | **90 days (policy)** (CONFIRMED, DEC-084) |
 | Record / entity types | Tables job_record, idempotency_record. Payloads of sensitive jobs are encrypted; records carry organisation/company/trace ids. |
 | Statutory provisions | Policy only (diagnostics). UK GDPR Art 5(1)(c),(e) data minimisation and storage limitation. |
 | Official sources | <https://www.legislation.gov.uk/eur/2016/679/article/5> |
@@ -157,13 +157,13 @@ One row per category in `packages/contracts/src/retention.ts` (a test keeps this
 | Questions for the reviewer | Confirm 90 days; no purge exists yet (S4(b)). |
 | Verification status | UNVERIFIED |
 | Review date | Before the production retention gate (date to be set by the reviewer), then every 12 months and on any change in law or guidance |
-| Reviewer / decision / date | (blank) |
+| Reviewer / decision / date | Product owner / period confirmed / 2026-10-27 (DEC-084) |
 
 ### OPERATIONAL_EVENTS - Outbox events and consumer markers
 
 | Field | Content |
 |---|---|
-| Provisional period | **14 days (policy, enforced)** (PROVISIONAL) |
+| Provisional period | **14 days (policy, enforced)** (CONFIRMED, DEC-084) |
 | Record / entity types | Tables outbox_event, event_consumption. Enforced today: processed events are deleted after OUTBOX_RETENTION_DAYS (default 14); unprocessed events are never deleted. |
 | Statutory provisions | Policy only. UK GDPR Art 5(1)(e). |
 | Official sources | <https://www.legislation.gov.uk/eur/2016/679/article/5> |
@@ -172,13 +172,13 @@ One row per category in `packages/contracts/src/retention.ts` (a test keeps this
 | Questions for the reviewer | None expected. |
 | Verification status | UNVERIFIED |
 | Review date | Before the production retention gate (date to be set by the reviewer), then every 12 months and on any change in law or guidance |
-| Reviewer / decision / date | (blank) |
+| Reviewer / decision / date | Product owner / period confirmed / 2026-10-27 (DEC-084) |
 
 ### NOTIFICATIONS - Notifications, reminders and planned deliveries
 
 | Field | Content |
 |---|---|
-| Provisional period | **1 year (policy)** (PROVISIONAL) |
+| Provisional period | **1 year (policy)** (CONFIRMED, DEC-084) |
 | Record / entity types | Tables notification, notification_delivery, notification_preference, task_reminder. |
 | Statutory provisions | Policy only. UK GDPR Art 5(1)(e); notification preferences are consent-like settings (Privacy and Electronic Communications Regulations 2003 apply to marketing, not to transactional notices - reviewer to confirm). |
 | Official sources | <https://www.legislation.gov.uk/eur/2016/679/article/5> ; <https://www.legislation.gov.uk/uksi/2003/2426/contents> |
@@ -187,13 +187,13 @@ One row per category in `packages/contracts/src/retention.ts` (a test keeps this
 | Questions for the reviewer | Confirm 1 year; confirm that e-mail notices are service messages, not marketing. |
 | Verification status | UNVERIFIED |
 | Review date | Before the production retention gate (date to be set by the reviewer), then every 12 months and on any change in law or guidance |
-| Reviewer / decision / date | (blank) |
+| Reviewer / decision / date | Product owner / period confirmed / 2026-10-27 (DEC-084) |
 
 ### AUTH_TRANSIENT - Sessions, verification tokens and challenges
 
 | Field | Content |
 |---|---|
-| Provisional period | **90 days (policy)** (PROVISIONAL) |
+| Provisional period | **90 days (policy)** (CONFIRMED, DEC-084) |
 | Record / entity types | Tables session, auth_token, auth_challenge, login_trusted_ip. See section 2 for the IP and user-agent fields. |
 | Statutory provisions | Policy only. UK GDPR Art 5(1)(e) and Art 32 (security of processing). |
 | Official sources | <https://www.legislation.gov.uk/eur/2016/679/article/5> ; <https://www.legislation.gov.uk/eur/2016/679/article/32> |
@@ -202,28 +202,28 @@ One row per category in `packages/contracts/src/retention.ts` (a test keeps this
 | Questions for the reviewer | Confirm 90 days after expiry; see section 2. |
 | Verification status | UNVERIFIED |
 | Review date | Before the production retention gate (date to be set by the reviewer), then every 12 months and on any change in law or guidance |
-| Reviewer / decision / date | (blank) |
+| Reviewer / decision / date | Product owner / period confirmed / 2026-10-27 (DEC-084) |
 
 ### WHILE_ACTIVE - Held while the relationship is active
 
 | Field | Content |
 |---|---|
-| Provisional period | **UNDEFINED** (PROVISIONAL) |
+| Provisional period | **6 years after the relationship ends** (CONFIRMED, DEC-084) |
 | Record / entity types | Master data and working records: users, organisations, memberships, roles, companies, contacts, addresses, officers, tasks, comments, workflows, integration connections, AI runs and proposals. |
 | Statutory provisions | UK GDPR Art 5(1)(e), Art 17 (erasure, with the Art 17(3)(b) exception for legal obligations) and Art 28 (processor duties on termination). Where the platform acts as processor for an accounting firm, retention instructions come from the firm (the controller). |
 | Official sources | <https://www.legislation.gov.uk/eur/2016/679/article/17> ; <https://www.legislation.gov.uk/eur/2016/679/article/28> ; <https://www.legislation.gov.uk/eur/2016/679/article/5> |
-| Clock-start event | Termination of the customer relationship (not defined) |
+| Clock-start event | End of the relationship (DEC-084) |
 | Exceptions / extensions | Statutory records inside these tables (e.g. company officers) may need to outlive the account |
-| Questions for the reviewer | Define the after-termination period and the controller/processor split BEFORE S4(b): this category has no period at all today. |
+| Questions for the reviewer | Answered by DEC-084: 6 years after the relationship ends; the practice is controller, the platform operator its processor. |
 | Verification status | UNVERIFIED |
 | Review date | Before the production retention gate (date to be set by the reviewer), then every 12 months and on any change in law or guidance |
-| Reviewer / decision / date | (blank) |
+| Reviewer / decision / date | Product owner / period confirmed / 2026-10-27 (DEC-084) |
 
 ### REFERENCE_DATA - Reference data (no personal data)
 
 | Field | Content |
 |---|---|
-| Provisional period | **No limit** (PROVISIONAL) |
+| Provisional period | **No limit** (CONFIRMED, DEC-084) |
 | Record / entity types | Tables currency, country, tax_jurisdiction, document_type, retention_category, retention_rule. |
 | Statutory provisions | None: no personal data. |
 | Official sources |  |
@@ -232,7 +232,7 @@ One row per category in `packages/contracts/src/retention.ts` (a test keeps this
 | Questions for the reviewer | None. |
 | Verification status | UNVERIFIED |
 | Review date | Before the production retention gate (date to be set by the reviewer), then every 12 months and on any change in law or guidance |
-| Reviewer / decision / date | (blank) |
+| Reviewer / decision / date | Product owner / period confirmed / 2026-10-27 (DEC-084) |
 
 ## 2. IP address and user agent - flagged for privacy review
 Where the platform stores them (from the code, 2026-10-09):
@@ -249,7 +249,13 @@ Where the platform stores them (from the code, 2026-10-09):
 
 **Finding:** the privacy switch covers `audit_event` and the access log only. `session.ip`/`session.user_agent` and `auth_challenge.ip` are stored regardless, and none of these rows is purged today. This is reported, not changed: whether to extend the switch, shorten retention or remove fields is a decision for the reviewer (DEC-003).
 
-**Lawful basis:** not decided. See the candidate bases and the questions in section 3; selecting one is the controller's decision, with a documented assessment.
+**Lawful basis:** legitimate interests (UK GDPR Art 6(1)(f)), for security and fraud prevention, decided by the product owner on 2026-10-27 (DEC-084); the balancing test is to be documented with PRIV-1. **Minimisation decided (DEC-084):**
+* IP address and user agent are removed from audit rows after 12 months; the row is kept for its 7 years;
+* they are removed from sessions 90 days after the session expires;
+* `auth_challenge.ip` is no longer stored;
+* IP addresses in rate-limit keys are hashed, like the login-throttle keys.
+
+All four are built in milestone PRIV-1; until then the platform behaves as the table above describes.
 
 ## 3. Legal sources for the privacy questions
 | Source | Official link | Relevance |
@@ -263,9 +269,10 @@ Where the platform stores them (from the code, 2026-10-09):
 | Case law (retained EU case law, persuasive/binding status for the reviewer): Breyer v Bundesrepublik Deutschland, CJEU C-582/14 (19 Oct 2016) | <https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:62014CJ0582> | A dynamic IP address can be personal data when the controller has legal means to identify the person. Relevant to treating IP addresses in logs and the audit trail as personal data. Status of this authority in UK law after 2020 is for the reviewer. |
 
 ## 4. Open decisions this schedule needs
-1. Who is the controller of client data in the platform (the firm, or the platform operator), and therefore who sets each period?
-2. Confirm or change every PROVISIONAL period above; record the decision in `decision-log.md` and set the category status in a new migration (periods are reference data).
-3. The after-termination period for WHILE_ACTIVE data (currently undefined).
-4. IP/user-agent: necessity, lawful basis, period, and whether the switch should cover sessions and challenges.
-5. Erasure versus statutory retention process (Art 17(3)(b)) and the mandatory-deletion duty in MLR 2017 reg 40.
-6. Only after 1-5: approve (or amend) S4(b).
+Answered by the product owner on 2026-10-27 (DEC-084):
+1. **Controller:** the accounting practice is the controller of its clients' data; the platform operator is its processor (UK GDPR Art 28). The practice may set longer periods for its own obligations.
+2. **Periods:** every period above is CONFIRMED as written.
+3. **WHILE_ACTIVE:** kept for 6 years after the relationship ends.
+4. **IP address and user agent:** legitimate interests, minimised as in section 2.
+5. **Erasure versus statutory retention** (Art 17(3)(b); MLR 2017 reg 40): designed and built in milestone PRIV-1, recorded before code.
+6. **S4(b):** unfrozen; built as PRIV-1 before production with real client data (DEC-085).

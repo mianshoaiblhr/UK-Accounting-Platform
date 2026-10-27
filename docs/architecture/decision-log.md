@@ -287,6 +287,12 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-080 | Sage-style nominal codes: chart templates version 2 (2026-10-27) | The product owner chose Sage-style codes. Chart templates version 2 use the Sage 50 ranges, one template per business type (limited company, sole trader, partnership, landlord), drafted in `chart-templates-v2.xlsx` for the owner's review before code. Version 1 stays for existing companies. One VAT control account (2200). HMRC categories and SA103F/SA105 boxes are UNVERIFIED (DEC-022) |
 | DEC-081 | MTD Income Tax and Self Assessment: specification V13, built against HMRC's sandbox (2026-10-27) | No specification covered Income Tax for individuals. V13 (`docs/specifications/V13_MTD_Income_Tax_Self_Assessment.md`) is written now and built against HMRC's sandbox only, after V5's HMRC adapter, which it shares. Production access is an explicit gate. Blocked on HMRC sandbox credentials and network access to HMRC's sandbox |
 | DEC-082 | HMRC's test environment set aside (2026-10-27) | The product owner said "ignore hmrc test environment". Amends DEC-081: V13 is not built or tested against HMRC's sandbox; it is built against the fake HMRC adapter only, and nothing calls HMRC, sandbox or live, until the owner decides on HMRC access. The sandbox credentials and network blockers are withdrawn |
+| DEC-083 | Verification of the VAT rules and the accounting-standard versions directed (2026-10-27) | The product owner approved going ahead with verification. It is done in the platform by a holder of `tax:rule-verify` / `accounts:rule-verify` who did not enter the rule (DEC-021, DEC-052); the owner's approval verifies nothing, and AI never verifies. Engineering supplies `docs/legal/rule-verification-worksheet.xlsx`. Verification needs a running environment: staging (DEC-085) |
+| DEC-084 | Retention and privacy approved (2026-10-27) | Amends DEC-003. Every period in the retention schedule is CONFIRMED as written; WHILE_ACTIVE data is kept 6 years after the relationship ends. The accounting practice is the controller of its clients' data and the platform operator its processor. IP address and user agent: legitimate interests, minimised. S4(b) is unfrozen; erasure and purge are built as milestone PRIV-1 before real client data |
+| DEC-085 | Production gate approved: staging first, then live (2026-10-27) | Amends DEC-006 and DEC-014. The owner approved going live on AWS London. A person with AWS access applies the Terraform: staging first, where the rules are verified (DEC-083) on synthetic data; then production with real client data, once PRIV-1 is built and the go-live checklist in this entry is met |
+| DEC-086 | Build order: V7, then V5, then V3 and V4 (2026-10-27) | The owner asked to build. V7 (practice layer) is split into five milestones, starting with the compliance calendar; V5 (VAT) follows, with the HMRC connection built against the fake adapter only, as DEC-082 does for V13; then V3 (iXBRL, Companies House) and V4 (Corporation Tax) |
+| DEC-087 | Correction to DEC-080: VAT accounts in chart templates version 2 (2026-10-27) | DEC-080 said the VAT engine posts to one control account. It does not: the VAT settings name an output and an input account, which may differ (M4b). The templates therefore use Sage's three VAT accounts: 2200 output VAT, 2201 input VAT, 2202 VAT liability. Account counts become 111, 105, 106 and 38 |
+| DEC-088 | How V7-M1 is built: the compliance calendar (delegated, DEC-019; recorded before code) | Deadline rules are sourced, versioned organisation data, verified by a second person before use. Obligations per client are generated from its accounting periods, VAT settings and confirmation-statement date, or entered by hand; each has a status, an owner and filing evidence. A practice-wide list and counts cover only the clients the caller may read. Behind the new flag `practice.management` and four new permissions |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -1167,3 +1173,110 @@ DEC-076 is unchanged. This records what building it refined; the detail is in `d
   * no acceptance package may claim a test against HMRC.
 * **What does not change:** the specification's scope, rules and controls; production access stays an explicit gate (DEC-006 pattern), and the feature flag stays off.
 * **The specification** `docs/specifications/V13_MTD_Income_Tax_Self_Assessment.md` is updated to match.
+
+### DEC-083 - Verification of the VAT rules and the accounting-standard versions directed (2026-10-27)
+* **What the owner decided:** "approve", in answer to "verify the VAT rates and the FRS 105 / FRS 102 1A versions inside the platform".
+* **What it means:** the work may start. It does not verify anything:
+  * the platform ships no VAT rate (DEC-022); a firm enters its codes and rates, and a different person holding `tax:rule-verify` verifies each rate version (DEC-021);
+  * the draft FRS 105 and FRS 102 Section 1A packs and the size thresholds (`content/standards/drafts/`) are imported UNVERIFIED and verified by a holder of `accounts:rule-verify` who did not import them (DEC-052);
+  * the named verifier is Shoaib (DEC-056); neither engineering nor AI verifies.
+* **What engineering supplies:** `docs/legal/rule-verification-worksheet.xlsx` (generator `scripts/docs/gen_rule_verification.py`), which lists:
+  * the VAT codes and rates to enter, with their box mapping and the provision each must be checked against;
+  * where the draft packs and thresholds are, how to import them and the review workbook that already covers them (`v2-draft-wording-review.xlsx`);
+  * the steps in the platform.
+* **Where:** verification needs a running platform, so it happens on staging (DEC-085).
+
+### DEC-084 - Retention and privacy approved (2026-10-27)
+Amends DEC-003. The owner approved the retention and privacy decisions and answered the four open questions of the schedule (section 4).
+* **Periods:** every category in `docs/legal/retention-verification-schedule.md` is CONFIRMED at the period written there. The reviewer's questions in each row (clock-start events and the like) stay open in the schedule for the next review; confirming a period does not answer them.
+* **Data held while active (WHILE_ACTIVE):** kept while the relationship is active and for 6 years after it ends (the Limitation Act 1980 s.5 period, as for engagement records). The category becomes a 6-year period from RELATIONSHIP_END.
+* **Controller:** the accounting practice is the controller of its clients' data; the platform operator is its processor under a UK GDPR Art 28 contract. The practice sets any longer period its own obligations need.
+* **IP address and user agent:** lawful basis legitimate interests (UK GDPR Art 6(1)(f)) for security and fraud prevention, with a documented balancing test, and minimised:
+  * removed from audit rows after 12 months (the row itself is kept for its 7 years);
+  * removed from sessions 90 days after they expire;
+  * the login-challenge IP (`auth_challenge.ip`, never read) is no longer stored;
+  * IP addresses in rate-limit keys are hashed, like the login-throttle keys.
+* **S4(b) is unfrozen.** Purge jobs, the IP minimisation above and the erasure-versus-retention process (UK GDPR Art 17(3)(b); MLR 2017 reg 40) are built as milestone **PRIV-1**, with its own design recorded before code. The audit trail stays append-only: the only change PRIV-1 may make to an audit row is to clear the two personal fields, by a controlled, audited job.
+* **Not changed by this entry:** no data is deleted today. The schedule's sources were not opened from the build environment, so its links remain the owner's to check.
+
+### DEC-085 - Production gate approved: staging first, then live (2026-10-27)
+Amends DEC-006 and DEC-014. The owner approved going live, choosing "approve; deploy staging".
+* **Who deploys:** a person with access to the firm's AWS account applies the Terraform in `infra/terraform` (London, eu-west-2). This session has no AWS access, so nothing has been applied.
+* **Staging:** synthetic data only. The rules are imported and verified there (DEC-083), and the main paths are smoke-tested against real AWS (S3 signatures, ClamAV, SES).
+* **Production with real client data** starts only when all of these hold:
+  1. staging is up and the smoke test passed;
+  2. PRIV-1 is built and accepted (DEC-084);
+  3. the VAT rates and standard versions a client needs are verified;
+  4. an Art 28 processing agreement template exists for practices (DEC-084);
+  5. backups, restore and the incident runbook are tested on staging.
+* **DEC-014's synthetic-data rule** stays in force everywhere except production after go-live.
+
+### DEC-086 - Build order: V7, then V5, then V3 and V4 (2026-10-27)
+* **What the owner decided:** "build", after the order was given as the practice layer (V7) and the VAT return (V5), followed by V3 and V4.
+* **V7 split** (`docs/architecture/v7-plan.md`), each milestone with its design recorded before code:
+  * V7-M1 compliance calendar: obligations per client and their deadlines, with statuses;
+  * V7-M2 practice dashboard and client list, following the prototype (DEC-079);
+  * V7-M3 onboarding and anti-money-laundering checks;
+  * V7-M4 client portal: requests, uploads, approvals, secure messages;
+  * V7-M5 compliance health score and client communication.
+* **V5:** the VAT return from the ledger, the review flags and the submission record. The HMRC connection is built against the fake adapter only, as DEC-082 does for V13: nothing calls HMRC until the owner decides on HMRC access.
+* **Then** V3 (iXBRL, Companies House) and V4 (Corporation Tax).
+* **PRIV-1** (DEC-084) is fitted in before production, whatever milestone is in progress.
+
+### DEC-087 - Correction to DEC-080: VAT accounts in chart templates version 2 (2026-10-27)
+* **The error:** DEC-080 said the platform keeps one VAT control account "because the VAT engine posts to one (M4b)". That is wrong. The VAT settings hold an output account and an input account (`outputAccountId`, `inputAccountId`); the posting service writes output VAT to the first and input VAT to the second, and they may be the same account or two.
+* **The correction:** the draft templates use Sage's three VAT accounts:
+  * 2200 sales tax control account, set as the output account (control kind VAT_CONTROL);
+  * 2201 purchase tax control account, set as the input account (control kind VAT_CONTROL);
+  * 2202 VAT liability, which takes the return's net amount when the return is filed and is cleared when it is paid (the filing journal is V5's).
+* **Counts:** limited company 111 accounts, sole trader 105, partnership 106, landlord 38 (DEC-080 gave 109, 103, 104 and 36).
+* `docs/architecture/chart-templates-v2.xlsx` is regenerated; DEC-080 is otherwise unchanged.
+
+### DEC-088 - How V7-M1 is built: the compliance calendar (delegated, DEC-019; recorded before code)
+The first V7 milestone (`docs/architecture/v7-plan.md`). It records what a practice must file or pay for each client and when, and who is doing it. It files nothing (DEC-082, DEC-086).
+* **Deadline rules** (`deadline_rule`, organisation data, the DEC-021 pattern):
+  * a rule names an obligation kind: ACCOUNTS_FILING, CT_PAYMENT, CT_RETURN, CONFIRMATION_STATEMENT or VAT_RETURN;
+  * it names the legal forms it applies to, and the dates it governs (anchors from `effectiveFrom` to `effectiveTo`);
+  * the due date is computed from the anchor in three steps: add `daysBeforeMonths` days; add `months` months; then add `daysAfterMonths` days. With `monthEndRule`, an anchor that falls on the last day of a month lands on the last day of the target month (Companies Act 2006 s.443);
+  * every rule carries its source (URL, provision, date read), starts UNVERIFIED and is verified once by a holder of `compliance:rule-verify` who did not enter it; a change is a new version that supersedes the old one;
+  * the database refuses overlapping current versions of the same kind for a shared legal form, and any edit other than verification once and supersession once;
+  * engineering ships draft rules in `content/compliance/drafts/uk-deadline-rules.json`, imported by a person; no migration seeds a rule.
+* **The anchors:**
+  * ACCOUNTS_FILING, CT_PAYMENT and CT_RETURN run from the end of each accounting period of the client (`accounting_period`);
+  * VAT_RETURN runs from the end of each VAT return period, taken from the VAT settings (stagger, period length, registration date);
+  * CONFIRMATION_STATEMENT runs from the confirmation date held on the client's compliance profile, and each anniversary of it.
+* **Obligations** (`compliance_obligation`, per client):
+  * generated from a verified rule (source RULE, with the rule version) or entered by hand (source MANUAL); kind OTHER is for internal deadlines and needs a title;
+  * generation is idempotent: one RULE obligation per client, kind and anchor date; it reports what it created, what already existed and what it skipped and why (no verified rule, or no anchor data);
+  * statuses NOT_STARTED, IN_PROGRESS, WAITING_ON_CLIENT, READY, DONE and NOT_REQUIRED. DONE needs the date it was done and may carry a reference and an evidence document. NOT_REQUIRED, reopening DONE or NOT_REQUIRED, and moving a due date each need a reason;
+  * an owner (a member of the organisation) may be set;
+  * an obligation is never deleted; every change is audited with its before and after, and updates use an optimistic version;
+  * overdue means the due date is before today and the status is neither DONE nor NOT_REQUIRED. It is computed by the API, never stored.
+* **What a rule change does:** existing obligations keep their due date and the rule version they came from. Regenerating creates only what is missing.
+* **Known limits, recorded rather than guessed:**
+  * the first accounts of a new company (21 months from incorporation, s.442(3)) and accounting periods longer than 12 months for Corporation Tax are not derived: the preparer moves the due date, with a reason;
+  * extensions granted by Companies House or HMRC are recorded the same way;
+  * MTD Income Tax obligations wait for V13; PAYE is not in scope.
+* **Practice-wide views:**
+  * a list across the clients the caller may read with `compliance:read`, filtered by status, kind, client, owner and due window (overdue, next 14 days, next 90 days, all open);
+  * counts of overdue, due in the next 14 days, waiting on the client and ready to submit, over the same clients;
+  * a client the caller may not read is invisible, not counted.
+* **Permissions (new):**
+  * `compliance:read` and `compliance:manage`, company-scoped;
+  * `compliance:rules-manage` and `compliance:rule-verify`, organisation-scoped;
+  * system roles: owner and admin hold all four; partner, manager and accountant read and manage; bookkeeper and reviewer read; client viewer none (the client portal is V7-M4).
+* **Feature flag:** `practice.management`, default off, gates every V7 route and screen.
+* **Screens** (following the prototype, DEC-079):
+  * a practice deadlines page with the four counts and the deadline list;
+  * a client compliance page: its obligations, generation, updates and the confirmation date.
+* **Retention:**
+  * deadline rules: ACCOUNTING_RECORDS, as tax rates;
+  * obligations: FILING_EVIDENCE;
+  * the compliance profile: WHILE_ACTIVE.
+* **Acceptance:**
+  * unit tests of the due-date arithmetic, including month ends, leap years and the three-step order;
+  * database tests of every guard;
+  * API tests of the rule lifecycle, generation, updates, the practice views, permissions and tenancy;
+  * a real-browser test (DEC-050);
+  * the OpenAPI contract regenerated;
+  * CI green.

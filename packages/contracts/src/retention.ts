@@ -5,10 +5,10 @@ import { DOCUMENT_TYPES } from './documents';
  * one retention category, so data created by later versions is classified from day one. THIS IS CLASSIFICATION ONLY: nothing here deletes,
  * archives or anonymises anything (purge jobs and erasure-versus-retention rules are a separate, not yet approved item).
  *
- * `status: 'PROVISIONAL'` on every category: the periods below are working defaults drawn from the statutory anchors named in `basis`, but
- * the product's retention policy and lawful basis are a DPO / legal decision that is still open (specification V0-8.3). Do not read a
- * PROVISIONAL period as legal advice or as a confirmed policy. Mirrors the `retention_category` / `retention_rule` reference tables;
- * tests keep both identical (same pattern as DOCUMENT_TYPES).
+ * `status: 'CONFIRMED'` on every category: the product owner confirmed each period on 2026-10-27 (DEC-084, amending DEC-003). The practice
+ * is the controller of its clients' data and may need longer periods for its own obligations. Confirming a period is not legal advice, and
+ * nothing here deletes anything: purge and erasure are milestone PRIV-1. Mirrors the `retention_category` / `retention_rule` reference
+ * tables; tests keep both identical (same pattern as DOCUMENT_TYPES).
  */
 export const RETENTION_TRIGGERS = [
   'DOCUMENT_DATE', 'ACCOUNTING_PERIOD_END', 'TAX_YEAR_END', 'FILING_DATE', 'RELATIONSHIP_END', 'RECORD_CREATED', 'PROCESSING_COMPLETED', 'EXPIRY', 'NOT_APPLICABLE',
@@ -29,7 +29,7 @@ export interface RetentionCategory {
 }
 
 const period = (code: string, name: string, p: { years?: number; days?: number }, trigger: RetentionTrigger, basis: string): RetentionCategory =>
-  ({ code, name, kind: 'PERIOD', years: p.years ?? null, days: p.days ?? null, trigger, basis, status: 'PROVISIONAL' });
+  ({ code, name, kind: 'PERIOD', years: p.years ?? null, days: p.days ?? null, trigger, basis, status: 'CONFIRMED' });
 
 export const RETENTION_CATEGORIES: readonly RetentionCategory[] = [
   period('ACCOUNTING_RECORDS', 'Accounting and tax records', { years: 6 }, 'ACCOUNTING_PERIOD_END',
@@ -59,9 +59,10 @@ export const RETENTION_CATEGORIES: readonly RetentionCategory[] = [
     'Policy: transient personal notices; one year.'),
   period('AUTH_TRANSIENT', 'Sessions, verification tokens and challenges', { days: 90 }, 'EXPIRY',
     'Policy: security records of expired credentials, kept for investigation of misuse and then removed.'),
-  { code: 'WHILE_ACTIVE', name: 'Held while the relationship is active', kind: 'WHILE_ACTIVE', years: null, days: null, trigger: 'NOT_APPLICABLE', status: 'PROVISIONAL',
-    basis: 'Master data and working records that are needed for as long as the organisation or user account exists. The period after termination (and the erasure-versus-retention rules) is decided with the purge work and the DPO; it is not set here.' },
-  { code: 'REFERENCE_DATA', name: 'Reference data (no personal data)', kind: 'NOT_APPLICABLE', years: null, days: null, trigger: 'NOT_APPLICABLE', status: 'PROVISIONAL',
+  // DEC-084: held while the relationship is active, then 6 years after it ends (a period that only starts at the end).
+  period('WHILE_ACTIVE', 'Held while the relationship is active, then 6 years', { years: 6 }, 'RELATIONSHIP_END',
+    'Master data and working records needed for as long as the organisation or user account exists, then kept for the Limitation Act 1980 s.5 period (6 years) after the relationship ends (DEC-084).'),
+  { code: 'REFERENCE_DATA', name: 'Reference data (no personal data)', kind: 'NOT_APPLICABLE', years: null, days: null, trigger: 'NOT_APPLICABLE', status: 'CONFIRMED',
     basis: 'Global reference data (ISO tables, jurisdictions, document types, this classification): no personal data, no retention limit.' },
 ];
 
@@ -97,11 +98,16 @@ export const RETENTION_RULES: readonly RetentionRule[] = [
     // V2 accounts production: the framework the accounts were prepared under
     'reporting_standard', 'reporting_standard_version', 'statutory_line', 'statutory_map_entry', 'validation_rule', 'disclosure_rule', 'statutory_account_override', 'company_reporting_framework',
     'fixed_asset_class', 'fixed_asset', 'fixed_asset_basis', 'depreciation_run', 'depreciation_run_line',
-    'year_end_item', 'release_run', 'release_run_line', 'provision', 'provision_movement', 'year_end_close', 'director_loan_account', 'director_loan_threshold', 'related_party', 'accounts_fact', 'size_threshold_set', 'cash_flow_class', 'cash_flow_map_entry', 'review_setting', 'review_flag_response', 'year_end_step_signoff', 'accounts_approval', 'accounts_package']),
+    'year_end_item', 'release_run', 'release_run_line', 'provision', 'provision_movement', 'year_end_close', 'director_loan_account', 'director_loan_threshold', 'related_party', 'accounts_fact', 'size_threshold_set', 'cash_flow_class', 'cash_flow_map_entry', 'review_setting', 'review_flag_response', 'year_end_step_signoff', 'accounts_approval', 'accounts_package',
+    // V7-M1: deadline rules explain the due dates of filed obligations (DEC-088)
+    'deadline_rule']),
+  // V7-M1: an obligation is the record of a filing or payment and its evidence (DEC-088)
+  ...tableRules('FILING_EVIDENCE', ['compliance_obligation']),
   ...tableRules('WHILE_ACTIVE', [
     'user', 'user_identity', 'mfa_factor', 'mfa_recovery_code', 'organisation', 'role', 'organisation_membership', 'practice', 'practice_membership', 'company_membership', 'invitation',
     'company', 'company_officer', 'contact', 'contact_role', 'customer_profile', 'supplier_profile', 'address', 'feature_flag_override', 'task', 'task_attachment', 'task_comment', 'workflow_instance', 'workflow_transition',
     'integration_connection', 'ai_run', 'ai_proposal',
+    'company_compliance_profile',
   ]),
   ...tableRules('REFERENCE_DATA', ['currency', 'country', 'tax_jurisdiction', 'document_type', 'retention_category', 'retention_rule']),
 ];
