@@ -294,6 +294,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-087 | Correction to DEC-080: VAT accounts in chart templates version 2 (2026-10-27) | DEC-080 said the VAT engine posts to one control account. It does not: the VAT settings name an output and an input account, which may differ (M4b). The templates therefore use Sage's three VAT accounts: 2200 output VAT, 2201 input VAT, 2202 VAT liability. Account counts become 111, 105, 106 and 38 |
 | DEC-088 | How V7-M1 is built: the compliance calendar (delegated, DEC-019; recorded before code) | Deadline rules are sourced, versioned organisation data, verified by a second person before use. Obligations per client are generated from its accounting periods, VAT settings and confirmation-statement date, or entered by hand; each has a status, an owner and filing evidence. A practice-wide list and counts cover only the clients the caller may read. Behind the new flag `practice.management` and four new permissions |
 | DEC-089 | How V7-M2 is built: the practice overview and the client list (delegated, DEC-019; recorded before code) | A practice shell with the prototype's sidebar (DEC-079); an overview of the counts, the deadlines due soon and the open work by status; a client list with year end, VAT, the next deadline and the client manager, over the clients the caller may read. A client manager is set on the compliance profile. Behind `practice.management` |
+| DEC-090 | How V5-M1 is built: the VAT return (delegated, DEC-019; recorded before code) | A VAT return per client and period, prepared from the M4b workpaper and tied to it by a fingerprint; review flags explained before review; a second-person review and a recorded client approval that freeze the return and lock the period against new VAT lines. Filing (fake HMRC adapter only) is V5-M2, the screens V5-M3. Behind the new flag `vat.returns` and two new permissions |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -1308,4 +1309,52 @@ The second V7 milestone (`docs/architecture/v7-plan.md`). The screens follow the
   * API tests of the new counts, the list (visibility, search, filters, pages) and the manager;
   * a real-browser test of the overview, the client list and the shell, including a reader with no action;
   * the OpenAPI contract regenerated;
+  * CI green.
+
+### DEC-090 - How V5-M1 is built: the VAT return (delegated, DEC-019; recorded before code)
+V5 follows V7-M1 and V7-M2 (DEC-086). `docs/architecture/v5-plan.md` splits it into three milestones:
+* V5-M1 the VAT return: preparation, review flags, review and client approval, the period lock;
+* V5-M2 the filing record: the HMRC port with a fake adapter only (DEC-082, DEC-086), the submission record, boxes 6 to 9 in whole pounds by a verified rule, the liability journal, the obligation marked done;
+* V5-M3 the screens, following the prototype's VAT return (DEC-079).
+
+**V5-M1** follows the accounts approval pattern (DEC-070):
+* **The return** (`vat_return`): one per client and VAT period, the period taken from the VAT settings (`vatPeriodFor`). It is created by a person with `vat:prepare` (new), linked to the client's open VAT obligation for that period when there is one (V7-M1).
+* **The fingerprint:** the SHA-256 of the M4b workpaper for the period in canonical JSON (keys sorted), without its notice. It covers the boxes, the lines each box drills to, the rule versions and the control-account reconciliation. It is computed live; any change of the ledger that touches the period changes it.
+* **Events** (`vat_return_event`, append-only, each with the fingerprint it was made on):
+  * PREPARED: a person with `vat:prepare` records that the return as it stands is prepared;
+  * FLAG_EXPLAINED: a person with `vat:prepare` or `vat:review` explains one review flag;
+  * REVIEWED: a person with `vat:review` (new), who is not the person of the live PREPARED event, records the review;
+  * CLIENT_APPROVED: a person with `vat:review` and `period:lock` records the client's approval, naming the client's contact, the approval date and an evidence document (readable, of the same client, scanned clean).
+* **Review flags**, computed live from the workpaper. Each has a stable key, and review is refused while a flag has no explanation:
+  * `reconciliation_difference`: the control-account difference is not zero (the explained entries are listed with it);
+  * `superseded_rate:{rateId}`: a VAT line used a rate version that has since been superseded;
+  * `repayment`: box 4 is greater than box 1 plus box 2 (a repayment return);
+  * `zero_return`: every box is zero;
+  * `late_posting:{journalId}:{lineNo}`: a VAT line with a tax point in the period on a journal dated after the period's end.
+* **Status, derived and not stored:**
+  * DRAFT: no live PREPARED event;
+  * PREPARED: the latest PREPARED event has the live fingerprint;
+  * REVIEWED: a REVIEWED event has the live fingerprint and follows it;
+  * APPROVED: the return is locked.
+
+  A PREPARED or REVIEWED event whose fingerprint no longer matches has lapsed. It is kept and shown as lapsed.
+* **Approval freezes and locks:**
+  * client approval needs a live review and no unexplained flag;
+  * it stores the workpaper as approved (content and SHA-256) on the return and sets the lock, written once;
+  * from then on the database refuses any journal line with a tax point inside the locked period for that client (`vat_period_locked`). A correction goes into a later return, as HMRC's error-correction rules expect;
+  * the linked obligation moves to READY with an audited, versioned update.
+* **Boxes 6 to 9:** M1 stores and approves the exact amounts. Whole-pound presentation is applied when the filing record is built (V5-M2), by a verified rule, from the approved amounts. No rounding figure is built in (DEC-021).
+* **Permissions and the flag:**
+  * `vat:prepare` and `vat:review` (company), granted as `accounts:prepare` and `accounts:review` are;
+  * the routes sit behind the new feature flag `vat.returns`.
+* **Records:**
+  * the two new tables are classified (RLS+APP), with no DELETE or TRUNCATE;
+  * identity and lock fields are guarded;
+  * retention is ACCOUNTING_RECORDS (6 years from the end of the period, DEC-084);
+  * every event is audited.
+* **Not in M1:** filing, payment, the liability journal, the screens, partial exemption, the flat-rate and cash schemes (not implemented in M4b) and the input-to-output threshold the firm would set.
+* **Acceptance:**
+  * golden workings for a synthetic quarter (a workbook with each box traced to its lines), for review by the named accountant (the DEC-054 pattern);
+  * API and database tests of every rule above;
+  * the OpenAPI contract;
   * CI green.
