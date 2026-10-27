@@ -91,6 +91,11 @@ probes.push(
   { name: 'sign off a review flag', perm: 'accounts:review', run: (u) => call('post', `/companies/${company.id}/review-flags/sign-off`, {})(u) },
   { name: 'read the fixed-asset register', perm: 'assets:read', run: (u) => call('get', `/companies/${company.id}/fixed-assets`)(u) },
   { name: 'add a fixed asset', perm: 'assets:manage', run: (u) => call('post', `/companies/${company.id}/fixed-assets`, {})(u) },
+  // V7-M1 (DEC-088)
+  { name: 'read a client\'s deadlines', perm: 'compliance:read', run: (u) => call('get', `/companies/${company.id}/compliance/obligations`)(u) },
+  { name: 'enter a deadline', perm: 'compliance:manage', run: (u) => call('post', `/companies/${company.id}/compliance/obligations`, {})(u) },
+  { name: 'add a deadline rule', perm: 'compliance:rules-manage', run: call('post', '/compliance/deadline-rules', {}) },
+  { name: 'verify a deadline rule', perm: 'compliance:rule-verify', run: call('post', `/compliance/deadline-rules/${GHOST}/verify`, {}) },
 );
 probes.find((p) => p.name === 'create company')!.run = (u) => call('post', '/companies', { name: `Perm ${Math.random()}` })(u);
 probes.push({ name: 'create period', perm: 'period:manage', run: (u) => call('post', `/companies/${company.id}/periods`, { startDate: `${2000 + Math.floor(Math.random() * 90)}-01-01`, endDate: `${2000 + Math.floor(Math.random() * 90)}-12-31` })(u) });

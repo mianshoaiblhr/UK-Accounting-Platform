@@ -14,6 +14,7 @@ export const FEATURE_FLAGS = {
   'filing.formats.new': { description: 'New statutory filing formats', default: false },
   'reporting.standards.new': { description: 'New reporting standards', default: false },
   'accounts.production': { description: 'V2 accounts production: reporting framework, statutory statements, year end (incomplete while V2 is being built)', default: false },
+  'practice.management': { description: 'V7 practice management: compliance calendar, practice dashboard, onboarding, client portal (incomplete while V7 is being built)', default: false },
 } as const satisfies Record<string, FeatureFlagDef>;
 
 export type FeatureKey = keyof typeof FEATURE_FLAGS;

@@ -27439,6 +27439,1035 @@
         }
       }
     },
+    "/api/v1/organisations/{organisationId}/compliance/deadline-rules": {
+      "get": {
+        "operationId": "Compliance_rules",
+        "parameters": [
+          {
+            "name": "includeSuperseded",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rules",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeadlineRuleList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Compliance"
+        ],
+        "x-required-feature": "practice.management",
+        "x-required-permissions": [
+          "org:read"
+        ],
+        "summary": "Deadline rule versions of the organisation (the platform ships none; a firm enters or imports them with sources)",
+        "description": "**Requires permission:** `org:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "Compliance_addRule",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Added (unverified)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeadlineRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Compliance"
+        ],
+        "x-required-feature": "practice.management",
+        "x-required-permissions": [
+          "compliance:rules-manage"
+        ],
+        "summary": "Add a sourced, effective-dated deadline rule (compliance:rules-manage). It starts UNVERIFIED and generates nothing until verified",
+        "description": "**Requires permission:** `compliance:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDeadlineRuleRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/compliance/deadline-rules/{ruleId}/supersede": {
+      "post": {
+        "operationId": "Compliance_supersede",
+        "parameters": [
+          {
+            "name": "ruleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "New version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeadlineRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Compliance"
+        ],
+        "x-required-feature": "practice.management",
+        "x-required-permissions": [
+          "compliance:rules-manage"
+        ],
+        "summary": "Replace a rule version with a new UNVERIFIED one (reason required); obligations already generated keep their version",
+        "description": "**Requires permission:** `compliance:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupersedeDeadlineRuleRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/compliance/deadline-rules/{ruleId}/verify": {
+      "post": {
+        "operationId": "Compliance_verify",
+        "parameters": [
+          {
+            "name": "ruleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeadlineRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Compliance"
+        ],
+        "x-required-feature": "practice.management",
+        "x-required-permissions": [
+          "compliance:rule-verify"
+        ],
+        "summary": "Verify a rule version against its source (compliance:rule-verify; not the person who entered it)",
+        "description": "**Requires permission:** `compliance:rule-verify`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyDeadlineRuleRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/compliance/obligations": {
+      "get": {
+        "operationId": "Compliance_obligations",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "NOT_STARTED",
+                "IN_PROGRESS",
+                "WAITING_ON_CLIENT",
+                "READY",
+                "DONE",
+                "NOT_REQUIRED"
+              ]
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACCOUNTS_FILING",
+                "CT_PAYMENT",
+                "CT_RETURN",
+                "CONFIRMATION_STATEMENT",
+                "VAT_RETURN",
+                "OTHER"
+              ]
+            }
+          },
+          {
+            "name": "due",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "overdue",
+                "next14",
+                "soon",
+                "next90",
+                "open",
+                "all"
+              ],
+              "default": "soon"
+            }
+          },
+          {
+            "name": "companyId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "assignee",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "me"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObligationPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Compliance"
+        ],
+        "x-required-feature": "practice.management",
+        "x-required-permissions": [
+          "compliance:read"
+        ],
+        "summary": "Deadlines across the clients the caller may read (compliance:read per client), by due window, status, kind, client and owner",
+        "description": "**Requires permission:** `compliance:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/compliance/summary": {
+      "get": {
+        "operationId": "Compliance_summary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplianceSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Compliance"
+        ],
+        "x-required-feature": "practice.management",
+        "x-required-permissions": [
+          "compliance:read"
+        ],
+        "summary": "Counts over the clients the caller may read: overdue, due in the next 14 days, waiting on the client, ready",
+        "description": "**Requires permission:** `compliance:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/compliance/profile": {
+      "get": {
+        "operationId": "CompanyCompliance_profile",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplianceProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Compliance"
+        ],
+        "x-required-feature": "practice.management",
+        "x-required-permissions": [
+          "compliance:read"
+        ],
+        "summary": "The client's compliance profile: the confirmation date of its next confirmation statement",
+        "description": "**Requires permission:** `compliance:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "CompanyCompliance_setProfile",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplianceProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Compliance"
+        ],
+        "x-required-feature": "practice.management",
+        "x-required-permissions": [
+          "compliance:manage"
+        ],
+        "summary": "Set the confirmation date (compliance:manage, reason required)",
+        "description": "**Requires permission:** `compliance:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetComplianceProfileRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/compliance/generate": {
+      "post": {
+        "operationId": "CompanyCompliance_generate",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Generated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Compliance"
+        ],
+        "x-required-feature": "practice.management",
+        "x-required-permissions": [
+          "compliance:manage"
+        ],
+        "summary": "Create the missing obligations from verified rules for the client's period ends, VAT periods and confirmation dates in a window; idempotent; reports what was skipped and why",
+        "description": "**Requires permission:** `compliance:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateObligationsRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/compliance/obligations": {
+      "get": {
+        "operationId": "CompanyCompliance_list",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "due",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "overdue",
+                "next14",
+                "soon",
+                "next90",
+                "open",
+                "all"
+              ],
+              "default": "all"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "NOT_STARTED",
+                "IN_PROGRESS",
+                "WAITING_ON_CLIENT",
+                "READY",
+                "DONE",
+                "NOT_REQUIRED"
+              ]
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACCOUNTS_FILING",
+                "CT_PAYMENT",
+                "CT_RETURN",
+                "CONFIRMATION_STATEMENT",
+                "VAT_RETURN",
+                "OTHER"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Obligations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObligationList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Compliance"
+        ],
+        "x-required-feature": "practice.management",
+        "x-required-permissions": [
+          "compliance:read"
+        ],
+        "summary": "The client's obligations by due window, status and kind",
+        "description": "**Requires permission:** `compliance:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "CompanyCompliance_create",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Obligation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Compliance"
+        ],
+        "x-required-feature": "practice.management",
+        "x-required-permissions": [
+          "compliance:manage"
+        ],
+        "summary": "Enter a deadline by hand (an internal deadline, first accounts, an extension), with a reason",
+        "description": "**Requires permission:** `compliance:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateObligationRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/compliance/obligations/{obligationId}": {
+      "get": {
+        "operationId": "CompanyCompliance_get",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "obligationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Obligation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Obligation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Compliance"
+        ],
+        "x-required-feature": "practice.management",
+        "x-required-permissions": [
+          "compliance:read"
+        ],
+        "summary": "One obligation",
+        "description": "**Requires permission:** `compliance:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "CompanyCompliance_update",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "obligationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Obligation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Compliance"
+        ],
+        "x-required-feature": "practice.management",
+        "x-required-permissions": [
+          "compliance:manage"
+        ],
+        "summary": "Change status, owner, due date or filing evidence against a version; DONE needs its date; NOT_REQUIRED, reopening and moving a due date need a reason",
+        "description": "**Requires permission:** `compliance:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateObligationRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -28430,6 +29459,9 @@
     },
     {
       "name": "Integrations"
+    },
+    {
+      "name": "Compliance"
     },
     {
       "name": "AI"
@@ -44742,6 +45774,1009 @@
         ],
         "additionalProperties": false
       },
+      "DeadlineRule": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ACCOUNTS_FILING",
+              "CT_PAYMENT",
+              "CT_RETURN",
+              "CONFIRMATION_STATEMENT",
+              "VAT_RETURN"
+            ]
+          },
+          "legalForms": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "daysBeforeMonths": {
+            "type": "integer"
+          },
+          "months": {
+            "type": "integer"
+          },
+          "daysAfterMonths": {
+            "type": "integer"
+          },
+          "monthEndRule": {
+            "type": "boolean",
+            "description": "A month-end anchor lands on the last day of the target month"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "First anchor date the version governs"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string"
+              },
+              "provision": {
+                "type": "string"
+              },
+              "retrievedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url",
+              "provision",
+              "retrievedOn"
+            ],
+            "additionalProperties": false
+          },
+          "enteredByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "UNVERIFIED",
+              "VERIFIED"
+            ],
+            "description": "UNVERIFIED versions generate nothing"
+          },
+          "verifiedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "verifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "verificationNotes": {
+            "type": "string",
+            "nullable": true
+          },
+          "evidenceDocumentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "supersededById": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "legalForms",
+          "daysBeforeMonths",
+          "months",
+          "daysAfterMonths",
+          "monthEndRule",
+          "effectiveFrom",
+          "effectiveTo",
+          "source",
+          "enteredByUserId",
+          "createdAt",
+          "verificationStatus",
+          "verifiedByUserId",
+          "verifiedAt",
+          "verificationNotes",
+          "evidenceDocumentId",
+          "supersededById"
+        ],
+        "additionalProperties": false
+      },
+      "DeadlineRuleList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "ACCOUNTS_FILING",
+                    "CT_PAYMENT",
+                    "CT_RETURN",
+                    "CONFIRMATION_STATEMENT",
+                    "VAT_RETURN"
+                  ]
+                },
+                "legalForms": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "daysBeforeMonths": {
+                  "type": "integer"
+                },
+                "months": {
+                  "type": "integer"
+                },
+                "daysAfterMonths": {
+                  "type": "integer"
+                },
+                "monthEndRule": {
+                  "type": "boolean",
+                  "description": "A month-end anchor lands on the last day of the target month"
+                },
+                "effectiveFrom": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "description": "First anchor date the version governs"
+                },
+                "effectiveTo": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "provision": {
+                      "type": "string"
+                    },
+                    "retrievedOn": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    }
+                  },
+                  "required": [
+                    "url",
+                    "provision",
+                    "retrievedOn"
+                  ],
+                  "additionalProperties": false
+                },
+                "enteredByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "verificationStatus": {
+                  "type": "string",
+                  "enum": [
+                    "UNVERIFIED",
+                    "VERIFIED"
+                  ],
+                  "description": "UNVERIFIED versions generate nothing"
+                },
+                "verifiedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "verifiedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "verificationNotes": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "evidenceDocumentId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "supersededById": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "legalForms",
+                "daysBeforeMonths",
+                "months",
+                "daysAfterMonths",
+                "monthEndRule",
+                "effectiveFrom",
+                "effectiveTo",
+                "source",
+                "enteredByUserId",
+                "createdAt",
+                "verificationStatus",
+                "verifiedByUserId",
+                "verifiedAt",
+                "verificationNotes",
+                "evidenceDocumentId",
+                "supersededById"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "Obligation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyName": {
+            "type": "string",
+            "description": "Practice-wide lists only"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ACCOUNTS_FILING",
+              "CT_PAYMENT",
+              "CT_RETURN",
+              "CONFIRMATION_STATEMENT",
+              "VAT_RETURN",
+              "OTHER"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "periodStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "periodEnd": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true,
+            "description": "The anchor: period end, VAT period end or confirmation date"
+          },
+          "dueDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "RULE",
+              "MANUAL"
+            ]
+          },
+          "deadlineRuleId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "NOT_STARTED",
+              "IN_PROGRESS",
+              "WAITING_ON_CLIENT",
+              "READY",
+              "DONE",
+              "NOT_REQUIRED"
+            ]
+          },
+          "overdue": {
+            "type": "boolean",
+            "description": "Computed on the UK date of the request, never stored"
+          },
+          "assigneeUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "doneOn": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "doneReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "evidenceDocumentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "statusReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer"
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "kind",
+          "title",
+          "periodStart",
+          "periodEnd",
+          "dueDate",
+          "source",
+          "deadlineRuleId",
+          "status",
+          "overdue",
+          "assigneeUserId",
+          "doneOn",
+          "doneReference",
+          "evidenceDocumentId",
+          "statusReason",
+          "version",
+          "createdByUserId",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "ObligationList": {
+        "type": "object",
+        "properties": {
+          "today": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "The UK date the list was computed for"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyName": {
+                  "type": "string",
+                  "description": "Practice-wide lists only"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "ACCOUNTS_FILING",
+                    "CT_PAYMENT",
+                    "CT_RETURN",
+                    "CONFIRMATION_STATEMENT",
+                    "VAT_RETURN",
+                    "OTHER"
+                  ]
+                },
+                "title": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "periodStart": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "periodEnd": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true,
+                  "description": "The anchor: period end, VAT period end or confirmation date"
+                },
+                "dueDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "RULE",
+                    "MANUAL"
+                  ]
+                },
+                "deadlineRuleId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "NOT_STARTED",
+                    "IN_PROGRESS",
+                    "WAITING_ON_CLIENT",
+                    "READY",
+                    "DONE",
+                    "NOT_REQUIRED"
+                  ]
+                },
+                "overdue": {
+                  "type": "boolean",
+                  "description": "Computed on the UK date of the request, never stored"
+                },
+                "assigneeUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "doneOn": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "doneReference": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "evidenceDocumentId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "statusReason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "version": {
+                  "type": "integer"
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "kind",
+                "title",
+                "periodStart",
+                "periodEnd",
+                "dueDate",
+                "source",
+                "deadlineRuleId",
+                "status",
+                "overdue",
+                "assigneeUserId",
+                "doneOn",
+                "doneReference",
+                "evidenceDocumentId",
+                "statusReason",
+                "version",
+                "createdByUserId",
+                "createdAt",
+                "updatedAt"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "today",
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "ObligationPage": {
+        "type": "object",
+        "properties": {
+          "today": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "The UK date the list was computed for"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyName": {
+                  "type": "string",
+                  "description": "Practice-wide lists only"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "ACCOUNTS_FILING",
+                    "CT_PAYMENT",
+                    "CT_RETURN",
+                    "CONFIRMATION_STATEMENT",
+                    "VAT_RETURN",
+                    "OTHER"
+                  ]
+                },
+                "title": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "periodStart": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "periodEnd": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true,
+                  "description": "The anchor: period end, VAT period end or confirmation date"
+                },
+                "dueDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "RULE",
+                    "MANUAL"
+                  ]
+                },
+                "deadlineRuleId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "NOT_STARTED",
+                    "IN_PROGRESS",
+                    "WAITING_ON_CLIENT",
+                    "READY",
+                    "DONE",
+                    "NOT_REQUIRED"
+                  ]
+                },
+                "overdue": {
+                  "type": "boolean",
+                  "description": "Computed on the UK date of the request, never stored"
+                },
+                "assigneeUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "doneOn": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "doneReference": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "evidenceDocumentId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "statusReason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "version": {
+                  "type": "integer"
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "kind",
+                "title",
+                "periodStart",
+                "periodEnd",
+                "dueDate",
+                "source",
+                "deadlineRuleId",
+                "status",
+                "overdue",
+                "assigneeUserId",
+                "doneOn",
+                "doneReference",
+                "evidenceDocumentId",
+                "statusReason",
+                "version",
+                "createdByUserId",
+                "createdAt",
+                "updatedAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "today",
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false
+      },
+      "ComplianceSummary": {
+        "type": "object",
+        "properties": {
+          "today": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "overdue": {
+            "type": "integer"
+          },
+          "dueNext14": {
+            "type": "integer"
+          },
+          "waitingOnClient": {
+            "type": "integer"
+          },
+          "ready": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "today",
+          "overdue",
+          "dueNext14",
+          "waitingOnClient",
+          "ready"
+        ],
+        "additionalProperties": false
+      },
+      "ComplianceProfile": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "confirmationDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "updatedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "companyId",
+          "confirmationDate",
+          "updatedByUserId",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "GenerationResult": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "through": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "created": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyName": {
+                  "type": "string",
+                  "description": "Practice-wide lists only"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "ACCOUNTS_FILING",
+                    "CT_PAYMENT",
+                    "CT_RETURN",
+                    "CONFIRMATION_STATEMENT",
+                    "VAT_RETURN",
+                    "OTHER"
+                  ]
+                },
+                "title": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "periodStart": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "periodEnd": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true,
+                  "description": "The anchor: period end, VAT period end or confirmation date"
+                },
+                "dueDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "RULE",
+                    "MANUAL"
+                  ]
+                },
+                "deadlineRuleId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "NOT_STARTED",
+                    "IN_PROGRESS",
+                    "WAITING_ON_CLIENT",
+                    "READY",
+                    "DONE",
+                    "NOT_REQUIRED"
+                  ]
+                },
+                "overdue": {
+                  "type": "boolean",
+                  "description": "Computed on the UK date of the request, never stored"
+                },
+                "assigneeUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "doneOn": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "doneReference": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "evidenceDocumentId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "statusReason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "version": {
+                  "type": "integer"
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "kind",
+                "title",
+                "periodStart",
+                "periodEnd",
+                "dueDate",
+                "source",
+                "deadlineRuleId",
+                "status",
+                "overdue",
+                "assigneeUserId",
+                "doneOn",
+                "doneReference",
+                "evidenceDocumentId",
+                "statusReason",
+                "version",
+                "createdByUserId",
+                "createdAt",
+                "updatedAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "existing": {
+            "type": "integer",
+            "description": "Generated before; left as they are"
+          },
+          "skipped": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "ACCOUNTS_FILING",
+                    "CT_PAYMENT",
+                    "CT_RETURN",
+                    "CONFIRMATION_STATEMENT",
+                    "VAT_RETURN"
+                  ]
+                },
+                "anchor": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "rule_unverified",
+                    "no_rule_for_date"
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "anchor",
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "notApplicable": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "ACCOUNTS_FILING",
+                    "CT_PAYMENT",
+                    "CT_RETURN",
+                    "CONFIRMATION_STATEMENT",
+                    "VAT_RETURN"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "from",
+          "through",
+          "created",
+          "existing",
+          "skipped",
+          "notApplicable"
+        ],
+        "additionalProperties": false
+      },
       "ProfitAndLoss": {
         "type": "object",
         "properties": {
@@ -54169,7 +56204,11 @@
                 "accounts:prepare",
                 "accounts:review",
                 "assets:read",
-                "assets:manage"
+                "assets:manage",
+                "compliance:read",
+                "compliance:manage",
+                "compliance:rules-manage",
+                "compliance:rule-verify"
               ]
             },
             "minItems": 1
@@ -60980,6 +63019,356 @@
         },
         "required": [
           "yearStart"
+        ],
+        "additionalProperties": false
+      },
+      "CreateDeadlineRuleRequest": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ACCOUNTS_FILING",
+              "CT_PAYMENT",
+              "CT_RETURN",
+              "CONFIRMATION_STATEMENT",
+              "VAT_RETURN"
+            ]
+          },
+          "legalForms": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "LTD",
+                "LLP",
+                "SOLE_TRADER",
+                "PARTNERSHIP",
+                "CHARITY",
+                "OTHER"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 6
+          },
+          "daysBeforeMonths": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 31,
+            "default": 0
+          },
+          "months": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 24
+          },
+          "daysAfterMonths": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 60,
+            "default": 0
+          },
+          "monthEndRule": {
+            "type": "boolean",
+            "default": false
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 500
+              },
+              "provision": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 300
+              },
+              "retrievedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url",
+              "provision",
+              "retrievedOn"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "kind",
+          "legalForms",
+          "months",
+          "effectiveFrom",
+          "source"
+        ],
+        "additionalProperties": false
+      },
+      "SupersedeDeadlineRuleRequest": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ACCOUNTS_FILING",
+              "CT_PAYMENT",
+              "CT_RETURN",
+              "CONFIRMATION_STATEMENT",
+              "VAT_RETURN"
+            ]
+          },
+          "legalForms": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "LTD",
+                "LLP",
+                "SOLE_TRADER",
+                "PARTNERSHIP",
+                "CHARITY",
+                "OTHER"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 6
+          },
+          "daysBeforeMonths": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 31,
+            "default": 0
+          },
+          "months": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 24
+          },
+          "daysAfterMonths": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 60,
+            "default": 0
+          },
+          "monthEndRule": {
+            "type": "boolean",
+            "default": false
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 500
+              },
+              "provision": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 300
+              },
+              "retrievedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url",
+              "provision",
+              "retrievedOn"
+            ],
+            "additionalProperties": false
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "kind",
+          "legalForms",
+          "months",
+          "effectiveFrom",
+          "source",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "VerifyDeadlineRuleRequest": {
+        "type": "object",
+        "properties": {
+          "notes": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          },
+          "evidenceDocumentId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "notes"
+        ],
+        "additionalProperties": false
+      },
+      "SetComplianceProfileRequest": {
+        "type": "object",
+        "properties": {
+          "confirmationDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "confirmationDate",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "GenerateObligationsRequest": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "through": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          }
+        },
+        "required": [
+          "through"
+        ],
+        "additionalProperties": false
+      },
+      "CreateObligationRequest": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ACCOUNTS_FILING",
+              "CT_PAYMENT",
+              "CT_RETURN",
+              "CONFIRMATION_STATEMENT",
+              "VAT_RETURN",
+              "OTHER"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "periodStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "periodEnd": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "dueDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "assigneeUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "default": null
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "kind",
+          "dueDate",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateObligationRequest": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "NOT_STARTED",
+              "IN_PROGRESS",
+              "WAITING_ON_CLIENT",
+              "READY",
+              "DONE",
+              "NOT_REQUIRED"
+            ]
+          },
+          "assigneeUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "dueDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "doneOn": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "doneReference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "nullable": true
+          },
+          "evidenceDocumentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "version"
         ],
         "additionalProperties": false
       },

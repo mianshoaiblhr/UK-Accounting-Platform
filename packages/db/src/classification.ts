@@ -104,6 +104,10 @@ export const TABLE_PROTECTION: Record<string, { protection: Protection; why: str
   year_end_step_signoff: { protection: 'RLS+APP', why: 'V2-M6b sign-offs and reopens of the year-end workflow steps (DEC-069); written once.' },
   accounts_approval: { protection: 'RLS+APP', why: 'V2-M6c partner reviews and client approvals of a year\'s accounts with their fingerprint (DEC-070); written once; the approval locks the year.' },
   accounts_package: { protection: 'RLS+APP', why: 'V2-M6c filing-ready package of an approved year (DEC-070, V2-ARC-04); one per year, written once.' },
+  // V7-M1 (DEC-088)
+  deadline_rule: { protection: 'RLS+APP', why: 'V7-M1 sourced, effective-dated deadline rules; used only once verified by a holder of compliance:rule-verify who did not enter them; immutable except verification and supersession (trigger).' },
+  company_compliance_profile: { protection: 'RLS+APP', why: 'V7-M1 a client\'s confirmation date for its confirmation statements; changed with compliance:manage.' },
+  compliance_obligation: { protection: 'RLS+APP', why: 'V7-M1 what a client must file or pay, its status, owner and evidence; never deleted; identity fixed and versioned updates (trigger).' },
   review_setting: { protection: 'RLS+APP', why: 'V2-M6a the firm\'s review settings per company, versioned rows (DEC-068); written once.' },
   review_flag_response: { protection: 'RLS+APP', why: 'V2-M6a responses to review flags: explained, signed off by a second person, reopened (DEC-068); written once (trigger checks the second person).' },
   cash_flow_class: { protection: 'RLS+APP', why: 'V2-M5c cash-flow classes, version content verified with the version (DEC-052, DEC-067); frozen once verified (trigger).' },

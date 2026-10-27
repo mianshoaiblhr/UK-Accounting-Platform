@@ -2738,3 +2738,73 @@ model AccountsPackage {
   @@map("accounts_package")
 }
 
+
+// ───────────── V7-M1 compliance calendar (DEC-088) ─────────────
+/// A sourced, effective-dated deadline rule version; used only once verified by a second person (compliance:rule-verify).
+model DeadlineRule {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId     String    @map("organisation_id") @db.Uuid
+  kind               String
+  legalForms         String[]  @map("legal_forms")
+  daysBeforeMonths   Int       @default(0) @map("days_before_months") @db.SmallInt
+  months             Int       @db.SmallInt
+  daysAfterMonths    Int       @default(0) @map("days_after_months") @db.SmallInt
+  monthEndRule       Boolean   @default(false) @map("month_end_rule")
+  effectiveFrom      DateTime  @map("effective_from") @db.Date
+  effectiveTo        DateTime? @map("effective_to") @db.Date
+  sourceUrl          String    @map("source_url")
+  sourceProvision    String    @map("source_provision")
+  sourceRetrievedOn  DateTime  @map("source_retrieved_on") @db.Date
+  enteredByUserId    String    @map("entered_by_user_id") @db.Uuid
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  verificationStatus String    @default("UNVERIFIED") @map("verification_status")
+  verifiedByUserId   String?   @map("verified_by_user_id") @db.Uuid
+  verifiedAt         DateTime? @map("verified_at") @db.Timestamptz(3)
+  verificationNotes  String?   @map("verification_notes")
+  evidenceDocumentId String?   @map("evidence_document_id") @db.Uuid
+  supersededById     String?   @map("superseded_by_id") @db.Uuid
+
+  @@unique([organisationId, id])
+  @@index([organisationId, kind, effectiveFrom], map: "deadline_rule_kind_idx")
+  @@map("deadline_rule")
+}
+
+/// A client's compliance profile: the confirmation date its next confirmation statement is made up to.
+model CompanyComplianceProfile {
+  organisationId   String    @map("organisation_id") @db.Uuid
+  companyId        String    @map("company_id") @db.Uuid
+  confirmationDate DateTime? @map("confirmation_date") @db.Date
+  updatedByUserId  String    @map("updated_by_user_id") @db.Uuid
+  updatedAt        DateTime  @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@id([organisationId, companyId])
+  @@map("company_compliance_profile")
+}
+
+/// What a client must file or pay, generated from a verified rule or entered by hand; never deleted, versioned updates.
+model ComplianceObligation {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId     String    @map("organisation_id") @db.Uuid
+  companyId          String    @map("company_id") @db.Uuid
+  kind               String
+  title              String?
+  periodStart        DateTime? @map("period_start") @db.Date
+  periodEnd          DateTime? @map("period_end") @db.Date
+  dueDate            DateTime  @map("due_date") @db.Date
+  source             String
+  deadlineRuleId     String?   @map("deadline_rule_id") @db.Uuid
+  status             String    @default("NOT_STARTED")
+  assigneeUserId     String?   @map("assignee_user_id") @db.Uuid
+  doneOn             DateTime? @map("done_on") @db.Date
+  doneReference      String?   @map("done_reference")
+  evidenceDocumentId String?   @map("evidence_document_id") @db.Uuid
+  statusReason       String?   @map("status_reason")
+  version            Int       @default(1)
+  createdByUserId    String    @map("created_by_user_id") @db.Uuid
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@index([organisationId, companyId, dueDate], map: "co_company_due_idx")
+  @@map("compliance_obligation")
+}

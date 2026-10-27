@@ -626,3 +626,31 @@ export const AccountsApproval = z.object({
 });
 export const AccountsPackage = z.object({ id: uuid, companyId: uuid, yearStart: day, frameworkId: uuid, fingerprint: z.string(), sha256: z.string(), byUserId: uuid, at: ts,
   content: z.record(z.unknown()).describe('The package (format uk-accounts-package/1): the approved accounts document, the framework and its verification, the size test, the partner review and the client approval') });
+
+// ───────────── V7-M1 compliance calendar (DEC-088) ─────────────
+const ruleKind = z.enum(['ACCOUNTS_FILING', 'CT_PAYMENT', 'CT_RETURN', 'CONFIRMATION_STATEMENT', 'VAT_RETURN']);
+const obligationKind = z.enum(['ACCOUNTS_FILING', 'CT_PAYMENT', 'CT_RETURN', 'CONFIRMATION_STATEMENT', 'VAT_RETURN', 'OTHER']);
+const obligationStatus = z.enum(['NOT_STARTED', 'IN_PROGRESS', 'WAITING_ON_CLIENT', 'READY', 'DONE', 'NOT_REQUIRED']);
+export const DeadlineRule = z.object({
+  id: uuid, kind: ruleKind, legalForms: z.array(z.string()), daysBeforeMonths: z.number().int(), months: z.number().int(), daysAfterMonths: z.number().int(),
+  monthEndRule: z.boolean().describe('A month-end anchor lands on the last day of the target month'), effectiveFrom: day.describe('First anchor date the version governs'), effectiveTo: day.nullable(),
+  source: z.object({ url: z.string(), provision: z.string(), retrievedOn: day }), enteredByUserId: uuid, createdAt: ts,
+  verificationStatus: z.enum(['UNVERIFIED', 'VERIFIED']).describe('UNVERIFIED versions generate nothing'), verifiedByUserId: uuid.nullable(), verifiedAt: ts.nullable(), verificationNotes: z.string().nullable(),
+  evidenceDocumentId: uuid.nullable(), supersededById: uuid.nullable(),
+});
+export const Obligation = z.object({
+  id: uuid, companyId: uuid, companyName: z.string().optional().describe('Practice-wide lists only'), kind: obligationKind, title: z.string().nullable(),
+  periodStart: day.nullable(), periodEnd: day.nullable().describe('The anchor: period end, VAT period end or confirmation date'), dueDate: day,
+  source: z.enum(['RULE', 'MANUAL']), deadlineRuleId: uuid.nullable(), status: obligationStatus, overdue: z.boolean().describe('Computed on the UK date of the request, never stored'),
+  assigneeUserId: uuid.nullable(), doneOn: day.nullable(), doneReference: z.string().nullable(), evidenceDocumentId: uuid.nullable(), statusReason: z.string().nullable(),
+  version: z.number().int(), createdByUserId: uuid, createdAt: ts, updatedAt: ts,
+});
+export const ObligationList = z.object({ today: day.describe('The UK date the list was computed for'), items: z.array(Obligation) });
+export const ObligationPage = ObligationList.extend({ nextCursor: z.string().nullable() });
+export const ComplianceSummary = z.object({ today: day, overdue: z.number().int(), dueNext14: z.number().int(), waitingOnClient: z.number().int(), ready: z.number().int() });
+export const ComplianceProfile = z.object({ companyId: uuid, confirmationDate: day.nullable(), updatedByUserId: uuid.nullable(), updatedAt: ts.nullable() });
+export const GenerationResult = z.object({
+  from: day, through: day, created: z.array(Obligation), existing: z.number().int().describe('Generated before; left as they are'),
+  skipped: z.array(z.object({ kind: ruleKind, anchor: day, reason: z.enum(['rule_unverified', 'no_rule_for_date']) })),
+  notApplicable: z.array(z.object({ kind: ruleKind, reason: z.string() })),
+});
