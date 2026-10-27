@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>VAT return, Northwind Ltd</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#f2f4f7}
+*{box-sizing:border-box}
+a{color:#172231}a:hover{color:#1d5fbf}
+:focus-visible{outline:2px solid #1d5fbf;outline-offset:2px}
+table{border-collapse:separate;border-spacing:0;width:100%}
+th{font-size:12px;line-height:16px;font-weight:500;color:#566170;text-align:left;padding:10px 12px;border-bottom:1px solid #e1e6ec;white-space:nowrap}
+td{font-size:14px;line-height:20px;padding:12px;border-bottom:1px solid #edf0f4;vertical-align:baseline}
+tr:last-child td{border-bottom:none}
+th.num{text-align:right}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.total td{font-weight:500}
+.total td.num{font-weight:700}
+.rule{display:inline-block;padding-top:4px;border-top:1px solid #172231}
+.final{padding-bottom:2px;border-bottom:3px double #172231}
+.meta{display:block;font-size:12px;line-height:16px;color:#566170}
+.mono{font-family:'Geist Mono',ui-monospace,monospace;font-size:13px}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;line-height:16px;font-weight:500;white-space:nowrap}
+.p-pos{background:#dcfae5;color:#04250e}.p-neu{background:#e9edf2;color:#3a4553}
+.nav a{display:flex;align-items:center;min-height:36px;padding:0 12px;border-radius:6px;text-decoration:none;font-size:14px;color:#172231;white-space:nowrap}
+.nav a:hover{background:#e9edf2;color:#172231}
+.nav a[aria-current="page"]{background:#e3e8ee;font-weight:500}
+.sub a{display:inline-flex;align-items:center;min-height:44px;font-size:14px;color:#566170;text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap}
+.sub a[aria-current="page"]{color:#172231;font-weight:500;border-bottom-color:#172231}
+.kv{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:10px 16px;margin:0}
+.kv dt{color:#566170}.kv dd{margin:0}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.checks li{display:flex;gap:10px;align-items:flex-start}
+.checks svg{flex:none;margin-top:2px}
+button:disabled{opacity:1;background:#e3e8ee!important;color:#566170!important;cursor:not-allowed!important}
+@media (max-width:760px){
+.side{padding:12px 16px!important;gap:12px!important}
+.groups{flex-direction:row!important;overflow-x:auto;gap:4px!important}
+.glabel,.person{display:none!important}
+.canvas{padding:16px!important}
+}
+</style>
+</head>
+<body>
+
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #f2f4f7; color: #172231; font-family: 'Geist', system-ui, sans-serif; font-size: 14px; line-height: 20px">
+
+<aside class="side" style="flex: 1 1 240px; padding: 20px 16px; display: flex; flex-direction: column; gap: 24px">
+  <a href="index.html" style="display: flex; align-items: center; gap: 10px; min-height: 44px; text-decoration: none; color: #172231">
+    <span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 6px; background: #172231; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px"><span style="width: 14px; height: 2px; background: #ffffff"></span><span style="width: 14px; height: 2px; background: #ffffff"></span></span>
+    <span style="font-weight: 500">UK Accounting Platform</span>
+  </a>
+  <div style="display: flex; flex-direction: column; gap: 2px; padding: 0 12px">
+    <span style="font-weight: 500">Northwind Ltd</span>
+    <span class="meta">Base currency GBP</span>
+    <a href="Clients.html" style="font-size: 12px; line-height: 16px; color: #566170">Change client</a>
+  </div>
+  <nav class="nav groups" aria-label="Sections" style="display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; flex-direction: column; gap: 2px">
+      <span class="glabel" style="font-size: 12px; line-height: 16px; color: #566170; padding: 0 12px 4px">Client</span>
+      <a href="Client.html">Overview</a>
+      <a href="#">Documents</a>
+      <a href="#">Tasks</a>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 2px">
+      <span class="glabel" style="font-size: 12px; line-height: 16px; color: #566170; padding: 0 12px 4px">Books</span>
+      <a href="#">Bank and reconciliation</a>
+      <a href="#">Transactions</a>
+      <a href="#">Journals</a>
+      <a href="#">Trial balance</a>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 2px">
+      <span class="glabel" style="font-size: 12px; line-height: 16px; color: #566170; padding: 0 12px 4px">Accounts production</span>
+      <a href="#">Year end</a>
+      <a href="#">Statutory accounts</a>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 2px">
+      <span class="glabel" style="font-size: 12px; line-height: 16px; color: #566170; padding: 0 12px 4px">Tax</span>
+      <a href="VatReturn.html" aria-current="page">VAT returns</a>
+      <a href="CorporationTax.html">Corporation Tax</a>
+    </div>
+  </nav>
+  <div class="person" style="margin-top: auto; padding: 0 12px; display: flex; flex-direction: column; gap: 4px">
+    <a href="Clients.html" style="font-size: 14px">All clients</a>
+    <span style="margin-top: 8px">Anna Khan</span>
+    <span class="meta">Manager</span>
+    <a href="#" style="font-size: 12px; line-height: 16px; color: #566170">Sign out</a>
+  </div>
+</aside>
+
+<main class="canvas" style="flex: 999 1 560px; min-width: 0; padding: 32px">
+<div style="max-width: 1240px; display: flex; flex-direction: column; gap: 24px">
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <h1 style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 500">VAT return for 1 July to 30 September 2026</h1>
+      <span style="color: #566170">Northwind Ltd, Making Tax Digital for VAT</span>
+    </div>
+    <nav class="sub" aria-label="VAT" style="display: flex; flex-wrap: wrap; gap: 4px 24px; border-bottom: 1px solid #e1e6ec">
+      <a href="#">Obligations from HMRC</a>
+      <a href="VatReturn.html" aria-current="page">This return</a>
+      <a href="#">Submitted returns</a>
+      <a href="#">Payments and liabilities</a>
+    </nav>
+  </div>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+    <div style="flex: 999 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+
+      <section style="background: #ffffff; border: 1px solid #e1e6ec; border-radius: 8px">
+        <div style="padding: 16px 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px">
+          <h2 style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 500">The nine boxes</h2>
+          <span style="color: #566170">Figures in pounds sterling</span>
+        </div>
+        <div style="overflow-x: auto; border-top: 1px solid #e1e6ec">
+          <table style="min-width: 560px">
+            <thead><tr><th style="width: 64px">Box</th><th>Description</th><th class="num">Amount</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>VAT due on sales and other outputs</td><td class="num">18,420.60</td></tr>
+              <tr><td>2</td><td>VAT due on acquisitions of goods made in Northern Ireland from EU member states</td><td class="num">0.00</td></tr>
+              <tr class="total"><td>3</td><td>Total VAT due</td><td class="num"><span class="rule">18,420.60</span></td></tr>
+              <tr><td>4</td><td>VAT reclaimed on purchases and other inputs, including acquisitions in Northern Ireland from EU member states</td><td class="num">6,135.25</td></tr>
+              <tr class="total"><td>5</td><td>Net VAT to pay to HMRC</td><td class="num"><span class="rule final">12,285.35</span></td></tr>
+              <tr><td>6</td><td>Total value of sales and all other outputs, excluding VAT</td><td class="num">92,103</td></tr>
+              <tr><td>7</td><td>Total value of purchases and all other inputs, excluding VAT</td><td class="num">30,676</td></tr>
+              <tr><td>8</td><td>Total value of dispatches of goods and related costs from Northern Ireland to EU member states, excluding VAT</td><td class="num">0</td></tr>
+              <tr><td>9</td><td>Total value of acquisitions of goods and related costs made in Northern Ireland from EU member states, excluding VAT</td><td class="num">0</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      
+      <section id="submit-panel" style="background: #ffffff; border: 1px solid #e1e6ec; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+        <h2 style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 500">Submit to HMRC</h2>
+        <p style="margin: 0; max-width: 68ch">When you submit this VAT information you are making a legal declaration that the information is true and complete. A false declaration can result in prosecution.</p>
+        <label style="display: flex; gap: 12px; align-items: flex-start; cursor: pointer; max-width: 68ch">
+          <input type="checkbox" id="agree" style="width: 20px; height: 20px; margin: 0; flex: none; accent-color: #172231">
+          <span>Ruth Nolan, director, approved this return on 27 October 2026. I am submitting it on Northwind Ltd's behalf as its agent.</span>
+        </label>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <button type="button" id="submit" disabled style="min-height: 44px; padding: 0 20px; border: none; border-radius: 6px; background: #172231; color: #ffffff; font: inherit; font-weight: 500; cursor: pointer">Submit to HMRC</button>
+          <button type="button" style="min-height: 44px; padding: 0 20px; border: none; border-radius: 6px; background: #e3e8ee; color: #172231; font: inherit; font-weight: 500; cursor: pointer">Send back for changes</button>
+        </div>
+      </section>
+      
+
+      
+      <section id="receipt" hidden role="status" style="background: #ffffff; border: 1px solid #e1e6ec; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; gap: 10px; align-items: center">
+          <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="#276b2b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3 3 7-7"></path></svg>
+          <h2 style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 500; color: #276b2b">HMRC received this return</h2>
+        </div>
+        <dl class="kv" style="max-width: 560px">
+          <dt>Processing date</dt><dd>27 Oct 2026, 10:42</dd>
+          <dt>Form bundle number</dt><dd class="mono">[HMRC receipt reference]</dd>
+          <dt>Charge reference</dt><dd class="mono">[HMRC charge reference]</dd>
+          <dt>To pay</dt><dd><span class="num" style="font-weight: 700">12,285.35</span> by 7 Nov 2026</dd>
+        </dl>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <button type="button" style="min-height: 44px; padding: 0 20px; border: none; border-radius: 6px; background: #e3e8ee; color: #172231; font: inherit; font-weight: 500; cursor: pointer">Download receipt</button>
+          <a href="Client.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px; border-radius: 6px; background: #172231; color: #ffffff; font-weight: 500; text-decoration: none">Back to Northwind Ltd</a>
+        </div>
+      </section>
+      
+
+    </div>
+
+    <div style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+
+      <section style="background: #ffffff; border: 1px solid #e1e6ec; border-radius: 8px; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 500">Obligation</h2>
+        <dl class="kv">
+          <dt>Period key</dt><dd class="mono">[26C3]</dd>
+          <dt>Return and payment due</dt><dd>7 Nov 2026</dd>
+          <dt>Scheme</dt><dd>Standard, accrual basis</dd>
+          <dt>Status at HMRC</dt><dd><span id="status-open" class="pill p-neu">Open</span><span id="status-done" hidden class="pill p-pos">Fulfilled</span></dd>
+        </dl>
+      </section>
+
+      <section style="background: #ffffff; border: 1px solid #e1e6ec; border-radius: 8px; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 500">Checks against the ledger</h2>
+        <ul class="checks">
+          <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#276b2b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3 3 7-7"></path></svg><span>The VAT control account at 30 Sep 2026 is <span class="num">12,285.35</span>, which agrees with box 5</span></li>
+          <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#276b2b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3 3 7-7"></path></svg><span>Output VAT on the sales ledger agrees with box 1</span></li>
+          <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#276b2b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3 3 7-7"></path></svg><span>Input VAT on the purchase ledger agrees with box 4</span></li>
+          <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#276b2b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3 3 7-7"></path></svg><span>The period is locked, so no transaction can be posted into it</span></li>
+        </ul>
+      </section>
+
+      <section style="background: #ffffff; border: 1px solid #e1e6ec; border-radius: 8px; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 500">Sign-off</h2>
+        <dl class="kv">
+          <dt>Prepared</dt><dd>Anna Khan<span class="meta">24 Oct 2026</span></dd>
+          <dt>Reviewed</dt><dd>James Webb<span class="meta">26 Oct 2026</span></dd>
+          <dt>Approved by the client</dt><dd>Ruth Nolan, director<span class="meta">27 Oct 2026, 09:14</span></dd>
+        </dl>
+      </section>
+
+    </div>
+  </div>
+
+</div>
+</main>
+</div>
+<script>
+(function () {
+  var box = document.getElementById('agree');
+  var btn = document.getElementById('submit');
+  var form = document.getElementById('submit-panel');
+  var done = document.getElementById('receipt');
+  var open = document.getElementById('status-open');
+  var met = document.getElementById('status-done');
+  box.addEventListener('change', function () { btn.disabled = !box.checked; });
+  btn.addEventListener('click', function () {
+    if (!box.checked) return;
+    form.hidden = true; done.hidden = false; open.hidden = true; met.hidden = false;
+  });
+})();
+</script>
+</body>
+</html>

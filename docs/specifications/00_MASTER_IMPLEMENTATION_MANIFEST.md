@@ -26,6 +26,7 @@ No reporting, tax, AI or filing module may create an alternative accounting trut
 - V10 — AI Accountant / Autonomous Workflows
 - V11 — Integrations / Migration / Ecosystem
 - V12 — Benchmarking / Marketplace / Platform Ecosystem
+- V13 — MTD Income Tax / Self Assessment (added by DEC-081; built after V5, whose HMRC adapter it shares)
 
 ## Shared Technical Contract
 - Frontend: Next.js + TypeScript

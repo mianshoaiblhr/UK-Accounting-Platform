@@ -175,3 +175,9 @@ Building the plan and reviewing it in screenshots of the real stack led to these
 * **The current section and page:**
   * the sidebar marks the current section with `aria-current="page"`;
   * the year end's current step row carries `aria-current="step"`, in signal blue.
+
+## 10. The design prototype (DEC-079; added 2026-10-27, sections 1 to 9 unchanged)
+The product owner chose the look of the design prototype in `docs/design/prototype/` as the reference for every screen still to be built. It applies this visual system to six screens: practice overview, clients, a client's workspace, the MTD VAT return, MTD Income Tax and the Company Tax Return. When one of those screens is built:
+* it takes its layout from the prototype;
+* it keeps this document's tokens, type, shell and ruled totals;
+* it shows only what the API returns.

@@ -283,6 +283,9 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-076 | UI-1: the platform's visual system (delegated, DEC-019; recorded before code) | Following the owner's frontend-design skill and the dealt Achromatic-ledger style, every screen gets one visual system: a ledger blue-grey ground, blue-black ink, Geist bundled with the app, one signal-blue hue on the main data element, red ink only for what is wrong, an open-plane sidebar with the product, the company and the sections, and the accountant's ruled totals (a single rule above a total, a double rule under the final one). Nothing a screen shows changes; the 32 browser tests pass unchanged |
 | DEC-077 | October 2026 dependency advisories (2026-10-25) | CI's dependency audit began failing on advisories published after the last green run, none from UI-1. Updated next to 15.5.28 (a critical remote-code-execution and a denial of service), vitest to 4.1.12, and through overrides body-parser 2.4, multer 2.5, undici 8.12.3 and fast-uri 3.1.9. Zod's advisory (GHSA-mrhx-c7xc-m3w5) is patched only in Zod 4; the platform uses Zod 3, which has the same unbounded issue list. The API now refuses any request array over 5,000 items before validation, a test proves no limited schema allows more, and the advisory is listed in the audit's ignore list with this record. Moving to Zod 4 is left for its own milestone |
 | DEC-078 | UI-1 build record (2026-10-25) | Building DEC-076 refined it without changing its intent: the ruled total sits over the figures only; the mark is an "=" (the ledger in balance); the sidebar groups are Books, Reports, Money and Accounts production; dark-mode pills added (41 contrast pairs pass); wide tables keep a minimum width on a phone. Three pieces of the platform's own chrome changed wording ("Dashboard" to "Companies" in the top bar; the breadcrumb became the sidebar's company block; middle dots left the sub-navigation). No word, figure or state from the API changed. A new browser test holds the quality floor |
+| DEC-079 | The look: the design prototype is the reference (2026-10-27) | The product owner decided the platform should look "just like" the design prototype (six screens, `docs/design/prototype/`). The prototype applies DEC-076 unchanged and extends it to screens not yet built: practice overview, clients, client workspace, VAT return, MTD Income Tax and the CT600. The AccLedger/shadcn look proposed in the AccLedger blueprint is not adopted |
+| DEC-080 | Sage-style nominal codes: chart templates version 2 (2026-10-27) | The product owner chose Sage-style codes. Chart templates version 2 use the Sage 50 ranges, one template per business type (limited company, sole trader, partnership, landlord), drafted in `chart-templates-v2.xlsx` for the owner's review before code. Version 1 stays for existing companies. One VAT control account (2200). HMRC categories and SA103F/SA105 boxes are UNVERIFIED (DEC-022) |
+| DEC-081 | MTD Income Tax and Self Assessment: specification V13, built against HMRC's sandbox (2026-10-27) | No specification covered Income Tax for individuals. V13 (`docs/specifications/V13_MTD_Income_Tax_Self_Assessment.md`) is written now and built against HMRC's sandbox only, after V5's HMRC adapter, which it shares. Production access is an explicit gate. Blocked on HMRC sandbox credentials and network access to HMRC's sandbox |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -1086,3 +1089,70 @@ DEC-076 is unchanged. This records what building it refined; the detail is in `d
   * no sideways scroll at 390px.
 
   The evidence is in `docs/design/ui-1-acceptance.md`.
+
+### DEC-079 - The look: the design prototype is the reference (2026-10-27)
+* **What the owner decided:** asked to choose between the look proposed in the AccLedger teardown blueprint (AccLedger's shadcn/ui screens) and the platform's own visual system, the product owner answered: "look should be just like the artifact created".
+* **The artifact:**
+  * a design canvas, "UK Practice Platform", with six screens: practice overview, clients, a client's workspace, the MTD VAT return, MTD Income Tax and the Company Tax Return;
+  * standalone copies, with a README, are in `docs/design/prototype/`.
+* **What it means:**
+  * DEC-076 and DEC-078 stay as they are, because the prototype applies them: tokens, Geist, the 256px sidebar shell, sheets, tables, pills and the ruled totals;
+  * screens built later (V4, V5, V7, V13) take their layout from the prototype;
+  * the AccLedger/shadcn look is not adopted.
+* **The sidebar groups** extend DEC-078:
+  * at practice level: Practice, Tax and Firm;
+  * at client level: Client, Books, Accounts production and Tax.
+* **What does not follow the prototype:**
+  * its sample figures and names: screens show what the API returns (DEC-048, DEC-071);
+  * its Google Fonts link: the app keeps the bundled `geist` package;
+  * its CT600 box numbers and HMRC wording, which stay UNVERIFIED (DEC-022).
+* **Not changed:** no screen, route, permission or test.
+
+### DEC-080 - Sage-style nominal codes: chart templates version 2 (2026-10-27)
+* **What the owner decided:** asked whether to adopt the Sage-style nominal codes the blueprint recommends, the product owner answered "sage style".
+* **The draft:** `docs/architecture/chart-templates-v2.xlsx`, written by `scripts/docs/gen_chart_templates_v2.py`. It has one template per business type:
+  * limited company (109 accounts);
+  * sole trader (103);
+  * partnership (104);
+  * landlord (36).
+
+  Each account has its code, name, type, subtype, control, VAT treatment, reporting line, HMRC category and SA103F/SA105 box, with a column for the owner's verdict.
+* **The codes:** four digits in the Sage 50 ranges:
+  * fixed assets 0010-0099, current assets 1000-1999, liabilities 2000-2999, capital 3000-3999;
+  * sales 4000-4999, purchases 5000-5999, direct expenses 6000-6999, overheads 7000-7999;
+  * depreciation and other expenses 8000-8999, suspense 9000-9999.
+
+  The platform keeps one VAT control account (2200), not Sage's three, because the VAT engine posts to one (M4b).
+* **Rules for the build, after the owner's review:**
+  * **Versions:** `DEFAULT_CHART_VERSION` 2, with the template chosen from the legal form when a chart is initialised. Version 1 stays for every existing company and for the V2 golden workings, which read it. A chart is never merged (`initialiseDefault` refuses a non-empty chart).
+  * **New subtypes:** OWNER_CAPITAL, DRAWINGS, PARTNER_CAPITAL and PARTNER_CURRENT.
+  * **New reporting lines:** BS.CAPITAL.PROPRIETOR and BS.CAPITAL.PARTNERS, as reporting-mapping version 2. The registry is versioned, so version 1 is never edited.
+  * **HMRC category:** a new account attribute holding the self-employment or UK property category of HMRC's MTD APIs. V13 builds the quarterly updates from it. It is verified with `tax:rule-verify` before use.
+  * **Legal forms:** a landlord needs a legal form the platform lacks (for example INDIVIDUAL). LLPs and charities need their own templates (members' interests, funds); they are not in this draft.
+  * **Wording:** screens call these "UK standard nominal codes". "Sage" is a trade mark and is not used in the product.
+* **Status:** every HMRC category and box reference is UNVERIFIED (DEC-022). Nothing is built until the owner has reviewed the workbook, as with the golden workings (DEC-057).
+
+### DEC-081 - MTD Income Tax and Self Assessment: specification V13, built against HMRC's sandbox (2026-10-27)
+* **Why:** the AccLedger blueprint review found that no specification (V0 to V12) covers MTD Income Tax or Self Assessment. Asked "whether to write its spec now and build it against HMRC's test environment", the product owner chose that option.
+* **The specification:** `docs/specifications/V13_MTD_Income_Tax_Self_Assessment.md`, added to the manifest's roadmap and to the implementation order, after V5. Its milestones:
+  * M0, the HMRC connection, shared with V5 and built once;
+  * M1, the taxpayer and income sources;
+  * M2, obligations and cumulative quarterly updates from the ledger;
+  * M3, HMRC's calculation;
+  * M4, end of year and the final declaration;
+  * M5, the SA100 for clients outside MTD;
+  * M6, screens following the prototype (DEC-079).
+* **Rules:**
+  * figures come only from journal lines, through each account's verified HMRC category (DEC-080);
+  * every submission keeps a snapshot of its payload, hash, response and receipt, behind an idempotency key;
+  * the client approves before the final declaration, which only a person with the main-agent authorisation submits; never AI or the system;
+  * dates, thresholds and categories are UNVERIFIED data until verified with `tax:rule-verify`.
+* **Sandbox only:**
+  * production access is an explicit gate, like DEC-006;
+  * the blueprint reports that HMRC has paused new production-access requests for MTD Income Tax software for 2026/27, which is UNVERIFIED;
+  * the feature flag stays off.
+* **Blocked on:**
+  * a sandbox application on HMRC's Developer Hub, whose client id and secret go into the environment's secrets;
+  * network access from the build environment to `test-api.service.hmrc.gov.uk`, which its network policy denies today.
+
+  Until both exist, tests run against the fake adapter, and sandbox contract tests are reported as skipped, never as passed.

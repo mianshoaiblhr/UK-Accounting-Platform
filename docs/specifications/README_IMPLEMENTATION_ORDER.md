@@ -9,6 +9,7 @@ Give Claude Code the documents in this exact order:
 5. V3_iXBRL_Companies_House.md
 6. V4_Corporation_Tax_HMRC.md
 7. V5_VAT_MTD_HMRC_Services.md
+7a. V13_MTD_Income_Tax_Self_Assessment.md (added by DEC-081; shares V5's HMRC adapter)
 8. V6_AI_OCR_Automation.md
 9. V7_Practice_Management_Client_Portal_Compliance.md
 10. V8_Working_Papers_Review_QC.md
