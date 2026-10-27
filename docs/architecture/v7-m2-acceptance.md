@@ -1,14 +1,14 @@
 # V7 milestone V7-M2 - acceptance package (the practice overview and the client list)
 
-**Status:** PREPARED; acceptance under the delegation (DEC-019, DEC-086) follows a green CI run on the code baseline, recorded in section 1.
+**Status:** ACCEPTED under the delegation (DEC-019, DEC-086) on 2026-10-27, on the green CI run recorded in section 1.
 
 The design is in DEC-089, recorded and pushed before code (`b8324ff`). This is milestone evidence only, **not production approval** (DEC-085 sets the go-live checklist). All data is synthetic. The screens show what the API returns and compute nothing (DEC-048, DEC-071).
 
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | recorded when CI has run |
-| CI | recorded when CI has run |
+| Code baseline commit | `b42d2a5`; CI on `53c88b5`, which contains it |
+| CI | [ci run 184](https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/40596762720): all nine jobs green (build, lint, typecheck, unit, integration and real-browser tests; migrations from scratch; Terraform; dependency audit and secret scan; S3 and ClamAV; the four images with their Trivy scans) |
 | Local runs | see section 6 |
 
 ## 2. What was built
