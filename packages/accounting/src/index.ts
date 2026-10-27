@@ -29,3 +29,4 @@ export * from './review';
 export * from './year-end-workflow';
 export * from './accounts-approval';
 export * from './compliance';
+export * from './vat-return';

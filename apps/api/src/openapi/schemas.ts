@@ -665,3 +665,23 @@ export const ClientSummary = z.object({
   clientManager: z.object({ userId: uuid, displayName: z.string().nullable() }).nullable(),
 });
 export const ClientPage = z.object({ today: day, items: z.array(ClientSummary), nextCursor: z.string().nullable() });
+
+// ───────────── V5-M1 the VAT return (DEC-090) ─────────────
+const vatReturnStatus = z.enum(['DRAFT', 'PREPARED', 'REVIEWED', 'APPROVED']).describe('Derived from the events and the live fingerprint, never stored; APPROVED once locked');
+export const VatReturnFlag = z.object({
+  key: z.string().describe('reconciliation_difference, superseded_rate:{rateId}, repayment, zero_return or late_posting:{journalId}:{lineNo}'),
+  kind: z.enum(['reconciliation_difference', 'superseded_rate', 'repayment', 'zero_return', 'late_posting']), message: z.string(),
+  explanation: z.object({ note: z.string(), byUserId: uuid, at: ts }).nullable().describe('The explanation made on the live fingerprint; null until explained'),
+});
+export const VatReturnEvent = z.object({
+  id: uuid, kind: z.enum(['PREPARED', 'FLAG_EXPLAINED', 'REVIEWED', 'CLIENT_APPROVED']), fingerprint: z.string(), live: z.boolean().describe('False once the ledger changed after it (lapsed)'),
+  flagKey: z.string().nullable(), note: z.string().nullable(), byUserId: uuid, at: ts, approverContactId: uuid.nullable(), approvedOn: day.nullable(), evidenceDocumentId: uuid.nullable(),
+});
+export const VatReturn = z.object({
+  id: uuid, companyId: uuid, periodFrom: day, periodTo: day, obligationId: uuid.nullable().describe('The client\'s VAT obligation for the period (V7-M1), when there is one'),
+  status: vatReturnStatus, fingerprint: z.string().describe('SHA-256 of the workpaper in canonical JSON without its notice: live, or as approved once locked'),
+  locked: z.boolean(), lockedAt: ts.nullable(), lockedByUserId: uuid.nullable(), createdByUserId: uuid, createdAt: ts,
+  workpaper: VatWorkpaper.omit({ notice: true }).describe('The M4b workpaper for the period: live, or as approved'),
+  flags: z.array(VatReturnFlag), unexplainedFlags: z.number().int(), events: z.array(VatReturnEvent), notice: z.string(),
+});
+export const VatReturnList = z.object({ items: z.array(z.object({ id: uuid, periodFrom: day, periodTo: day, status: vatReturnStatus, locked: z.boolean(), unexplainedFlags: z.number().int(), obligationId: uuid.nullable() })) });

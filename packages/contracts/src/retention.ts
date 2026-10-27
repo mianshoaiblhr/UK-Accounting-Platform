@@ -100,7 +100,9 @@ export const RETENTION_RULES: readonly RetentionRule[] = [
     'fixed_asset_class', 'fixed_asset', 'fixed_asset_basis', 'depreciation_run', 'depreciation_run_line',
     'year_end_item', 'release_run', 'release_run_line', 'provision', 'provision_movement', 'year_end_close', 'director_loan_account', 'director_loan_threshold', 'related_party', 'accounts_fact', 'size_threshold_set', 'cash_flow_class', 'cash_flow_map_entry', 'review_setting', 'review_flag_response', 'year_end_step_signoff', 'accounts_approval', 'accounts_package',
     // V7-M1: deadline rules explain the due dates of filed obligations (DEC-088)
-    'deadline_rule']),
+    'deadline_rule',
+    // V5-M1: the VAT return as approved and how it was prepared, reviewed and approved (DEC-090)
+    'vat_return', 'vat_return_event']),
   // V7-M1: an obligation is the record of a filing or payment and its evidence (DEC-088)
   ...tableRules('FILING_EVIDENCE', ['compliance_obligation']),
   ...tableRules('WHILE_ACTIVE', [

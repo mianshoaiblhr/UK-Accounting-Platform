@@ -95,6 +95,8 @@ const FORBIDDEN: Record<string, string[]> = {
   deadline_rule: ['DELETE', 'TRUNCATE'],             // versions are superseded, never deleted (only verification / supersession update a row, by trigger)
   company_compliance_profile: ['DELETE', 'TRUNCATE'],
   compliance_obligation: ['DELETE', 'TRUNCATE'],     // never deleted; identity fixed and versioned updates (trigger)
+  vat_return: ['DELETE', 'TRUNCATE'],                // never deleted; identity fixed; the lock and approved content written once (trigger)
+  vat_return_event: ['UPDATE', 'DELETE', 'TRUNCATE'], // append-only
 };
 const has = (table: string, priv: string) => adminSql(`SELECT has_table_privilege('uk_app', '${table}', '${priv}')`) === 't';
 const hasAnyColumn = (table: string, priv: string) => adminSql(`SELECT has_any_column_privilege('uk_app', '${table}', '${priv}')`) === 't';

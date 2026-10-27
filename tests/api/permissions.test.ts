@@ -96,6 +96,8 @@ probes.push(
   { name: 'enter a deadline', perm: 'compliance:manage', run: (u) => call('post', `/companies/${company.id}/compliance/obligations`, {})(u) },
   { name: 'add a deadline rule', perm: 'compliance:rules-manage', run: call('post', '/compliance/deadline-rules', {}) },
   { name: 'verify a deadline rule', perm: 'compliance:rule-verify', run: call('post', `/compliance/deadline-rules/${GHOST}/verify`, {}) },
+  { name: 'open a VAT return', perm: 'vat:prepare', run: (u) => call('post', `/companies/${company.id}/vat-returns`, {})(u) },
+  { name: 'review a VAT return', perm: 'vat:review', run: (u) => call('post', `/companies/${company.id}/vat-returns/${GHOST}/review`, {})(u) },
 );
 probes.find((p) => p.name === 'create company')!.run = (u) => call('post', '/companies', { name: `Perm ${Math.random()}` })(u);
 probes.push({ name: 'create period', perm: 'period:manage', run: (u) => call('post', `/companies/${company.id}/periods`, { startDate: `${2000 + Math.floor(Math.random() * 90)}-01-01`, endDate: `${2000 + Math.floor(Math.random() * 90)}-12-31` })(u) });

@@ -237,6 +237,17 @@ export class PostingService {
     const ctx: PostingContext = { tx, input, period, accounts: accounts as PostingContext['accounts'], lines };
     for (const v of this.opts.validators ?? []) await v(ctx);
 
+    // 9b. a VAT period whose return the client approved is locked (V5-M1, DEC-090); the approval takes this lock exclusively, and the database
+    // proves the refusal again at insert
+    const taxPoints = [...new Set(lines.flatMap((l) => (l.vat ? [l.vat.taxPoint] : [])))];
+    if (taxPoints.length) {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock_shared(hashtextextended(${'vatreturn:' + input.companyId}, 0))`;
+      for (const tp of taxPoints) {
+        const locked = await tx.vatReturn.findFirst({ where: { companyId: input.companyId, lockedAt: { not: null }, periodFrom: { lte: toDate(tp) }, periodTo: { gte: toDate(tp) } }, select: { periodFrom: true, periodTo: true } });
+        if (locked) throw unprocessable(`The VAT return for ${isoDay(locked.periodFrom)} to ${isoDay(locked.periodTo)} was approved: the tax point ${tp} is in a locked VAT period; record the correction in a later return`, 'vat_period_locked');
+      }
+    }
+
     // 9a. negative bank and cash (DEC-036, DEC-037): the database proves the cash refusal again at commit
     const balanceWarnings = await this.balanceCheck(tx, input, lines, accounts as Map<string, { id: string; code: string; subtype: string }>, cur.minorUnits);
     const negativeCash = balanceWarnings.filter((w) => w.kind === 'CASH');

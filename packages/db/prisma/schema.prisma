@@ -2810,3 +2810,44 @@ model ComplianceObligation {
   @@index([organisationId, companyId, dueDate], map: "co_company_due_idx")
   @@map("compliance_obligation")
 }
+
+/// V5-M1 (DEC-090): a client's VAT return for one period. The approval freezes it (content and fingerprint, written once) and locks the period.
+model VatReturn {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId      String    @map("organisation_id") @db.Uuid
+  companyId           String    @map("company_id") @db.Uuid
+  periodFrom          DateTime  @map("period_from") @db.Date
+  periodTo            DateTime  @map("period_to") @db.Date
+  obligationId        String?   @map("obligation_id") @db.Uuid
+  createdByUserId     String    @map("created_by_user_id") @db.Uuid
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lockedAt            DateTime? @map("locked_at") @db.Timestamptz(3)
+  lockedByUserId      String?   @map("locked_by_user_id") @db.Uuid
+  approvedFingerprint String?   @map("approved_fingerprint")
+  approvedContent     Json?     @map("approved_content")
+
+  @@unique([organisationId, id])
+  @@unique([organisationId, companyId, periodFrom], map: "vat_return_period_key")
+  @@map("vat_return")
+}
+
+/// V5-M1 (DEC-090): what was done on a VAT return, append-only, each on the fingerprint it was made on.
+model VatReturnEvent {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  seq                Int       @unique(map: "vat_return_event_seq_key") @default(autoincrement())
+  organisationId     String    @map("organisation_id") @db.Uuid
+  companyId          String    @map("company_id") @db.Uuid
+  vatReturnId        String    @map("vat_return_id") @db.Uuid
+  kind               String
+  fingerprint        String
+  flagKey            String?   @map("flag_key")
+  note               String?
+  approverContactId  String?   @map("approver_contact_id") @db.Uuid
+  approvedOn         DateTime? @map("approved_on") @db.Date
+  evidenceDocumentId String?   @map("evidence_document_id") @db.Uuid
+  byUserId           String    @map("by_user_id") @db.Uuid
+  at                 DateTime  @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(3)
+
+  @@index([organisationId, vatReturnId, seq], map: "vat_return_event_return_idx")
+  @@map("vat_return_event")
+}

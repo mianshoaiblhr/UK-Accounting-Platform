@@ -28631,6 +28631,587 @@
         }
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/vat-returns": {
+      "get": {
+        "operationId": "VatReturn_list",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 2000,
+              "maximum": 2100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatReturnList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "VAT returns"
+        ],
+        "x-required-feature": "vat.returns",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The client's VAT returns, latest period first, with each one's derived status",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "VatReturn_create",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Opened",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatReturn"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "VAT returns"
+        ],
+        "x-required-feature": "vat.returns",
+        "x-required-permissions": [
+          "vat:prepare"
+        ],
+        "summary": "Open the return for the VAT period containing a date (vat:prepare); links the client's VAT obligation for the period",
+        "description": "**Requires permission:** `vat:prepare`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVatReturnRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/vat-returns/{returnId}": {
+      "get": {
+        "operationId": "VatReturn_get",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "returnId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Return",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatReturn"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "VAT returns"
+        ],
+        "x-required-feature": "vat.returns",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The return: the workpaper and fingerprint (live, or as approved), the review flags and their explanations, the events (live or lapsed), the status",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/vat-returns/{returnId}/prepare": {
+      "post": {
+        "operationId": "VatReturn_prepare",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "returnId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Prepared",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatReturn"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "VAT returns"
+        ],
+        "x-required-feature": "vat.returns",
+        "x-required-permissions": [
+          "vat:prepare"
+        ],
+        "summary": "Record that the return as it stands is prepared (vat:prepare)",
+        "description": "**Requires permission:** `vat:prepare`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VatReturnStepRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/vat-returns/{returnId}/flag-explanations": {
+      "post": {
+        "operationId": "VatReturn_explain",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "returnId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Explained",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatReturn"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "VAT returns"
+        ],
+        "x-required-feature": "vat.returns",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "Explain one review flag on the live fingerprint (vat:prepare or vat:review)",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExplainVatFlagRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/vat-returns/{returnId}/review": {
+      "post": {
+        "operationId": "VatReturn_review",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "returnId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reviewed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatReturn"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "VAT returns"
+        ],
+        "x-required-feature": "vat.returns",
+        "x-required-permissions": [
+          "vat:review"
+        ],
+        "summary": "Record the review (vat:review): a person other than the preparer, on a live preparation, with every flag explained",
+        "description": "**Requires permission:** `vat:review`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VatReturnStepRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/vat-returns/{returnId}/client-approval": {
+      "post": {
+        "operationId": "VatReturn_approve",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "returnId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Approved and locked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatReturn"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "VAT returns"
+        ],
+        "x-required-feature": "vat.returns",
+        "x-required-permissions": [
+          "vat:review",
+          "period:lock"
+        ],
+        "summary": "Record the client's approval (vat:review and period:lock) with the approver, date and evidence; freezes the return, locks the VAT period and moves the obligation to READY. Nothing is filed",
+        "description": "**Requires permission:** `vat:review`, `period:lock`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VatClientApprovalRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -29625,6 +30206,9 @@
     },
     {
       "name": "Compliance"
+    },
+    {
+      "name": "VAT returns"
     },
     {
       "name": "AI"
@@ -47141,6 +47725,501 @@
         ],
         "additionalProperties": false
       },
+      "VatReturn": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "periodFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "periodTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "obligationId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "The client's VAT obligation for the period (V7-M1), when there is one"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "PREPARED",
+              "REVIEWED",
+              "APPROVED"
+            ],
+            "description": "Derived from the events and the live fingerprint, never stored; APPROVED once locked"
+          },
+          "fingerprint": {
+            "type": "string",
+            "description": "SHA-256 of the workpaper in canonical JSON without its notice: live, or as approved once locked"
+          },
+          "locked": {
+            "type": "boolean"
+          },
+          "lockedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lockedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "workpaper": {
+            "type": "object",
+            "properties": {
+              "companyId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "from": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "to": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "currency": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 3
+              },
+              "vrn": {
+                "type": "string",
+                "nullable": true
+              },
+              "scheme": {
+                "type": "string"
+              },
+              "boxes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "box": {
+                      "type": "integer"
+                    },
+                    "amount": {
+                      "type": "string"
+                    },
+                    "lines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "journalId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "journalNumber": {
+                            "type": "integer"
+                          },
+                          "lineNo": {
+                            "type": "integer"
+                          },
+                          "accountCode": {
+                            "type": "string"
+                          },
+                          "taxCode": {
+                            "type": "string"
+                          },
+                          "taxPoint": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                          },
+                          "amount": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "journalId",
+                          "journalNumber",
+                          "lineNo",
+                          "accountCode",
+                          "taxCode",
+                          "taxPoint",
+                          "amount"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "direction": {
+                      "type": "string",
+                      "enum": [
+                        "PAYABLE",
+                        "REPAYABLE"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "box",
+                    "amount",
+                    "lines"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "reconciliation": {
+                "type": "object",
+                "properties": {
+                  "vatAccountMovement": {
+                    "type": "string"
+                  },
+                  "vatLinesByTaxPoint": {
+                    "type": "string"
+                  },
+                  "difference": {
+                    "type": "string"
+                  },
+                  "explainedBy": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "journalId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "journalNumber": {
+                          "type": "integer"
+                        },
+                        "lineNo": {
+                          "type": "integer"
+                        },
+                        "journalDate": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "taxPoint": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "nullable": true
+                        },
+                        "amount": {
+                          "type": "string"
+                        },
+                        "reason": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "journalId",
+                        "journalNumber",
+                        "lineNo",
+                        "journalDate",
+                        "taxPoint",
+                        "amount",
+                        "reason"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "vatAccountMovement",
+                  "vatLinesByTaxPoint",
+                  "difference",
+                  "explainedBy"
+                ],
+                "additionalProperties": false
+              },
+              "rules": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "rateId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "rate": {
+                      "type": "string"
+                    },
+                    "provision": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    },
+                    "verifiedBy": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "verifiedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "rateId",
+                    "code",
+                    "rate",
+                    "provision",
+                    "url",
+                    "verifiedBy",
+                    "verifiedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "companyId",
+              "from",
+              "to",
+              "currency",
+              "vrn",
+              "scheme",
+              "boxes",
+              "reconciliation",
+              "rules"
+            ],
+            "additionalProperties": false,
+            "description": "The M4b workpaper for the period: live, or as approved"
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "description": "reconciliation_difference, superseded_rate:{rateId}, repayment, zero_return or late_posting:{journalId}:{lineNo}"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "reconciliation_difference",
+                    "superseded_rate",
+                    "repayment",
+                    "zero_return",
+                    "late_posting"
+                  ]
+                },
+                "message": {
+                  "type": "string"
+                },
+                "explanation": {
+                  "type": "object",
+                  "properties": {
+                    "note": {
+                      "type": "string"
+                    },
+                    "byUserId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "note",
+                    "byUserId",
+                    "at"
+                  ],
+                  "additionalProperties": false,
+                  "nullable": true,
+                  "description": "The explanation made on the live fingerprint; null until explained"
+                }
+              },
+              "required": [
+                "key",
+                "kind",
+                "message",
+                "explanation"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "unexplainedFlags": {
+            "type": "integer"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "PREPARED",
+                    "FLAG_EXPLAINED",
+                    "REVIEWED",
+                    "CLIENT_APPROVED"
+                  ]
+                },
+                "fingerprint": {
+                  "type": "string"
+                },
+                "live": {
+                  "type": "boolean",
+                  "description": "False once the ledger changed after it (lapsed)"
+                },
+                "flagKey": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "note": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "byUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "approverContactId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "approvedOn": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "evidenceDocumentId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "fingerprint",
+                "live",
+                "flagKey",
+                "note",
+                "byUserId",
+                "at",
+                "approverContactId",
+                "approvedOn",
+                "evidenceDocumentId"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "notice": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "periodFrom",
+          "periodTo",
+          "obligationId",
+          "status",
+          "fingerprint",
+          "locked",
+          "lockedAt",
+          "lockedByUserId",
+          "createdByUserId",
+          "createdAt",
+          "workpaper",
+          "flags",
+          "unexplainedFlags",
+          "events",
+          "notice"
+        ],
+        "additionalProperties": false
+      },
+      "VatReturnList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "periodFrom": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "periodTo": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "DRAFT",
+                    "PREPARED",
+                    "REVIEWED",
+                    "APPROVED"
+                  ],
+                  "description": "Derived from the events and the live fingerprint, never stored; APPROVED once locked"
+                },
+                "locked": {
+                  "type": "boolean"
+                },
+                "unexplainedFlags": {
+                  "type": "integer"
+                },
+                "obligationId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "periodFrom",
+                "periodTo",
+                "status",
+                "locked",
+                "unexplainedFlags",
+                "obligationId"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
       "ProfitAndLoss": {
         "type": "object",
         "properties": {
@@ -56572,7 +57651,9 @@
                 "compliance:read",
                 "compliance:manage",
                 "compliance:rules-manage",
-                "compliance:rule-verify"
+                "compliance:rule-verify",
+                "vat:prepare",
+                "vat:review"
               ]
             },
             "minItems": 1
@@ -63737,6 +64818,77 @@
         },
         "required": [
           "version"
+        ],
+        "additionalProperties": false
+      },
+      "CreateVatReturnRequest": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          }
+        },
+        "required": [
+          "date"
+        ],
+        "additionalProperties": false
+      },
+      "VatReturnStepRequest": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "additionalProperties": false
+      },
+      "ExplainVatFlagRequest": {
+        "type": "object",
+        "properties": {
+          "flagKey": {
+            "type": "string",
+            "pattern": "^(reconciliation_difference|repayment|zero_return|superseded_rate:[0-9a-f-]{36}|late_posting:[0-9a-f-]{36}:\\d{1,5})$"
+          },
+          "explanation": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "flagKey",
+          "explanation"
+        ],
+        "additionalProperties": false
+      },
+      "VatClientApprovalRequest": {
+        "type": "object",
+        "properties": {
+          "approverContactId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "approvedOn": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "evidenceDocumentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "approverContactId",
+          "approvedOn",
+          "evidenceDocumentId"
         ],
         "additionalProperties": false
       },

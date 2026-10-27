@@ -328,6 +328,7 @@ describe('database access paths that carry security meaning', () => {
       'packages/accounting/src/accounts-approval.ts', // the client approval's evidence uses the recorder's canReadDocument
       'packages/accounting/src/compliance.ts',     // rule-verification and filing evidence use the actor's canReadDocument (DEC-088)
       'packages/accounting/src/requests.ts',       // request evidence check uses the requester's canReadDocument
+      'packages/accounting/src/vat-return.ts',     // the client's approval evidence uses the actor's canReadDocument (DEC-090)
       'packages/accounting/src/vat.ts',            // VAT-rule verification evidence uses the verifier's canReadDocument
       'packages/platform/src/workflow.ts',         // evidence check uses Actor.canReadDocument
     ]);
