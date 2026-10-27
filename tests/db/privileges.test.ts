@@ -91,6 +91,10 @@ const FORBIDDEN: Record<string, string[]> = {
   notification_preference: ['DELETE', 'TRUNCATE'], // toggled, never removed
   notification_delivery: ['DELETE', 'TRUNCATE'],   // planned deliveries are final once handled
   outbox_event: ['TRUNCATE'],                    // DELETE is system-context only (RLS) and trigger-guarded
+  // V7-M1 (DEC-088)
+  deadline_rule: ['DELETE', 'TRUNCATE'],             // versions are superseded, never deleted (only verification / supersession update a row, by trigger)
+  company_compliance_profile: ['DELETE', 'TRUNCATE'],
+  compliance_obligation: ['DELETE', 'TRUNCATE'],     // never deleted; identity fixed and versioned updates (trigger)
 };
 const has = (table: string, priv: string) => adminSql(`SELECT has_table_privilege('uk_app', '${table}', '${priv}')`) === 't';
 const hasAnyColumn = (table: string, priv: string) => adminSql(`SELECT has_any_column_privilege('uk_app', '${table}', '${priv}')`) === 't';
