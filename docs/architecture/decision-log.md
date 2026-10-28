@@ -296,6 +296,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-089 | How V7-M2 is built: the practice overview and the client list (delegated, DEC-019; recorded before code) | A practice shell with the prototype's sidebar (DEC-079); an overview of the counts, the deadlines due soon and the open work by status; a client list with year end, VAT, the next deadline and the client manager, over the clients the caller may read. A client manager is set on the compliance profile. Behind `practice.management` |
 | DEC-090 | How V5-M1 is built: the VAT return (delegated, DEC-019; recorded before code) | A VAT return per client and period, prepared from the M4b workpaper and tied to it by a fingerprint; review flags explained before review; a second-person review and a recorded client approval that freeze the return and lock the period against new VAT lines. Filing (fake HMRC adapter only) is V5-M2, the screens V5-M3. Behind the new flag `vat.returns` and two new permissions |
 | DEC-091 | How V5-M2 is built: the VAT filing record (delegated, DEC-019; recorded before code) | An approved return becomes a filing package (boxes 6 to 9 in whole pounds by a verified presentation rule). A filing made outside the platform is recorded with HMRC's receipt and evidence: it posts the liability journal and marks the obligation done. A simulated submission through the HMRC port (fake adapter only, refused in production) exercises the seam and changes nothing else. New permission `vat:file` |
+| DEC-092 | How V5-M3 is built: the VAT return screens (delegated, DEC-019; recorded before code) | A Tax group in the client workspace with VAT returns: the list, opening a return, and the return screen of the prototype (nine boxes with drill-down, checks and flags, sign-off, the client's approval, the filing package and the filing record). Events carry the person's name from the API. Behind `vat.returns` |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -1391,5 +1392,33 @@ The second V5 milestone (`docs/architecture/v5-plan.md`). There is no HMRC conne
 * **Acceptance:**
   * API and database tests of every rule above, including the journal and the obligation;
   * the golden workings extended with the package and the journal;
+  * the OpenAPI contract;
+  * CI green.
+
+### DEC-092 - How V5-M3 is built: the VAT return screens (delegated, DEC-019; recorded before code)
+The third V5 milestone. The screens follow the prototype's VAT return (DEC-079, `docs/design/prototype/VatReturn.html`) and show only what the API returns (DEC-048, DEC-071).
+* **Where:**
+  * a "Tax" group in the client workspace sidebar, with "VAT returns" (`ledger:read`, feature `vat.returns`);
+  * the list at `/org/{org}/companies/{company}/vat-returns`;
+  * a return at `/org/{org}/companies/{company}/vat-returns/{id}`.
+* **The list:**
+  * each return's period, status, unexplained flags and whether it is locked;
+  * "Open the return for a period", with a date, for `vat:prepare`.
+* **The return screen,** laid out as the prototype:
+  * the nine boxes with their descriptions; each box opens to its lines (journal number, line, account, code, tax point, amount);
+  * once a filing package exists, boxes 6 to 9 are also shown in whole pounds as the package states them;
+  * "Checks against the ledger": the control-account reconciliation and the entries that explain it;
+  * the review flags, with an explanation form for `vat:prepare` or `vat:review`;
+  * "Sign-off": prepared, reviewed and approved, each with the person's name and date, and marked "lapsed" when the API says so;
+  * actions offered by permission:
+    * Prepare (`vat:prepare`);
+    * Review (`vat:review`);
+    * the client's approval with the client's contact, the date and the evidence document (`vat:review` and `period:lock`);
+    * once approved, recording a filing made outside the platform, with the declaration text of the prototype (`vat:file`);
+  * the filings, with their receipts. A simulated one is marked "Simulated: nothing was sent to HMRC".
+  * There is no "Submit to HMRC" button: the platform does not submit (DEC-082, DEC-086). A simulated submission stays an API route for testing the seam; the screen does not offer it.
+* **API addition:** each event of a return carries `byName`, the person's display name, so the screen computes nothing.
+* **Acceptance:**
+  * real-browser tests of the main path across people (prepare, explain, review, approve, record), a refusal in the API's words, a reader with no action, and the feature switched off;
   * the OpenAPI contract;
   * CI green.
