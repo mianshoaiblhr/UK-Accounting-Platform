@@ -47,6 +47,12 @@ The design is in DEC-097, recorded and pushed before code (`5e35dd5`). This is m
 ## 5. Local runs
 * `tests/api/corporation-tax.test.ts`: 12 passed on the first run.
 * `packages/contracts/src/corporation-tax.test.ts`: 4 passed.
+* Unit and integration projects: 2,562 of 2,565 passed on the first full run. The three failures were registry lists that did not yet name the new code:
+  * the regression test's list of approved tables (`company_tax_profile` contains "tax");
+  * the service as a reader of the accounts year;
+  * the service as a reader of evidence documents (it applies the verifier's `canReadDocument`).
+
+  They were updated in the next commit, and both files pass (46 unit tests, 5 regression tests).
 * Typecheck (every package) and lint: clean.
 
 ## 6. For the verifier (Shoaib)
