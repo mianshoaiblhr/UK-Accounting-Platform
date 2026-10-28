@@ -305,6 +305,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-098 | V4-M1 details settled while building (delegated, DEC-019) | Any current CT rule version, verified or not, is changed by superseding it (a version is never edited); a new version keeps its kind. Deriving periods answers 200 with `created`. If the accounts year changed after its periods were derived, deriving refuses with `ct_periods_stale` instead of re-splitting |
 | DEC-099 | How V4-M2 is built: tax adjustments and the profit of each CT period (delegated, DEC-019; recorded before code) | Account adjustment rules (an account, a category and the share of its movement that is added back or deducted) as company data, verified by a second person; manual adjustments with evidence, withdrawn but never removed; the profit of a CT period from the ledger (profit before tax), each adjustment and the adjusted profit, each adjustment drilling to its ledger lines or its evidence, with what still needs attention. Nothing is stored as a result |
 | DEC-100 | How V4-M3 is built: capital allowances (delegated, DEC-019; recorded before code) | Three new CT rule kinds (the AIA limit, the writing-down rates, the small pools limit) as verified data; pool opening balances entered with evidence and verified by a second person; the capital allowances of a CT period worked from the fixed-asset register's tax category and cost (AIA in date order, main and special rate pools, single asset pools, disposal values capped at cost, balancing charges and allowances, small pools), shown live and stored as a computation that the next period starts from. First-year allowances (full expensing) are left for a later milestone |
+| DEC-101 | How V4-M4 is built: losses, the computation and the canonical CT600 (delegated, DEC-019; recorded before code) | The tax computation of a CT period from the adjusted profit (V4-M2) and the stored capital allowances (V4-M3): trading losses brought forward and carried back one period, taxable total profits, tax by financial year with the small profits rate and marginal relief from verified rules, associated companies and short periods. Prepared and approved by two people (new permission `ct:approve`); the canonical CT600 is built from the approved computation. Non-trading income, group relief and instalments are not modelled |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -1698,5 +1699,86 @@ The totals are the allowances (AIA, writing-down allowances, balancing allowance
 * unit tests of the arithmetic;
 * API and database tests;
 * a golden of two consecutive periods (12 months and a 6-month period) worked by hand with formulas;
+* the OpenAPI contract;
+* CI green.
+
+### DEC-101 - How V4-M4 is built: losses, the computation and the canonical CT600 (delegated, DEC-019; recorded before code)
+V4-M4 of `docs/architecture/v4-plan.md`. The chain is: adjusted profit (V4-M2), less capital allowances plus balancing charges (V4-M3), equals trading profit or loss; less losses; equals taxable total profits; then tax by financial year.
+
+**What is treated how:**
+* Every figure of the adjusted profit is treated as **trading**. Non-trading loan relationships, property income, chargeable gains and distributions are not separated: their CT600 fields are zero, and the computation's notice says so.
+* Augmented profits equal taxable total profits (no exempt distributions are modelled).
+
+**Losses:**
+* **Brought forward** come from:
+  * the previous CT period's current approved computation (its losses carried forward); or
+  * when there is none, a trading loss opening balance (`ct_loss_opening`) at the day before the period starts, entered with evidence and verified by a second person (as DEC-100's pool openings; zero is entered explicitly).
+
+  They are set against the period's trading profit as far as it goes.
+  * The deductions allowance and the restriction on brought-forward losses (CTA 2010 Part 7ZA) are not modelled. A period whose profits exceed the restriction threshold is out of scope; it is refused only once a rule for it exists.
+  * Pre-April 2017 and post-April 2017 losses are not distinguished, since all profit is trading.
+* **Carry back** (CTA 2010 s 37):
+  * a period with a trading loss may claim, when it is prepared, an amount carried back to the immediately preceding CT period, if that period lies wholly within the 12 months before the loss period starts;
+  * the amount is capped at that period's profits before carry back, taken from its current approved computation;
+  * other shapes are refused (`carry_back_not_modelled`). The rest of the loss is carried forward;
+  * the preceding period's computation deducts the amount claimed by the following period's current **approved** computation;
+  * terminal loss relief and group relief are not modelled.
+
+**Tax by financial year** (1 April to 31 March):
+* the taxable total profits are apportioned to each financial year the period falls in by days (the first part rounded half-up to the penny, the last part the remainder);
+* each part uses the `CT_RATES` version in force on the first day of the part, and a version change inside a part is refused (`ct_rule_change_in_period`);
+* the lower and upper limits for the period are the rule's limits:
+  * times the period fraction (1 for 12 months, else days/365);
+  * divided by one plus the associated companies;
+  * apportioned to each part by its days;
+* for a part:
+  * at or below its lower limit: the small profits rate;
+  * at or above its upper limit: the main rate;
+  * between them: the main rate less marginal relief, the fraction times (upper limit less profits); with augmented profits equal to profits the N/A factor is 1;
+* tax and relief are rounded half-up to the penny per part.
+
+**The computation (`ct_computation`):**
+* `GET ct-periods/{id}/computation` (optionally `carryBack`) shows it live with its problems:
+  * the adjusted profit's problems;
+  * no current stored capital allowances computation, or a stale one;
+  * unknown losses brought forward;
+* `POST .../computation` (`ct:prepare`, with the fingerprint as read and any carry-back claim) stores it as PREPARED and supersedes the period's previous one;
+* `POST .../computation/{id}/approve` (`ct:approve`, new: owner, admin, partner) is made by someone other than the preparer, only while the live computation still has the stored fingerprint (`computation_changed`);
+* a stored computation is never changed, and is superseded once;
+* a period's computation records the figures it took from its neighbours (the previous period's losses carried forward and profits before carry back, the following period's carry-back). It is stale when they no longer match the neighbours' current approved computations.
+
+**The canonical CT600** (`GET ct-periods/{id}/ct600`) is built from the period's current approved computation, the company and its tax profile. It uses named fields, not box numbers:
+* identity;
+* turnover;
+* trading profits;
+* losses used;
+* taxable total profits;
+* associated companies;
+* each financial year's profit, rate, tax and marginal relief;
+* corporation tax chargeable;
+* tax payable;
+* losses carried forward.
+
+It refuses when there is no approved computation (`computation_not_approved`) or no UTR (`utr_missing`). The mapping to the form's boxes and HMRC's schema is V4-M5's verified data. Nothing is filed.
+
+**Not in V4-M4:**
+* quarterly instalment payments;
+* R&D and other reliefs;
+* the deductions allowance;
+* group relief;
+* close investment-holding companies;
+* ring-fence trades;
+* a period falling in more than two financial years (impossible at 12 months).
+
+**Rules for the whole milestone:**
+* permissions as above;
+* every change audited;
+* the two new tables (`ct_loss_opening`, `ct_computation`) classified (RLS+APP), with no DELETE or TRUNCATE;
+* retention ACCOUNTING_RECORDS.
+
+**Acceptance:**
+* unit tests of the arithmetic (financial-year split, marginal relief, associated companies, short periods, losses);
+* API and database tests;
+* a golden of a profitable 12-month period across two financial years and a following short loss period carried back, worked by hand with formulas;
 * the OpenAPI contract;
 * CI green.
