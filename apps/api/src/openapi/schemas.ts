@@ -750,3 +750,25 @@ export const CtPeriod = z.object({
   associatedCompanies: z.number().int(), associatedReason: z.string().nullable(), version: z.number().int(), createdByUserId: uuid, createdAt: ts, updatedAt: ts,
 });
 export const CtPeriodDerivation = z.object({ created: z.boolean().describe('false when the year\'s periods already existed'), items: z.array(CtPeriod) });
+
+// ───────────── V4-M2 tax adjustments and the adjusted profit (DEC-099) ─────────────
+const ctCategory = z.enum(['DISALLOWABLE', 'DEPRECIATION', 'ENTERTAINING', 'PROVISION', 'LEGAL_PROFESSIONAL', 'NON_TAXABLE_INCOME', 'OTHER']);
+export const CtAdjustmentRule = z.object({
+  id: uuid, companyId: uuid, accountId: uuid, category: ctCategory, percentage: z.string().describe('The share of the account\'s net debit added back (a credit balance is deducted)'), effectiveFrom: day, effectiveTo: day.nullable(),
+  provision: z.string().nullable(), reason: z.string(), enteredByUserId: uuid, createdAt: ts,
+  verificationStatus: z.enum(['UNVERIFIED', 'VERIFIED']), verifiedByUserId: uuid.nullable(), verifiedAt: ts.nullable(), verificationNotes: z.string().nullable(), supersededById: uuid.nullable(),
+});
+export const CtAdjustment = z.object({
+  id: uuid, companyId: uuid, periodId: uuid, category: ctCategory, direction: z.enum(['ADD', 'DEDUCT']), amount: z.string(), description: z.string(), evidenceDocumentId: uuid, enteredByUserId: uuid, createdAt: ts,
+  withdrawn: z.object({ byUserId: uuid, at: ts, reason: z.string() }).nullable(),
+});
+export const CtAdjustedProfit = z.object({
+  periodId: uuid, companyId: uuid, startDate: day, endDate: day, currency: z.string(), accountingProfit: z.string().describe('Profit before tax from the ledger, closing journals and the tax charge left out'),
+  adjustments: z.array(z.object({
+    source: z.enum(['RULE', 'MANUAL']), ruleId: uuid.optional(), adjustmentId: uuid.optional(), category: ctCategory, direction: z.enum(['ADD', 'DEDUCT']), amount: z.string(), description: z.string(),
+    account: z.object({ id: uuid, code: z.string(), name: z.string() }).optional(), debits: z.string().optional(), credits: z.string().optional(), percentage: z.string().optional(), verificationStatus: z.string().optional(),
+    drilldown: z.object({ accountId: uuid, from: day, to: day, excludeClosing: z.boolean() }).optional().describe('The account\'s lines behind a rule-made adjustment'), evidenceDocumentId: uuid.optional(),
+  })),
+  totalAdded: z.string(), totalDeducted: z.string(), adjustedProfit: z.string().describe('Before capital allowances and losses'), problems: z.array(z.string()).describe('What the computation will refuse until resolved'),
+  fingerprint: z.string().describe('SHA-256 of the statement in canonical JSON, without the notice'), notice: z.string(),
+});

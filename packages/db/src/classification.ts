@@ -119,6 +119,8 @@ export const TABLE_PROTECTION: Record<string, { protection: Protection; why: str
   ch_filing_event: { protection: 'RLS+APP', why: 'V3-M3 the evidence of each move of a filing (actor, payload hash, request, response); append-only.' },
   ct_rule: { protection: 'RLS+APP', why: 'V4-M1 Corporation Tax rates, limits and the longest CT accounting period; sourced, verified by a second person, immutable versions (trigger).' },
   company_tax_profile: { protection: 'RLS+APP', why: 'V4-M1 the company\'s Unique Taxpayer Reference; set with a reason, audited.' },
+  ct_adjustment_rule: { protection: 'RLS+APP', why: 'V4-M2 the share of an income or expense account added back or deducted for tax; verified by a second person, immutable (trigger).' },
+  ct_adjustment: { protection: 'RLS+APP', why: 'V4-M2 a manual tax adjustment of a CT period with its evidence; withdrawn once, never changed or removed (trigger).' },
   ct_period: { protection: 'RLS+APP', why: 'V4-M1 a CT accounting period derived from an accounts year; dates fixed, associated companies versioned; never deleted (trigger).' },
   review_setting: { protection: 'RLS+APP', why: 'V2-M6a the firm\'s review settings per company, versioned rows (DEC-068); written once.' },
   review_flag_response: { protection: 'RLS+APP', why: 'V2-M6a responses to review flags: explained, signed off by a second person, reopened (DEC-068); written once (trigger checks the second person).' },

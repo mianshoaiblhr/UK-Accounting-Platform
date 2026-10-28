@@ -1,6 +1,9 @@
 import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Query } from '@nestjs/common';
 import { z } from 'zod';
-import { associatedCompaniesSchema, createCtRuleSchema, ctRuleListQuerySchema, deriveCtPeriodsSchema, supersedeCtRuleSchema, taxProfileSchema, verifyCtRuleSchema } from '@uk/contracts';
+import {
+  associatedCompaniesSchema, createCtAdjustmentRuleSchema, createCtAdjustmentSchema, createCtRuleSchema, ctAdjustmentRuleListQuerySchema, ctRuleListQuerySchema, deriveCtPeriodsSchema, supersedeCtAdjustmentRuleSchema,
+  supersedeCtRuleSchema, taxProfileSchema, verifyCtAdjustmentRuleSchema, verifyCtRuleSchema, withdrawCtAdjustmentSchema,
+} from '@uk/contracts';
 import { CorporationTaxService, ctPeriodView } from '@uk/accounting';
 import { Idempotent, Org, RequireFeature, RequirePermissions } from '../common/decorators';
 import type { OrgAccess } from '../common/types';
@@ -52,4 +55,33 @@ export class CorporationTaxController {
   setAssociated(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('periodId') id: string, @Body(new ZodPipe(associatedCompaniesSchema)) b: z.output<typeof associatedCompaniesSchema>) {
     return this.api.run(org, (tx, actor) => this.svc.setAssociated(tx, { organisationId: org.organisationId, companyId: c, actor, id, ...b }));
   }
+
+  // ───── V4-M2 (DEC-099): tax adjustments and the adjusted profit ─────
+  @Get('ct-adjustment-rules') @RequirePermissions('ledger:read')
+  listAdjustmentRules(@Org() org: OrgAccess, @ID('companyId') c: string, @Query(new ZodPipe(ctAdjustmentRuleListQuerySchema)) q: z.output<typeof ctAdjustmentRuleListQuerySchema>) { return this.api.run(org, (tx) => this.svc.listAdjustmentRules(tx, c, q)); }
+  @Post('ct-adjustment-rules') @RequirePermissions('ct:prepare') @Idempotent()
+  addAdjustmentRule(@Org() org: OrgAccess, @ID('companyId') c: string, @Body(new ZodPipe(createCtAdjustmentRuleSchema)) b: z.output<typeof createCtAdjustmentRuleSchema>) {
+    return this.api.run(org, (tx, actor) => this.svc.addAdjustmentRule(tx, { organisationId: org.organisationId, companyId: c, actor, ...b }));
+  }
+  @Post('ct-adjustment-rules/:ruleId/supersede') @RequirePermissions('ct:prepare') @Idempotent()
+  supersedeAdjustmentRule(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('ruleId') id: string, @Body(new ZodPipe(supersedeCtAdjustmentRuleSchema)) b: z.output<typeof supersedeCtAdjustmentRuleSchema>) {
+    return this.api.run(org, (tx, actor) => this.svc.supersedeAdjustmentRule(tx, { organisationId: org.organisationId, companyId: c, actor, id, ...b }));
+  }
+  @Post('ct-adjustment-rules/:ruleId/verify') @HttpCode(200) @RequirePermissions('tax:rule-verify') @Idempotent()
+  verifyAdjustmentRule(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('ruleId') id: string, @Body(new ZodPipe(verifyCtAdjustmentRuleSchema)) b: z.output<typeof verifyCtAdjustmentRuleSchema>) {
+    return this.api.run(org, (tx, actor) => this.svc.verifyAdjustmentRule(tx, { organisationId: org.organisationId, companyId: c, actor, id, ...b }));
+  }
+  @Get('ct-periods/:periodId/adjustments') @RequirePermissions('ledger:read')
+  listAdjustments(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('periodId') id: string) { return this.api.run(org, (tx) => this.svc.listAdjustments(tx, c, id)); }
+  @Post('ct-periods/:periodId/adjustments') @RequirePermissions('ct:prepare') @Idempotent()
+  addAdjustment(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('periodId') id: string, @Body(new ZodPipe(createCtAdjustmentSchema)) b: z.output<typeof createCtAdjustmentSchema>) {
+    return this.api.run(org, (tx, actor) => this.svc.addAdjustment(tx, { organisationId: org.organisationId, companyId: c, actor, periodId: id, ...b }));
+  }
+  @Post('ct-periods/:periodId/adjustments/:adjustmentId/withdraw') @HttpCode(200) @RequirePermissions('ct:prepare') @Idempotent()
+  withdrawAdjustment(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('periodId') periodId: string, @ID('adjustmentId') id: string, @Body(new ZodPipe(withdrawCtAdjustmentSchema)) b: z.output<typeof withdrawCtAdjustmentSchema>) {
+    return this.api.run(org, (tx, actor) => this.svc.withdrawAdjustment(tx, { organisationId: org.organisationId, companyId: c, actor, periodId, id, ...b }));
+  }
+  /** Read from the ledger each time; nothing is stored. */
+  @Get('ct-periods/:periodId/adjusted-profit') @RequirePermissions('ledger:read')
+  adjustedProfit(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('periodId') id: string) { return this.api.run(org, (tx) => this.svc.adjustedProfit(tx, c, id)); }
 }

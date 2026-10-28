@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createCtRuleSchema, splitCtPeriods } from './corporation-tax';
+import { createCtAdjustmentRuleSchema, createCtAdjustmentSchema, createCtRuleSchema, ruleAdjustment, splitCtPeriods } from './corporation-tax';
 
 describe('CT accounting periods from an accounts year (V4-M1, DEC-097)', () => {
   it('a year no longer than the maximum is one period', () => {
@@ -25,5 +25,29 @@ describe('the parameters of a CT rule are checked by kind', () => {
     expect(createCtRuleSchema.safeParse({ kind: 'CT_RATES', effectiveFrom: '2023-04-01', parameters: { ...rates, smallProfitsRate: '30' }, source }).success).toBe(false);
     expect(createCtRuleSchema.safeParse({ kind: 'PERIOD_MAX_MONTHS', effectiveFrom: '2000-01-01', parameters: rates, source }).success).toBe(false);
     expect(createCtRuleSchema.safeParse({ kind: 'PERIOD_MAX_MONTHS', effectiveFrom: '2000-01-01', parameters: { months: 12 }, source }).success).toBe(true);
+  });
+});
+
+describe('ruleAdjustment (DEC-099)', () => {
+  it('adds back the share of an expense and deducts the share of income, rounding half away from zero', () => {
+    expect(ruleAdjustment('1200.00', '0', '100')).toBe('1200.00');
+    expect(ruleAdjustment('1000.00', '200.00', '50')).toBe('400.00');
+    expect(ruleAdjustment('0', '750.00', '100')).toBe('-750.00');
+    expect(ruleAdjustment('0.05', '0', '50')).toBe('0.03');
+    expect(ruleAdjustment('0', '0.05', '50')).toBe('-0.03');
+    expect(ruleAdjustment('333.33', '0', '33.33')).toBe('111.10');
+    expect(ruleAdjustment('100', '100', '100')).toBe('0.00');
+    expect(ruleAdjustment('1000', '0', '12.5', 0)).toBe('125');
+  });
+  it('checks rules and manual adjustments', () => {
+    const base = { accountId: '00000000-0000-4000-8000-000000000001', category: 'ENTERTAINING', percentage: '100', effectiveFrom: '2026-01-01', reason: 'Client entertaining is disallowed' };
+    expect(createCtAdjustmentRuleSchema.safeParse(base).success).toBe(true);
+    expect(createCtAdjustmentRuleSchema.safeParse({ ...base, percentage: '0' }).success).toBe(false);
+    expect(createCtAdjustmentRuleSchema.safeParse({ ...base, percentage: '100.01' }).success).toBe(false);
+    expect(createCtAdjustmentRuleSchema.safeParse({ ...base, effectiveTo: '2025-12-31' }).success).toBe(false);
+    const adj = { category: 'OTHER', direction: 'ADD', amount: '10.00', description: 'Fine paid', evidenceDocumentId: base.accountId };
+    expect(createCtAdjustmentSchema.safeParse(adj).success).toBe(true);
+    expect(createCtAdjustmentSchema.safeParse({ ...adj, amount: '0' }).success).toBe(false);
+    expect(createCtAdjustmentSchema.safeParse({ ...adj, evidenceDocumentId: undefined }).success).toBe(false);
   });
 });

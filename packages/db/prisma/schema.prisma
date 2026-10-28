@@ -3080,3 +3080,50 @@ model CtPeriod {
   @@unique([organisationId, companyId, startDate], map: "ct_period_start_key")
   @@map("ct_period")
 }
+
+/// V4-M2 (DEC-099): the share of an income or expense account's movement added back or deducted for tax; verified by a second person, immutable.
+model CtAdjustmentRule {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId     String    @map("organisation_id") @db.Uuid
+  companyId          String    @map("company_id") @db.Uuid
+  accountId          String    @map("account_id") @db.Uuid
+  category           String
+  percentage         Decimal   @db.Decimal(5, 2)
+  effectiveFrom      DateTime  @map("effective_from") @db.Date
+  effectiveTo        DateTime? @map("effective_to") @db.Date
+  provision          String?
+  reason             String
+  enteredByUserId    String    @map("entered_by_user_id") @db.Uuid
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  verificationStatus String    @default("UNVERIFIED") @map("verification_status")
+  verifiedByUserId   String?   @map("verified_by_user_id") @db.Uuid
+  verifiedAt         DateTime? @map("verified_at") @db.Timestamptz(3)
+  verificationNotes  String?   @map("verification_notes")
+  supersededById     String?   @map("superseded_by_id") @db.Uuid
+
+  @@unique([organisationId, id])
+  @@index([organisationId, companyId, accountId, effectiveFrom], map: "ct_adjustment_rule_account_idx")
+  @@map("ct_adjustment_rule")
+}
+
+/// V4-M2 (DEC-099): a manual tax adjustment of a CT period with its evidence; withdrawn once, never changed or removed.
+model CtAdjustment {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId     String    @map("organisation_id") @db.Uuid
+  companyId          String    @map("company_id") @db.Uuid
+  periodId           String    @map("period_id") @db.Uuid
+  category           String
+  direction          String
+  amount             Decimal   @db.Decimal(18, 2)
+  description        String
+  evidenceDocumentId String    @map("evidence_document_id") @db.Uuid
+  enteredByUserId    String    @map("entered_by_user_id") @db.Uuid
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  withdrawnByUserId  String?   @map("withdrawn_by_user_id") @db.Uuid
+  withdrawnAt        DateTime? @map("withdrawn_at") @db.Timestamptz(3)
+  withdrawalReason   String?   @map("withdrawal_reason")
+
+  @@unique([organisationId, id])
+  @@index([organisationId, periodId, createdAt], map: "ct_adjustment_period_idx")
+  @@map("ct_adjustment")
+}

@@ -1,0 +1,37 @@
+{
+  "about": "V4-M2 (DEC-099) golden: one synthetic 12-month CT period. Each journal's other side is the directors' loan account (2230); the rules and manual adjustments are synthetic test fixtures, not tax advice. Worked by hand in docs/architecture/v4-m2-golden-workings.xlsx.",
+  "year": { "yearStart": "2027-01-01", "yearEnd": "2027-12-31" },
+  "journals": [
+    { "date": "2026-12-31", "description": "Sundry cost before the period", "account": "8000", "debit": "100.00", "credit": "0" },
+    { "date": "2027-02-01", "description": "Professional fees before the rule's start", "account": "6600", "debit": "1000.00", "credit": "0" },
+    { "date": "2027-03-31", "description": "Sales", "account": "4000", "debit": "0", "credit": "50000.00" },
+    { "date": "2027-04-15", "description": "Client entertaining", "account": "8000", "debit": "1234.57", "credit": "0" },
+    { "date": "2027-06-30", "description": "A grant treated as not taxable", "account": "4100", "debit": "0", "credit": "800.00" },
+    { "date": "2027-09-30", "description": "Professional fees, part capital", "account": "6600", "debit": "2000.00", "credit": "0" },
+    { "date": "2027-11-30", "description": "Wages", "account": "6000", "debit": "20000.00", "credit": "0" },
+    { "date": "2027-12-31", "description": "Depreciation", "account": "6900", "debit": "3000.00", "credit": "0" },
+    { "date": "2027-12-31", "description": "Corporation tax charge", "account": "7100", "debit": "9000.00", "credit": "0" }
+  ],
+  "rules": [
+    { "account": "8000", "category": "ENTERTAINING", "percentage": "100", "effectiveFrom": "2020-01-01", "provision": "CTA 2009 s 1298 (synthetic fixture)", "reason": "Sundry costs are client entertaining" },
+    { "account": "6900", "category": "DEPRECIATION", "percentage": "100", "effectiveFrom": "2020-01-01", "reason": "Depreciation is replaced by capital allowances" },
+    { "account": "4100", "category": "NON_TAXABLE_INCOME", "percentage": "100", "effectiveFrom": "2020-01-01", "reason": "The synthetic grant is not taxable income" },
+    { "account": "6600", "category": "LEGAL_PROFESSIONAL", "percentage": "25", "effectiveFrom": "2027-07-01", "reason": "A quarter of professional fees from July are capital" }
+  ],
+  "manual": [
+    { "category": "OTHER", "direction": "ADD", "amount": "350.00", "description": "A parking fine paid by the company" },
+    { "category": "OTHER", "direction": "DEDUCT", "amount": "100.00", "description": "Entered in error, then withdrawn", "withdraw": "The amount was entered in error" }
+  ],
+  "expected": {
+    "accountingProfit": "23565.43",
+    "ruleAdjustments": [
+      { "account": "8000", "direction": "ADD", "amount": "1234.57" },
+      { "account": "6900", "direction": "ADD", "amount": "3000.00" },
+      { "account": "4100", "direction": "DEDUCT", "amount": "800.00" },
+      { "account": "6600", "direction": "ADD", "amount": "500.00" }
+    ],
+    "totalAdded": "5084.57",
+    "totalDeducted": "800.00",
+    "adjustedProfit": "27850.00"
+  }
+}

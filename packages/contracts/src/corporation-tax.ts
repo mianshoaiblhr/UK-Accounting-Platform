@@ -66,3 +66,38 @@ export function splitCtPeriods(start: string, end: string, maxMonths: number): {
   }
   return out;
 }
+
+// ───── V4-M2 (DEC-099): tax adjustments ─────
+export const CT_ADJUSTMENT_CATEGORIES = ['DISALLOWABLE', 'DEPRECIATION', 'ENTERTAINING', 'PROVISION', 'LEGAL_PROFESSIONAL', 'NON_TAXABLE_INCOME', 'OTHER'] as const;
+export type CtAdjustmentCategory = (typeof CT_ADJUSTMENT_CATEGORIES)[number];
+const reason = z.string().trim().min(10).max(1000);
+const rulePercent = z.string().regex(/^\d{1,3}(\.\d{1,2})?$/, 'A percentage, e.g. 100 or 50').refine((v) => Number(v) > 0 && Number(v) <= 100, 'Above 0 and at most 100');
+const ruleFields = {
+  category: z.enum(CT_ADJUSTMENT_CATEGORIES), percentage: rulePercent, effectiveFrom: isoDate, effectiveTo: isoDate.optional(),
+  provision: z.string().trim().min(3).max(300).optional().describe('The provision relied on, e.g. CTA 2009 s 1298'), reason,
+};
+const datesInOrder = (v: { effectiveFrom: string; effectiveTo?: string }) => !v.effectiveTo || v.effectiveTo >= v.effectiveFrom;
+export const createCtAdjustmentRuleSchema = z.object({ accountId: z.string().uuid(), ...ruleFields }).strict().refine(datesInOrder, { message: 'The end is on or after the start', path: ['effectiveTo'] });
+export const supersedeCtAdjustmentRuleSchema = z.object(ruleFields).strict().refine(datesInOrder, { message: 'The end is on or after the start', path: ['effectiveTo'] });
+export const verifyCtAdjustmentRuleSchema = z.object({ notes: z.string().trim().min(10).max(2000) }).strict();
+export const ctAdjustmentRuleListQuerySchema = z.object({ accountId: z.string().uuid().optional(), includeSuperseded: z.enum(['true', 'false']).optional().transform((v) => v === 'true') }).strict();
+export const createCtAdjustmentSchema = z.object({
+  category: z.enum(CT_ADJUSTMENT_CATEGORIES), direction: z.enum(['ADD', 'DEDUCT']),
+  amount: z.string().regex(/^\d{1,12}(\.\d{1,2})?$/, 'An amount, e.g. 1250.00').refine((v) => Number(v) > 0, 'Above 0'),
+  description: z.string().trim().min(5).max(500), evidenceDocumentId: z.string().uuid(),
+}).strict();
+export const withdrawCtAdjustmentSchema = z.object({ reason }).strict();
+
+/** The adjustment an account rule makes: (debits - credits) x percentage / 100, half-up to `minor` places; positive is added to profit. */
+export function ruleAdjustment(debits: string, credits: string, percentage: string, minor = 2): string {
+  const scale = 10n ** BigInt(minor);
+  const toUnits = (s: string, places: number) => { const [i, f = ''] = s.replace('-', '').split('.'); const v = BigInt(i! + f.padEnd(places, '0').slice(0, places)); return s.startsWith('-') ? -v : v; };
+  const net = toUnits(debits, minor) - toUnits(credits, minor);             // minor units
+  const pct = toUnits(percentage, 2);                                       // hundredths of a percent
+  const num = net * pct, den = 10000n;                                      // net x pct / 100 / 100
+  const q = num / den, r = num % den;
+  const rounded = (r < 0n ? -r : r) * 2n >= den ? q + (num < 0n ? -1n : 1n) : q;   // half away from zero
+  const neg = rounded < 0n, abs = neg ? -rounded : rounded;
+  const whole = abs / scale, frac = (abs % scale).toString().padStart(minor, '0');
+  return `${neg ? '-' : ''}${whole}${minor ? `.${frac}` : ''}`;
+}

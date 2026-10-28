@@ -32248,6 +32248,667 @@
         }
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ct-adjustment-rules": {
+      "get": {
+        "operationId": "CorporationTax_listAdjustmentRules",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "accountId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "includeSuperseded",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rules",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CtAdjustmentRuleList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Corporation Tax"
+        ],
+        "x-required-feature": "corporation.tax",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "Account adjustment rules, without superseded ones unless asked",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "CorporationTax_addAdjustmentRule",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Entered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CtAdjustmentRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Corporation Tax"
+        ],
+        "x-required-feature": "corporation.tax",
+        "x-required-permissions": [
+          "ct:prepare"
+        ],
+        "summary": "Enter an account adjustment rule with a reason (ct:prepare); it starts UNVERIFIED",
+        "description": "**Requires permission:** `ct:prepare`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCtAdjustmentRuleRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ct-adjustment-rules/{ruleId}/supersede": {
+      "post": {
+        "operationId": "CorporationTax_supersedeAdjustmentRule",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ruleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "New version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CtAdjustmentRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Corporation Tax"
+        ],
+        "x-required-feature": "corporation.tax",
+        "x-required-permissions": [
+          "ct:prepare"
+        ],
+        "summary": "Supersede an adjustment rule with a new UNVERIFIED version for the same account (ct:prepare)",
+        "description": "**Requires permission:** `ct:prepare`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupersedeCtAdjustmentRuleRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ct-adjustment-rules/{ruleId}/verify": {
+      "post": {
+        "operationId": "CorporationTax_verifyAdjustmentRule",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ruleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CtAdjustmentRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Corporation Tax"
+        ],
+        "x-required-feature": "corporation.tax",
+        "x-required-permissions": [
+          "tax:rule-verify"
+        ],
+        "summary": "Verify an adjustment rule (tax:rule-verify), by someone other than the person who entered it",
+        "description": "**Requires permission:** `tax:rule-verify`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyCtAdjustmentRuleRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ct-periods/{periodId}/adjustments": {
+      "get": {
+        "operationId": "CorporationTax_listAdjustments",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Adjustments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CtAdjustmentList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Corporation Tax"
+        ],
+        "x-required-feature": "corporation.tax",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The manual adjustments of a CT period, withdrawn ones included",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "CorporationTax_addAdjustment",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Entered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CtAdjustment"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Corporation Tax"
+        ],
+        "x-required-feature": "corporation.tax",
+        "x-required-permissions": [
+          "ct:prepare"
+        ],
+        "summary": "Enter a manual adjustment with its evidence (ct:prepare)",
+        "description": "**Requires permission:** `ct:prepare`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCtAdjustmentRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ct-periods/{periodId}/adjustments/{adjustmentId}/withdraw": {
+      "post": {
+        "operationId": "CorporationTax_withdrawAdjustment",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "adjustmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Withdrawn",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CtAdjustment"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Corporation Tax"
+        ],
+        "x-required-feature": "corporation.tax",
+        "x-required-permissions": [
+          "ct:prepare"
+        ],
+        "summary": "Withdraw a manual adjustment with a reason (ct:prepare); it is kept",
+        "description": "**Requires permission:** `ct:prepare`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WithdrawCtAdjustmentRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ct-periods/{periodId}/adjusted-profit": {
+      "get": {
+        "operationId": "CorporationTax_adjustedProfit",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CtAdjustedProfit"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Corporation Tax"
+        ],
+        "x-required-feature": "corporation.tax",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The profit of the period from the ledger, every adjustment with its drill-down or evidence, the adjusted profit and what still needs attention; read each time",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -52163,6 +52824,605 @@
         ],
         "additionalProperties": false
       },
+      "CtAdjustmentRule": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "accountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "DISALLOWABLE",
+              "DEPRECIATION",
+              "ENTERTAINING",
+              "PROVISION",
+              "LEGAL_PROFESSIONAL",
+              "NON_TAXABLE_INCOME",
+              "OTHER"
+            ]
+          },
+          "percentage": {
+            "type": "string",
+            "description": "The share of the account's net debit added back (a credit balance is deducted)"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "provision": {
+            "type": "string",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string"
+          },
+          "enteredByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "UNVERIFIED",
+              "VERIFIED"
+            ]
+          },
+          "verifiedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "verifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "verificationNotes": {
+            "type": "string",
+            "nullable": true
+          },
+          "supersededById": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "accountId",
+          "category",
+          "percentage",
+          "effectiveFrom",
+          "effectiveTo",
+          "provision",
+          "reason",
+          "enteredByUserId",
+          "createdAt",
+          "verificationStatus",
+          "verifiedByUserId",
+          "verifiedAt",
+          "verificationNotes",
+          "supersededById"
+        ],
+        "additionalProperties": false
+      },
+      "CtAdjustmentRuleList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "accountId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "category": {
+                  "type": "string",
+                  "enum": [
+                    "DISALLOWABLE",
+                    "DEPRECIATION",
+                    "ENTERTAINING",
+                    "PROVISION",
+                    "LEGAL_PROFESSIONAL",
+                    "NON_TAXABLE_INCOME",
+                    "OTHER"
+                  ]
+                },
+                "percentage": {
+                  "type": "string",
+                  "description": "The share of the account's net debit added back (a credit balance is deducted)"
+                },
+                "effectiveFrom": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "effectiveTo": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "provision": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "enteredByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "verificationStatus": {
+                  "type": "string",
+                  "enum": [
+                    "UNVERIFIED",
+                    "VERIFIED"
+                  ]
+                },
+                "verifiedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "verifiedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "verificationNotes": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "supersededById": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "accountId",
+                "category",
+                "percentage",
+                "effectiveFrom",
+                "effectiveTo",
+                "provision",
+                "reason",
+                "enteredByUserId",
+                "createdAt",
+                "verificationStatus",
+                "verifiedByUserId",
+                "verifiedAt",
+                "verificationNotes",
+                "supersededById"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "CtAdjustment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "periodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "DISALLOWABLE",
+              "DEPRECIATION",
+              "ENTERTAINING",
+              "PROVISION",
+              "LEGAL_PROFESSIONAL",
+              "NON_TAXABLE_INCOME",
+              "OTHER"
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "ADD",
+              "DEDUCT"
+            ]
+          },
+          "amount": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "evidenceDocumentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "enteredByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "withdrawn": {
+            "type": "object",
+            "properties": {
+              "byUserId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "byUserId",
+              "at",
+              "reason"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "periodId",
+          "category",
+          "direction",
+          "amount",
+          "description",
+          "evidenceDocumentId",
+          "enteredByUserId",
+          "createdAt",
+          "withdrawn"
+        ],
+        "additionalProperties": false
+      },
+      "CtAdjustmentList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "periodId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "category": {
+                  "type": "string",
+                  "enum": [
+                    "DISALLOWABLE",
+                    "DEPRECIATION",
+                    "ENTERTAINING",
+                    "PROVISION",
+                    "LEGAL_PROFESSIONAL",
+                    "NON_TAXABLE_INCOME",
+                    "OTHER"
+                  ]
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "ADD",
+                    "DEDUCT"
+                  ]
+                },
+                "amount": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "evidenceDocumentId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "enteredByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "withdrawn": {
+                  "type": "object",
+                  "properties": {
+                    "byUserId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "byUserId",
+                    "at",
+                    "reason"
+                  ],
+                  "additionalProperties": false,
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "periodId",
+                "category",
+                "direction",
+                "amount",
+                "description",
+                "evidenceDocumentId",
+                "enteredByUserId",
+                "createdAt",
+                "withdrawn"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "CtAdjustedProfit": {
+        "type": "object",
+        "properties": {
+          "periodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "endDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "accountingProfit": {
+            "type": "string",
+            "description": "Profit before tax from the ledger, closing journals and the tax charge left out"
+          },
+          "adjustments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "RULE",
+                    "MANUAL"
+                  ]
+                },
+                "ruleId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "adjustmentId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "category": {
+                  "type": "string",
+                  "enum": [
+                    "DISALLOWABLE",
+                    "DEPRECIATION",
+                    "ENTERTAINING",
+                    "PROVISION",
+                    "LEGAL_PROFESSIONAL",
+                    "NON_TAXABLE_INCOME",
+                    "OTHER"
+                  ]
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "ADD",
+                    "DEDUCT"
+                  ]
+                },
+                "amount": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "account": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "code",
+                    "name"
+                  ],
+                  "additionalProperties": false
+                },
+                "debits": {
+                  "type": "string"
+                },
+                "credits": {
+                  "type": "string"
+                },
+                "percentage": {
+                  "type": "string"
+                },
+                "verificationStatus": {
+                  "type": "string"
+                },
+                "drilldown": {
+                  "type": "object",
+                  "properties": {
+                    "accountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "from": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "to": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "excludeClosing": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "accountId",
+                    "from",
+                    "to",
+                    "excludeClosing"
+                  ],
+                  "additionalProperties": false,
+                  "description": "The account's lines behind a rule-made adjustment"
+                },
+                "evidenceDocumentId": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "source",
+                "category",
+                "direction",
+                "amount",
+                "description"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "totalAdded": {
+            "type": "string"
+          },
+          "totalDeducted": {
+            "type": "string"
+          },
+          "adjustedProfit": {
+            "type": "string",
+            "description": "Before capital allowances and losses"
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What the computation will refuse until resolved"
+          },
+          "fingerprint": {
+            "type": "string",
+            "description": "SHA-256 of the statement in canonical JSON, without the notice"
+          },
+          "notice": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "periodId",
+          "companyId",
+          "startDate",
+          "endDate",
+          "currency",
+          "accountingProfit",
+          "adjustments",
+          "totalAdded",
+          "totalDeducted",
+          "adjustedProfit",
+          "problems",
+          "fingerprint",
+          "notice"
+        ],
+        "additionalProperties": false
+      },
       "IxbrlDocument": {
         "type": "object",
         "properties": {
@@ -71016,6 +72276,178 @@
         },
         "required": [
           "associatedCompanies",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "CreateCtAdjustmentRuleRequest": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "DISALLOWABLE",
+              "DEPRECIATION",
+              "ENTERTAINING",
+              "PROVISION",
+              "LEGAL_PROFESSIONAL",
+              "NON_TAXABLE_INCOME",
+              "OTHER"
+            ]
+          },
+          "percentage": {
+            "type": "string",
+            "pattern": "^\\d{1,3}(\\.\\d{1,2})?$"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "provision": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 300,
+            "description": "The provision relied on, e.g. CTA 2009 s 1298"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "accountId",
+          "category",
+          "percentage",
+          "effectiveFrom",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "SupersedeCtAdjustmentRuleRequest": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "DISALLOWABLE",
+              "DEPRECIATION",
+              "ENTERTAINING",
+              "PROVISION",
+              "LEGAL_PROFESSIONAL",
+              "NON_TAXABLE_INCOME",
+              "OTHER"
+            ]
+          },
+          "percentage": {
+            "type": "string",
+            "pattern": "^\\d{1,3}(\\.\\d{1,2})?$"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "provision": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 300,
+            "description": "The provision relied on, e.g. CTA 2009 s 1298"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "category",
+          "percentage",
+          "effectiveFrom",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "VerifyCtAdjustmentRuleRequest": {
+        "type": "object",
+        "properties": {
+          "notes": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "notes"
+        ],
+        "additionalProperties": false
+      },
+      "CreateCtAdjustmentRequest": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "DISALLOWABLE",
+              "DEPRECIATION",
+              "ENTERTAINING",
+              "PROVISION",
+              "LEGAL_PROFESSIONAL",
+              "NON_TAXABLE_INCOME",
+              "OTHER"
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "ADD",
+              "DEDUCT"
+            ]
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^\\d{1,12}(\\.\\d{1,2})?$"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 500
+          },
+          "evidenceDocumentId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "category",
+          "direction",
+          "amount",
+          "description",
+          "evidenceDocumentId"
+        ],
+        "additionalProperties": false
+      },
+      "WithdrawCtAdjustmentRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
           "reason"
         ],
         "additionalProperties": false

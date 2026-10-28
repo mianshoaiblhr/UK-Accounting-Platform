@@ -108,7 +108,9 @@ export const RETENTION_RULES: readonly RetentionRule[] = [
     // V3-M1: the taxonomy mapping explains how filed accounts were tagged (DEC-093)
     'xbrl_taxonomy_version', 'xbrl_concept_map',
     // V4-M1: the rules and periods a Corporation Tax computation was made under (DEC-097)
-    'ct_rule', 'ct_period']),
+    'ct_rule', 'ct_period',
+    // V4-M2: the adjustments behind the adjusted profit of a CT period (DEC-099)
+    'ct_adjustment_rule', 'ct_adjustment']),
   // V7-M1: an obligation is the record of a filing or payment and its evidence (DEC-088)
   ...tableRules('FILING_EVIDENCE', ['compliance_obligation',
     // V5-M2: a VAT filing and its receipt (DEC-091)
