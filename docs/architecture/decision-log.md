@@ -295,6 +295,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-088 | How V7-M1 is built: the compliance calendar (delegated, DEC-019; recorded before code) | Deadline rules are sourced, versioned organisation data, verified by a second person before use. Obligations per client are generated from its accounting periods, VAT settings and confirmation-statement date, or entered by hand; each has a status, an owner and filing evidence. A practice-wide list and counts cover only the clients the caller may read. Behind the new flag `practice.management` and four new permissions |
 | DEC-089 | How V7-M2 is built: the practice overview and the client list (delegated, DEC-019; recorded before code) | A practice shell with the prototype's sidebar (DEC-079); an overview of the counts, the deadlines due soon and the open work by status; a client list with year end, VAT, the next deadline and the client manager, over the clients the caller may read. A client manager is set on the compliance profile. Behind `practice.management` |
 | DEC-090 | How V5-M1 is built: the VAT return (delegated, DEC-019; recorded before code) | A VAT return per client and period, prepared from the M4b workpaper and tied to it by a fingerprint; review flags explained before review; a second-person review and a recorded client approval that freeze the return and lock the period against new VAT lines. Filing (fake HMRC adapter only) is V5-M2, the screens V5-M3. Behind the new flag `vat.returns` and two new permissions |
+| DEC-091 | How V5-M2 is built: the VAT filing record (delegated, DEC-019; recorded before code) | An approved return becomes a filing package (boxes 6 to 9 in whole pounds by a verified presentation rule). A filing made outside the platform is recorded with HMRC's receipt and evidence: it posts the liability journal and marks the obligation done. A simulated submission through the HMRC port (fake adapter only, refused in production) exercises the seam and changes nothing else. New permission `vat:file` |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -1356,5 +1357,39 @@ V5 follows V7-M1 and V7-M2 (DEC-086). `docs/architecture/v5-plan.md` splits it i
 * **Acceptance:**
   * golden workings for a synthetic quarter (a workbook with each box traced to its lines), for review by the named accountant (the DEC-054 pattern);
   * API and database tests of every rule above;
+  * the OpenAPI contract;
+  * CI green.
+
+### DEC-091 - How V5-M2 is built: the VAT filing record (delegated, DEC-019; recorded before code)
+The second V5 milestone (`docs/architecture/v5-plan.md`). There is no HMRC connection (DEC-082, DEC-086). The platform therefore records filings made elsewhere, and it simulates its own submission only through a fake adapter.
+* **The presentation rule** (`vat_presentation_rule`, organisation data like a VAT rate version, DEC-021):
+  * it states how boxes 6 to 9 are presented: `TRUNCATE_PENCE` (whole pounds, pence left out) or `ROUND_TO_POUND` (half up);
+  * it carries its dates and its source;
+  * it is entered with `vat:manage`, starts UNVERIFIED, is verified once by a different person with `tax:rule-verify`, and is superseded by a new version;
+  * no rule is seeded. The draft is added to the verifier's worksheet with HMRC's guidance to check against.
+* **The filing package:**
+  * built from the approved return only (DEC-090);
+  * boxes 1 to 5 in pounds and pence, exactly as approved; boxes 6 to 9 by the verified rule whose dates cover the period end. Without one, the package is refused (`presentation_rule_unverified`);
+  * it names the VRN and the period, and records its SHA-256 and the rule version used.
+* **Recording a filing made outside the platform** (`vat:file`, new; granted to owner, admin and partner):
+  * the person gives the submission date (not before the approval, not in the future) and HMRC's receipt reference (the form bundle number, 12 digits);
+  * they also give an evidence document of the client, readable and scanned clean (HMRC's receipt), and confirm the declaration that the return was submitted as approved;
+  * one recorded filing per return;
+  * in the same transaction:
+    * the liability journal is posted (new source `VAT_RETURN`, dated the period end): Dr the output VAT account with box 3, Cr the input VAT account with box 4, and Cr (payable) or Dr (repayable) the VAT liability account with box 5. Zero lines are left out;
+    * the client's VAT obligation becomes DONE, with the submission date, the receipt reference and the evidence (a versioned, audited update).
+* **The VAT liability account:** a new optional field of the VAT settings, `liabilityAccountId`. It must be an active balance-sheet account, other than the output and input accounts. Recording a filing without it is refused (`liability_account_missing`).
+* **Simulated submission:**
+  * goes through the HMRC VAT port (`packages/adapters`), whose only adapter is `fake`; it returns a receipt marked FAKE;
+  * the driver is set by `HMRC_VAT_ADAPTER` (`none` by default; production refuses `fake` at start);
+  * it is stored as a SIMULATED filing with its receipt, and posts nothing and changes no obligation;
+  * with the driver `none` the route answers `filing_not_available`.
+* **Records:**
+  * `vat_filing` is append-only; it is classified (RLS+APP), with retention FILING_EVIDENCE;
+  * every step is audited.
+* **Not in M2:** a real HMRC adapter (the HMRC test environment is ignored, DEC-082) and fraud-prevention headers; the VAT payment or repayment through the bank; the screens (V5-M3).
+* **Acceptance:**
+  * API and database tests of every rule above, including the journal and the obligation;
+  * the golden workings extended with the package and the journal;
   * the OpenAPI contract;
   * CI green.
