@@ -297,6 +297,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-090 | How V5-M1 is built: the VAT return (delegated, DEC-019; recorded before code) | A VAT return per client and period, prepared from the M4b workpaper and tied to it by a fingerprint; review flags explained before review; a second-person review and a recorded client approval that freeze the return and lock the period against new VAT lines. Filing (fake HMRC adapter only) is V5-M2, the screens V5-M3. Behind the new flag `vat.returns` and two new permissions |
 | DEC-091 | How V5-M2 is built: the VAT filing record (delegated, DEC-019; recorded before code) | An approved return becomes a filing package (boxes 6 to 9 in whole pounds by a verified presentation rule). A filing made outside the platform is recorded with HMRC's receipt and evidence: it posts the liability journal and marks the obligation done. A simulated submission through the HMRC port (fake adapter only, refused in production) exercises the seam and changes nothing else. New permission `vat:file` |
 | DEC-092 | How V5-M3 is built: the VAT return screens (delegated, DEC-019; recorded before code) | A Tax group in the client workspace with VAT returns: the list, opening a return, and the return screen of the prototype (nine boxes with drill-down, checks and flags, sign-off, the client's approval, the filing package and the filing record). Events carry the person's name from the API. Behind `vat.returns` |
+| DEC-093 | V3 plan and how V3-M1 is built: the taxonomy and its mapping (delegated, DEC-019; recorded before code) | V3 in four milestones (`docs/architecture/v3-plan.md`). V3-M1 holds taxonomy versions and their concept maps as versioned organisation data, verified by a second person; nothing of the taxonomy is in code. A draft pack lands UNVERIFIED. Behind the new flag `ixbrl.filing` and two new permissions |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -1420,5 +1421,34 @@ The third V5 milestone. The screens follow the prototype's VAT return (DEC-079, 
 * **API addition:** each event of a return carries `byName`, the person's display name, so the screen computes nothing.
 * **Acceptance:**
   * real-browser tests of the main path across people (prepare, explain, review, approve, record), a refusal in the API's words, a reader with no action, and the feature switched off;
+  * the OpenAPI contract;
+  * CI green.
+
+### DEC-093 - V3 plan and how V3-M1 is built: the taxonomy and its mapping (delegated, DEC-019; recorded before code)
+V3 follows V5 (DEC-086). `docs/architecture/v3-plan.md` splits it into four milestones:
+* V3-M1 the taxonomy and mapping;
+* V3-M2 the iXBRL document and its validation;
+* V3-M3 the Companies House workflow, with a fake adapter only, as for HMRC (DEC-082);
+* V3-M4 the screens.
+
+**V3-M1:**
+* **Taxonomy versions** (`xbrl_taxonomy_version`, organisation data):
+  * each has a label (for example "FRC 2025 FRS 105"), the reporting standard it tags (FRS105 or FRS102), the entry point (schema reference) and the namespace of each prefix it uses;
+  * it has the dates it is effective for and its source (link, reference, date read);
+  * a version is UNVERIFIED while its entries are edited; a person with `ixbrl:rule-verify` (new) who did not create it verifies it, which freezes it; a change is a new version that supersedes it (the V2-M1 pattern, DEC-051).
+* **Concept map entries** (`xbrl_concept_map`, in a taxonomy version), one per source:
+  * the source is a statutory line key (current and prior year use the same concept in different contexts), a preparer's fact key, or a company detail. The company details are name, number, the period start and end, the balance sheet date, the directors and the approving director;
+  * each entry gives the concept (a prefix the version declares and a local name), its data type (MONETARY, TEXT, DATE), its period type (INSTANT or DURATION), whether the line's natural amount is negated, the decimals and any dimensions (axis and member, each a declared prefix);
+  * an entry may be marked mandatory, which V3-M2 checks;
+  * entries change only while the version is UNVERIFIED (database guard).
+* **Draft pack:**
+  * `content/ixbrl/drafts/frc-frs105.json` maps the FRS 105 micro-entity pack's lines and the company details to FRC taxonomy concepts;
+  * it is written without reading the taxonomy, so every concept is a proposal for the verifier to check against the FRC taxonomy files;
+  * it is imported with `scripts/ixbrl/import-taxonomy.mjs` and lands UNVERIFIED. The verifier's worksheet gets a sheet for it.
+* **Permissions:** `ixbrl:rules-manage` (create versions and edit entries) and `ixbrl:rule-verify`, organisation scope, granted to owner and admin as the standards permissions are.
+* **The flag** `ixbrl.filing` gates the routes.
+* **Records:** both tables are classified (RLS+APP), with no DELETE or TRUNCATE (entries of an UNVERIFIED version may be removed through the service, by a guarded delete); retention ACCOUNTING_RECORDS; every change is audited.
+* **Acceptance:**
+  * API and database tests (versions, entries, verification by a second person, the freeze, supersession by copy, the import);
   * the OpenAPI contract;
   * CI green.
