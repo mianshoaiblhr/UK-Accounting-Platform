@@ -712,10 +712,16 @@ export const ConceptEntry = z.object({
   dimensions: z.array(z.object({ axis: qname, member: qname })), mandatory: z.boolean(),
 });
 const taxonomyVersionFields = {
-  id: uuid, label: z.string(), standardCode: z.string(), entryPoint: z.string().describe('The schema reference of the taxonomy entry point'), namespaces: z.record(z.string()).describe('Prefix to namespace URI'),
+  id: uuid, label: z.string(), standardCode: z.string(), entryPoint: z.string().describe('The schema reference of the taxonomy entry point'), entityScheme: z.string().nullable().describe('V3-M2: the scheme of the entity identifier'), namespaces: z.record(z.string()).describe('Prefix to namespace URI'),
   effectiveFrom: day, effectiveTo: day.nullable(), source: z.object({ url: z.string(), provision: z.string(), retrievedOn: day }), notes: z.string().nullable(),
   status: z.enum(['UNVERIFIED', 'VERIFIED', 'SUPERSEDED']), copiedFromId: uuid.nullable(), createdByUserId: uuid, createdAt: ts,
   verifiedByUserId: uuid.nullable(), verifiedAt: ts.nullable(), verificationNotes: z.string().nullable(), supersededById: uuid.nullable(),
 };
 export const TaxonomyVersionSummary = z.object(taxonomyVersionFields);
 export const TaxonomyVersion = z.object({ ...taxonomyVersionFields, entries: z.array(ConceptEntry), problems: z.array(z.string()).describe('What stops verification; empty when it may be verified') });
+
+// ───────────── V3-M2 the iXBRL document (DEC-094) ─────────────
+export const IxbrlDocument = z.object({
+  id: uuid, companyId: uuid, packageId: uuid, taxonomyVersionId: uuid, status: z.enum(['VALID', 'INVALID']).describe('INVALID when a check found an error'),
+  sha256: z.string(), factCount: z.number().int(), contextCount: z.number().int(), errors: z.array(z.string()), warnings: z.array(z.string()), byUserId: uuid, at: ts, notice: z.string(),
+});

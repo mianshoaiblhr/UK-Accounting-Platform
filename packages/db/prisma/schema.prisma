@@ -2923,6 +2923,8 @@ model XbrlTaxonomyVersion {
   verifiedAt        DateTime? @map("verified_at") @db.Timestamptz(3)
   verificationNotes String?   @map("verification_notes")
   supersededById    String?   @map("superseded_by_id") @db.Uuid
+  /// V3-M2 (DEC-094): the scheme of the entity identifier in the contexts
+  entityScheme      String?   @map("entity_scheme")
 
   @@unique([organisationId, id])
   @@index([organisationId, standardCode, effectiveFrom], map: "xtv_standard_idx")
@@ -2947,4 +2949,26 @@ model XbrlConceptMap {
 
   @@unique([organisationId, versionId, sourceKind, sourceKey], map: "xbrl_concept_map_source_key")
   @@map("xbrl_concept_map")
+}
+
+/// V3-M2 (DEC-094): an inline XBRL document of an approved accounts package, with its checks; append-only (the latest is current).
+model IxbrlDocument {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId    String   @map("organisation_id") @db.Uuid
+  companyId         String   @map("company_id") @db.Uuid
+  packageId         String   @map("package_id") @db.Uuid
+  taxonomyVersionId String   @map("taxonomy_version_id") @db.Uuid
+  status            String
+  content           String
+  sha256            String
+  factCount         Int      @map("fact_count")
+  contextCount      Int      @map("context_count")
+  errors            Json
+  warnings          Json
+  byUserId          String   @map("by_user_id") @db.Uuid
+  at                DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@index([organisationId, packageId, at], map: "ixbrl_document_package_idx")
+  @@map("ixbrl_document")
 }

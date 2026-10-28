@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ix="http://www.xbrl.org/2013/inlineXBRL" xmlns:ixt="http://www.xbrl.org/inlineXBRL/transformation/2020-02-12" xmlns:xbrli="http://www.xbrl.org/2003/instance" xmlns:link="http://www.xbrl.org/2003/linkbase" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xbrldi="http://xbrl.org/2006/xbrldi" xmlns:iso4217="http://www.xbrl.org/2003/iso4217" xmlns:bus="https://example.invalid/bus" xmlns:core="https://example.invalid/core">
+<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><title>Golden Approval Ltd - accounts for the period ending 2025-12-31</title>
+<style>body{font-family:Arial,sans-serif;margin:32px;color:#172231}table{border-collapse:collapse;margin:8px 0 24px}td,th{padding:4px 12px;border-bottom:1px solid #e1e6ec;text-align:left}.num{text-align:right}.muted{color:#566170}</style></head>
+<body>
+<div style="display:none"><ix:header>
+<ix:hidden><ix:nonNumeric name="bus:BalanceSheetDate" contextRef="C1" format="ixt:date-year-month-day">2025-12-31</ix:nonNumeric><ix:nonNumeric name="core:AverageEmployees" contextRef="C3">1</ix:nonNumeric></ix:hidden>
+<ix:references><link:schemaRef xlink:type="simple" xlink:href="https://example.invalid/tax/entry.xsd"/></ix:references>
+<ix:resources>
+<xbrli:context id="C1"><xbrli:entity><xbrli:identifier scheme="https://example.invalid/registry">01234567</xbrli:identifier></xbrli:entity><xbrli:period><xbrli:instant>2025-12-31</xbrli:instant></xbrli:period></xbrli:context>
+<xbrli:context id="C2"><xbrli:entity><xbrli:identifier scheme="https://example.invalid/registry">01234567</xbrli:identifier><xbrli:segment><xbrldi:explicitMember dimension="core:MaturityAxis">core:WithinOneYear</xbrldi:explicitMember></xbrli:segment></xbrli:entity><xbrli:period><xbrli:instant>2025-12-31</xbrli:instant></xbrli:period></xbrli:context>
+<xbrli:context id="C3"><xbrli:entity><xbrli:identifier scheme="https://example.invalid/registry">01234567</xbrli:identifier></xbrli:entity><xbrli:period><xbrli:startDate>2025-01-01</xbrli:startDate><xbrli:endDate>2025-12-31</xbrli:endDate></xbrli:period></xbrli:context>
+<xbrli:unit id="U-GBP"><xbrli:measure>iso4217:GBP</xbrli:measure></xbrli:unit>
+</ix:resources>
+</ix:header></div>
+<h1><ix:nonNumeric name="bus:EntityName" contextRef="C3">Golden Approval Ltd</ix:nonNumeric></h1>
+<p>Registered number <ix:nonNumeric name="bus:RegisteredNumber" contextRef="C3">01234567</ix:nonNumeric></p>
+<p>Accounts for the period <ix:nonNumeric name="bus:PeriodStart" contextRef="C3" format="ixt:date-year-month-day">2025-01-01</ix:nonNumeric> to <ix:nonNumeric name="bus:PeriodEnd" contextRef="C3" format="ixt:date-year-month-day">2025-12-31</ix:nonNumeric></p>
+<h2>Profit and loss account</h2>
+<table>
+<thead><tr><th>Line</th><th>2025-12-31</th><th>2024-12-31</th></tr></thead><tbody>
+<tr><td>Turnover</td><td class="num"><ix:nonFraction name="core:Turnover" contextRef="C3" unitRef="U-GBP" decimals="2" scale="0" format="ixt:num-dot-decimal">1,200.00</ix:nonFraction></td><td class="num">0.00</td></tr>
+<tr><td>Other income</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+<tr><td>Cost of raw materials and consumables</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+<tr><td>Depreciation and other amounts written off assets</td><td class="num"><ix:nonFraction name="core:Depreciation" contextRef="C3" unitRef="U-GBP" decimals="2" scale="0" format="ixt:num-dot-decimal">1,200.00</ix:nonFraction></td><td class="num">0.00</td></tr>
+<tr><td>Other charges</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+<tr><td>Tax</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+<tr><td>Profit or loss</td><td class="num"><ix:nonFraction name="core:ProfitLoss" contextRef="C3" unitRef="U-GBP" decimals="2" scale="0" format="ixt:num-dot-decimal">0.00</ix:nonFraction></td><td class="num">0.00</td></tr>
+</tbody></table>
+<h2>Balance sheet</h2>
+<table>
+<thead><tr><th>Line</th><th>2025-12-31</th><th>2024-12-31</th></tr></thead><tbody>
+<tr><td>Fixed assets</td><td class="num"><ix:nonFraction name="core:FixedAssets" contextRef="C1" unitRef="U-GBP" decimals="2" scale="0" format="ixt:num-dot-decimal">2,400.00</ix:nonFraction></td><td class="num">0.00</td></tr>
+<tr><td>Current assets</td><td class="num">7,600.00</td><td class="num">0.00</td></tr>
+<tr><td>Prepayments and accrued income</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+<tr><td>Creditors: amounts falling due within one year</td><td class="num"><ix:nonFraction name="core:Creditors" contextRef="C2" unitRef="U-GBP" decimals="2" scale="0" format="ixt:num-dot-decimal">0.00</ix:nonFraction></td><td class="num">0.00</td></tr>
+<tr><td>Net current assets (liabilities)</td><td class="num">7,600.00</td><td class="num">0.00</td></tr>
+<tr><td>Total assets less current liabilities</td><td class="num">10,000.00</td><td class="num">0.00</td></tr>
+<tr><td>Creditors: amounts falling due after more than one year</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+<tr><td>Accruals and deferred income</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+<tr><td>Net assets (liabilities)</td><td class="num"><ix:nonFraction name="core:NetAssets" contextRef="C1" unitRef="U-GBP" decimals="2" scale="0" format="ixt:num-dot-decimal">10,000.00</ix:nonFraction></td><td class="num">0.00</td></tr>
+<tr><td>Capital and reserves</td><td class="num"><ix:nonFraction name="core:Equity" contextRef="C1" unitRef="U-GBP" decimals="2" scale="0" format="ixt:num-dot-decimal">10,000.00</ix:nonFraction></td><td class="num">0.00</td></tr>
+<tr><td>Called up share capital</td><td class="num">10,000.00</td><td class="num">0.00</td></tr>
+<tr><td>Other reserves</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+<tr><td>Profit and loss account</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+</tbody></table>
+<h3>Employees</h3>
+<p>The average number of employees during the year was 1.</p>
+<h3>Approval</h3>
+<p>The financial statements were approved by the board of directors on 16 March 2026 and signed on its behalf by:</p>
+<p>Synthetic Director, Director</p>
+<p>Approved by the board on <ix:nonNumeric name="core:ApprovalDate" contextRef="C3" format="ixt:date-year-month-day">2026-03-16</ix:nonNumeric> and signed on its behalf by <ix:nonNumeric name="core:SigningDirector" contextRef="C3">Synthetic Director</ix:nonNumeric>, Director.</p>
+</body></html>

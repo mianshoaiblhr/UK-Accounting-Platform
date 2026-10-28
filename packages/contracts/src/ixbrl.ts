@@ -26,14 +26,18 @@ const dates = <T extends { effectiveFrom?: string; effectiveTo?: string | null }
 export const createTaxonomyVersionSchema = z.object({
   label: z.string().trim().min(3).max(200), standardCode: z.string().trim().min(2).max(40), entryPoint: httpUrl, namespaces,
   effectiveFrom: isoDate, effectiveTo: isoDate.optional(), source, notes: z.string().trim().max(4000).optional(), copyFromVersionId: z.string().uuid().optional(),
+  /** V3-M2 (DEC-094): the scheme of the entity identifier (the registry's URI), as the taxonomy guidance gives it. */
+  entityScheme: httpUrl.optional(),
 }).strict().refine(dates, { message: 'The end is on or after the start', path: ['effectiveTo'] });
 export const updateTaxonomyVersionSchema = z.object({
   label: z.string().trim().min(3).max(200).optional(), entryPoint: httpUrl.optional(), namespaces: namespaces.optional(),
   effectiveFrom: isoDate.optional(), effectiveTo: isoDate.nullable().optional(), source: source.optional(), notes: z.string().trim().max(4000).nullable().optional(),
+  entityScheme: httpUrl.nullable().optional(),
 }).strict().refine(dates, { message: 'The end is on or after the start', path: ['effectiveTo'] });
 export const verifyTaxonomyVersionSchema = z.object({ notes: z.string().trim().min(10).max(4000) }).strict();
 export const supersedeTaxonomyVersionSchema = z.object({
   label: z.string().trim().min(3).max(200), effectiveFrom: isoDate, effectiveTo: isoDate.optional(), source, notes: z.string().trim().max(4000).optional(), reason: z.string().trim().min(10).max(1000),
+  entityScheme: httpUrl.optional(),
 }).strict().refine(dates, { message: 'The end is on or after the start', path: ['effectiveTo'] });
 
 export const conceptEntrySchema = z.object({
@@ -65,3 +69,9 @@ export function mappingProblems(v: { namespaces: Record<string, string> }, entri
   }
   return out;
 }
+
+// ───────────── V3-M2 the iXBRL document (DEC-094) ─────────────
+export const IXBRL_DOCUMENT_STATUSES = ['VALID', 'INVALID'] as const;
+/** Generates the iXBRL document of the year's approved accounts package; the taxonomy version is found by standard and year end unless named. */
+export const generateIxbrlSchema = z.object({ yearStart: isoDate, taxonomyVersionId: z.string().uuid().optional() }).strict();
+export const ixbrlListQuerySchema = z.object({ yearStart: isoDate.optional() }).strict();

@@ -16,7 +16,7 @@ type Source = { url: string; provision: string; retrievedOn: string };
 export interface TaxonomyActor { userId: string; kind?: string; can(permission: string): boolean | Promise<boolean> }
 
 export const taxonomyVersionView = (v: VersionRow) => ({
-  id: v.id, label: v.label, standardCode: v.standardCode, entryPoint: v.entryPoint, namespaces: v.namespaces as Record<string, string>,
+  id: v.id, label: v.label, standardCode: v.standardCode, entryPoint: v.entryPoint, entityScheme: v.entityScheme, namespaces: v.namespaces as Record<string, string>,
   effectiveFrom: isoDay(v.effectiveFrom), effectiveTo: v.effectiveTo ? isoDay(v.effectiveTo) : null,
   source: { url: v.sourceUrl, provision: v.sourceReference, retrievedOn: isoDay(v.sourceRetrievedOn) }, notes: v.notes, status: v.status, copiedFromId: v.copiedFromId,
   createdByUserId: v.createdByUserId, createdAt: v.createdAt, verifiedByUserId: v.verifiedByUserId, verifiedAt: v.verifiedAt, verificationNotes: v.verificationNotes, supersededById: v.supersededById,
@@ -63,11 +63,11 @@ export class TaxonomyService {
     return { ...taxonomyVersionView(v), entries, problems: mappingProblems({ namespaces: v.namespaces as Record<string, string> }, entries as ConceptEntry[]) };
   }
 
-  async create(tx: Tx, a: { organisationId: string; actor: TaxonomyActor; label: string; standardCode: string; entryPoint: string; namespaces: Record<string, string>; effectiveFrom: string; effectiveTo?: string; source: Source; notes?: string; copyFromVersionId?: string }) {
+  async create(tx: Tx, a: { organisationId: string; actor: TaxonomyActor; label: string; standardCode: string; entryPoint: string; namespaces: Record<string, string>; effectiveFrom: string; effectiveTo?: string; source: Source; notes?: string; copyFromVersionId?: string; entityScheme?: string }) {
     await this.need(a.actor, 'ixbrl:rules-manage');
     const from = a.copyFromVersionId ? await this.version(tx, a.copyFromVersionId) : null;
     if (from && from.standardCode !== a.standardCode) throw unprocessable('A copy tags the same standard as its original', 'standard_mismatch');
-    const v = await tx.xbrlTaxonomyVersion.create({ data: { organisationId: a.organisationId, label: a.label, standardCode: a.standardCode, entryPoint: a.entryPoint, namespaces: a.namespaces,
+    const v = await tx.xbrlTaxonomyVersion.create({ data: { organisationId: a.organisationId, label: a.label, standardCode: a.standardCode, entryPoint: a.entryPoint, namespaces: a.namespaces, entityScheme: a.entityScheme ?? from?.entityScheme ?? null,
       effectiveFrom: toDate(a.effectiveFrom), effectiveTo: a.effectiveTo ? toDate(a.effectiveTo) : null, sourceUrl: a.source.url, sourceReference: a.source.provision,
       sourceRetrievedOn: toDate(a.source.retrievedOn), notes: a.notes ?? null, copiedFromId: from?.id ?? null, createdByUserId: a.actor.userId } });
     if (from) await this.copyEntries(tx, a.organisationId, from.id, v.id);
@@ -78,7 +78,7 @@ export class TaxonomyService {
     const rows = await tx.xbrlConceptMap.findMany({ where: { versionId: fromId } });
     if (rows.length) await tx.xbrlConceptMap.createMany({ data: rows.map((e) => ({ organisationId, versionId: toId, ...entryData(conceptEntryView(e) as ConceptEntry) })) });
   }
-  async update(tx: Tx, a: { organisationId: string; actor: TaxonomyActor; id: string; label?: string; entryPoint?: string; namespaces?: Record<string, string>; effectiveFrom?: string; effectiveTo?: string | null; source?: Source; notes?: string | null }) {
+  async update(tx: Tx, a: { organisationId: string; actor: TaxonomyActor; id: string; label?: string; entryPoint?: string; namespaces?: Record<string, string>; effectiveFrom?: string; effectiveTo?: string | null; source?: Source; notes?: string | null; entityScheme?: string | null }) {
     await this.need(a.actor, 'ixbrl:rules-manage');
     const before = await this.editable(tx, a.id);
     const from = a.effectiveFrom ?? isoDay(before.effectiveFrom), to = a.effectiveTo === undefined ? (before.effectiveTo ? isoDay(before.effectiveTo) : null) : a.effectiveTo;
@@ -86,7 +86,7 @@ export class TaxonomyService {
     let after: VersionRow;
     try {
       after = await tx.xbrlTaxonomyVersion.update({ where: { id: a.id }, data: { ...(a.label !== undefined ? { label: a.label } : {}), ...(a.entryPoint !== undefined ? { entryPoint: a.entryPoint } : {}),
-        ...(a.namespaces !== undefined ? { namespaces: a.namespaces } : {}), effectiveFrom: toDate(from), effectiveTo: to ? toDate(to) : null,
+        ...(a.namespaces !== undefined ? { namespaces: a.namespaces } : {}), ...(a.entityScheme !== undefined ? { entityScheme: a.entityScheme } : {}), effectiveFrom: toDate(from), effectiveTo: to ? toDate(to) : null,
         ...(a.source ? { sourceUrl: a.source.url, sourceReference: a.source.provision, sourceRetrievedOn: toDate(a.source.retrievedOn) } : {}), ...(a.notes !== undefined ? { notes: a.notes } : {}) } });
     } catch (e) { this.mapDb(e); }
     await this.audit(tx, { action: 'ixbrl.taxonomy_version_changed', organisationId: a.organisationId, actorUserId: a.actor.userId, entityType: 'xbrl_taxonomy_version', entityId: a.id,
@@ -139,14 +139,14 @@ export class TaxonomyService {
     return this.get(tx, a.id);
   }
   /** A change to a verified version: a new UNVERIFIED copy with the same entries, the old one SUPERSEDED, in one transaction. */
-  async supersede(tx: Tx, a: { organisationId: string; actor: TaxonomyActor; id: string; label: string; effectiveFrom: string; effectiveTo?: string; source: Source; notes?: string; reason: string }) {
+  async supersede(tx: Tx, a: { organisationId: string; actor: TaxonomyActor; id: string; label: string; effectiveFrom: string; effectiveTo?: string; source: Source; notes?: string; reason: string; entityScheme?: string }) {
     await this.need(a.actor, 'ixbrl:rules-manage');
     const old = await this.version(tx, a.id);
     if (old.status === 'UNVERIFIED') throw conflict('An unverified version is edited, not superseded', 'version_unverified');
     if (old.status === 'SUPERSEDED') throw conflict('This version was already superseded', 'version_superseded');
     const id = uuidv7();
     await tx.xbrlTaxonomyVersion.update({ where: { id: old.id }, data: { status: 'SUPERSEDED', supersededById: id } });
-    await tx.xbrlTaxonomyVersion.create({ data: { id, organisationId: a.organisationId, label: a.label, standardCode: old.standardCode, entryPoint: old.entryPoint, namespaces: old.namespaces as Prisma.InputJsonValue,
+    await tx.xbrlTaxonomyVersion.create({ data: { id, organisationId: a.organisationId, label: a.label, standardCode: old.standardCode, entryPoint: old.entryPoint, entityScheme: a.entityScheme ?? old.entityScheme, namespaces: old.namespaces as Prisma.InputJsonValue,
       effectiveFrom: toDate(a.effectiveFrom), effectiveTo: a.effectiveTo ? toDate(a.effectiveTo) : null, sourceUrl: a.source.url, sourceReference: a.source.provision,
       sourceRetrievedOn: toDate(a.source.retrievedOn), notes: a.notes ?? null, copiedFromId: old.id, createdByUserId: a.actor.userId } });
     await this.copyEntries(tx, a.organisationId, old.id, id);

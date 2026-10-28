@@ -110,7 +110,9 @@ export const RETENTION_RULES: readonly RetentionRule[] = [
   // V7-M1: an obligation is the record of a filing or payment and its evidence (DEC-088)
   ...tableRules('FILING_EVIDENCE', ['compliance_obligation',
     // V5-M2: a VAT filing and its receipt (DEC-091)
-    'vat_filing']),
+    'vat_filing',
+    // V3-M2: the iXBRL document of filed accounts (DEC-094)
+    'ixbrl_document']),
   ...tableRules('WHILE_ACTIVE', [
     'user', 'user_identity', 'mfa_factor', 'mfa_recovery_code', 'organisation', 'role', 'organisation_membership', 'practice', 'practice_membership', 'company_membership', 'invitation',
     'company', 'company_officer', 'contact', 'contact_role', 'customer_profile', 'supplier_profile', 'address', 'feature_flag_override', 'task', 'task_attachment', 'task_comment', 'workflow_instance', 'workflow_transition',

@@ -100,6 +100,7 @@ const FORBIDDEN: Record<string, string[]> = {
   vat_presentation_rule: ['DELETE', 'TRUNCATE'],     // versions are immutable; verified once, superseded once (trigger)
   vat_filing: ['UPDATE', 'DELETE', 'TRUNCATE'],       // append-only
   xbrl_taxonomy_version: ['DELETE', 'TRUNCATE'],     // never deleted; frozen once verified (trigger)
+  ixbrl_document: ['UPDATE', 'DELETE', 'TRUNCATE'],   // append-only
 };
 const has = (table: string, priv: string) => adminSql(`SELECT has_table_privilege('uk_app', '${table}', '${priv}')`) === 't';
 const hasAnyColumn = (table: string, priv: string) => adminSql(`SELECT has_any_column_privilege('uk_app', '${table}', '${priv}')`) === 't';

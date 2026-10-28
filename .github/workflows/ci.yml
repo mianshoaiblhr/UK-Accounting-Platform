@@ -32,6 +32,9 @@ jobs:
       - run: pnpm build
       - run: pnpm typecheck
       - run: pnpm lint
+      # V3-M2 (DEC-094): the iXBRL document test proves the document well-formed with xmllint
+      - name: XML tools for the iXBRL test
+        run: command -v xmllint || (sudo apt-get update && sudo apt-get install -y libxml2-utils)
       - name: Unit, database, jobs, outbox, API, OpenAPI contract, security, tenancy, permissions, regression
         run: pnpm test
       - name: Install browser for E2E

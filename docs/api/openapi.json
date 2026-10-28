@@ -30500,6 +30500,288 @@
         }
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ixbrl-documents": {
+      "get": {
+        "operationId": "IxbrlDocument_list",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "yearStart",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Documents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IxbrlDocumentList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "iXBRL"
+        ],
+        "x-required-feature": "ixbrl.filing",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The iXBRL documents of the company, latest first, optionally of one year",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "IxbrlDocument_generate",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Generated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IxbrlDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "iXBRL"
+        ],
+        "x-required-feature": "ixbrl.filing",
+        "x-required-permissions": [
+          "accounts:prepare"
+        ],
+        "summary": "Generate the iXBRL document of the year's approved accounts package (accounts:prepare) with the verified taxonomy version for its standard and year end; stored with its checks",
+        "description": "**Requires permission:** `accounts:prepare`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateIxbrlRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ixbrl-documents/{documentId}": {
+      "get": {
+        "operationId": "IxbrlDocument_get",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IxbrlDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "iXBRL"
+        ],
+        "x-required-feature": "ixbrl.filing",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "A document: its status, SHA-256, counts, errors and warnings",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ixbrl-documents/{documentId}/content": {
+      "get": {
+        "operationId": "IxbrlDocument_content",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The inline XBRL document",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "iXBRL"
+        ],
+        "x-required-feature": "ixbrl.filing",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The document itself (application/xhtml+xml)",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -49524,6 +49806,172 @@
         ],
         "additionalProperties": false
       },
+      "IxbrlDocument": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "packageId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "taxonomyVersionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "VALID",
+              "INVALID"
+            ],
+            "description": "INVALID when a check found an error"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "factCount": {
+            "type": "integer"
+          },
+          "contextCount": {
+            "type": "integer"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "byUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notice": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "packageId",
+          "taxonomyVersionId",
+          "status",
+          "sha256",
+          "factCount",
+          "contextCount",
+          "errors",
+          "warnings",
+          "byUserId",
+          "at",
+          "notice"
+        ],
+        "additionalProperties": false
+      },
+      "IxbrlDocumentList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "packageId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "taxonomyVersionId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "VALID",
+                    "INVALID"
+                  ],
+                  "description": "INVALID when a check found an error"
+                },
+                "sha256": {
+                  "type": "string"
+                },
+                "factCount": {
+                  "type": "integer"
+                },
+                "contextCount": {
+                  "type": "integer"
+                },
+                "errors": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "byUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "notice": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "packageId",
+                "taxonomyVersionId",
+                "status",
+                "sha256",
+                "factCount",
+                "contextCount",
+                "errors",
+                "warnings",
+                "byUserId",
+                "at",
+                "notice"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
       "ConceptEntry": {
         "type": "object",
         "properties": {
@@ -49624,6 +50072,11 @@
           "entryPoint": {
             "type": "string",
             "description": "The schema reference of the taxonomy entry point"
+          },
+          "entityScheme": {
+            "type": "string",
+            "nullable": true,
+            "description": "V3-M2: the scheme of the entity identifier"
           },
           "namespaces": {
             "type": "object",
@@ -49806,6 +50259,7 @@
           "label",
           "standardCode",
           "entryPoint",
+          "entityScheme",
           "namespaces",
           "effectiveFrom",
           "effectiveTo",
@@ -49845,6 +50299,11 @@
                 "entryPoint": {
                   "type": "string",
                   "description": "The schema reference of the taxonomy entry point"
+                },
+                "entityScheme": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "V3-M2: the scheme of the entity identifier"
                 },
                 "namespaces": {
                   "type": "object",
@@ -49933,6 +50392,7 @@
                 "label",
                 "standardCode",
                 "entryPoint",
+                "entityScheme",
                 "namespaces",
                 "effectiveFrom",
                 "effectiveTo",
@@ -67674,6 +68134,11 @@
           "copyFromVersionId": {
             "type": "string",
             "format": "uuid"
+          },
+          "entityScheme": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 500
           }
         },
         "required": [
@@ -67744,6 +68209,12 @@
           "notes": {
             "type": "string",
             "maxLength": 4000,
+            "nullable": true
+          },
+          "entityScheme": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 500,
             "nullable": true
           }
         },
@@ -67895,6 +68366,11 @@
             "type": "string",
             "minLength": 10,
             "maxLength": 1000
+          },
+          "entityScheme": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 500
           }
         },
         "required": [
@@ -67902,6 +68378,23 @@
           "effectiveFrom",
           "source",
           "reason"
+        ],
+        "additionalProperties": false
+      },
+      "GenerateIxbrlRequest": {
+        "type": "object",
+        "properties": {
+          "yearStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "taxonomyVersionId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "yearStart"
         ],
         "additionalProperties": false
       },
