@@ -300,6 +300,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-093 | V3 plan and how V3-M1 is built: the taxonomy and its mapping (delegated, DEC-019; recorded before code) | V3 in four milestones (`docs/architecture/v3-plan.md`). V3-M1 holds taxonomy versions and their concept maps as versioned organisation data, verified by a second person; nothing of the taxonomy is in code. A draft pack lands UNVERIFIED. Behind the new flag `ixbrl.filing` and two new permissions |
 | DEC-094 | How V3-M2 is built: the iXBRL document and its validation (delegated, DEC-019; recorded before code) | From the year's approved accounts package and the verified taxonomy version for its standard and year end, the platform builds the contexts, units and facts and renders an inline XBRL (XHTML) document of the accounts. The in-platform checks are stored with it; a document with an error is INVALID. Full taxonomy validation by an external validator is a go-live step |
 | DEC-095 | How V3-M3 is built: the Companies House filing workflow (delegated, DEC-019; recorded before code) | A filing of a VALID iXBRL document moves DRAFT -> VALIDATED -> AUTHORISED -> SUBMITTED -> ACCEPTED or REJECTED, with append-only evidence of each step. Submission needs a person's explicit authority and goes through the Companies House port, whose only adapter is a fake refused in production; a filing made elsewhere is recorded with its evidence. Acceptance marks the accounts deadline done. New permission `ixbrl:file` |
+| DEC-096 | How V3-M4 is built: the iXBRL and filing screens (delegated, DEC-019; recorded before code) | An "Accounts filing" page in the client workspace (the year's iXBRL documents and their checks, the document itself, and the Companies House filing step by step with its evidence) and a "Taxonomy mapping" page for the practice (versions, entries, problems, verification). Screens compute nothing. Behind `ixbrl.filing` |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -1508,4 +1509,27 @@ The third V3 milestone (`docs/architecture/v3-plan.md`). There is no Companies H
 * **Acceptance:**
   * API and database tests of every move and refusal (including the second-person authority, idempotent retry, rejection and the recorded filing) and of the obligation;
   * the OpenAPI contract;
+  * CI green.
+
+### DEC-096 - How V3-M4 is built: the iXBRL and filing screens (delegated, DEC-019; recorded before code)
+The fourth V3 milestone. The screens show what the API returns and compute nothing (DEC-048, DEC-071). They follow the visual system of the prototype (DEC-079), which has no iXBRL screen of its own.
+* **Accounts filing** (client workspace, Accounts production group, `ledger:read`, feature `ixbrl.filing`, at `/org/{org}/companies/{company}/filing`):
+  * the year, chosen from the company's reporting-framework years;
+  * the year's iXBRL documents, latest first: status, SHA-256, counts, errors and warnings, and a link that opens the document itself;
+  * "Generate the iXBRL document" for `accounts:prepare`, with the API's refusal shown when the year has no approved package or no verified mapping;
+  * the Companies House filing of a document, as the path DRAFT -> VALIDATED -> AUTHORISED -> SUBMITTED -> ACCEPTED or REJECTED with the current step marked, and each move with who did it and when. Actions are offered by status and `ixbrl:file`:
+    * start a filing (on a VALID document);
+    * validate;
+    * record the authority (a director from the company's officers, the date, an evidence document);
+    * submit;
+    * read the status;
+    * record a filing made elsewhere (the reference, the date, the evidence);
+  * the API's notice says that the connection is a fake and nothing reaches Companies House.
+* **Taxonomy mapping** (practice shell, at `/org/{org}/taxonomy`):
+  * the versions with their standard, dates and status;
+  * a version's entry point, scheme, namespaces, entries and problems;
+  * "Verify this version" for a holder of `ixbrl:rule-verify` (from the organisation's `me`) with notes; the API refuses the creator.
+  * Entries are entered with the import tool or the API in V3. The page reads them and does not edit them.
+* **Acceptance:**
+  * real-browser tests of the main path across people (generate, start, validate, authorise, submit, read the status), a refusal in the API's words, a reader with no action, and the mapping page's verification;
   * CI green.
