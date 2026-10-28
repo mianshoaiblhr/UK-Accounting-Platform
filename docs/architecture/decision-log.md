@@ -299,6 +299,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-092 | How V5-M3 is built: the VAT return screens (delegated, DEC-019; recorded before code) | A Tax group in the client workspace with VAT returns: the list, opening a return, and the return screen of the prototype (nine boxes with drill-down, checks and flags, sign-off, the client's approval, the filing package and the filing record). Events carry the person's name from the API. Behind `vat.returns` |
 | DEC-093 | V3 plan and how V3-M1 is built: the taxonomy and its mapping (delegated, DEC-019; recorded before code) | V3 in four milestones (`docs/architecture/v3-plan.md`). V3-M1 holds taxonomy versions and their concept maps as versioned organisation data, verified by a second person; nothing of the taxonomy is in code. A draft pack lands UNVERIFIED. Behind the new flag `ixbrl.filing` and two new permissions |
 | DEC-094 | How V3-M2 is built: the iXBRL document and its validation (delegated, DEC-019; recorded before code) | From the year's approved accounts package and the verified taxonomy version for its standard and year end, the platform builds the contexts, units and facts and renders an inline XBRL (XHTML) document of the accounts. The in-platform checks are stored with it; a document with an error is INVALID. Full taxonomy validation by an external validator is a go-live step |
+| DEC-095 | How V3-M3 is built: the Companies House filing workflow (delegated, DEC-019; recorded before code) | A filing of a VALID iXBRL document moves DRAFT -> VALIDATED -> AUTHORISED -> SUBMITTED -> ACCEPTED or REJECTED, with append-only evidence of each step. Submission needs a person's explicit authority and goes through the Companies House port, whose only adapter is a fake refused in production; a filing made elsewhere is recorded with its evidence. Acceptance marks the accounts deadline done. New permission `ixbrl:file` |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -1483,5 +1484,28 @@ The second V3 milestone (`docs/architecture/v3-plan.md`). It reads the approved 
 * **Acceptance:**
   * API tests of a synthetic approved year through generation, the facts and contexts in the document, each check, and the SHA-256;
   * golden workings of the tagged figures;
+  * the OpenAPI contract;
+  * CI green.
+
+### DEC-095 - How V3-M3 is built: the Companies House filing workflow (delegated, DEC-019; recorded before code)
+The third V3 milestone (`docs/architecture/v3-plan.md`). There is no Companies House connection (as for HMRC, DEC-082, DEC-086).
+* **The filing** (`ch_filing`): one company's filing of one iXBRL document (DEC-094). Its status moves only along the specification's path, and the database guards each move:
+  * DRAFT: created from a document by a person with `ixbrl:file` (new);
+  * VALIDATED: the document is VALID, it is the latest document of its package, the package is still the year's, and the company has a registered number;
+  * AUTHORISED: a person with `ixbrl:file` records the explicit authority to file. It names the director who authorised (a serving director on the date), the date (not in the future) and an evidence document of the company scanned clean. That person is not the one who validated (second person);
+  * SUBMITTED: submitted through the Companies House port, with an idempotency key (the filing's id), the document's SHA-256 as the payload hash, and the adapter's submission id;
+  * ACCEPTED or REJECTED: the adapter's answer, read when a person asks for the status (no automatic polling in V3);
+  * or ACCEPTED directly from VALIDATED or AUTHORISED, when a filing made elsewhere is recorded with its Companies House reference, its acceptance date and the acceptance as evidence (mode RECORDED).
+* **No automatic submission:** a submission needs AUTHORISED and a person's request. A retry of a submission with the same idempotency key returns the same submission, and a REJECTED filing is final: a new filing is made after the cause is fixed.
+* **Evidence** (`ch_filing_event`, append-only): one event per move, with the actor, the time, the payload hash, the adapter's request and response (JSON), the submission id and any reason. The filing row holds the current status and its key facts. Only a move may change it (database guard), and it is never deleted.
+* **The Companies House port** (`packages/adapters`): the only adapter is `fake`. It accepts any submission, except that a company number starting `99` is rejected, so rejection can be tested. The driver is `CH_ADAPTER` (`none` by default, and production refuses `fake` at start); with `none`, submission answers `filing_not_available`.
+* **On ACCEPTED** the client's accounts-filing obligation for the year end (V7-M1) becomes DONE, with the acceptance date, the Companies House reference and the evidence (a versioned, audited update).
+* **Permissions and the flag:**
+  * `ixbrl:file` (company), granted to owner, admin and partner;
+  * reading needs `ledger:read`;
+  * the routes sit behind `ixbrl.filing`.
+* **Records:** both tables are classified (RLS+APP) with retention FILING_EVIDENCE; filings have no DELETE or TRUNCATE, and events no UPDATE, DELETE or TRUNCATE.
+* **Acceptance:**
+  * API and database tests of every move and refusal (including the second-person authority, idempotent retry, rejection and the recorded filing) and of the obligation;
   * the OpenAPI contract;
   * CI green.
