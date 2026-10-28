@@ -58,7 +58,7 @@ import { OrganisationsController } from './organisations/organisations.controlle
 import { OrganisationsService } from './organisations/organisations.service';
 import { LedgerController } from './ledger/ledger.controller';
 import { LedgerApiService } from './ledger/ledger.service';
-import { CorporationTaxService, ChFilingService, IxbrlDocumentService, TaxonomyService, VatFilingService, VatReturnService, ComplianceService, AccountsApprovalService, AccountsDocumentService, CashFlowService, ReviewService, YearEndWorkflowService, SizeTestService, SizeThresholdService, DirectorService, YearEndCloseService, YearEndService, DepreciationService, FixedAssetService, FrameworkService, StandardsService, StatutoryReportService, AlertService, DrillDownService, ReportService, BankService, CashService, ReconciliationService, PurchasesService, SalesService, VatService, AccountService, FxSettingsService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, RateService, RevaluationService } from '@uk/accounting';
+import { CapitalAllowanceService, CorporationTaxService, ChFilingService, IxbrlDocumentService, TaxonomyService, VatFilingService, VatReturnService, ComplianceService, AccountsApprovalService, AccountsDocumentService, CashFlowService, ReviewService, YearEndWorkflowService, SizeTestService, SizeThresholdService, DirectorService, YearEndCloseService, YearEndService, DepreciationService, FixedAssetService, FrameworkService, StandardsService, StatutoryReportService, AlertService, DrillDownService, ReportService, BankService, CashService, ReconciliationService, PurchasesService, SalesService, VatService, AccountService, FxSettingsService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, RateService, RevaluationService } from '@uk/accounting';
 
 @Module({})
 export class AppModule {
@@ -74,6 +74,7 @@ export class AppModule {
         { provide: VatService, useFactory: () => new VatService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: VatReturnService, inject: [VatService], useFactory: (v: VatService) => new VatReturnService(v, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: CorporationTaxService, useFactory: () => new CorporationTaxService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
+        { provide: CapitalAllowanceService, inject: [CorporationTaxService], useFactory: (ct: CorporationTaxService) => new CapitalAllowanceService(ct, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: TaxonomyService, useFactory: () => new TaxonomyService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) }, IxbrlApiService,
         { provide: ChFilingService, useFactory: () => new ChFilingService(createCompaniesHouse(config), { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: IxbrlDocumentService, useFactory: () => new IxbrlDocumentService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },

@@ -1,14 +1,14 @@
 # V3 milestone V3-M3 - acceptance package (the Companies House filing workflow)
 
-**Status:** PREPARED; acceptance under the delegation (DEC-019, DEC-086) follows a green CI run on the code baseline (section 1).
+**Status:** ACCEPTED under the delegation (DEC-019, DEC-086) on 2026-10-28, on the green CI run recorded in section 1.
 
 The design is in DEC-095, recorded and pushed before code (`08fbc7b`). This is milestone evidence only, **not production approval** (DEC-085). All data is synthetic. **Nothing reaches Companies House:** the port's only adapter is a fake, refused in production.
 
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | recorded when CI has run |
-| CI | recorded when CI has run |
+| Code baseline commit | `669e1a9` |
+| CI | [ci run 203](https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/40783514135) on `17d53a8`, which contains it: every job green, including the real-browser tests and the image scans |
 | Local runs | see section 5 |
 
 ## 2. What was built

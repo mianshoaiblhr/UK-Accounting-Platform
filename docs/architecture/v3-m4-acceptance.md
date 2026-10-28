@@ -1,14 +1,14 @@
 # V3 milestone V3-M4 - acceptance package (the iXBRL and filing screens)
 
-**Status:** PREPARED; acceptance under the delegation (DEC-019, DEC-086) follows a green CI run on the code baseline (section 1).
+**Status:** ACCEPTED under the delegation (DEC-019, DEC-086) on 2026-10-28, on the green CI run recorded in section 1.
 
 The design is in DEC-096, recorded and pushed before code (`c94daf2`). This is milestone evidence only, **not production approval** (DEC-085). All data is synthetic. The screens show what the API returns and compute nothing (DEC-048, DEC-071). **Nothing reaches Companies House:** the connection is a test stand-in, and the screen says so.
 
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | recorded when CI has run |
-| CI | recorded when CI has run |
+| Code baseline commit | `217fd6c` |
+| CI | [ci run 203](https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/40783514135) on `17d53a8`, which contains it: every job green, including the real-browser tests and the image scans |
 | Local runs | see section 5 |
 
 ## 2. What was built

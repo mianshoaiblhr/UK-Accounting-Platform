@@ -772,3 +772,27 @@ export const CtAdjustedProfit = z.object({
   totalAdded: z.string(), totalDeducted: z.string(), adjustedProfit: z.string().describe('Before capital allowances and losses'), problems: z.array(z.string()).describe('What the computation will refuse until resolved'),
   fingerprint: z.string().describe('SHA-256 of the statement in canonical JSON, without the notice'), notice: z.string(),
 });
+
+// ───────────── V4-M3 capital allowances (DEC-100) ─────────────
+const caPool = z.enum(['MAIN', 'SPECIAL_RATE', 'SINGLE_ASSET']);
+export const PoolOpening = z.object({
+  id: uuid, companyId: uuid, pool: caPool, assetId: uuid.nullable(), asOf: day, amount: z.string().describe('The written-down value at the date'), evidenceDocumentId: uuid, reason: z.string(),
+  enteredByUserId: uuid, createdAt: ts, verificationStatus: z.enum(['UNVERIFIED', 'VERIFIED']), verifiedByUserId: uuid.nullable(), verifiedAt: ts.nullable(), verificationNotes: z.string().nullable(), supersededById: uuid.nullable(),
+});
+const caResult = z.object({
+  fraction: z.string().describe('1 for a 12-month period, else days/365'),
+  aia: z.object({ limit: z.string(), available: z.string(), claimed: z.string(), claims: z.array(z.object({ assetId: z.string(), number: z.number().int(), description: z.string(), acquiredOn: day, cost: z.string(), aia: z.string(), toMainPool: z.string() })) }),
+  smallPoolLimit: z.string(),
+  pools: z.array(z.object({ pool: caPool, assetId: z.string().nullable(), opening: z.string(), additions: z.string(), disposals: z.string(), available: z.string(), rate: z.string(), writingDownAllowance: z.string(),
+    smallPool: z.boolean(), balancingAllowance: z.string(), balancingCharge: z.string(), closing: z.string() })),
+  disposals: z.array(z.object({ assetId: z.string(), number: z.number().int(), description: z.string(), disposedOn: day, pool: caPool.nullable(), proceeds: z.string(), cost: z.string(), disposalValue: z.string().describe('The lower of the proceeds and the tax cost') })),
+  totals: z.object({ aia: z.string(), writingDownAllowances: z.string(), balancingAllowances: z.string(), allowances: z.string(), balancingCharges: z.string() }),
+});
+export const CapitalAllowances = z.object({
+  periodId: uuid, companyId: uuid, startDate: day, endDate: day, rules: z.object({ aiaLimitRuleId: uuid, wdaRatesRuleId: uuid, smallPoolLimitRuleId: uuid }),
+  openingsFrom: z.record(z.unknown()).describe('PRIOR_COMPUTATION with its id, or OPENING_BALANCES with their ids'),
+  notQualifying: z.array(z.object({ assetId: uuid, number: z.number().int(), description: z.string(), cost: z.string() })), computation: caResult,
+  problems: z.array(z.string()).describe('What stops the computation from being stored'), priorComputationId: uuid.nullable(), fingerprint: z.string(), notice: z.string(),
+});
+export const CaComputation = z.object({ id: uuid, periodId: uuid, priorComputationId: uuid.nullable(), fingerprint: z.string(), preparedByUserId: uuid, preparedAt: ts, supersededById: uuid.nullable(),
+  stale: z.boolean().describe('The prior period\'s current computation is no longer the one this opened from'), snapshot: z.record(z.unknown()) });

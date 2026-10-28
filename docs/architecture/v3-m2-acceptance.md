@@ -1,14 +1,14 @@
 # V3 milestone V3-M2 - acceptance package (the iXBRL document and its validation)
 
-**Status:** PREPARED; acceptance under the delegation (DEC-019, DEC-086) follows a green CI run on the code baseline (section 1) and the named accountant's review of the golden tagging (section 4).
+**Status:** CI GREEN (section 1); acceptance under the delegation (DEC-019, DEC-086) follows the named accountant's review of the golden tagging (section 4).
 
 The design is in DEC-094, recorded and pushed before code (`65e2ab8`). This is milestone evidence only, **not production approval** (DEC-085). All data is synthetic. Nothing is filed. **Full schema and taxonomy validation is not run in the platform:** it needs the FRC taxonomy files and an external validator, and it is a go-live step.
 
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | recorded when CI has run |
-| CI | recorded when CI has run |
+| Code baseline commit | `5182d2b` |
+| CI | [ci run 203](https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/40783514135) on `17d53a8`, which contains it: every job green, including the real-browser tests and the image scans |
 | Local runs | see section 6 |
 
 ## 2. What was built

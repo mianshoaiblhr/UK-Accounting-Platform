@@ -5,7 +5,7 @@ import { z } from 'zod';
  * run are data: a rule version with its source, UNVERIFIED until a different person verifies it (the DEC-021 pattern). Nothing of the tax law is
  * written here except the shape each kind of rule takes.
  */
-export const CT_RULE_KINDS = ['CT_RATES', 'PERIOD_MAX_MONTHS'] as const;
+export const CT_RULE_KINDS = ['CT_RATES', 'PERIOD_MAX_MONTHS', 'AIA_LIMIT', 'WDA_RATES', 'SMALL_POOL_LIMIT'] as const;
 export type CtRuleKind = (typeof CT_RULE_KINDS)[number];
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD').refine((s) => !Number.isNaN(Date.parse(s)) && new Date(s).toISOString().startsWith(s), 'Invalid date');
@@ -20,6 +20,10 @@ export const CT_RULE_PARAMETERS = {
   }).strict().refine((p) => Number(p.lowerLimit) < Number(p.upperLimit), { message: 'The lower limit is below the upper limit', path: ['upperLimit'] })
     .refine((p) => Number(p.smallProfitsRate) <= Number(p.mainRate), { message: 'The small profits rate is not above the main rate', path: ['smallProfitsRate'] }),
   PERIOD_MAX_MONTHS: z.object({ months: z.number().int().min(1).max(24) }).strict(),
+  // V4-M3 (DEC-100): capital allowances
+  AIA_LIMIT: z.object({ annualLimit: amount }).strict(),
+  WDA_RATES: z.object({ mainRate: percent, specialRate: percent }).strict(),
+  SMALL_POOL_LIMIT: z.object({ limit: amount }).strict(),
 } as const satisfies Record<CtRuleKind, z.ZodTypeAny>;
 
 const source = z.object({ url: z.string().trim().url().max(500).refine((u) => /^https?:\/\//.test(u), 'An http(s) link'), provision: z.string().trim().min(3).max(300), retrievedOn: isoDate }).strict();
@@ -42,7 +46,7 @@ export const associatedCompaniesSchema = z.object({ associatedCompanies: z.numbe
 const day = (s: string) => new Date(`${s}T00:00:00.000Z`);
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 /** The day before the same day `months` months later (a month-end start keeps to month ends: 31 Jan + 1 month - 1 day = 27/28 Feb). */
-function endAfterMonths(start: string, months: number): string {
+export function endAfterMonths(start: string, months: number): string {
   const d = day(start), y = d.getUTCFullYear(), m = d.getUTCMonth() + months, dd = d.getUTCDate();
   const last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
   const next = new Date(Date.UTC(y, m, Math.min(dd, last)));

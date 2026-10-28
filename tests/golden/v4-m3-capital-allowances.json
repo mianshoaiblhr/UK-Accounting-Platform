@@ -1,0 +1,48 @@
+{
+  "about": "V4-M3 (DEC-100) golden: two consecutive synthetic CT periods (2027, 12 months; then 1 January to 30 June 2028, 182 days). The rates and limits are entered as test fixtures and verified by a second person in the test; they are not tax advice. Worked by hand in docs/architecture/v4-m3-golden-workings.xlsx.",
+  "rules": { "aiaLimit": "1000000", "mainRate": "18", "specialRate": "6", "smallPoolLimit": "1000" },
+  "years": [{ "yearStart": "2027-01-01", "yearEnd": "2027-12-31" }, { "yearStart": "2028-01-01", "yearEnd": "2028-06-30" }],
+  "openings": { "asOf": "2026-12-31", "MAIN": "10000.00", "SPECIAL_RATE": "2000.00", "single": [{ "asset": "S0", "amount": "3000.00" }] },
+  "assets": [
+    { "key": "S0", "description": "Old machine in its own pool", "acquiredOn": "2025-03-01", "cost": "5000.00", "category": "SINGLE_ASSET_POOL" },
+    { "key": "D1", "description": "Old van in the main pool", "acquiredOn": "2025-06-01", "cost": "2500.00", "category": "MAIN_POOL" },
+    { "key": "A1", "description": "Production line", "acquiredOn": "2027-02-01", "cost": "900000.00", "category": "AIA" },
+    { "key": "A3", "description": "Office furniture", "acquiredOn": "2027-03-01", "cost": "5000.00", "category": "MAIN_POOL" },
+    { "key": "A6", "description": "Artwork (not plant)", "acquiredOn": "2027-04-01", "cost": "10000.00", "category": "NOT_QUALIFYING" },
+    { "key": "A2", "description": "Packing machine", "acquiredOn": "2027-05-01", "cost": "300000.00", "category": "AIA" },
+    { "key": "A4", "description": "Integral features", "acquiredOn": "2027-06-01", "cost": "30000.00", "category": "SPECIAL_RATE_POOL" },
+    { "key": "A5", "description": "Short-life computer", "acquiredOn": "2027-07-01", "cost": "4000.00", "category": "SINGLE_ASSET_POOL" },
+    { "key": "A7", "description": "Robot cell", "acquiredOn": "2028-03-01", "cost": "600000.00", "category": "AIA" }
+  ],
+  "disposals": [
+    { "asset": "S0", "disposedOn": "2027-08-01", "proceeds": "1000.00" },
+    { "asset": "D1", "disposedOn": "2027-09-01", "proceeds": "3000.00" },
+    { "asset": "A4", "disposedOn": "2028-04-01", "proceeds": "40000.00" },
+    { "asset": "A3", "disposedOn": "2028-05-01", "proceeds": "6000.00" },
+    { "asset": "A5", "disposedOn": "2028-06-01", "proceeds": "3500.00" }
+  ],
+  "expected": [
+    {
+      "fraction": "1",
+      "aia": { "available": "1000000.00", "claims": [["A1", "900000.00", "0.00"], ["A2", "100000.00", "200000.00"]] },
+      "pools": [
+        ["MAIN", null, "10000.00", "205000.00", "2500.00", "38250.00", "0.00", "0.00", "174250.00"],
+        ["SPECIAL_RATE", null, "2000.00", "30000.00", "0.00", "1920.00", "0.00", "0.00", "30080.00"],
+        ["SINGLE_ASSET", "A5", "0.00", "4000.00", "0.00", "720.00", "0.00", "0.00", "3280.00"],
+        ["SINGLE_ASSET", "S0", "3000.00", "0.00", "1000.00", "0.00", "2000.00", "0.00", "0.00"]
+      ],
+      "totals": { "aia": "1000000.00", "writingDownAllowances": "40890.00", "balancingAllowances": "2000.00", "allowances": "1042890.00", "balancingCharges": "0.00" }
+    },
+    {
+      "fraction": "182/365",
+      "aia": { "available": "498630.14", "claims": [["A7", "498630.14", "101369.86"]] },
+      "pools": [
+        ["MAIN", null, "174250.00", "101369.86", "5000.00", "24289.06", "0.00", "0.00", "246330.80"],
+        ["SPECIAL_RATE", null, "30080.00", "0.00", "30000.00", "80.00", "0.00", "0.00", "0.00"],
+        ["SINGLE_ASSET", "A5", "3280.00", "0.00", "3500.00", "0.00", "0.00", "220.00", "0.00"]
+      ],
+      "totals": { "aia": "498630.14", "writingDownAllowances": "24369.06", "balancingAllowances": "0.00", "allowances": "522999.20", "balancingCharges": "220.00" }
+    }
+  ],
+  "poolColumns": ["pool", "asset", "opening", "additions", "disposals", "writingDownAllowance", "balancingAllowance", "balancingCharge", "closing"]
+}

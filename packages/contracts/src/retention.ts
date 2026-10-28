@@ -110,7 +110,9 @@ export const RETENTION_RULES: readonly RetentionRule[] = [
     // V4-M1: the rules and periods a Corporation Tax computation was made under (DEC-097)
     'ct_rule', 'ct_period',
     // V4-M2: the adjustments behind the adjusted profit of a CT period (DEC-099)
-    'ct_adjustment_rule', 'ct_adjustment']),
+    'ct_adjustment_rule', 'ct_adjustment',
+    // V4-M3: capital allowances openings and computations (DEC-100)
+    'ca_pool_opening', 'ca_computation']),
   // V7-M1: an obligation is the record of a filing or payment and its evidence (DEC-088)
   ...tableRules('FILING_EVIDENCE', ['compliance_obligation',
     // V5-M2: a VAT filing and its receipt (DEC-091)

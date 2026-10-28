@@ -35,3 +35,4 @@ export * from './ixbrl';
 export * from './ixbrl-document';
 export * from './ch-filing';
 export * from './corporation-tax';
+export * from './capital-allowances';

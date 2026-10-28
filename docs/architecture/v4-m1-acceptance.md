@@ -1,14 +1,14 @@
 # V4 milestone V4-M1 - acceptance package (Corporation Tax rules, tax periods and the tax profile)
 
-**Status:** PREPARED; acceptance under the delegation (DEC-019, DEC-086) follows a green CI run on the code baseline (section 1). The draft rules wait for the named verifier (DEC-056) in the platform.
+**Status:** ACCEPTED under the delegation (DEC-019, DEC-086) on 2026-10-28, on the green CI run recorded in section 1. The draft rules wait for the named verifier (DEC-056) in the platform.
 
 The design is in DEC-097, recorded and pushed before code (`5e35dd5`). This is milestone evidence only, **not production approval** (DEC-085). All data in the tests is synthetic, and the figures in the tests are fixtures, not the law. **No rule is seeded:** the draft pack is imported through the API and lands UNVERIFIED.
 
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | recorded when CI has run |
-| CI | recorded when CI has run |
+| Code baseline commit | `c08464a` |
+| CI | [ci run 203](https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/40783514135) on `17d53a8`, which contains it: every job green, including the real-browser tests and the image scans |
 | Local runs | see section 5 |
 
 ## 2. What was built

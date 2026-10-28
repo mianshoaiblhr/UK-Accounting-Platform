@@ -108,6 +108,8 @@ const FORBIDDEN: Record<string, string[]> = {
   company_tax_profile: ['DELETE', 'TRUNCATE'],       // set and cleared, never removed
   ct_adjustment_rule: ['DELETE', 'TRUNCATE'],        // rules are immutable; verified once, superseded once (trigger)
   ct_adjustment: ['DELETE', 'TRUNCATE'],             // never changed; withdrawn once (trigger)
+  ca_pool_opening: ['DELETE', 'TRUNCATE'],           // immutable; verified once, superseded once (trigger)
+  ca_computation: ['DELETE', 'TRUNCATE'],            // never changed; superseded once (trigger)
 };
 const has = (table: string, priv: string) => adminSql(`SELECT has_table_privilege('uk_app', '${table}', '${priv}')`) === 't';
 const hasAnyColumn = (table: string, priv: string) => adminSql(`SELECT has_any_column_privilege('uk_app', '${table}', '${priv}')`) === 't';

@@ -3127,3 +3127,43 @@ model CtAdjustment {
   @@index([organisationId, periodId, createdAt], map: "ct_adjustment_period_idx")
   @@map("ct_adjustment")
 }
+
+/// V4-M3 (DEC-100): a capital allowances pool's written-down value at a date, with evidence; verified by a second person, immutable.
+model CaPoolOpening {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId     String    @map("organisation_id") @db.Uuid
+  companyId          String    @map("company_id") @db.Uuid
+  pool               String
+  assetId            String?   @map("asset_id") @db.Uuid
+  asOf               DateTime  @map("as_of") @db.Date
+  amount             Decimal   @db.Decimal(18, 2)
+  evidenceDocumentId String    @map("evidence_document_id") @db.Uuid
+  reason             String
+  enteredByUserId    String    @map("entered_by_user_id") @db.Uuid
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  verificationStatus String    @default("UNVERIFIED") @map("verification_status")
+  verifiedByUserId   String?   @map("verified_by_user_id") @db.Uuid
+  verifiedAt         DateTime? @map("verified_at") @db.Timestamptz(3)
+  verificationNotes  String?   @map("verification_notes")
+  supersededById     String?   @map("superseded_by_id") @db.Uuid
+
+  @@unique([organisationId, id])
+  @@map("ca_pool_opening")
+}
+
+/// V4-M3 (DEC-100): a stored capital allowances computation of a CT period; append-only, superseded once.
+model CaComputation {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId     String   @map("organisation_id") @db.Uuid
+  companyId          String   @map("company_id") @db.Uuid
+  periodId           String   @map("period_id") @db.Uuid
+  priorComputationId String?  @map("prior_computation_id") @db.Uuid
+  snapshot           Json
+  fingerprint        String
+  preparedByUserId   String   @map("prepared_by_user_id") @db.Uuid
+  preparedAt         DateTime @default(now()) @map("prepared_at") @db.Timestamptz(3)
+  supersededById     String?  @map("superseded_by_id") @db.Uuid
+
+  @@unique([organisationId, id])
+  @@map("ca_computation")
+}

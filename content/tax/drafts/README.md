@@ -4,6 +4,6 @@ These files are **drafts for verification**, not rules in force. Each one is imp
 
 | File | Rules | Import |
 |---|---|---|
-| `uk-ct-rules.json` | `CT_RATES` from financial year 2023; `PERIOD_MAX_MONTHS` (12) | `node scripts/tax/import-ct-rules.mjs --api <url> --org <id> --company <id> --token <bearer> content/tax/drafts/uk-ct-rules.json` |
+| `uk-ct-rules.json` | `CT_RATES` from financial year 2023; `PERIOD_MAX_MONTHS` (12); `AIA_LIMIT`, `WDA_RATES` and `SMALL_POOL_LIMIT` (capital allowances, V4-M3) | `node scripts/tax/import-ct-rules.mjs --api <url> --org <id> --company <id> --token <bearer> content/tax/drafts/uk-ct-rules.json` |
 
 The verifier's worksheet (`docs/legal/rule-verification-worksheet.xlsx`) has a sheet for these rules.
