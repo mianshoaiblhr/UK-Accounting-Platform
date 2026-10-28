@@ -75,3 +75,14 @@ export const IXBRL_DOCUMENT_STATUSES = ['VALID', 'INVALID'] as const;
 /** Generates the iXBRL document of the year's approved accounts package; the taxonomy version is found by standard and year end unless named. */
 export const generateIxbrlSchema = z.object({ yearStart: isoDate, taxonomyVersionId: z.string().uuid().optional() }).strict();
 export const ixbrlListQuerySchema = z.object({ yearStart: isoDate.optional() }).strict();
+
+// ───────────── V3-M3 the Companies House filing workflow (DEC-095) ─────────────
+export const CH_FILING_STATUSES = ['DRAFT', 'VALIDATED', 'AUTHORISED', 'SUBMITTED', 'ACCEPTED', 'REJECTED'] as const;
+export type ChFilingStatus = (typeof CH_FILING_STATUSES)[number];
+export const createChFilingSchema = z.object({ documentId: z.string().uuid() }).strict();
+const chNote = z.string().trim().min(1).max(2000);
+/** The explicit authority to file: the director who gave it, when, and the evidence (DEC-095). */
+export const authoriseChFilingSchema = z.object({ directorContactId: z.string().uuid(), authorisedOn: isoDate, evidenceDocumentId: z.string().uuid(), note: chNote.optional() }).strict();
+/** A filing made outside the platform: Companies House's reference, the acceptance date and the acceptance as evidence. */
+export const recordChFilingSchema = z.object({ reference: z.string().trim().min(3).max(60), acceptedOn: isoDate, evidenceDocumentId: z.string().uuid(), note: chNote.optional() }).strict();
+export const chFilingStepSchema = z.object({ note: chNote.optional() }).strict();

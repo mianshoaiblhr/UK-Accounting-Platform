@@ -2972,3 +2972,52 @@ model IxbrlDocument {
   @@index([organisationId, packageId, at], map: "ixbrl_document_package_idx")
   @@map("ixbrl_document")
 }
+
+/// V3-M3 (DEC-095): a Companies House filing of an iXBRL document; DRAFT -> VALIDATED -> AUTHORISED -> SUBMITTED -> ACCEPTED / REJECTED (guarded).
+model ChFiling {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId       String    @map("organisation_id") @db.Uuid
+  companyId            String    @map("company_id") @db.Uuid
+  documentId           String    @map("document_id") @db.Uuid
+  status               String    @default("DRAFT")
+  mode                 String    @default("PORT")
+  payloadSha256        String    @map("payload_sha256")
+  createdByUserId      String    @map("created_by_user_id") @db.Uuid
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  validatedByUserId    String?   @map("validated_by_user_id") @db.Uuid
+  authorisedByUserId   String?   @map("authorised_by_user_id") @db.Uuid
+  directorContactId    String?   @map("director_contact_id") @db.Uuid
+  authorisedOn         DateTime? @map("authorised_on") @db.Date
+  authorityEvidenceId  String?   @map("authority_evidence_id") @db.Uuid
+  submissionId         String?   @map("submission_id")
+  chReference          String?   @map("ch_reference")
+  acceptedOn           DateTime? @map("accepted_on") @db.Date
+  acceptanceEvidenceId String?   @map("acceptance_evidence_id") @db.Uuid
+  rejectionReasons     Json?     @map("rejection_reasons")
+  updatedAt            DateTime  @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@index([organisationId, companyId, createdAt], map: "ch_filing_company_idx")
+  @@map("ch_filing")
+}
+
+/// V3-M3 (DEC-095): the evidence of one move of a Companies House filing; append-only.
+model ChFilingEvent {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  seq            Int      @unique(map: "ch_filing_event_seq_key") @default(autoincrement())
+  organisationId String   @map("organisation_id") @db.Uuid
+  companyId      String   @map("company_id") @db.Uuid
+  filingId       String   @map("filing_id") @db.Uuid
+  fromStatus     String?  @map("from_status")
+  toStatus       String   @map("to_status")
+  payloadSha256  String   @map("payload_sha256")
+  submissionId   String?  @map("submission_id")
+  request        Json?
+  response       Json?
+  note           String?
+  byUserId       String   @map("by_user_id") @db.Uuid
+  at             DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(3)
+
+  @@index([organisationId, filingId, seq], map: "ch_filing_event_filing_idx")
+  @@map("ch_filing_event")
+}

@@ -725,3 +725,14 @@ export const IxbrlDocument = z.object({
   id: uuid, companyId: uuid, packageId: uuid, taxonomyVersionId: uuid, status: z.enum(['VALID', 'INVALID']).describe('INVALID when a check found an error'),
   sha256: z.string(), factCount: z.number().int(), contextCount: z.number().int(), errors: z.array(z.string()), warnings: z.array(z.string()), byUserId: uuid, at: ts, notice: z.string(),
 });
+
+// ───────────── V3-M3 the Companies House filing (DEC-095) ─────────────
+export const ChFiling = z.object({
+  id: uuid, companyId: uuid, documentId: uuid, status: z.enum(['DRAFT', 'VALIDATED', 'AUTHORISED', 'SUBMITTED', 'ACCEPTED', 'REJECTED']), mode: z.enum(['PORT', 'RECORDED']),
+  payloadSha256: z.string(), createdByUserId: uuid, createdAt: ts, validatedByUserId: uuid.nullable(),
+  authority: z.object({ byUserId: uuid, directorContactId: uuid.nullable(), authorisedOn: day, evidenceDocumentId: uuid.nullable() }).nullable(),
+  submissionId: z.string().nullable(), chReference: z.string().nullable(), acceptedOn: day.nullable(), acceptanceEvidenceId: uuid.nullable(), rejectionReasons: z.array(z.string()), updatedAt: ts,
+  events: z.array(z.object({ id: uuid, fromStatus: z.string().nullable(), toStatus: z.string(), payloadSha256: z.string(), submissionId: z.string().nullable(), request: z.unknown(), response: z.unknown(),
+    note: z.string().nullable(), byUserId: uuid, at: ts })).describe('Every move, append-only; empty in lists'),
+  notice: z.string(),
+});

@@ -30782,6 +30782,657 @@
         ]
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ch-filings": {
+      "get": {
+        "operationId": "ChFiling_list",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Filings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChFilingList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "iXBRL"
+        ],
+        "x-required-feature": "ixbrl.filing",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The company's Companies House filings, latest first",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "ChFiling_create",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChFiling"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "iXBRL"
+        ],
+        "x-required-feature": "ixbrl.filing",
+        "x-required-permissions": [
+          "ixbrl:file"
+        ],
+        "summary": "Start a filing (DRAFT) of an iXBRL document (ixbrl:file); one live filing per document",
+        "description": "**Requires permission:** `ixbrl:file`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChFilingRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ch-filings/{filingId}": {
+      "get": {
+        "operationId": "ChFiling_get",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "filingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Filing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChFiling"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "iXBRL"
+        ],
+        "x-required-feature": "ixbrl.filing",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "A filing with every move and its evidence",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ch-filings/{filingId}/validate": {
+      "post": {
+        "operationId": "ChFiling_validate",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "filingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Validated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChFiling"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "iXBRL"
+        ],
+        "x-required-feature": "ixbrl.filing",
+        "x-required-permissions": [
+          "ixbrl:file"
+        ],
+        "summary": "VALIDATED: the document is VALID and current and the company has a registered number (ixbrl:file)",
+        "description": "**Requires permission:** `ixbrl:file`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChFilingStepRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ch-filings/{filingId}/authorise": {
+      "post": {
+        "operationId": "ChFiling_authorise",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "filingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorised",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChFiling"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "iXBRL"
+        ],
+        "x-required-feature": "ixbrl.filing",
+        "x-required-permissions": [
+          "ixbrl:file"
+        ],
+        "summary": "AUTHORISED: the explicit authority of a serving director, with evidence, recorded by someone other than the validator (ixbrl:file)",
+        "description": "**Requires permission:** `ixbrl:file`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthoriseChFilingRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ch-filings/{filingId}/submit": {
+      "post": {
+        "operationId": "ChFiling_submit",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "filingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Submitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChFiling"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "tags": [
+          "iXBRL"
+        ],
+        "x-required-feature": "ixbrl.filing",
+        "x-required-permissions": [
+          "ixbrl:file"
+        ],
+        "summary": "SUBMITTED through the Companies House port (fake adapter only); a retry returns the same submission (ixbrl:file)",
+        "description": "**Requires permission:** `ixbrl:file`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChFilingStepRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ch-filings/{filingId}/status": {
+      "post": {
+        "operationId": "ChFiling_refresh",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "filingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChFiling"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "tags": [
+          "iXBRL"
+        ],
+        "x-required-feature": "ixbrl.filing",
+        "x-required-permissions": [
+          "ixbrl:file"
+        ],
+        "summary": "Read the submission's status: ACCEPTED (the accounts deadline becomes DONE) or REJECTED (final) (ixbrl:file)",
+        "description": "**Requires permission:** `ixbrl:file`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ch-filings/{filingId}/record": {
+      "post": {
+        "operationId": "ChFiling_record",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "filingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChFiling"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "iXBRL"
+        ],
+        "x-required-feature": "ixbrl.filing",
+        "x-required-permissions": [
+          "ixbrl:file"
+        ],
+        "summary": "Record a filing made outside the platform as ACCEPTED, with Companies House's reference, the date and the evidence (ixbrl:file)",
+        "description": "**Requires permission:** `ixbrl:file`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordChFilingRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -49806,6 +50457,390 @@
         ],
         "additionalProperties": false
       },
+      "ChFiling": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "documentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "VALIDATED",
+              "AUTHORISED",
+              "SUBMITTED",
+              "ACCEPTED",
+              "REJECTED"
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "PORT",
+              "RECORDED"
+            ]
+          },
+          "payloadSha256": {
+            "type": "string"
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "validatedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "authority": {
+            "type": "object",
+            "properties": {
+              "byUserId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "directorContactId": {
+                "type": "string",
+                "format": "uuid",
+                "nullable": true
+              },
+              "authorisedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "evidenceDocumentId": {
+                "type": "string",
+                "format": "uuid",
+                "nullable": true
+              }
+            },
+            "required": [
+              "byUserId",
+              "directorContactId",
+              "authorisedOn",
+              "evidenceDocumentId"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "submissionId": {
+            "type": "string",
+            "nullable": true
+          },
+          "chReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "acceptedOn": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "acceptanceEvidenceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "rejectionReasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "fromStatus": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "toStatus": {
+                  "type": "string"
+                },
+                "payloadSha256": {
+                  "type": "string"
+                },
+                "submissionId": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "request": {},
+                "response": {},
+                "note": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "byUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "fromStatus",
+                "toStatus",
+                "payloadSha256",
+                "submissionId",
+                "note",
+                "byUserId",
+                "at"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Every move, append-only; empty in lists"
+          },
+          "notice": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "documentId",
+          "status",
+          "mode",
+          "payloadSha256",
+          "createdByUserId",
+          "createdAt",
+          "validatedByUserId",
+          "authority",
+          "submissionId",
+          "chReference",
+          "acceptedOn",
+          "acceptanceEvidenceId",
+          "rejectionReasons",
+          "updatedAt",
+          "events",
+          "notice"
+        ],
+        "additionalProperties": false
+      },
+      "ChFilingList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "documentId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "DRAFT",
+                    "VALIDATED",
+                    "AUTHORISED",
+                    "SUBMITTED",
+                    "ACCEPTED",
+                    "REJECTED"
+                  ]
+                },
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "PORT",
+                    "RECORDED"
+                  ]
+                },
+                "payloadSha256": {
+                  "type": "string"
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "validatedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "authority": {
+                  "type": "object",
+                  "properties": {
+                    "byUserId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "directorContactId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "authorisedOn": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "evidenceDocumentId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "byUserId",
+                    "directorContactId",
+                    "authorisedOn",
+                    "evidenceDocumentId"
+                  ],
+                  "additionalProperties": false,
+                  "nullable": true
+                },
+                "submissionId": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "chReference": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "acceptedOn": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "acceptanceEvidenceId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "rejectionReasons": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "events": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "fromStatus": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "toStatus": {
+                        "type": "string"
+                      },
+                      "payloadSha256": {
+                        "type": "string"
+                      },
+                      "submissionId": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "request": {},
+                      "response": {},
+                      "note": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "byUserId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "fromStatus",
+                      "toStatus",
+                      "payloadSha256",
+                      "submissionId",
+                      "note",
+                      "byUserId",
+                      "at"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "description": "Every move, append-only; empty in lists"
+                },
+                "notice": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "documentId",
+                "status",
+                "mode",
+                "payloadSha256",
+                "createdByUserId",
+                "createdAt",
+                "validatedByUserId",
+                "authority",
+                "submissionId",
+                "chReference",
+                "acceptedOn",
+                "acceptanceEvidenceId",
+                "rejectionReasons",
+                "updatedAt",
+                "events",
+                "notice"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
       "IxbrlDocument": {
         "type": "object",
         "properties": {
@@ -60647,7 +61682,8 @@
                 "vat:review",
                 "vat:file",
                 "ixbrl:rules-manage",
-                "ixbrl:rule-verify"
+                "ixbrl:rule-verify",
+                "ixbrl:file"
               ]
             },
             "minItems": 1
@@ -68395,6 +69431,87 @@
         },
         "required": [
           "yearStart"
+        ],
+        "additionalProperties": false
+      },
+      "CreateChFilingRequest": {
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "documentId"
+        ],
+        "additionalProperties": false
+      },
+      "ChFilingStepRequest": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "additionalProperties": false
+      },
+      "AuthoriseChFilingRequest": {
+        "type": "object",
+        "properties": {
+          "directorContactId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "authorisedOn": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "evidenceDocumentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "directorContactId",
+          "authorisedOn",
+          "evidenceDocumentId"
+        ],
+        "additionalProperties": false
+      },
+      "RecordChFilingRequest": {
+        "type": "object",
+        "properties": {
+          "reference": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 60
+          },
+          "acceptedOn": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "evidenceDocumentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "reference",
+          "acceptedOn",
+          "evidenceDocumentId"
         ],
         "additionalProperties": false
       },

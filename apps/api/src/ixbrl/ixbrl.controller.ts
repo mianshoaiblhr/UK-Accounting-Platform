@@ -1,10 +1,10 @@
 import { Body, Controller, Delete, Get, Header, HttpCode, Inject, Injectable, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import { z } from 'zod';
 import {
-  conceptEntrySchema, createTaxonomyVersionSchema, generateIxbrlSchema, ixbrlListQuerySchema, supersedeTaxonomyVersionSchema, taxonomyListQuerySchema, updateTaxonomyVersionSchema, verifyTaxonomyVersionSchema, type Permission,
+  authoriseChFilingSchema, chFilingStepSchema, conceptEntrySchema, createChFilingSchema, createTaxonomyVersionSchema, generateIxbrlSchema, ixbrlListQuerySchema, recordChFilingSchema, supersedeTaxonomyVersionSchema, taxonomyListQuerySchema, updateTaxonomyVersionSchema, verifyTaxonomyVersionSchema, type Permission,
 } from '@uk/contracts';
 import type { Database, Tx } from '@uk/db';
-import { IxbrlDocumentService, TaxonomyService, type TaxonomyActor } from '@uk/accounting';
+import { ChFilingService, IxbrlDocumentService, TaxonomyService, type ChActor, type TaxonomyActor } from '@uk/accounting';
 import { Idempotent, Org, RequireFeature, RequirePermissions } from '../common/decorators';
 import { DB } from '../common/tokens';
 import type { OrgAccess } from '../common/types';
@@ -78,4 +78,44 @@ export class IxbrlDocumentController {
   /** The document itself, as XHTML. */
   @Get(':documentId/content') @RequirePermissions('ledger:read') @Header('Content-Type', 'application/xhtml+xml; charset=utf-8')
   async content(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('documentId') id: string) { return (await this.api.run(org, (tx) => this.svc.get(tx, c, id, true))).content; }
+}
+
+/** V3-M3 (DEC-095): Companies House filings: DRAFT -> VALIDATED -> AUTHORISED -> SUBMITTED -> ACCEPTED / REJECTED, or recorded when filed elsewhere. */
+@Controller('organisations/:organisationId/companies/:companyId/ch-filings')
+@RequireFeature('ixbrl.filing')
+export class ChFilingController {
+  constructor(private readonly api: IxbrlApiService, private readonly svc: ChFilingService) {}
+  private actor(org: OrgAccess): ChActor {
+    return { userId: org.userId, kind: 'USER', can: (p, companyId) => org.access.can(p as Permission, { companyId }), canReadDocument: (d) => org.access.canReadDocument({ ...d, createdByUserId: d.createdByUserId ?? '' }) };
+  }
+  private run<T>(org: OrgAccess, fn: (tx: Tx, a: ChActor) => Promise<T>) { return this.api.run(org, (tx) => fn(tx, this.actor(org))); }
+
+  @Get() @RequirePermissions('ledger:read')
+  list(@Org() org: OrgAccess, @ID('companyId') c: string) { return this.run(org, (tx) => this.svc.list(tx, c)); }
+  @Post() @RequirePermissions('ixbrl:file') @Idempotent()
+  create(@Org() org: OrgAccess, @ID('companyId') c: string, @Body(new ZodPipe(createChFilingSchema)) b: z.output<typeof createChFilingSchema>) {
+    return this.run(org, (tx, actor) => this.svc.create(tx, { organisationId: org.organisationId, companyId: c, actor, ...b }));
+  }
+  @Get(':filingId') @RequirePermissions('ledger:read')
+  get(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('filingId') id: string) { return this.run(org, (tx) => this.svc.get(tx, c, id)); }
+  @Post(':filingId/validate') @HttpCode(200) @RequirePermissions('ixbrl:file') @Idempotent()
+  validate(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('filingId') id: string, @Body(new ZodPipe(chFilingStepSchema)) b: z.output<typeof chFilingStepSchema>) {
+    return this.run(org, (tx, actor) => this.svc.validate(tx, { organisationId: org.organisationId, companyId: c, actor, id, ...b }));
+  }
+  @Post(':filingId/authorise') @HttpCode(200) @RequirePermissions('ixbrl:file') @Idempotent()
+  authorise(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('filingId') id: string, @Body(new ZodPipe(authoriseChFilingSchema)) b: z.output<typeof authoriseChFilingSchema>) {
+    return this.run(org, (tx, actor) => this.svc.authorise(tx, { organisationId: org.organisationId, companyId: c, actor, id, ...b }));
+  }
+  @Post(':filingId/submit') @HttpCode(200) @RequirePermissions('ixbrl:file') @Idempotent()
+  submit(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('filingId') id: string, @Body(new ZodPipe(chFilingStepSchema)) b: z.output<typeof chFilingStepSchema>) {
+    return this.run(org, (tx, actor) => this.svc.submit(tx, { organisationId: org.organisationId, companyId: c, actor, id, ...b }));
+  }
+  @Post(':filingId/status') @HttpCode(200) @RequirePermissions('ixbrl:file') @Idempotent()
+  refresh(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('filingId') id: string) {
+    return this.run(org, (tx, actor) => this.svc.refresh(tx, { organisationId: org.organisationId, companyId: c, actor, id }));
+  }
+  @Post(':filingId/record') @HttpCode(200) @RequirePermissions('ixbrl:file') @Idempotent()
+  record(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('filingId') id: string, @Body(new ZodPipe(recordChFilingSchema)) b: z.output<typeof recordChFilingSchema>) {
+    return this.run(org, (tx, actor) => this.svc.record(tx, { organisationId: org.organisationId, companyId: c, actor, id, ...b }));
+  }
 }

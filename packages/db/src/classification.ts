@@ -115,6 +115,8 @@ export const TABLE_PROTECTION: Record<string, { protection: Protection; why: str
   xbrl_taxonomy_version: { protection: 'RLS+APP', why: 'V3-M1 a taxonomy version (entry point, namespaces, source); verified by a second person, then frozen; never deleted (trigger).' },
   xbrl_concept_map: { protection: 'RLS+APP', why: 'V3-M1 the concept that tags a line, fact or company detail; changed only while its version is UNVERIFIED (trigger).' },
   ixbrl_document: { protection: 'RLS+APP', why: 'V3-M2 an inline XBRL document of an approved accounts package, with its checks; append-only.' },
+  ch_filing: { protection: 'RLS+APP', why: 'V3-M3 a Companies House filing and its authority; moves only DRAFT -> VALIDATED -> AUTHORISED -> SUBMITTED -> ACCEPTED/REJECTED (trigger); never deleted.' },
+  ch_filing_event: { protection: 'RLS+APP', why: 'V3-M3 the evidence of each move of a filing (actor, payload hash, request, response); append-only.' },
   review_setting: { protection: 'RLS+APP', why: 'V2-M6a the firm\'s review settings per company, versioned rows (DEC-068); written once.' },
   review_flag_response: { protection: 'RLS+APP', why: 'V2-M6a responses to review flags: explained, signed off by a second person, reopened (DEC-068); written once (trigger checks the second person).' },
   cash_flow_class: { protection: 'RLS+APP', why: 'V2-M5c cash-flow classes, version content verified with the version (DEC-052, DEC-067); frozen once verified (trigger).' },

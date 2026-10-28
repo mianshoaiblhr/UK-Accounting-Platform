@@ -33,3 +33,4 @@ export * from './vat-return';
 export * from './vat-filing';
 export * from './ixbrl';
 export * from './ixbrl-document';
+export * from './ch-filing';

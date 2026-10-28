@@ -28,7 +28,7 @@ export const PERMISSIONS = [
   'assets:read', 'assets:manage',
   'compliance:read', 'compliance:manage', 'compliance:rules-manage', 'compliance:rule-verify',
   'vat:prepare', 'vat:review', 'vat:file',
-  'ixbrl:rules-manage', 'ixbrl:rule-verify',
+  'ixbrl:rules-manage', 'ixbrl:rule-verify', 'ixbrl:file',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -70,6 +70,8 @@ export const PERMISSION_SCOPE: Record<Permission, PermissionScope> = {
   'vat:file': 'COMPANY',
   // V3-M1 (DEC-093): taxonomy versions and their mapping are organisation data
   'ixbrl:rules-manage': 'ORG', 'ixbrl:rule-verify': 'ORG',
+  // V3-M3 (DEC-095): filing a client's accounts with Companies House
+  'ixbrl:file': 'COMPANY',
 };
 export const permissionsOfScope = (...scopes: PermissionScope[]): Permission[] => PERMISSIONS.filter((p) => scopes.includes(PERMISSION_SCOPE[p]));
 

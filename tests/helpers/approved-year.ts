@@ -59,8 +59,9 @@ export async function approvedYear(s: Stack, owner: TestUser, o: { name?: string
   ok(await as(author, 'patch', v, { turnoverLineKey: 'P.T' }));
   ok(await as(owner, 'post', `${v}/verify`, { notes: 'Synthetic version checked for the approval golden' }));
   ok(await as(accountant, 'put', c('/reporting-frameworks'), { yearStart: Y, yearEnd: G.year.yearEnd, versionId, entitySize: G.year.entitySize, reason: 'Synthetic' }));
-  const set = ok(await as(author, 'post', c('/size-threshold-sets'), { ...S.thresholds, source: { url: 'https://example.test/synthetic-limits', provision: 'Synthetic test limits', retrievedOn: '2026-10-21' } }), 201);
-  ok(await as(owner, 'post', c(`/size-threshold-sets/${set.id}/verify`), { notes: 'Synthetic limits checked for the approval golden' }));
+  // threshold sets are organisation data: a second approved year in the same organisation uses the set the first one verified
+  const created = await as(author, 'post', c('/size-threshold-sets'), { ...S.thresholds, source: { url: 'https://example.test/synthetic-limits', provision: 'Synthetic test limits', retrievedOn: '2026-10-21' } });
+  if (!(created.status === 409 && created.body.code === 'threshold_set_overlap')) ok(await as(owner, 'post', c(`/size-threshold-sets/${ok(created, 201).id}/verify`), { notes: 'Synthetic limits checked for the approval golden' }));
   for (const [key, value] of S.facts) ok(await as(accountant, 'post', c('/accounts-facts'), { yearStart: Y, key, value: value === '@director' ? director : value, reason: 'Synthetic' }), 201);
   ok(await as(accountant, 'post', c('/review-settings'), { ...S.settings, reason: 'Firm settings (synthetic)' }), 201);
   ok(await as(accountant, 'post', c('/depreciation-runs'), { asAt: S.depreciationRun.asAt }), 201);

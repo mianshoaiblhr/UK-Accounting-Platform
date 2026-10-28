@@ -99,7 +99,7 @@ describe('adapter boundary: no S3 / ClamAV specifics outside packages/adapters',
     expect(offenders).toEqual([]);
   });
   it('application code imports only the PORTS from @uk/adapters (+ the factory functions)', () => {
-    const allowed = new Set(['StoragePort', 'AntivirusPort', 'EmailPort', 'sniffMatches', 'createStorage', 'createAntivirus', 'createEmail', 'createHmrcVat', 'PresignedUpload', 'ScanResult', 'OutboundEmail']);
+    const allowed = new Set(['StoragePort', 'AntivirusPort', 'EmailPort', 'sniffMatches', 'createStorage', 'createAntivirus', 'createEmail', 'createHmrcVat', 'createCompaniesHouse', 'PresignedUpload', 'ScanResult', 'OutboundEmail']);
     const bad: string[] = [];
     for (const f of SRC.filter((x) => !rel(x).startsWith('packages/adapters/'))) {
       for (const m of read(f).matchAll(/import (?:type )?\{([^}]+)\} from '@uk\/adapters'/g)) {
@@ -201,10 +201,10 @@ describe('database access paths that carry security meaning', () => {
     expect(src).not.toMatch(/\btx\.\w+\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\(|\$executeRaw|\b(INSERT|UPDATE|DELETE)\b/);
     expect(src).not.toMatch(/\beval\(|new Function\(/);
   });
-  it('no transaction module reads the reporting framework: only the framework service and the statutory reports (preview and, from V2-M5a, the accounts document) touch its tables; from V2-M5b the size test reads the lines of a version from V2-M5c the cash flow statement reads its cash-flow content, and from V2-M6a and V2-M6b the review checklist and the year-end workflow find the framework year; from V2-M6c the approval service finds it and the package records the verified version; from V3-M2 the iXBRL document finds the year to read its approved package (V2-ARC-01, ADR-62)', () => {
+  it('no transaction module reads the reporting framework: only the framework service and the statutory reports (preview and, from V2-M5a, the accounts document) touch its tables; from V2-M5b the size test reads the lines of a version from V2-M5c the cash flow statement reads its cash-flow content, and from V2-M6a and V2-M6b the review checklist and the year-end workflow find the framework year; from V2-M6c the approval service finds it and the package records the verified version; from V3-M2 the iXBRL document finds the year to read its approved package, and from V3-M3 the filing finds the year end of its accounts (V2-ARC-01, ADR-62)', () => {
     const TOUCH = /\.(reportingStandard|reportingStandardVersion|statutoryLine|statutoryMapEntry|validationRule|disclosureRule|statutoryAccountOverride|companyReportingFramework)\.|\b(reporting_standard\w*|statutory_(line|map_entry|account_override)|validation_rule|disclosure_rule|company_reporting_framework)\b/;
     const users = SRC.filter((f) => !f.endsWith('.test.ts') && !rel(f).startsWith('packages/db/src/') && !rel(f).startsWith('packages/contracts/src/retention')).filter((f) => TOUCH.test(read(f))).map(rel).sort();
-    expect(users).toEqual(['packages/accounting/src/accounts-approval.ts', 'packages/accounting/src/accounts-document.ts', 'packages/accounting/src/cash-flow.ts', 'packages/accounting/src/ixbrl-document.ts', 'packages/accounting/src/review.ts', 'packages/accounting/src/size-test.ts', 'packages/accounting/src/statutory-report.ts', 'packages/accounting/src/statutory.ts', 'packages/accounting/src/year-end-workflow.ts']);
+    expect(users).toEqual(['packages/accounting/src/accounts-approval.ts', 'packages/accounting/src/accounts-document.ts', 'packages/accounting/src/cash-flow.ts', 'packages/accounting/src/ch-filing.ts', 'packages/accounting/src/ixbrl-document.ts', 'packages/accounting/src/review.ts', 'packages/accounting/src/size-test.ts', 'packages/accounting/src/statutory-report.ts', 'packages/accounting/src/statutory.ts', 'packages/accounting/src/year-end-workflow.ts']);
   });
   it('depreciation never reads the tax fields (V2-FA-07, DEC-058): the arithmetic, the shared asset state and the depreciation service do not mention them', () => {
     const math = read(`${ROOT}/packages/accounting/src/depreciation-math.ts`);
@@ -326,6 +326,7 @@ describe('database access paths that carry security meaning', () => {
       'apps/api/src/evidence/evidence.service.ts', // resolver applies canReadDocument
       'apps/api/src/tasks/tasks.service.ts',       // readableDocument()/listAttachments() apply canReadDocument
       'packages/accounting/src/accounts-approval.ts', // the client approval's evidence uses the recorder's canReadDocument
+      'packages/accounting/src/ch-filing.ts',      // the filing's authority and acceptance evidence use the actor's canReadDocument (DEC-095)
       'packages/accounting/src/compliance.ts',     // rule-verification and filing evidence use the actor's canReadDocument (DEC-088)
       'packages/accounting/src/requests.ts',       // request evidence check uses the requester's canReadDocument
       'packages/accounting/src/vat-filing.ts',     // the filing receipt and rule-verification evidence use the actor's canReadDocument (DEC-091)
