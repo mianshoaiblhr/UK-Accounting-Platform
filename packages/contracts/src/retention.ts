@@ -106,7 +106,9 @@ export const RETENTION_RULES: readonly RetentionRule[] = [
     // V5-M2: the presentation rule explains boxes 6 to 9 of a filing (DEC-091)
     'vat_presentation_rule',
     // V3-M1: the taxonomy mapping explains how filed accounts were tagged (DEC-093)
-    'xbrl_taxonomy_version', 'xbrl_concept_map']),
+    'xbrl_taxonomy_version', 'xbrl_concept_map',
+    // V4-M1: the rules and periods a Corporation Tax computation was made under (DEC-097)
+    'ct_rule', 'ct_period']),
   // V7-M1: an obligation is the record of a filing or payment and its evidence (DEC-088)
   ...tableRules('FILING_EVIDENCE', ['compliance_obligation',
     // V5-M2: a VAT filing and its receipt (DEC-091)
@@ -120,6 +122,8 @@ export const RETENTION_RULES: readonly RetentionRule[] = [
     'company', 'company_officer', 'contact', 'contact_role', 'customer_profile', 'supplier_profile', 'address', 'feature_flag_override', 'task', 'task_attachment', 'task_comment', 'workflow_instance', 'workflow_transition',
     'integration_connection', 'ai_run', 'ai_proposal',
     'company_compliance_profile',
+    // V4-M1: the company's tax profile (DEC-097)
+    'company_tax_profile',
   ]),
   ...tableRules('REFERENCE_DATA', ['currency', 'country', 'tax_jurisdiction', 'document_type', 'retention_category', 'retention_rule']),
 ];

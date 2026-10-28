@@ -1,0 +1,21 @@
+{
+  "format": "uk-ct-rules/1",
+  "title": "UK Corporation Tax rules (draft for verification)",
+  "status": "DRAFT - imported UNVERIFIED; a holder of tax:rule-verify who did not import it checks each rule against its source and verifies it in the platform",
+  "rules": [
+    {
+      "kind": "CT_RATES",
+      "effectiveFrom": "2023-04-01",
+      "parameters": { "mainRate": "25", "smallProfitsRate": "19", "lowerLimit": "50000", "upperLimit": "250000", "marginalReliefFraction": { "numerator": 3, "denominator": 200 } },
+      "source": { "url": "https://www.legislation.gov.uk/ukpga/2010/4/part/3A", "provision": "CTA 2010 Part 3A ss 18A-18N (small profits rate, limits, marginal relief), inserted by FA 2021 s 7 and Sch 1; main rate FA 2021 s 6", "retrievedOn": "2026-10-28" },
+      "verifierNote": "Check the main rate (25%) and the small profits rate (19%) against the charge for each financial year from FY2023 (FA 2021 s 6 for FY2023; the later Finance Acts charge each later year). Check the lower and upper limits (£50,000 and £250,000, for a 12-month period with no associated companies) and the standard marginal relief fraction 3/200. If a later year changes any figure, end this version on 31 March of the last year it covers and enter the new one. HMRC summary: https://www.gov.uk/government/publications/rates-and-allowances-corporation-tax"
+    },
+    {
+      "kind": "PERIOD_MAX_MONTHS",
+      "effectiveFrom": "2009-04-01",
+      "parameters": { "months": 12 },
+      "source": { "url": "https://www.legislation.gov.uk/ukpga/2009/4/section/10", "provision": "CTA 2009 s 10(1)(a): an accounting period ends on the expiry of 12 months from its beginning", "retrievedOn": "2026-10-28" },
+      "verifierNote": "Check that a CT accounting period ends no later than 12 months from its start (CTA 2009 s 10(1)(a)). The platform splits a longer accounts year into a first period of 12 months from the year's start and a second period for the rest (HMRC Company Taxation Manual CTM01405)."
+    }
+  ]
+}

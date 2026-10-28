@@ -29,6 +29,7 @@ export const PERMISSIONS = [
   'compliance:read', 'compliance:manage', 'compliance:rules-manage', 'compliance:rule-verify',
   'vat:prepare', 'vat:review', 'vat:file',
   'ixbrl:rules-manage', 'ixbrl:rule-verify', 'ixbrl:file',
+  'ct:manage', 'ct:prepare',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -72,6 +73,8 @@ export const PERMISSION_SCOPE: Record<Permission, PermissionScope> = {
   'ixbrl:rules-manage': 'ORG', 'ixbrl:rule-verify': 'ORG',
   // V3-M3 (DEC-095): filing a client's accounts with Companies House
   'ixbrl:file': 'COMPANY',
+  // V4-M1 (DEC-097): Corporation Tax rules (entered through a company, verified with tax:rule-verify) and the company's tax work
+  'ct:manage': 'COMPANY', 'ct:prepare': 'COMPANY',
 };
 export const permissionsOfScope = (...scopes: PermissionScope[]): Permission[] => PERMISSIONS.filter((p) => scopes.includes(PERMISSION_SCOPE[p]));
 
@@ -96,7 +99,7 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
   { key: 'accountant', name: 'Accountant', description: 'Work on assigned client companies',
     permissions: [...READ, 'practice:read', 'company:create', 'company:update', 'period:manage', 'document:upload', 'document:archive', 'job:read', 'audit:read',
       'task:read', 'task:manage', 'workflow:read', 'workflow:manage', 'workflow:review', 'ai:use', 'ai:approve', 'contact:read', 'contact:manage', 'evidence:read', 'evidence:manage',
-      'account:read', 'account:manage', 'ledger:read', 'journal:post', 'ledger:control-adjustment', 'fx:rate-manage', 'contact:bank-details', 'vat:manage', 'sales:read', 'sales:manage', 'sales:approve', 'purchases:read', 'purchases:manage', 'purchases:approve', 'cash:read', 'cash:record', 'bank:read', 'bank:manage', 'bank:transfer', 'bank:reconcile', 'accounts:prepare', 'assets:read', 'assets:manage', 'compliance:read', 'compliance:manage', 'vat:prepare'] },
+      'account:read', 'account:manage', 'ledger:read', 'journal:post', 'ledger:control-adjustment', 'fx:rate-manage', 'contact:bank-details', 'vat:manage', 'sales:read', 'sales:manage', 'sales:approve', 'purchases:read', 'purchases:manage', 'purchases:approve', 'cash:read', 'cash:record', 'bank:read', 'bank:manage', 'bank:transfer', 'bank:reconcile', 'accounts:prepare', 'assets:read', 'assets:manage', 'compliance:read', 'compliance:manage', 'vat:prepare', 'ct:manage', 'ct:prepare'] },
   { key: 'bookkeeper', name: 'Bookkeeper', description: 'Prepare records for assigned companies',
     permissions: [...READ, 'practice:read', 'document:upload', 'job:read', 'task:read', 'task:manage', 'workflow:read', 'ai:use', 'contact:read', 'contact:manage', 'evidence:read', 'evidence:manage', 'account:read', 'ledger:read', 'sales:read', 'sales:manage', 'purchases:read', 'purchases:manage', 'cash:read', 'bank:read', 'bank:manage', 'bank:reconcile', 'assets:read', 'compliance:read'] },
   { key: 'reviewer', name: 'Reviewer', description: 'Read-only review and audit access',

@@ -3021,3 +3021,62 @@ model ChFilingEvent {
   @@index([organisationId, filingId, seq], map: "ch_filing_event_filing_idx")
   @@map("ch_filing_event")
 }
+
+/// V4-M1 (DEC-097): a Corporation Tax rule version (rates and limits, period length...); sourced, effective-dated, verified by a second person.
+model CtRule {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId     String    @map("organisation_id") @db.Uuid
+  jurisdiction       String    @default("UK")
+  kind               String
+  effectiveFrom      DateTime  @map("effective_from") @db.Date
+  effectiveTo        DateTime? @map("effective_to") @db.Date
+  parameters         Json
+  sourceUrl          String    @map("source_url")
+  sourceProvision    String    @map("source_provision")
+  sourceRetrievedOn  DateTime  @map("source_retrieved_on") @db.Date
+  enteredByUserId    String    @map("entered_by_user_id") @db.Uuid
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  verificationStatus String    @default("UNVERIFIED") @map("verification_status")
+  verifiedByUserId   String?   @map("verified_by_user_id") @db.Uuid
+  verifiedAt         DateTime? @map("verified_at") @db.Timestamptz(3)
+  verificationNotes  String?   @map("verification_notes")
+  evidenceDocumentId String?   @map("evidence_document_id") @db.Uuid
+  supersededById     String?   @map("superseded_by_id") @db.Uuid
+
+  @@unique([organisationId, id])
+  @@index([organisationId, kind, effectiveFrom], map: "ct_rule_kind_idx")
+  @@map("ct_rule")
+}
+
+/// V4-M1 (DEC-097): the company's tax profile (the UTR, format-checked only).
+model CompanyTaxProfile {
+  organisationId  String   @map("organisation_id") @db.Uuid
+  companyId       String   @map("company_id") @db.Uuid
+  utr             String?
+  updatedByUserId String   @map("updated_by_user_id") @db.Uuid
+  updatedAt       DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@id([organisationId, companyId])
+  @@map("company_tax_profile")
+}
+
+/// V4-M1 (DEC-097): a CT accounting period derived from an accounts year; dates fixed, associated companies versioned.
+model CtPeriod {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId      String   @map("organisation_id") @db.Uuid
+  companyId           String   @map("company_id") @db.Uuid
+  frameworkId         String   @map("framework_id") @db.Uuid
+  startDate           DateTime @map("start_date") @db.Date
+  endDate             DateTime @map("end_date") @db.Date
+  periodRuleId        String   @map("period_rule_id") @db.Uuid
+  associatedCompanies Int      @default(0) @map("associated_companies")
+  associatedReason    String?  @map("associated_reason")
+  version             Int      @default(1)
+  createdByUserId     String   @map("created_by_user_id") @db.Uuid
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@unique([organisationId, companyId, startDate], map: "ct_period_start_key")
+  @@map("ct_period")
+}

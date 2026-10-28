@@ -34,3 +34,4 @@ export * from './vat-filing';
 export * from './ixbrl';
 export * from './ixbrl-document';
 export * from './ch-filing';
+export * from './corporation-tax';

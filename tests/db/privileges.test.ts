@@ -103,6 +103,9 @@ const FORBIDDEN: Record<string, string[]> = {
   ixbrl_document: ['UPDATE', 'DELETE', 'TRUNCATE'],   // append-only
   ch_filing: ['DELETE', 'TRUNCATE'],                 // never deleted; moves only along its path (trigger)
   ch_filing_event: ['UPDATE', 'DELETE', 'TRUNCATE'],  // append-only
+  ct_rule: ['DELETE', 'TRUNCATE'],                   // versions are immutable; verified once, superseded once (trigger)
+  ct_period: ['DELETE', 'TRUNCATE'],                 // dates never change; never deleted (trigger)
+  company_tax_profile: ['DELETE', 'TRUNCATE'],       // set and cleared, never removed
 };
 const has = (table: string, priv: string) => adminSql(`SELECT has_table_privilege('uk_app', '${table}', '${priv}')`) === 't';
 const hasAnyColumn = (table: string, priv: string) => adminSql(`SELECT has_any_column_privilege('uk_app', '${table}', '${priv}')`) === 't';

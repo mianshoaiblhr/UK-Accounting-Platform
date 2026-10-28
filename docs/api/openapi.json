@@ -31433,6 +31433,821 @@
         }
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ct-rules": {
+      "get": {
+        "operationId": "CorporationTax_listRules",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "CT_RATES",
+                "PERIOD_MAX_MONTHS"
+              ]
+            }
+          },
+          {
+            "name": "includeSuperseded",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rules",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CtRuleList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Corporation Tax"
+        ],
+        "x-required-feature": "corporation.tax",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "Corporation Tax rules (organisation data), without superseded versions unless asked",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "CorporationTax_addRule",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Entered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CtRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Corporation Tax"
+        ],
+        "x-required-feature": "corporation.tax",
+        "x-required-permissions": [
+          "ct:manage"
+        ],
+        "summary": "Enter a rule version with its source (ct:manage); it starts UNVERIFIED",
+        "description": "**Requires permission:** `ct:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCtRuleRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ct-rules/{ruleId}": {
+      "get": {
+        "operationId": "CorporationTax_getRule",
+        "parameters": [
+          {
+            "name": "ruleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CtRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Corporation Tax"
+        ],
+        "x-required-feature": "corporation.tax",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "One rule version",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ct-rules/{ruleId}/supersede": {
+      "post": {
+        "operationId": "CorporationTax_supersede",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ruleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "New version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CtRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Corporation Tax"
+        ],
+        "x-required-feature": "corporation.tax",
+        "x-required-permissions": [
+          "ct:manage"
+        ],
+        "summary": "Supersede a rule version with a new UNVERIFIED version of the same kind (ct:manage)",
+        "description": "**Requires permission:** `ct:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupersedeCtRuleRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ct-rules/{ruleId}/verify": {
+      "post": {
+        "operationId": "CorporationTax_verify",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ruleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CtRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Corporation Tax"
+        ],
+        "x-required-feature": "corporation.tax",
+        "x-required-permissions": [
+          "tax:rule-verify"
+        ],
+        "summary": "Verify a rule version (tax:rule-verify), by someone other than the person who entered it",
+        "description": "**Requires permission:** `tax:rule-verify`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyCtRuleRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/tax-profile": {
+      "get": {
+        "operationId": "CorporationTax_getProfile",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Corporation Tax"
+        ],
+        "x-required-feature": "corporation.tax",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The company's tax profile",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "CorporationTax_setProfile",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Corporation Tax"
+        ],
+        "x-required-feature": "corporation.tax",
+        "x-required-permissions": [
+          "ct:prepare"
+        ],
+        "summary": "Set the UTR, or clear it, with a reason (ct:prepare)",
+        "description": "**Requires permission:** `ct:prepare`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetTaxProfileRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ct-periods": {
+      "get": {
+        "operationId": "CorporationTax_listPeriods",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Periods",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CtPeriodList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Corporation Tax"
+        ],
+        "x-required-feature": "corporation.tax",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The company's CT accounting periods",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ct-periods/derive": {
+      "post": {
+        "operationId": "CorporationTax_derive",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Periods",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CtPeriodDerivation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Corporation Tax"
+        ],
+        "x-required-feature": "corporation.tax",
+        "x-required-permissions": [
+          "ct:prepare"
+        ],
+        "summary": "Derive the CT accounting periods of an accounts year, split by the verified PERIOD_MAX_MONTHS rule (ct:prepare); idempotent",
+        "description": "**Requires permission:** `ct:prepare`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeriveCtPeriodsRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ct-periods/{periodId}": {
+      "get": {
+        "operationId": "CorporationTax_getPeriod",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Period",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CtPeriod"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "Corporation Tax"
+        ],
+        "x-required-feature": "corporation.tax",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "One CT accounting period",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/ct-periods/{periodId}/associated-companies": {
+      "post": {
+        "operationId": "CorporationTax_setAssociated",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CtPeriod"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "Corporation Tax"
+        ],
+        "x-required-feature": "corporation.tax",
+        "x-required-permissions": [
+          "ct:prepare"
+        ],
+        "summary": "Set the number of associated companies of a period, with a reason (ct:prepare)",
+        "description": "**Requires permission:** `ct:prepare`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAssociatedCompaniesRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -32433,6 +33248,9 @@
     },
     {
       "name": "iXBRL"
+    },
+    {
+      "name": "Corporation Tax"
     },
     {
       "name": "AI"
@@ -50841,6 +51659,510 @@
         ],
         "additionalProperties": false
       },
+      "CtRule": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "jurisdiction": {
+            "type": "string",
+            "enum": [
+              "UK"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "CT_RATES",
+              "PERIOD_MAX_MONTHS"
+            ]
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "parameters": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Checked by kind: CT_RATES (mainRate, smallProfitsRate, lowerLimit, upperLimit, marginalReliefFraction) or PERIOD_MAX_MONTHS (months)"
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string"
+              },
+              "provision": {
+                "type": "string"
+              },
+              "retrievedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url",
+              "provision",
+              "retrievedOn"
+            ],
+            "additionalProperties": false
+          },
+          "enteredByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "UNVERIFIED",
+              "VERIFIED"
+            ]
+          },
+          "verifiedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "verifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "verificationNotes": {
+            "type": "string",
+            "nullable": true
+          },
+          "evidenceDocumentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "supersededById": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "jurisdiction",
+          "kind",
+          "effectiveFrom",
+          "effectiveTo",
+          "parameters",
+          "source",
+          "enteredByUserId",
+          "createdAt",
+          "verificationStatus",
+          "verifiedByUserId",
+          "verifiedAt",
+          "verificationNotes",
+          "evidenceDocumentId",
+          "supersededById"
+        ],
+        "additionalProperties": false
+      },
+      "CtRuleList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "jurisdiction": {
+                  "type": "string",
+                  "enum": [
+                    "UK"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "CT_RATES",
+                    "PERIOD_MAX_MONTHS"
+                  ]
+                },
+                "effectiveFrom": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "effectiveTo": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "parameters": {
+                  "type": "object",
+                  "additionalProperties": {},
+                  "description": "Checked by kind: CT_RATES (mainRate, smallProfitsRate, lowerLimit, upperLimit, marginalReliefFraction) or PERIOD_MAX_MONTHS (months)"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "provision": {
+                      "type": "string"
+                    },
+                    "retrievedOn": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    }
+                  },
+                  "required": [
+                    "url",
+                    "provision",
+                    "retrievedOn"
+                  ],
+                  "additionalProperties": false
+                },
+                "enteredByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "verificationStatus": {
+                  "type": "string",
+                  "enum": [
+                    "UNVERIFIED",
+                    "VERIFIED"
+                  ]
+                },
+                "verifiedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "verifiedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "verificationNotes": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "evidenceDocumentId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "supersededById": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "jurisdiction",
+                "kind",
+                "effectiveFrom",
+                "effectiveTo",
+                "parameters",
+                "source",
+                "enteredByUserId",
+                "createdAt",
+                "verificationStatus",
+                "verifiedByUserId",
+                "verifiedAt",
+                "verificationNotes",
+                "evidenceDocumentId",
+                "supersededById"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "TaxProfile": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "utr": {
+            "type": "string",
+            "nullable": true,
+            "description": "The Unique Taxpayer Reference, 10 digits (form checked only)"
+          },
+          "updatedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "companyId",
+          "utr",
+          "updatedByUserId",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "CtPeriod": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "frameworkId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The accounts year it was derived from"
+          },
+          "startDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "endDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "periodRuleId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The PERIOD_MAX_MONTHS version used"
+          },
+          "associatedCompanies": {
+            "type": "integer"
+          },
+          "associatedReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer"
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "companyId",
+          "frameworkId",
+          "startDate",
+          "endDate",
+          "periodRuleId",
+          "associatedCompanies",
+          "associatedReason",
+          "version",
+          "createdByUserId",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "CtPeriodList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "frameworkId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The accounts year it was derived from"
+                },
+                "startDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "endDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "periodRuleId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The PERIOD_MAX_MONTHS version used"
+                },
+                "associatedCompanies": {
+                  "type": "integer"
+                },
+                "associatedReason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "version": {
+                  "type": "integer"
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "frameworkId",
+                "startDate",
+                "endDate",
+                "periodRuleId",
+                "associatedCompanies",
+                "associatedReason",
+                "version",
+                "createdByUserId",
+                "createdAt",
+                "updatedAt"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "CtPeriodDerivation": {
+        "type": "object",
+        "properties": {
+          "created": {
+            "type": "boolean",
+            "description": "false when the year's periods already existed"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "companyId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "frameworkId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The accounts year it was derived from"
+                },
+                "startDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "endDate": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "periodRuleId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The PERIOD_MAX_MONTHS version used"
+                },
+                "associatedCompanies": {
+                  "type": "integer"
+                },
+                "associatedReason": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "version": {
+                  "type": "integer"
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "companyId",
+                "frameworkId",
+                "startDate",
+                "endDate",
+                "periodRuleId",
+                "associatedCompanies",
+                "associatedReason",
+                "version",
+                "createdByUserId",
+                "createdAt",
+                "updatedAt"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "created",
+          "items"
+        ],
+        "additionalProperties": false
+      },
       "IxbrlDocument": {
         "type": "object",
         "properties": {
@@ -61683,7 +63005,9 @@
                 "vat:file",
                 "ixbrl:rules-manage",
                 "ixbrl:rule-verify",
-                "ixbrl:file"
+                "ixbrl:file",
+                "ct:manage",
+                "ct:prepare"
               ]
             },
             "minItems": 1
@@ -69512,6 +70836,187 @@
           "reference",
           "acceptedOn",
           "evidenceDocumentId"
+        ],
+        "additionalProperties": false
+      },
+      "CreateCtRuleRequest": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "CT_RATES",
+              "PERIOD_MAX_MONTHS"
+            ]
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "parameters": {},
+          "source": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 500
+              },
+              "provision": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 300
+              },
+              "retrievedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url",
+              "provision",
+              "retrievedOn"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "kind",
+          "effectiveFrom",
+          "source"
+        ],
+        "additionalProperties": false
+      },
+      "SupersedeCtRuleRequest": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "CT_RATES",
+              "PERIOD_MAX_MONTHS"
+            ]
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "parameters": {},
+          "source": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 500
+              },
+              "provision": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 300
+              },
+              "retrievedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url",
+              "provision",
+              "retrievedOn"
+            ],
+            "additionalProperties": false
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "kind",
+          "effectiveFrom",
+          "source",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "VerifyCtRuleRequest": {
+        "type": "object",
+        "properties": {
+          "notes": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 2000
+          },
+          "evidenceDocumentId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "notes"
+        ],
+        "additionalProperties": false
+      },
+      "SetTaxProfileRequest": {
+        "type": "object",
+        "properties": {
+          "utr": {
+            "type": "string",
+            "pattern": "^\\d{10}$",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "utr",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "DeriveCtPeriodsRequest": {
+        "type": "object",
+        "properties": {
+          "yearStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          }
+        },
+        "required": [
+          "yearStart"
+        ],
+        "additionalProperties": false
+      },
+      "SetAssociatedCompaniesRequest": {
+        "type": "object",
+        "properties": {
+          "associatedCompanies": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "associatedCompanies",
+          "reason"
         ],
         "additionalProperties": false
       },

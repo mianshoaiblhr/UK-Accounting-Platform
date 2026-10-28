@@ -17,6 +17,7 @@ export const FEATURE_FLAGS = {
   'practice.management': { description: 'V7 practice management: compliance calendar, practice dashboard, onboarding, client portal (incomplete while V7 is being built)', default: false },
   'vat.returns': { description: 'V5 VAT returns: preparation, review flags, review, client approval and the period lock; filing later (incomplete while V5 is being built)', default: false },
   'ixbrl.filing': { description: 'V3 iXBRL and Companies House: taxonomy mapping, iXBRL documents, the filing workflow (incomplete while V3 is being built)', default: false },
+  'corporation.tax': { description: 'V4 Corporation Tax: rules, tax periods, adjustments, allowances, the computation and the CT600 (incomplete while V4 is being built)', default: false },
 } as const satisfies Record<string, FeatureFlagDef>;
 
 export type FeatureKey = keyof typeof FEATURE_FLAGS;

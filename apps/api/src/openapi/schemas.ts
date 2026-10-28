@@ -736,3 +736,17 @@ export const ChFiling = z.object({
     note: z.string().nullable(), byUserId: uuid, at: ts })).describe('Every move, append-only; empty in lists'),
   notice: z.string(),
 });
+
+// ───────────── V4-M1 Corporation Tax rules, the tax profile and CT periods (DEC-097) ─────────────
+export const CtRule = z.object({
+  id: uuid, jurisdiction: z.literal('UK'), kind: z.enum(['CT_RATES', 'PERIOD_MAX_MONTHS']), effectiveFrom: day, effectiveTo: day.nullable(),
+  parameters: z.record(z.unknown()).describe('Checked by kind: CT_RATES (mainRate, smallProfitsRate, lowerLimit, upperLimit, marginalReliefFraction) or PERIOD_MAX_MONTHS (months)'),
+  source: z.object({ url: z.string(), provision: z.string(), retrievedOn: day }), enteredByUserId: uuid, createdAt: ts,
+  verificationStatus: z.enum(['UNVERIFIED', 'VERIFIED']), verifiedByUserId: uuid.nullable(), verifiedAt: ts.nullable(), verificationNotes: z.string().nullable(), evidenceDocumentId: uuid.nullable(), supersededById: uuid.nullable(),
+});
+export const TaxProfile = z.object({ companyId: uuid, utr: z.string().nullable().describe('The Unique Taxpayer Reference, 10 digits (form checked only)'), updatedByUserId: uuid.nullable(), updatedAt: ts.nullable() });
+export const CtPeriod = z.object({
+  id: uuid, companyId: uuid, frameworkId: uuid.describe('The accounts year it was derived from'), startDate: day, endDate: day, periodRuleId: uuid.describe('The PERIOD_MAX_MONTHS version used'),
+  associatedCompanies: z.number().int(), associatedReason: z.string().nullable(), version: z.number().int(), createdByUserId: uuid, createdAt: ts, updatedAt: ts,
+});
+export const CtPeriodDerivation = z.object({ created: z.boolean().describe('false when the year\'s periods already existed'), items: z.array(CtPeriod) });

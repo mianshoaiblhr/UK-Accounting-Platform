@@ -41,7 +41,8 @@ STEPS = [
     ("6", "Import content/compliance/drafts/uk-deadline-rules.json with scripts/compliance/import-deadline-rules.mjs, then check each rule on the 'Deadline rules' sheet and verify it, or supersede it with a corrected version first.", "Import: a person with compliance:rules-manage; verify: Shoaib, with compliance:rule-verify", "The platform refuses a verifier who entered the rule (DEC-088)"),
     ("7", "Enter the presentation rule for boxes 6 to 9 on the 'VAT presentation' sheet (Settings > VAT presentation rules, or POST vat-presentation-rules), then check it against Notice 700/12 and verify it.", "Enter: a person with vat:manage; verify: Shoaib, with tax:rule-verify", "Without a verified rule no VAT return can be filed or recorded (DEC-091)"),
     ("8", "Import content/ixbrl/drafts/frc-frs105.json with scripts/ixbrl/import-taxonomy.mjs, then check the entry point, the namespaces and every entry on the 'iXBRL mapping' sheet against the FRC taxonomy files; correct entries while UNVERIFIED, then verify the version.", "Import: a person with ixbrl:rules-manage; verify: Shoaib, with ixbrl:rule-verify", "The platform refuses a verifier who created the version (DEC-093)"),
-    ("9", "Fill in the 'Sign-off' sheet with the platform's record of each verification.", "Shoaib", "Evidence for the go-live checklist (DEC-085, item 3)"),
+    ("9", "Import content/tax/drafts/uk-ct-rules.json with scripts/tax/import-ct-rules.mjs, then check each rule on the 'Corporation Tax rules' sheet against its provision and verify it, or supersede it with a corrected version first.", "Import: a person with ct:manage; verify: Shoaib, with tax:rule-verify", "The platform refuses a verifier who entered the rule; CT periods cannot be derived until the period rule is verified (DEC-097)"),
+    ("10", "Fill in the 'Sign-off' sheet with the platform's record of each verification.", "Shoaib", "Evidence for the go-live checklist (DEC-085, item 3)"),
 ]
 LAW = [
     ("Value Added Tax Act 1994, ss.1, 2, 4, 8, 24-26, 29A, 30, 31 and 55A", "The charge, the rates, input tax, reverse charges", LEG + "contents"),
@@ -55,6 +56,11 @@ LAW = [
     ("VAT Notice 700 (the VAT guide)", "Rounding of VAT (the platform rounds each line half-up, DEC-025)", "https://www.gov.uk/guidance/vat-guide-notice-700"),
     ("Companies Act 2006, ss.382-384 and 384A-384B", "Small companies and micro-entities: the size tests", "https://www.legislation.gov.uk/ukpga/2006/46/section/382"),
     ("Companies Act 2006, ss.442-443 and 853A", "Deadlines: filing accounts, the month-end rule, the confirmation statement", "https://www.legislation.gov.uk/ukpga/2006/46/section/442"),
+    ("Corporation Tax Act 2009, s.10", "When a CT accounting period ends: 12 months from its start at the latest", "https://www.legislation.gov.uk/ukpga/2009/4/section/10"),
+    ("Corporation Tax Act 2010, Part 3A (ss.18A-18N), inserted by Finance Act 2021 s.7 and Sch 1", "The small profits rate, the lower and upper limits, associated companies and marginal relief", "https://www.legislation.gov.uk/ukpga/2010/4/part/3A"),
+    ("Finance Act 2021, s.6", "The main rate of 25% for the financial year 2023", "https://www.legislation.gov.uk/ukpga/2021/26/section/6"),
+    ("HMRC: Rates and allowances for Corporation Tax", "HMRC's summary of the rates and limits by financial year", "https://www.gov.uk/government/publications/rates-and-allowances-corporation-tax"),
+    ("HMRC Company Taxation Manual CTM01405", "Accounting periods: a period of account longer than 12 months", "https://www.gov.uk/hmrc-internal-manuals/company-taxation-manual/ctm01405"),
     ("Taxes Management Act 1970, s.59D; Finance Act 1998, Sch 18 para 14", "Deadlines: Corporation Tax payment and the Company Tax Return", "https://www.legislation.gov.uk/ukpga/1970/9/section/59D"),
     ("Small Companies and Groups (Accounts and Directors' Report) Regulations 2008, SI 2008/409", "Formats and notes for small and micro-entity accounts", "https://www.legislation.gov.uk/uksi/2008/409/contents"),
     ("FRS 105 and FRS 102 Section 1A (Financial Reporting Council)", "The standards the draft packs follow", "https://www.frc.org.uk/accountants/accounting-and-reporting-policy/uk-accounting-standards"),
@@ -152,9 +158,20 @@ table(xs, "Draft taxonomy mapping for FRS 105 accounts (V3-M1, DEC-093)",
       ["Source kind", "Source", "Concept", "Data type", "Period", "Negate", "Decimals", "Dimensions", "Mandatory", "What to check", "Verified (yes / corrected)", "Verified on", "Verifier's notes"],
       xrows, [12, 18, 52, 12, 10, 8, 9, 50, 10, 60, 18, 14, 40], input_cols=(11, 12, 13))
 
+# V4-M1 (DEC-097): the draft Corporation Tax rules, read from the pack itself so the sheet cannot drift from it
+cpack = json.loads((root / "content/tax/drafts/uk-ct-rules.json").read_text())
+crows = [(r["kind"], r["effectiveFrom"], r.get("effectiveTo", ""), "; ".join(f"{k} = {v['numerator']}/{v['denominator']}" if isinstance(v, dict) else f"{k} = {v}" for k, v in r["parameters"].items()),
+          r["source"]["provision"], r["source"]["url"], r["verifierNote"], "", "", "") for r in cpack["rules"]]
+cts = wb.create_sheet("Corporation Tax rules")
+table(cts, "Draft Corporation Tax rules (V4-M1, DEC-097)",
+      "Import with scripts/tax/import-ct-rules.mjs; each lands UNVERIFIED. Rates are percentages, limits are pounds for a 12-month period with no associated companies.",
+      ["Kind", "Effective from", "Effective to", "Parameters", "Provision to check", "Source", "What to check", "Verified (yes / corrected)", "Verified on", "Verifier's notes"],
+      crows, [20, 14, 14, 60, 60, 50, 70, 18, 14, 40], link_cols=(6,), input_cols=(8, 9, 10))
+
 sign = wb.create_sheet("Sign-off")
 sign_rows = ([(r[0], "Rate version", "", "", "") for r in VAT_CODES] + [(r[0], "Standard version", "", "", "") for r in srows]
-             + [(r["kind"], "Deadline rule", "", "", "") for r in pack["rules"]] + [("Boxes 6 to 9", "Presentation rule", "", "", ""), ("FRS 105 taxonomy mapping", "Taxonomy version", "", "", "")])
+             + [(r["kind"], "Deadline rule", "", "", "") for r in pack["rules"]] + [("Boxes 6 to 9", "Presentation rule", "", "", ""), ("FRS 105 taxonomy mapping", "Taxonomy version", "", "", "")]
+             + [(r["kind"], "Corporation Tax rule", "", "", "") for r in cpack["rules"]])
 table(sign, "Sign-off", "Filled in by the verifier from the platform's records.", ["Item", "Kind", "Platform record id", "Verified by", "Date"],
       sign_rows, [40, 18, 40, 20, 14], input_cols=(3, 4, 5))
 
