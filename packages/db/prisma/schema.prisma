@@ -1541,6 +1541,8 @@ model CompanyVatSetting {
   anchorPeriodEnd DateTime? @map("anchor_period_end") @db.Date
   outputAccountId String?   @map("output_account_id") @db.Uuid
   inputAccountId  String?   @map("input_account_id") @db.Uuid
+  /// V5-M2 (DEC-091): where a filed return's VAT is moved to.
+  liabilityAccountId String?  @map("liability_account_id") @db.Uuid
   updatedByUserId String?   @map("updated_by_user_id") @db.Uuid
   updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -2850,4 +2852,51 @@ model VatReturnEvent {
 
   @@index([organisationId, vatReturnId, seq], map: "vat_return_event_return_idx")
   @@map("vat_return_event")
+}
+
+/// V5-M2 (DEC-091): how boxes 6 to 9 are presented on a filing; sourced, effective-dated, verified by a second person (DEC-021).
+model VatPresentationRule {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId     String    @map("organisation_id") @db.Uuid
+  method             String
+  effectiveFrom      DateTime  @map("effective_from") @db.Date
+  effectiveTo        DateTime? @map("effective_to") @db.Date
+  sourceUrl          String    @map("source_url")
+  sourceProvision    String    @map("source_provision")
+  sourceRetrievedOn  DateTime  @map("source_retrieved_on") @db.Date
+  enteredByUserId    String    @map("entered_by_user_id") @db.Uuid
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  verificationStatus String    @default("UNVERIFIED") @map("verification_status")
+  verifiedByUserId   String?   @map("verified_by_user_id") @db.Uuid
+  verifiedAt         DateTime? @map("verified_at") @db.Timestamptz(3)
+  verificationNotes  String?   @map("verification_notes")
+  evidenceDocumentId String?   @map("evidence_document_id") @db.Uuid
+  supersededById     String?   @map("superseded_by_id") @db.Uuid
+
+  @@unique([organisationId, id])
+  @@map("vat_presentation_rule")
+}
+
+/// V5-M2 (DEC-091): a filing of an approved VAT return; RECORDED (made outside the platform, with HMRC's receipt) or SIMULATED (fake adapter). Append-only.
+model VatFiling {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId     String   @map("organisation_id") @db.Uuid
+  companyId          String   @map("company_id") @db.Uuid
+  vatReturnId        String   @map("vat_return_id") @db.Uuid
+  mode               String
+  package            Json
+  packageSha256      String   @map("package_sha256")
+  presentationRuleId String   @map("presentation_rule_id") @db.Uuid
+  submittedOn        DateTime @map("submitted_on") @db.Date
+  receiptReference   String   @map("receipt_reference")
+  receipt            Json?
+  adapter            String?
+  evidenceDocumentId String?  @map("evidence_document_id") @db.Uuid
+  journalId          String?  @map("journal_id") @db.Uuid
+  note               String?
+  byUserId           String   @map("by_user_id") @db.Uuid
+  at                 DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(3)
+
+  @@index([organisationId, vatReturnId, at], map: "vat_filing_return_idx")
+  @@map("vat_filing")
 }

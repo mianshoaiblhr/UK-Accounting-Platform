@@ -1,7 +1,10 @@
 import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { z } from 'zod';
-import { createVatReturnSchema, explainVatFlagSchema, vatClientApprovalSchema, vatReturnListQuerySchema, vatReturnStepSchema } from '@uk/contracts';
-import { VatReturnService } from '@uk/accounting';
+import {
+  createVatPresentationRuleSchema, createVatReturnSchema, explainVatFlagSchema, recordVatFilingSchema, simulateVatFilingSchema, supersedeVatPresentationRuleSchema, vatClientApprovalSchema,
+  vatReturnListQuerySchema, vatReturnStepSchema, verifyVatPresentationRuleSchema,
+} from '@uk/contracts';
+import { VatFilingService, VatReturnService } from '@uk/accounting';
 import { Idempotent, Org, RequireFeature, RequirePermissions } from '../common/decorators';
 import type { OrgAccess } from '../common/types';
 import { ZodPipe } from '../common/zod.pipe';
@@ -39,5 +42,40 @@ export class VatReturnController {
   @Post(':returnId/client-approval') @HttpCode(200) @RequirePermissions('vat:review', 'period:lock') @Idempotent()
   approve(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('returnId') id: string, @Body(new ZodPipe(vatClientApprovalSchema)) b: z.output<typeof vatClientApprovalSchema>) {
     return this.api.run(org, (tx, actor) => this.svc.clientApproval(tx, { organisationId: org.organisationId, companyId: c, actor, id, ...b }));
+  }
+}
+
+/** V5-M2 (DEC-091): the presentation rule of boxes 6 to 9 (verified by a second person), the filing package and the filing record. Nothing is sent to HMRC. */
+@Controller('organisations/:organisationId/companies/:companyId')
+@RequireFeature('vat.returns')
+export class VatFilingController {
+  constructor(private readonly api: VatApiService, private readonly svc: VatFilingService) {}
+
+  @Get('vat-presentation-rules') @RequirePermissions('ledger:read')
+  rules(@Org() org: OrgAccess) { return this.api.run(org, (tx) => this.svc.listRules(tx)); }
+  @Post('vat-presentation-rules') @RequirePermissions('vat:manage') @Idempotent()
+  addRule(@Org() org: OrgAccess, @ID('companyId') c: string, @Body(new ZodPipe(createVatPresentationRuleSchema)) b: z.output<typeof createVatPresentationRuleSchema>) {
+    return this.api.run(org, (tx, actor) => this.svc.addRule(tx, { organisationId: org.organisationId, companyId: c, actor, ...b }));
+  }
+  @Post('vat-presentation-rules/:ruleId/supersede') @RequirePermissions('vat:manage') @Idempotent()
+  supersede(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('ruleId') id: string, @Body(new ZodPipe(supersedeVatPresentationRuleSchema)) b: z.output<typeof supersedeVatPresentationRuleSchema>) {
+    return this.api.run(org, (tx, actor) => this.svc.supersedeRule(tx, { organisationId: org.organisationId, companyId: c, actor, id, ...b }));
+  }
+  @Post('vat-presentation-rules/:ruleId/verify') @HttpCode(200) @RequirePermissions('tax:rule-verify') @Idempotent()
+  verify(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('ruleId') id: string, @Body(new ZodPipe(verifyVatPresentationRuleSchema)) b: z.output<typeof verifyVatPresentationRuleSchema>) {
+    return this.api.run(org, (tx, actor) => this.svc.verifyRule(tx, { organisationId: org.organisationId, companyId: c, actor, id, ...b }));
+  }
+  @Get('vat-returns/:returnId/package') @RequirePermissions('ledger:read')
+  pkg(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('returnId') id: string) { return this.api.run(org, (tx) => this.svc.getPackage(tx, c, id)); }
+  @Get('vat-returns/:returnId/filings') @RequirePermissions('ledger:read')
+  filings(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('returnId') id: string) { return this.api.run(org, (tx) => this.svc.listFilings(tx, c, id)); }
+  @Post('vat-returns/:returnId/filings') @RequirePermissions('vat:file') @Idempotent()
+  record(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('returnId') id: string, @Body(new ZodPipe(recordVatFilingSchema)) b: z.output<typeof recordVatFilingSchema>) {
+    const { declarationConfirmed: _confirmed, ...rest } = b;
+    return this.api.run(org, (tx, actor) => this.svc.record(tx, { organisationId: org.organisationId, companyId: c, actor, id, ...rest }));
+  }
+  @Post('vat-returns/:returnId/simulated-submissions') @RequirePermissions('vat:file') @Idempotent()
+  simulate(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('returnId') id: string, @Body(new ZodPipe(simulateVatFilingSchema)) _b: z.output<typeof simulateVatFilingSchema>) {
+    return this.api.run(org, (tx, actor) => this.svc.simulate(tx, { organisationId: org.organisationId, companyId: c, actor, id }));
   }
 }

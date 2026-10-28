@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Writes docs/architecture/v5-m1-golden-workings.xlsx: the golden workings of the synthetic quarter in tests/api/vat-return.test.ts (V5-M1,
-DEC-090), for review by the named accountant (the DEC-054 pattern). Every box is a formula over the journal lines, so a reviewer can trace each
+"""Writes docs/architecture/v5-m1-golden-workings.xlsx: the golden workings of the synthetic quarters in tests/api/vat-return.test.ts (V5-M1,
+DEC-090) and tests/api/vat-filing.test.ts (V5-M2, DEC-091: whole pounds and the liability journal), for review by the named accountant (the DEC-054 pattern). Every box is a formula over the journal lines, so a reviewer can trace each
 figure; the expected column holds what the platform returned in the test. The rate (20%) and the box mappings are SYNTHETIC test fixtures
 verified in the test by a second person, not the real UK rate rules. Usage: python3 scripts/docs/gen_vat_return_golden.py (needs openpyxl)."""
 import pathlib
@@ -143,6 +143,38 @@ for i, row in enumerate(STEPS, start=2):
     for j, v in enumerate(row, start=1):
         c = st.cell(row=i, column=j, value=v)
         c.border, c.alignment = BOX, Alignment(wrap_text=True, vertical="top")
+
+# V5-M2 (DEC-091): the quarter of tests/api/vat-filing.test.ts, with pence, filed in whole pounds and posted to the liability account
+fi = wb.create_sheet("Filing (V5-M2)")
+header(fi, 1, ["Item", "Working", "Amount", "Expected (platform)", "Agrees"], [44, 70, 14, 18, 9])
+FIL = [
+    ("Sale: net (input)", "tests/api/vat-filing.test.ts, journal of 2026-02-10", "=1000.55", "1000.55"),
+    ("Purchase: net (input)", "journal of 2026-02-20", "=400.70", "400.70"),
+    ("Box 1: VAT on the sale", "ROUND(net x 20%, 2), half up (DEC-025)", "=ROUND(C2*20/100,2)", "200.11"),
+    ("Box 4: VAT on the purchase", "ROUND(net x 20%, 2)", "=ROUND(C3*20/100,2)", "80.14"),
+    ("Box 3", "Box 1 + box 2 (box 2 is 0)", "=C4+0", "200.11"),
+    ("Box 5 (payable)", "Box 3 - box 4", "=C6-C5", "119.97"),
+    ("Box 6, ROUND_TO_POUND", "ROUND(net sales, 0), half up", "=ROUND(C2,0)", "1001"),
+    ("Box 7, ROUND_TO_POUND", "ROUND(net purchases, 0)", "=ROUND(C3,0)", "401"),
+    ("Box 6, TRUNCATE_PENCE (filed)", "TRUNC(net sales): pence left out", "=TRUNC(C2)", "1000"),
+    ("Box 7, TRUNCATE_PENCE (filed)", "TRUNC(net purchases)", "=TRUNC(C3)", "400"),
+    ("Journal: Dr 2200 output VAT", "Box 3", "=C6", "200.11"),
+    ("Journal: Cr 1150 input VAT", "Box 4", "=C5", "80.14"),
+    ("Journal: Cr 2202 VAT liability", "Box 5", "=C7", "119.97"),
+    ("Journal balances", "Debits - credits", "=C12-C13-C14", "0"),
+]
+for i, (item, working, formula, expected) in enumerate(FIL, start=2):
+    fi.cell(row=i, column=1, value=item)
+    fi.cell(row=i, column=2, value=working)
+    fi.cell(row=i, column=3, value=formula).number_format = "#,##0.00"
+    e = fi.cell(row=i, column=4, value=float(expected))
+    e.number_format, e.fill = "#,##0.00", EXPECT
+    fi.cell(row=i, column=5, value=f"=ROUND(C{i}-D{i},2)=0")
+    for col in range(1, 6):
+        fi.cell(row=i, column=col).border = BOX
+        fi.cell(row=i, column=col).alignment = Alignment(wrap_text=True, vertical="top")
+for i in (2, 3):
+    fi.cell(row=i, column=3).fill = INPUT
 
 so = wb.create_sheet("Sign-off")
 header(so, 1, ["Reviewer", "Date", "Agrees (yes/no)", "Notes"], [28, 14, 16, 70])

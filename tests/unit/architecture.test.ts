@@ -99,7 +99,7 @@ describe('adapter boundary: no S3 / ClamAV specifics outside packages/adapters',
     expect(offenders).toEqual([]);
   });
   it('application code imports only the PORTS from @uk/adapters (+ the factory functions)', () => {
-    const allowed = new Set(['StoragePort', 'AntivirusPort', 'EmailPort', 'sniffMatches', 'createStorage', 'createAntivirus', 'createEmail', 'PresignedUpload', 'ScanResult', 'OutboundEmail']);
+    const allowed = new Set(['StoragePort', 'AntivirusPort', 'EmailPort', 'sniffMatches', 'createStorage', 'createAntivirus', 'createEmail', 'createHmrcVat', 'PresignedUpload', 'ScanResult', 'OutboundEmail']);
     const bad: string[] = [];
     for (const f of SRC.filter((x) => !rel(x).startsWith('packages/adapters/'))) {
       for (const m of read(f).matchAll(/import (?:type )?\{([^}]+)\} from '@uk\/adapters'/g)) {
@@ -328,6 +328,7 @@ describe('database access paths that carry security meaning', () => {
       'packages/accounting/src/accounts-approval.ts', // the client approval's evidence uses the recorder's canReadDocument
       'packages/accounting/src/compliance.ts',     // rule-verification and filing evidence use the actor's canReadDocument (DEC-088)
       'packages/accounting/src/requests.ts',       // request evidence check uses the requester's canReadDocument
+      'packages/accounting/src/vat-filing.ts',     // the filing receipt and rule-verification evidence use the actor's canReadDocument (DEC-091)
       'packages/accounting/src/vat-return.ts',     // the client's approval evidence uses the actor's canReadDocument (DEC-090)
       'packages/accounting/src/vat.ts',            // VAT-rule verification evidence uses the verifier's canReadDocument
       'packages/platform/src/workflow.ts',         // evidence check uses Actor.canReadDocument

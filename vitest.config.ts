@@ -23,6 +23,7 @@ const testEnv = {
   RATE_LIMIT_ENABLED: 'false',
   EMAIL_DRIVER: 'file',
   AV_DRIVER: 'noop',
+  HMRC_VAT_ADAPTER: 'fake', // V5-M2 (DEC-091): the simulated submission; tests/api/vat-filing.test.ts also starts a stack with 'none'
   STORAGE_DRIVER: 'local',
   STORAGE_LOCAL_DIR: '.tmp/test-storage',
   WORKER_CONCURRENCY: '4',

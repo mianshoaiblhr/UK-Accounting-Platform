@@ -286,6 +286,13 @@ export const POSTING_RULE_COVERAGE: Record<string, Record<Category, Cell>> = {
     vat: YEC_NO_VAT,
     periodLock: YEC_LOCK,
   },
+  VAT_RETURN: {
+    positive: T(A('vat-filing'), 'posts the liability journal at the period end and marks the obligation DONE with the receipt; once only'),
+    negative: T(A('vat-filing'), 'needs vat:file and the VAT liability account, which must differ from the output and input accounts'),
+    reversal: T(A('vat-filing'), 'VAT_RETURN is corrected in a later return: the ledger cannot reverse the liability journal directly'),
+    vat: T(A('vat-filing'), 'the liability journal carries no VAT code or tax point'),
+    periodLock: T(A('vat-filing'), 'a filing whose liability journal falls in a closed accounting period is refused; nothing is written'),
+  },
   YEAR_END_CLOSE_REVERSAL: {
     positive: T(P('year-end-close'), 'reversing a close posts its mirror at the year end and opens the year to income and expense again; closing again closes what is there now'),
     negative: T(P('year-end-close'), 'a reversed close cannot be reversed again; a closing source reaches no control account but retained earnings; the mirror is final'),

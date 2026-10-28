@@ -152,7 +152,7 @@ describe('fences every source shares (V1-TEST-01)', () => {
     // the V2 register sources (FIXED_ASSET_*, year-end adjustments) are proved in tests/platform/fixed-assets.test.ts and year-end.test.ts on their own accounts
     const noVat = Object.entries(JOURNAL_SOURCES).filter(([k, s]) => !s.vatCodes && !k.startsWith('FIXED_ASSET_') && !['ACCRUAL', 'ACCRUAL_AUTO_REVERSAL', 'ACCRUAL_CANCELLATION', 'ADJUSTMENT_SETUP', 'ADJUSTMENT_SETUP_REVERSAL', 'ADJUSTMENT_RELEASE', 'ADJUSTMENT_RELEASE_REVERSAL', 'PROVISION_MOVEMENT', 'PROVISION_MOVEMENT_REVERSAL', 'YEAR_END_CLOSE', 'YEAR_END_CLOSE_REVERSAL'].includes(k)).map(([k]) => k);
     expect(noVat.sort()).toEqual(['BANK_TRANSFER', 'BANK_TRANSFER_REVERSAL', 'CASH_PAYMENT_REVERSAL', 'CASH_RECEIPT_REVERSAL', 'CONTROL_ADJUSTMENT', 'FX_REVALUATION', 'OPENING_BALANCE', 'PURCHASE_ALLOCATION_FX',
-      'PURCHASE_PAYMENT', 'PURCHASE_PAYMENT_REVERSAL', 'REVERSAL', 'SALES_ALLOCATION_FX', 'SALES_RECEIPT', 'SALES_RECEIPT_REVERSAL']);
+      'PURCHASE_PAYMENT', 'PURCHASE_PAYMENT_REVERSAL', 'REVERSAL', 'SALES_ALLOCATION_FX', 'SALES_RECEIPT', 'SALES_RECEIPT_REVERSAL', 'VAT_RETURN']);
     const before = journals(co);
     for (const s of noVat) {
       const id = uuidv7();
@@ -169,7 +169,7 @@ describe('fences every source shares (V1-TEST-01)', () => {
   it('every sub-ledger source reaches only its own control kinds (retained earnings is none of them)', async () => {
     // the closing journal (V2-M3b) is the one sub-ledger source that reaches retained earnings, and it reaches nothing else (tests/platform/year-end-close.test.ts)
     const sub = Object.entries(JOURNAL_SOURCES).filter(([k, s]) => s.subLedger && !k.startsWith('YEAR_END_CLOSE'));
-    expect(sub.length).toBe(31);
+    expect(sub.length).toBe(32);   // V5-M2 (DEC-091) adds VAT_RETURN, which reaches only VAT control accounts
     for (const k of ['YEAR_END_CLOSE', 'YEAR_END_CLOSE_REVERSAL']) expect(JOURNAL_SOURCES[k]!.controlKinds).toEqual(['RETAINED_EARNINGS']);
     for (const [s, def] of sub) {
       expect(def.controlKinds ?? []).not.toContain('RETAINED_EARNINGS');

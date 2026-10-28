@@ -110,6 +110,8 @@ export const TABLE_PROTECTION: Record<string, { protection: Protection; why: str
   compliance_obligation: { protection: 'RLS+APP', why: 'V7-M1 what a client must file or pay, its status, owner and evidence; never deleted; identity fixed and versioned updates (trigger).' },
   vat_return: { protection: 'RLS+APP', why: 'V5-M1 a client\'s VAT return for one period; the client\'s approval freezes it and locks the period against new VAT lines (trigger); never deleted.' },
   vat_return_event: { protection: 'RLS+APP', why: 'V5-M1 preparation, flag explanations, review and client approval of a VAT return, each on its fingerprint; append-only; second-person review (trigger).' },
+  vat_presentation_rule: { protection: 'RLS+APP', why: 'V5-M2 how boxes 6 to 9 are presented; sourced, verified by a second person, immutable versions (trigger).' },
+  vat_filing: { protection: 'RLS+APP', why: 'V5-M2 a recorded (with HMRC\'s receipt) or simulated filing of an approved VAT return; append-only.' },
   review_setting: { protection: 'RLS+APP', why: 'V2-M6a the firm\'s review settings per company, versioned rows (DEC-068); written once.' },
   review_flag_response: { protection: 'RLS+APP', why: 'V2-M6a responses to review flags: explained, signed off by a second person, reopened (DEC-068); written once (trigger checks the second person).' },
   cash_flow_class: { protection: 'RLS+APP', why: 'V2-M5c cash-flow classes, version content verified with the version (DEC-052, DEC-067); frozen once verified (trigger).' },

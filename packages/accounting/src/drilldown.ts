@@ -81,6 +81,10 @@ const yearEndClose: Resolver = async (tx, id) => {
   const c = await tx.yearEndClose.findFirst({ where: { id } });
   return c && { entityType: 'year_end_close', id: c.id, permission: 'ledger:read', summary: { yearStart: isoDay(c.yearStart), yearEnd: isoDay(c.yearEnd), profit: c.profit.toFixed(2), status: c.status, journalId: c.journalId, reversalJournalId: c.reversalJournalId } };
 };
+const vatFiling: Resolver = async (tx, id) => {
+  const f = await tx.vatFiling.findFirst({ where: { id } });
+  return f && { entityType: 'vat_filing', id: f.id, permission: 'ledger:read', summary: { vatReturnId: f.vatReturnId, mode: f.mode, submittedOn: isoDay(f.submittedOn), receiptReference: f.receiptReference, evidenceDocumentId: f.evidenceDocumentId } };
+};
 
 /** One resolver per journal source (DEC-043). MANUAL journals have no source transaction: their evidence hangs on the journal itself. */
 export const DRILL_RESOLVERS: Record<string, Resolver | null> = {
@@ -95,6 +99,7 @@ export const DRILL_RESOLVERS: Record<string, Resolver | null> = {
   FIXED_ASSET_DEPRECIATION: depreciationRun, FIXED_ASSET_DEPRECIATION_REVERSAL: depreciationRun,
   ACCRUAL: yearEndItem, ACCRUAL_AUTO_REVERSAL: yearEndItem, ACCRUAL_CANCELLATION: yearEndItem, ADJUSTMENT_SETUP: yearEndItem, ADJUSTMENT_SETUP_REVERSAL: yearEndItem,
   ADJUSTMENT_RELEASE: releaseRun, ADJUSTMENT_RELEASE_REVERSAL: releaseRun, PROVISION_MOVEMENT: provisionMovement, PROVISION_MOVEMENT_REVERSAL: provisionMovement, YEAR_END_CLOSE: yearEndClose, YEAR_END_CLOSE_REVERSAL: yearEndClose,
+  VAT_RETURN: vatFiling,
 };
 /** Evidence-graph entity types that can carry attached documents. */
 const EVIDENCE_TYPES = new Set(['sales_document', 'purchase_document', 'cash_transaction', 'journal']);

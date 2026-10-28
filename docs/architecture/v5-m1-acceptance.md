@@ -1,14 +1,14 @@
 # V5 milestone V5-M1 - acceptance package (the VAT return)
 
-**Status:** PREPARED; acceptance under the delegation (DEC-019, DEC-086) follows a green CI run on the code baseline (section 1) and the named accountant's review of the golden workings (section 4).
+**Status:** CI GREEN (section 1); acceptance under the delegation (DEC-019, DEC-086) waits only for the named accountant's review of the golden workings (section 4).
 
 The design is in DEC-090 and `docs/architecture/v5-plan.md`, recorded and pushed before code (`53c88b5`). This is milestone evidence only, **not production approval** (DEC-085 sets the go-live checklist). All data is synthetic. Nothing is filed: there is no HMRC connection (DEC-082, DEC-086).
 
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | recorded when CI has run |
-| CI | recorded when CI has run |
+| Code baseline commit | `406c193` |
+| CI | [ci run 185](https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/40600570520): every job green, including the real-browser tests and the image scans |
 | Local runs | see section 7 |
 
 ## 2. What was built

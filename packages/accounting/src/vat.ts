@@ -158,10 +158,10 @@ export class VatService {
   async getSettings(tx: Tx, companyId: string) {
     const s = await tx.companyVatSetting.findFirst({ where: { companyId } });
     return s ? { companyId, registered: s.registered, vrn: s.vrn, registeredFrom: s.registeredFrom ? isoDay(s.registeredFrom) : null, scheme: s.scheme, periodMonths: s.periodMonths,
-      anchorPeriodEnd: s.anchorPeriodEnd ? isoDay(s.anchorPeriodEnd) : null, outputAccountId: s.outputAccountId, inputAccountId: s.inputAccountId, isDefault: false, updatedAt: s.updatedAt, updatedByUserId: s.updatedByUserId }
-      : { companyId, registered: false, vrn: null, registeredFrom: null, scheme: 'STANDARD', periodMonths: 3, anchorPeriodEnd: null, outputAccountId: null, inputAccountId: null, isDefault: true, updatedAt: null, updatedByUserId: null };
+      anchorPeriodEnd: s.anchorPeriodEnd ? isoDay(s.anchorPeriodEnd) : null, outputAccountId: s.outputAccountId, inputAccountId: s.inputAccountId, liabilityAccountId: s.liabilityAccountId, isDefault: false, updatedAt: s.updatedAt, updatedByUserId: s.updatedByUserId }
+      : { companyId, registered: false, vrn: null, registeredFrom: null, scheme: 'STANDARD', periodMonths: 3, anchorPeriodEnd: null, outputAccountId: null, inputAccountId: null, liabilityAccountId: null as string | null, isDefault: true, updatedAt: null, updatedByUserId: null };
   }
-  async setSettings(tx: Tx, a: { organisationId: string; companyId: string; actor: VatActor; registered: boolean; vrn: string | null; registeredFrom: string | null; scheme: string; periodMonths: number; anchorPeriodEnd: string | null; outputAccountId: string | null; inputAccountId: string | null; reason: string }) {
+  async setSettings(tx: Tx, a: { organisationId: string; companyId: string; actor: VatActor; registered: boolean; vrn: string | null; registeredFrom: string | null; scheme: string; periodMonths: number; anchorPeriodEnd: string | null; outputAccountId: string | null; inputAccountId: string | null; liabilityAccountId?: string | null; reason: string }) {
     await this.need(a.actor, 'vat:manage', a.companyId);
     if (a.anchorPeriodEnd) { const e = toDate(a.anchorPeriodEnd); if (new Date(e.getTime() + 86_400_000).getUTCDate() !== 1) throw unprocessable('The period end must be the last day of a month', 'invalid_period_end'); }
     const scheme = VAT_SCHEMES[a.scheme];
@@ -171,12 +171,19 @@ export class VatService {
       if (!acc) throw unprocessable('A VAT account does not exist in this company', 'unknown_account');
       if (!['ASSET', 'LIABILITY'].includes(acc.type) || acc.activeTo) throw unprocessable(`Account ${acc.code} cannot hold VAT: use an active balance-sheet account (normally the VAT control account)`, 'invalid_account');
     }
+    // V5-M2 (DEC-091): the liability account receives a filed return's VAT, so it is neither the output nor the input account
+    if (a.liabilityAccountId) {
+      const acc = await tx.account.findFirst({ where: { id: a.liabilityAccountId, companyId: a.companyId } });
+      if (!acc) throw unprocessable('The VAT liability account does not exist in this company', 'unknown_account');
+      if (!['ASSET', 'LIABILITY'].includes(acc.type) || acc.activeTo) throw unprocessable(`Account ${acc.code} cannot hold the VAT liability: use an active balance-sheet account`, 'invalid_account');
+      if (a.liabilityAccountId === a.outputAccountId || a.liabilityAccountId === a.inputAccountId) throw unprocessable('The VAT liability account is a different account from the output and input VAT accounts', 'invalid_account');
+    }
     const before = await this.getSettings(tx, a.companyId);
     const data = { registered: a.registered, vrn: a.vrn, registeredFrom: a.registeredFrom ? toDate(a.registeredFrom) : null, scheme: a.scheme, periodMonths: a.periodMonths,
-      anchorPeriodEnd: a.anchorPeriodEnd ? toDate(a.anchorPeriodEnd) : null, outputAccountId: a.outputAccountId, inputAccountId: a.inputAccountId, updatedByUserId: a.actor.userId };
+      anchorPeriodEnd: a.anchorPeriodEnd ? toDate(a.anchorPeriodEnd) : null, outputAccountId: a.outputAccountId, inputAccountId: a.inputAccountId, liabilityAccountId: a.liabilityAccountId ?? null, updatedByUserId: a.actor.userId };
     await tx.companyVatSetting.upsert({ where: { organisationId_companyId: { organisationId: a.organisationId, companyId: a.companyId } }, create: { organisationId: a.organisationId, companyId: a.companyId, ...data }, update: data });
     const after = await this.getSettings(tx, a.companyId);
-    const v = (x: typeof before) => ({ registered: x.registered, vrn: x.vrn, registeredFrom: x.registeredFrom, scheme: x.scheme, periodMonths: x.periodMonths, anchorPeriodEnd: x.anchorPeriodEnd, outputAccountId: x.outputAccountId, inputAccountId: x.inputAccountId });
+    const v = (x: typeof before) => ({ registered: x.registered, vrn: x.vrn, registeredFrom: x.registeredFrom, scheme: x.scheme, periodMonths: x.periodMonths, anchorPeriodEnd: x.anchorPeriodEnd, outputAccountId: x.outputAccountId, inputAccountId: x.inputAccountId, liabilityAccountId: x.liabilityAccountId });
     await this.audit(tx, { action: 'vat.settings_changed', organisationId: a.organisationId, companyId: a.companyId, actorUserId: a.actor.userId, entityType: 'company_vat_setting', entityId: a.companyId, before: v(before), after: v(after), reason: a.reason.trim() });
     return after;
   }

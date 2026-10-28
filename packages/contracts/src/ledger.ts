@@ -112,6 +112,8 @@ export const JOURNAL_SOURCES: Record<string, JournalSourceDef> = {
   PROVISION_MOVEMENT_REVERSAL: { actors: ['USER'], permission: 'accounts:prepare', controlAccounts: false, subLedger: true, description: 'Mirror of the latest live movement of a provision' },
   // V2-M3b closing journal (DEC-060): the year's income and expense to retained earnings, corrected only by its mirror; no VAT
   YEAR_END_CLOSE: { actors: ['USER'], permission: 'accounts:prepare', controlAccounts: true, controlKinds: ['RETAINED_EARNINGS'], subLedger: true, description: 'Closing journal of a financial year: every income and expense balance of the year moved to retained earnings' },
+  // V5-M2 VAT filing (DEC-091): the period's VAT moved from the output and input accounts to the VAT liability account; no VAT codes
+  VAT_RETURN: { actors: ['USER'], permission: 'vat:file', controlAccounts: true, controlKinds: ['VAT_CONTROL'], subLedger: true, description: 'A filed VAT return: Dr output VAT (box 3) / Cr input VAT (box 4) / Cr or Dr the VAT liability (box 5)' },
   YEAR_END_CLOSE_REVERSAL: { actors: ['USER'], permission: 'accounts:prepare', controlAccounts: true, controlKinds: ['RETAINED_EARNINGS'], subLedger: true, description: 'Mirror of a closing journal (the year is open to income and expense again)' },
 };
 /** The closing journal's sources (DEC-060): every P&L figure leaves them out; balance-sheet lines too, so they read the same before and after a close. */

@@ -29212,6 +29212,630 @@
         }
       }
     },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/vat-presentation-rules": {
+      "get": {
+        "operationId": "VatFiling_rules",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Rules",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatPresentationRuleList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "VAT returns"
+        ],
+        "x-required-feature": "vat.returns",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The presentation rules of boxes 6 to 9 (organisation data), every version",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "VatFiling_addRule",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Entered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatPresentationRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "VAT returns"
+        ],
+        "x-required-feature": "vat.returns",
+        "x-required-permissions": [
+          "vat:manage"
+        ],
+        "summary": "Enter a presentation rule with its source (vat:manage); it starts UNVERIFIED",
+        "description": "**Requires permission:** `vat:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVatPresentationRuleRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/vat-presentation-rules/{ruleId}/supersede": {
+      "post": {
+        "operationId": "VatFiling_supersede",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ruleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "New version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatPresentationRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "VAT returns"
+        ],
+        "x-required-feature": "vat.returns",
+        "x-required-permissions": [
+          "vat:manage"
+        ],
+        "summary": "Supersede a presentation rule with a new UNVERIFIED version (vat:manage)",
+        "description": "**Requires permission:** `vat:manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupersedeVatPresentationRuleRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/vat-presentation-rules/{ruleId}/verify": {
+      "post": {
+        "operationId": "VatFiling_verify",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ruleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatPresentationRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "VAT returns"
+        ],
+        "x-required-feature": "vat.returns",
+        "x-required-permissions": [
+          "tax:rule-verify"
+        ],
+        "summary": "Verify a presentation rule (tax:rule-verify), by someone other than the person who entered it",
+        "description": "**Requires permission:** `tax:rule-verify`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyVatPresentationRuleRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/vat-returns/{returnId}/package": {
+      "get": {
+        "operationId": "VatFiling_pkg",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "returnId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Package",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatFilingPackage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "VAT returns"
+        ],
+        "x-required-feature": "vat.returns",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The filing package of an approved return: boxes 1 to 5 as approved, 6 to 9 by the verified presentation rule",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/vat-returns/{returnId}/filings": {
+      "get": {
+        "operationId": "VatFiling_filings",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "returnId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Filings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatFilingList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "VAT returns"
+        ],
+        "x-required-feature": "vat.returns",
+        "x-required-permissions": [
+          "ledger:read"
+        ],
+        "summary": "The filings of a return: recorded and simulated",
+        "description": "**Requires permission:** `ledger:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "VatFiling_record",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "returnId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatFiling"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "VAT returns"
+        ],
+        "x-required-feature": "vat.returns",
+        "x-required-permissions": [
+          "vat:file"
+        ],
+        "summary": "Record a filing made outside the platform (vat:file) with HMRC's receipt reference and the receipt as evidence; posts the liability journal and marks the VAT obligation DONE",
+        "description": "**Requires permission:** `vat:file`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordVatFilingRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/companies/{companyId}/vat-returns/{returnId}/simulated-submissions": {
+      "post": {
+        "operationId": "VatFiling_simulate",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "returnId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Simulated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatFiling"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "tags": [
+          "VAT returns"
+        ],
+        "x-required-feature": "vat.returns",
+        "x-required-permissions": [
+          "vat:file"
+        ],
+        "summary": "Simulate a submission through the HMRC VAT port (vat:file); fake adapter only, nothing is sent to HMRC and nothing else changes",
+        "description": "**Requires permission:** `vat:file`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateVatFilingRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -35226,6 +35850,12 @@
             "format": "uuid",
             "nullable": true
           },
+          "liabilityAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "V5-M2: where a filed return's VAT is moved to"
+          },
           "isDefault": {
             "type": "boolean"
           },
@@ -35250,6 +35880,7 @@
           "anchorPeriodEnd",
           "outputAccountId",
           "inputAccountId",
+          "liabilityAccountId",
           "isDefault",
           "updatedAt",
           "updatedByUserId"
@@ -48220,6 +48851,801 @@
         ],
         "additionalProperties": false
       },
+      "VatPresentationRule": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "TRUNCATE_PENCE",
+              "ROUND_TO_POUND"
+            ],
+            "description": "How boxes 6 to 9 are presented in whole pounds"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string"
+              },
+              "provision": {
+                "type": "string"
+              },
+              "retrievedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url",
+              "provision",
+              "retrievedOn"
+            ],
+            "additionalProperties": false
+          },
+          "enteredByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "UNVERIFIED",
+              "VERIFIED"
+            ]
+          },
+          "verifiedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "verifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "verificationNotes": {
+            "type": "string",
+            "nullable": true
+          },
+          "evidenceDocumentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "supersededById": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "method",
+          "effectiveFrom",
+          "effectiveTo",
+          "source",
+          "enteredByUserId",
+          "createdAt",
+          "verificationStatus",
+          "verifiedByUserId",
+          "verifiedAt",
+          "verificationNotes",
+          "evidenceDocumentId",
+          "supersededById"
+        ],
+        "additionalProperties": false
+      },
+      "VatPresentationRuleList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "method": {
+                  "type": "string",
+                  "enum": [
+                    "TRUNCATE_PENCE",
+                    "ROUND_TO_POUND"
+                  ],
+                  "description": "How boxes 6 to 9 are presented in whole pounds"
+                },
+                "effectiveFrom": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "effectiveTo": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "provision": {
+                      "type": "string"
+                    },
+                    "retrievedOn": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    }
+                  },
+                  "required": [
+                    "url",
+                    "provision",
+                    "retrievedOn"
+                  ],
+                  "additionalProperties": false
+                },
+                "enteredByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "verificationStatus": {
+                  "type": "string",
+                  "enum": [
+                    "UNVERIFIED",
+                    "VERIFIED"
+                  ]
+                },
+                "verifiedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "verifiedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "verificationNotes": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "evidenceDocumentId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "supersededById": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "method",
+                "effectiveFrom",
+                "effectiveTo",
+                "source",
+                "enteredByUserId",
+                "createdAt",
+                "verificationStatus",
+                "verifiedByUserId",
+                "verifiedAt",
+                "verificationNotes",
+                "evidenceDocumentId",
+                "supersededById"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "VatFilingPackage": {
+        "type": "object",
+        "properties": {
+          "package": {
+            "type": "object",
+            "properties": {
+              "format": {
+                "type": "string",
+                "enum": [
+                  "uk-vat-filing-package/1"
+                ]
+              },
+              "companyId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "vatReturnId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "vrn": {
+                "type": "string",
+                "nullable": true
+              },
+              "currency": {
+                "type": "string"
+              },
+              "periodFrom": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "periodTo": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "approvedFingerprint": {
+                "type": "string"
+              },
+              "boxes": {
+                "type": "object",
+                "properties": {
+                  "1": {
+                    "type": "string"
+                  },
+                  "2": {
+                    "type": "string"
+                  },
+                  "3": {
+                    "type": "string"
+                  },
+                  "4": {
+                    "type": "string"
+                  },
+                  "5": {
+                    "type": "string"
+                  },
+                  "6": {
+                    "type": "string"
+                  },
+                  "7": {
+                    "type": "string"
+                  },
+                  "8": {
+                    "type": "string"
+                  },
+                  "9": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "1",
+                  "2",
+                  "3",
+                  "4",
+                  "5",
+                  "6",
+                  "7",
+                  "8",
+                  "9"
+                ],
+                "additionalProperties": false,
+                "description": "Boxes 1 to 5 in pounds and pence as approved; 6 to 9 in whole pounds"
+              },
+              "box5Direction": {
+                "type": "string",
+                "enum": [
+                  "PAYABLE",
+                  "REPAYABLE"
+                ]
+              },
+              "presentation": {
+                "type": "object",
+                "properties": {
+                  "ruleId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "method": {
+                    "type": "string",
+                    "enum": [
+                      "TRUNCATE_PENCE",
+                      "ROUND_TO_POUND"
+                    ]
+                  }
+                },
+                "required": [
+                  "ruleId",
+                  "method"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "format",
+              "companyId",
+              "vatReturnId",
+              "vrn",
+              "currency",
+              "periodFrom",
+              "periodTo",
+              "approvedFingerprint",
+              "boxes",
+              "box5Direction",
+              "presentation"
+            ],
+            "additionalProperties": false
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "notice": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "package",
+          "sha256",
+          "notice"
+        ],
+        "additionalProperties": false
+      },
+      "VatFiling": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "vatReturnId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "RECORDED",
+              "SIMULATED"
+            ],
+            "description": "RECORDED: filed outside the platform with HMRC's receipt; SIMULATED: fake adapter, nothing sent"
+          },
+          "submittedOn": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "receiptReference": {
+            "type": "string"
+          },
+          "receipt": {
+            "type": "object",
+            "additionalProperties": {},
+            "nullable": true
+          },
+          "adapter": {
+            "type": "string",
+            "nullable": true
+          },
+          "evidenceDocumentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "journalId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "The liability journal of a recorded filing"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "package": {
+            "type": "object",
+            "properties": {
+              "format": {
+                "type": "string",
+                "enum": [
+                  "uk-vat-filing-package/1"
+                ]
+              },
+              "companyId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "vatReturnId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "vrn": {
+                "type": "string",
+                "nullable": true
+              },
+              "currency": {
+                "type": "string"
+              },
+              "periodFrom": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "periodTo": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "approvedFingerprint": {
+                "type": "string"
+              },
+              "boxes": {
+                "type": "object",
+                "properties": {
+                  "1": {
+                    "type": "string"
+                  },
+                  "2": {
+                    "type": "string"
+                  },
+                  "3": {
+                    "type": "string"
+                  },
+                  "4": {
+                    "type": "string"
+                  },
+                  "5": {
+                    "type": "string"
+                  },
+                  "6": {
+                    "type": "string"
+                  },
+                  "7": {
+                    "type": "string"
+                  },
+                  "8": {
+                    "type": "string"
+                  },
+                  "9": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "1",
+                  "2",
+                  "3",
+                  "4",
+                  "5",
+                  "6",
+                  "7",
+                  "8",
+                  "9"
+                ],
+                "additionalProperties": false,
+                "description": "Boxes 1 to 5 in pounds and pence as approved; 6 to 9 in whole pounds"
+              },
+              "box5Direction": {
+                "type": "string",
+                "enum": [
+                  "PAYABLE",
+                  "REPAYABLE"
+                ]
+              },
+              "presentation": {
+                "type": "object",
+                "properties": {
+                  "ruleId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "method": {
+                    "type": "string",
+                    "enum": [
+                      "TRUNCATE_PENCE",
+                      "ROUND_TO_POUND"
+                    ]
+                  }
+                },
+                "required": [
+                  "ruleId",
+                  "method"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "format",
+              "companyId",
+              "vatReturnId",
+              "vrn",
+              "currency",
+              "periodFrom",
+              "periodTo",
+              "approvedFingerprint",
+              "boxes",
+              "box5Direction",
+              "presentation"
+            ],
+            "additionalProperties": false
+          },
+          "packageSha256": {
+            "type": "string"
+          },
+          "presentationRuleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "byUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notice": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "vatReturnId",
+          "mode",
+          "submittedOn",
+          "receiptReference",
+          "receipt",
+          "adapter",
+          "evidenceDocumentId",
+          "journalId",
+          "note",
+          "package",
+          "packageSha256",
+          "presentationRuleId",
+          "byUserId",
+          "at",
+          "notice"
+        ],
+        "additionalProperties": false
+      },
+      "VatFilingList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "vatReturnId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "RECORDED",
+                    "SIMULATED"
+                  ],
+                  "description": "RECORDED: filed outside the platform with HMRC's receipt; SIMULATED: fake adapter, nothing sent"
+                },
+                "submittedOn": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "receiptReference": {
+                  "type": "string"
+                },
+                "receipt": {
+                  "type": "object",
+                  "additionalProperties": {},
+                  "nullable": true
+                },
+                "adapter": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "evidenceDocumentId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "journalId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true,
+                  "description": "The liability journal of a recorded filing"
+                },
+                "note": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "package": {
+                  "type": "object",
+                  "properties": {
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "uk-vat-filing-package/1"
+                      ]
+                    },
+                    "companyId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "vatReturnId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "vrn": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "currency": {
+                      "type": "string"
+                    },
+                    "periodFrom": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "periodTo": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "approvedFingerprint": {
+                      "type": "string"
+                    },
+                    "boxes": {
+                      "type": "object",
+                      "properties": {
+                        "1": {
+                          "type": "string"
+                        },
+                        "2": {
+                          "type": "string"
+                        },
+                        "3": {
+                          "type": "string"
+                        },
+                        "4": {
+                          "type": "string"
+                        },
+                        "5": {
+                          "type": "string"
+                        },
+                        "6": {
+                          "type": "string"
+                        },
+                        "7": {
+                          "type": "string"
+                        },
+                        "8": {
+                          "type": "string"
+                        },
+                        "9": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "1",
+                        "2",
+                        "3",
+                        "4",
+                        "5",
+                        "6",
+                        "7",
+                        "8",
+                        "9"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Boxes 1 to 5 in pounds and pence as approved; 6 to 9 in whole pounds"
+                    },
+                    "box5Direction": {
+                      "type": "string",
+                      "enum": [
+                        "PAYABLE",
+                        "REPAYABLE"
+                      ]
+                    },
+                    "presentation": {
+                      "type": "object",
+                      "properties": {
+                        "ruleId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "method": {
+                          "type": "string",
+                          "enum": [
+                            "TRUNCATE_PENCE",
+                            "ROUND_TO_POUND"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "ruleId",
+                        "method"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "format",
+                    "companyId",
+                    "vatReturnId",
+                    "vrn",
+                    "currency",
+                    "periodFrom",
+                    "periodTo",
+                    "approvedFingerprint",
+                    "boxes",
+                    "box5Direction",
+                    "presentation"
+                  ],
+                  "additionalProperties": false
+                },
+                "packageSha256": {
+                  "type": "string"
+                },
+                "presentationRuleId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "byUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "notice": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "vatReturnId",
+                "mode",
+                "submittedOn",
+                "receiptReference",
+                "receipt",
+                "adapter",
+                "evidenceDocumentId",
+                "journalId",
+                "note",
+                "package",
+                "packageSha256",
+                "presentationRuleId",
+                "byUserId",
+                "at",
+                "notice"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
       "ProfitAndLoss": {
         "type": "object",
         "properties": {
@@ -57653,7 +59079,8 @@
                 "compliance:rules-manage",
                 "compliance:rule-verify",
                 "vat:prepare",
-                "vat:review"
+                "vat:review",
+                "vat:file"
               ]
             },
             "minItems": 1
@@ -60146,6 +61573,12 @@
             "default": null
           },
           "inputAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "default": null
+          },
+          "liabilityAccountId": {
             "type": "string",
             "format": "uuid",
             "nullable": true,
@@ -64889,6 +66322,182 @@
           "approverContactId",
           "approvedOn",
           "evidenceDocumentId"
+        ],
+        "additionalProperties": false
+      },
+      "CreateVatPresentationRuleRequest": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "TRUNCATE_PENCE",
+              "ROUND_TO_POUND"
+            ]
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 500
+              },
+              "provision": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 300
+              },
+              "retrievedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url",
+              "provision",
+              "retrievedOn"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "method",
+          "effectiveFrom",
+          "source"
+        ],
+        "additionalProperties": false
+      },
+      "SupersedeVatPresentationRuleRequest": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "TRUNCATE_PENCE",
+              "ROUND_TO_POUND"
+            ]
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 500
+              },
+              "provision": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 300
+              },
+              "retrievedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url",
+              "provision",
+              "retrievedOn"
+            ],
+            "additionalProperties": false
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "method",
+          "effectiveFrom",
+          "source",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "VerifyVatPresentationRuleRequest": {
+        "type": "object",
+        "properties": {
+          "notes": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 2000
+          },
+          "evidenceDocumentId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "notes"
+        ],
+        "additionalProperties": false
+      },
+      "RecordVatFilingRequest": {
+        "type": "object",
+        "properties": {
+          "submittedOn": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "receiptReference": {
+            "type": "string",
+            "pattern": "^\\d{12}$"
+          },
+          "evidenceDocumentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "declarationConfirmed": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "submittedOn",
+          "receiptReference",
+          "evidenceDocumentId",
+          "declarationConfirmed"
+        ],
+        "additionalProperties": false
+      },
+      "SimulateVatFilingRequest": {
+        "type": "object",
+        "properties": {
+          "declarationConfirmed": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "declarationConfirmed"
         ],
         "additionalProperties": false
       },

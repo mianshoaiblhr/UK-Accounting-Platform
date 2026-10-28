@@ -27,7 +27,7 @@ export const PERMISSIONS = [
   'accounts:rules-manage', 'accounts:rule-verify', 'accounts:prepare', 'accounts:review',
   'assets:read', 'assets:manage',
   'compliance:read', 'compliance:manage', 'compliance:rules-manage', 'compliance:rule-verify',
-  'vat:prepare', 'vat:review',
+  'vat:prepare', 'vat:review', 'vat:file',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -65,6 +65,8 @@ export const PERMISSION_SCOPE: Record<Permission, PermissionScope> = {
   'compliance:read': 'COMPANY', 'compliance:manage': 'COMPANY', 'compliance:rules-manage': 'ORG', 'compliance:rule-verify': 'ORG',
   // V5-M1 (DEC-090): the VAT return is per client
   'vat:prepare': 'COMPANY', 'vat:review': 'COMPANY',
+  // V5-M2 (DEC-091): recording a VAT filing posts the liability journal and closes the obligation
+  'vat:file': 'COMPANY',
 };
 export const permissionsOfScope = (...scopes: PermissionScope[]): Permission[] => PERMISSIONS.filter((p) => scopes.includes(PERMISSION_SCOPE[p]));
 

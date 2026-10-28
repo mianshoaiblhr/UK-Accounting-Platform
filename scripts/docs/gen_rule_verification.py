@@ -39,13 +39,15 @@ STEPS = [
     ("4", "Import content/standards/drafts/frs105-micro.json, frs102-1a-small.json and uk-size-thresholds.json with scripts/standards/import-pack.mjs.", "A person with accounts:rules-manage who is NOT the verifier", "Each lands UNVERIFIED"),
     ("5", "Check every line, map entry, rule and threshold against the standard and the Companies Act provisions, using docs/architecture/v2-draft-wording-review.xlsx; correct or remove rules, then verify each version.", "Shoaib, with accounts:rule-verify", "The platform refuses a verifier who imported the version (DEC-052)"),
     ("6", "Import content/compliance/drafts/uk-deadline-rules.json with scripts/compliance/import-deadline-rules.mjs, then check each rule on the 'Deadline rules' sheet and verify it, or supersede it with a corrected version first.", "Import: a person with compliance:rules-manage; verify: Shoaib, with compliance:rule-verify", "The platform refuses a verifier who entered the rule (DEC-088)"),
-    ("7", "Fill in the 'Sign-off' sheet with the platform's record of each verification.", "Shoaib", "Evidence for the go-live checklist (DEC-085, item 3)"),
+    ("7", "Enter the presentation rule for boxes 6 to 9 on the 'VAT presentation' sheet (Settings > VAT presentation rules, or POST vat-presentation-rules), then check it against Notice 700/12 and verify it.", "Enter: a person with vat:manage; verify: Shoaib, with tax:rule-verify", "Without a verified rule no VAT return can be filed or recorded (DEC-091)"),
+    ("8", "Fill in the 'Sign-off' sheet with the platform's record of each verification.", "Shoaib", "Evidence for the go-live checklist (DEC-085, item 3)"),
 ]
 LAW = [
     ("Value Added Tax Act 1994, ss.1, 2, 4, 8, 24-26, 29A, 30, 31 and 55A", "The charge, the rates, input tax, reverse charges", LEG + "contents"),
     ("Value Added Tax Regulations 1995, SI 1995/2518, regs 25 and 25A", "Returns and their filing", "https://www.legislation.gov.uk/uksi/1995/2518/regulation/25A"),
     ("Value Added Tax (Input Tax) Order 1992, SI 1992/3222", "Input tax blocks: business entertainment, cars", "https://www.legislation.gov.uk/uksi/1992/3222/contents"),
     ("VAT Notice 700/12", "How each box of the return is filled", "https://www.gov.uk/guidance/how-to-fill-in-and-submit-your-vat-return-vat-notice-70012"),
+    ("Making Tax Digital for VAT: VAT (MTD) API, submit VAT return", "The value of each box as HMRC's API receives it; boxes 6 to 9 in whole pounds", "https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/vat-api/1.0"),
     ("VAT Notice 700 (the VAT guide)", "Rounding of VAT (the platform rounds each line half-up, DEC-025)", "https://www.gov.uk/guidance/vat-guide-notice-700"),
     ("Companies Act 2006, ss.382-384 and 384A-384B", "Small companies and micro-entities: the size tests", "https://www.legislation.gov.uk/ukpga/2006/46/section/382"),
     ("Companies Act 2006, ss.442-443 and 853A", "Deadlines: filing accounts, the month-end rule, the confirmation statement", "https://www.legislation.gov.uk/ukpga/2006/46/section/442"),
@@ -126,9 +128,19 @@ table(ded, "Draft deadline rules (V7-M1, DEC-088)",
        "Verified (yes / corrected)", "Verified on", "Verifier's notes"],
       drows, [22, 30, 8, 8, 8, 10, 14, 60, 44, 60, 18, 14, 40], link_cols=(9,), input_cols=(11, 12, 13))
 
+# V5-M2 (DEC-091): the presentation rule of boxes 6 to 9; engineering's proposal, written without reading the source
+PRES = [("TRUNCATE_PENCE", "Whole pounds: the pence are left out of boxes 6, 7, 8 and 9 (boxes 1 to 5 keep pounds and pence)", "2026-01-01",
+         "VAT Notice 700/12, the guidance on boxes 6 to 9", "https://www.gov.uk/guidance/how-to-fill-in-and-submit-your-vat-return-vat-notice-70012",
+         "Whether pence are left out (truncated) or rounded, and from which date; the alternative method is ROUND_TO_POUND", "", "", "")]
+pres = wb.create_sheet("VAT presentation")
+table(pres, "Presentation rule for boxes 6 to 9 (V5-M2, DEC-091)",
+      "One current version for the organisation; it applies to a return by its period end. Enter it with its source; it lands UNVERIFIED.",
+      ["Method", "What it does", "Effective from", "Provision to check", "Source", "What to check", "Verified (yes / corrected)", "Verified on", "Verifier's notes"],
+      PRES, [18, 60, 14, 40, 60, 60, 18, 14, 40], link_cols=(5,), input_cols=(7, 8, 9))
+
 sign = wb.create_sheet("Sign-off")
 sign_rows = ([(r[0], "Rate version", "", "", "") for r in VAT_CODES] + [(r[0], "Standard version", "", "", "") for r in srows]
-             + [(r["kind"], "Deadline rule", "", "", "") for r in pack["rules"]])
+             + [(r["kind"], "Deadline rule", "", "", "") for r in pack["rules"]] + [("Boxes 6 to 9", "Presentation rule", "", "", "")])
 table(sign, "Sign-off", "Filled in by the verifier from the platform's records.", ["Item", "Kind", "Platform record id", "Verified by", "Date"],
       sign_rows, [40, 18, 40, 20, 14], input_cols=(3, 4, 5))
 

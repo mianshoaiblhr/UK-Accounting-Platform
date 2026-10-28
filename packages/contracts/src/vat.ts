@@ -68,6 +68,8 @@ export const vatSettingsSchema = z.object({
   periodMonths: z.union([z.literal(1), z.literal(3)]).default(3),
   anchorPeriodEnd: isoDate.nullable().default(null),
   outputAccountId: uuid.nullable().default(null), inputAccountId: uuid.nullable().default(null),
+  /** V5-M2 (DEC-091): where a filed return's VAT is moved to (owed to or by HMRC); needed to record a filing. */
+  liabilityAccountId: uuid.nullable().default(null),
   reason: z.string().trim().min(10).max(1000),
 }).strict().refine((s) => !s.registered || (s.vrn && s.registeredFrom && s.anchorPeriodEnd && s.outputAccountId && s.inputAccountId), {
   message: 'A registered company needs a VRN, a registration date, a period end and its output and input VAT accounts', path: ['registered'],

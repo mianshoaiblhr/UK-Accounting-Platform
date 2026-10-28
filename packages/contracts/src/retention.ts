@@ -102,9 +102,13 @@ export const RETENTION_RULES: readonly RetentionRule[] = [
     // V7-M1: deadline rules explain the due dates of filed obligations (DEC-088)
     'deadline_rule',
     // V5-M1: the VAT return as approved and how it was prepared, reviewed and approved (DEC-090)
-    'vat_return', 'vat_return_event']),
+    'vat_return', 'vat_return_event',
+    // V5-M2: the presentation rule explains boxes 6 to 9 of a filing (DEC-091)
+    'vat_presentation_rule']),
   // V7-M1: an obligation is the record of a filing or payment and its evidence (DEC-088)
-  ...tableRules('FILING_EVIDENCE', ['compliance_obligation']),
+  ...tableRules('FILING_EVIDENCE', ['compliance_obligation',
+    // V5-M2: a VAT filing and its receipt (DEC-091)
+    'vat_filing']),
   ...tableRules('WHILE_ACTIVE', [
     'user', 'user_identity', 'mfa_factor', 'mfa_recovery_code', 'organisation', 'role', 'organisation_membership', 'practice', 'practice_membership', 'company_membership', 'invitation',
     'company', 'company_officer', 'contact', 'contact_role', 'customer_profile', 'supplier_profile', 'address', 'feature_flag_override', 'task', 'task_attachment', 'task_comment', 'workflow_instance', 'workflow_transition',

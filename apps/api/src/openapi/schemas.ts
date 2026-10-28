@@ -173,7 +173,7 @@ export const TaxRateVersion = z.object({
 });
 export const TaxCode = z.object({ id: uuid, code: z.string(), name: z.string(), treatment: z.enum(['STANDARD', 'REDUCED', 'ZERO', 'EXEMPT', 'OUTSIDE_SCOPE']), direction: z.enum(['SALES', 'PURCHASES', 'BOTH']), reverseCharge: z.boolean(), createdAt: ts, rates: z.array(TaxRateVersion) });
 export const VatSettings = z.object({ companyId: uuid, registered: z.boolean(), vrn: z.string().nullable(), registeredFrom: day.nullable(), scheme: z.string(), periodMonths: z.number().int(), anchorPeriodEnd: day.nullable(),
-  outputAccountId: uuid.nullable(), inputAccountId: uuid.nullable(), isDefault: z.boolean(), updatedAt: ts.nullable(), updatedByUserId: uuid.nullable() });
+  outputAccountId: uuid.nullable(), inputAccountId: uuid.nullable(), liabilityAccountId: uuid.nullable().describe('V5-M2: where a filed return\'s VAT is moved to'), isDefault: z.boolean(), updatedAt: ts.nullable(), updatedByUserId: uuid.nullable() });
 export const VatPeriod = z.object({ from: day, to: day, periodMonths: z.number().int() });
 const BoxLine = z.object({ journalId: uuid, journalNumber: z.number().int(), lineNo: z.number().int(), accountCode: z.string(), taxCode: z.string(), taxPoint: day, amount: z.string() });
 export const VatWorkpaper = z.object({
@@ -685,3 +685,21 @@ export const VatReturn = z.object({
   flags: z.array(VatReturnFlag), unexplainedFlags: z.number().int(), events: z.array(VatReturnEvent), notice: z.string(),
 });
 export const VatReturnList = z.object({ items: z.array(z.object({ id: uuid, periodFrom: day, periodTo: day, status: vatReturnStatus, locked: z.boolean(), unexplainedFlags: z.number().int(), obligationId: uuid.nullable() })) });
+
+// ───────────── V5-M2 the VAT filing record (DEC-091) ─────────────
+export const VatPresentationRule = z.object({
+  id: uuid, method: z.enum(['TRUNCATE_PENCE', 'ROUND_TO_POUND']).describe('How boxes 6 to 9 are presented in whole pounds'), effectiveFrom: day, effectiveTo: day.nullable(),
+  source: z.object({ url: z.string(), provision: z.string(), retrievedOn: day }), enteredByUserId: uuid, createdAt: ts,
+  verificationStatus: z.enum(['UNVERIFIED', 'VERIFIED']), verifiedByUserId: uuid.nullable(), verifiedAt: ts.nullable(), verificationNotes: z.string().nullable(), evidenceDocumentId: uuid.nullable(), supersededById: uuid.nullable(),
+});
+const vatBoxes = z.object(Object.fromEntries(['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((b) => [b, z.string()])) as Record<string, z.ZodString>).describe('Boxes 1 to 5 in pounds and pence as approved; 6 to 9 in whole pounds');
+const filingPackage = z.object({
+  format: z.literal('uk-vat-filing-package/1'), companyId: uuid, vatReturnId: uuid, vrn: z.string().nullable(), currency: z.string(), periodFrom: day, periodTo: day, approvedFingerprint: z.string(),
+  boxes: vatBoxes, box5Direction: z.enum(['PAYABLE', 'REPAYABLE']), presentation: z.object({ ruleId: uuid, method: z.enum(['TRUNCATE_PENCE', 'ROUND_TO_POUND']) }),
+});
+export const VatFilingPackage = z.object({ package: filingPackage, sha256: z.string(), notice: z.string() });
+export const VatFiling = z.object({
+  id: uuid, vatReturnId: uuid, mode: z.enum(['RECORDED', 'SIMULATED']).describe('RECORDED: filed outside the platform with HMRC\'s receipt; SIMULATED: fake adapter, nothing sent'),
+  submittedOn: day, receiptReference: z.string(), receipt: z.record(z.unknown()).nullable(), adapter: z.string().nullable(), evidenceDocumentId: uuid.nullable(),
+  journalId: uuid.nullable().describe('The liability journal of a recorded filing'), note: z.string().nullable(), package: filingPackage, packageSha256: z.string(), presentationRuleId: uuid, byUserId: uuid, at: ts, notice: z.string(),
+});
