@@ -304,6 +304,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-097 | V4 plan and how V4-M1 is built: Corporation Tax rules, tax periods and the tax profile (delegated, DEC-019; recorded before code) | V4 in six milestones (`docs/architecture/v4-plan.md`). V4-M1: CT rules (rates and limits by financial year, the maximum length of a CT accounting period) as sourced, effective-dated, verified organisation data; the company's tax profile; CT accounting periods derived from the accounts year and split by the verified maximum, each with its associated companies. Behind the new flag `corporation.tax` and two new permissions |
 | DEC-098 | V4-M1 details settled while building (delegated, DEC-019) | Any current CT rule version, verified or not, is changed by superseding it (a version is never edited); a new version keeps its kind. Deriving periods answers 200 with `created`. If the accounts year changed after its periods were derived, deriving refuses with `ct_periods_stale` instead of re-splitting |
 | DEC-099 | How V4-M2 is built: tax adjustments and the profit of each CT period (delegated, DEC-019; recorded before code) | Account adjustment rules (an account, a category and the share of its movement that is added back or deducted) as company data, verified by a second person; manual adjustments with evidence, withdrawn but never removed; the profit of a CT period from the ledger (profit before tax), each adjustment and the adjusted profit, each adjustment drilling to its ledger lines or its evidence, with what still needs attention. Nothing is stored as a result |
+| DEC-100 | How V4-M3 is built: capital allowances (delegated, DEC-019; recorded before code) | Three new CT rule kinds (the AIA limit, the writing-down rates, the small pools limit) as verified data; pool opening balances entered with evidence and verified by a second person; the capital allowances of a CT period worked from the fixed-asset register's tax category and cost (AIA in date order, main and special rate pools, single asset pools, disposal values capped at cost, balancing charges and allowances, small pools), shown live and stored as a computation that the next period starts from. First-year allowances (full expensing) are left for a later milestone |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -1627,3 +1628,75 @@ V4-M2 of `docs/architecture/v4-plan.md`. It produces the profit of a CT accounti
   * a golden workbook of a synthetic period worked by hand;
   * the OpenAPI contract;
   * CI green.
+
+### DEC-100 - How V4-M3 is built: capital allowances (delegated, DEC-019; recorded before code)
+V4-M3 of `docs/architecture/v4-plan.md`: the capital allowances of each CT accounting period, from the fixed-asset register's tax fields (the tax category and the tax cost, which depreciation never reads, DEC-058).
+
+**Rules (new `ct_rule` kinds, DEC-097 pattern; added to the draft pack, UNVERIFIED):**
+* `AIA_LIMIT` (`annualLimit`, pounds);
+* `WDA_RATES` (`mainRate`, `specialRate`, percentages);
+* `SMALL_POOL_LIMIT` (`limit`, pounds).
+
+A period uses the version of each kind in force on its first day. If another version of a kind starts inside the period, the computation is refused (`ca_rule_change_in_period`): hybrid rates and transitional limits are not modelled. Each rule must be verified (`ct_rule_unverified`, `ct_rule_not_found`).
+
+**The period fraction:**
+* 1 for a period of exactly 12 months;
+* otherwise the days in the period divided by 365.
+
+It scales the AIA limit, the writing-down allowances and the small pools limit for a short period.
+
+**What an asset contributes** (assets not VOID). The tax cost is the asset's tax cost when set, else its cost.
+* **Additions:** assets acquired in the period.
+  * Category `AIA` is main-pool expenditure on which AIA is claimed. AIA is allocated to such additions in date order (then by asset number) up to the period's limit, and any excess goes into the main pool.
+  * `MAIN_POOL` and `SPECIAL_RATE_POOL` go into those pools.
+  * `SINGLE_ASSET_POOL` opens a pool of its own, written down at the main rate.
+  * `NOT_QUALIFYING` is listed and ignored.
+  * `UNDECIDED` is a problem.
+* **Disposals:** assets disposed of in the period, of a qualifying category. The disposal value is the lower of the proceeds and the tax cost. It is deducted from the asset's pool (an `AIA` asset's pool is the main pool).
+
+**Pools.** Each pool computes:
+
+    available = opening + additions not covered by AIA - disposal values
+
+* If `available` is below zero, it is a balancing charge, and the pool closes at zero.
+* Otherwise, if it is above zero and at most the small pools limit times the fraction (main and special rate pools only), it is all claimed.
+* Otherwise the writing-down allowance is `available` times the rate times the fraction, rounded half-up to the penny, and the rest is carried forward.
+
+A single asset pool disposed of in the period gives a balancing allowance (what is left) or a balancing charge, and closes.
+
+**Opening balances (`ca_pool_opening`):**
+* the main, special rate or a single asset pool's written-down value at a date, with a reason and evidence of the company;
+* entered with `ct:prepare` and verified by a holder of `tax:rule-verify` who did not enter them;
+* immutable, and superseded once;
+* used for a period whose day before its start is the opening date and which has no stored computation before it.
+
+A first period with neither is a problem. Zero is entered explicitly.
+
+**The computation (`ca_computation`):**
+* `GET ct-periods/{id}/capital-allowances` shows it live, with its problems;
+* `POST` (`ct:prepare`) stores it when there are none, as a snapshot with a SHA-256 fingerprint and the id of the prior period's computation it started from. A stored computation is append-only: a new one supersedes the previous one of the period;
+* the next period (the CT period starting the day after) opens from the prior period's current stored computation. If the prior period has none, that is a problem;
+* a stored computation whose prior has since been superseded is reported as stale in the list.
+
+The totals are the allowances (AIA, writing-down allowances, balancing allowances) and the balancing charges, which V4-M4 takes into taxable profit.
+
+**Not in V4-M3:**
+* first-year allowances, including full expensing (`ca_fya_not_modelled` is not raised: no tax category selects them yet);
+* private-use adjustments and cars;
+* structures and buildings allowance;
+* cessation of trade;
+* AIA allocated other than by date order;
+* disclaiming allowances.
+
+**Rules for the whole milestone:**
+* permissions as V4-M1 and V4-M2;
+* every change audited;
+* the two new tables classified (RLS+APP), with no DELETE or TRUNCATE;
+* retention ACCOUNTING_RECORDS.
+
+**Acceptance:**
+* unit tests of the arithmetic;
+* API and database tests;
+* a golden of two consecutive periods (12 months and a 6-month period) worked by hand with formulas;
+* the OpenAPI contract;
+* CI green.
