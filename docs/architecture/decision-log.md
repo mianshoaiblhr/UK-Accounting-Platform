@@ -301,6 +301,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-094 | How V3-M2 is built: the iXBRL document and its validation (delegated, DEC-019; recorded before code) | From the year's approved accounts package and the verified taxonomy version for its standard and year end, the platform builds the contexts, units and facts and renders an inline XBRL (XHTML) document of the accounts. The in-platform checks are stored with it; a document with an error is INVALID. Full taxonomy validation by an external validator is a go-live step |
 | DEC-095 | How V3-M3 is built: the Companies House filing workflow (delegated, DEC-019; recorded before code) | A filing of a VALID iXBRL document moves DRAFT -> VALIDATED -> AUTHORISED -> SUBMITTED -> ACCEPTED or REJECTED, with append-only evidence of each step. Submission needs a person's explicit authority and goes through the Companies House port, whose only adapter is a fake refused in production; a filing made elsewhere is recorded with its evidence. Acceptance marks the accounts deadline done. New permission `ixbrl:file` |
 | DEC-096 | How V3-M4 is built: the iXBRL and filing screens (delegated, DEC-019; recorded before code) | An "Accounts filing" page in the client workspace (the year's iXBRL documents and their checks, the document itself, and the Companies House filing step by step with its evidence) and a "Taxonomy mapping" page for the practice (versions, entries, problems, verification). Screens compute nothing. Behind `ixbrl.filing` |
+| DEC-097 | V4 plan and how V4-M1 is built: Corporation Tax rules, tax periods and the tax profile (delegated, DEC-019; recorded before code) | V4 in six milestones (`docs/architecture/v4-plan.md`). V4-M1: CT rules (rates and limits by financial year, the maximum length of a CT accounting period) as sourced, effective-dated, verified organisation data; the company's tax profile; CT accounting periods derived from the accounts year and split by the verified maximum, each with its associated companies. Behind the new flag `corporation.tax` and two new permissions |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -1532,4 +1533,49 @@ The fourth V3 milestone. The screens show what the API returns and compute nothi
   * Entries are entered with the import tool or the API in V3. The page reads them and does not edit them.
 * **Acceptance:**
   * real-browser tests of the main path across people (generate, start, validate, authorise, submit, read the status), a refusal in the API's words, a reader with no action, and the mapping page's verification;
+  * CI green.
+
+### DEC-097 - V4 plan and how V4-M1 is built: Corporation Tax rules, tax periods and the tax profile (delegated, DEC-019; recorded before code)
+V4 follows V3 (DEC-086). `docs/architecture/v4-plan.md` splits it into six milestones:
+* V4-M1 the rules, the tax periods and the tax profile;
+* V4-M2 the tax adjustments and taxable profit;
+* V4-M3 capital allowances;
+* V4-M4 losses, the computation and the canonical CT600;
+* V4-M5 CT iXBRL and the HMRC submission (fake adapter only, DEC-082);
+* V4-M6 the screens.
+
+**V4-M1:**
+* **Corporation Tax rules** (`ct_rule`, organisation data, jurisdiction UK). A rule version has:
+  * a kind;
+  * the dates it is effective for (financial years run 1 April to 31 March);
+  * its parameters, checked by kind in `@uk/contracts`;
+  * its source (link, provision, date read).
+
+  It starts UNVERIFIED. It is verified once by a holder of `tax:rule-verify` who did not enter it, and it is superseded by a new version. Two current versions of one kind may not overlap (database guard). The kinds in M1:
+  * `CT_RATES`: the main rate and the small profits rate (percentages), the lower and upper limits, and the marginal relief fraction (numerator and denominator);
+  * `PERIOD_MAX_MONTHS`: the longest a CT accounting period may run.
+  Later milestones add their kinds (capital allowances in V4-M3, losses in V4-M4).
+* **The draft pack** `content/tax/drafts/uk-ct-rules.json` lands UNVERIFIED through `scripts/tax/import-ct-rules.mjs`, with a note for the verifier on each rule; the verifier's worksheet gets a sheet for it. It holds:
+  * the rates and limits from financial year 2023, with their provisions;
+  * the 12-month maximum, with its provision.
+
+  Nothing is seeded.
+* **The tax profile** (`company_tax_profile`): the company's Unique Taxpayer Reference (10 digits, format-checked only), set with `ct:prepare` (new) and a reason, audited.
+* **Tax periods** (`ct_period`):
+  * derived from a reporting-framework year by a holder of `ct:prepare`, as one period or, when the year is longer than the verified maximum, as consecutive periods of at most that many months (the first starting on the year's start);
+  * deriving is refused while the maximum rule for the year's start is not verified (`ct_rule_unverified`), and it is idempotent;
+  * each period records the rule version used and its associated companies (0 or more), set with a reason;
+  * a period's dates never change, and it is never deleted.
+* **Permissions:**
+  * `ct:manage` (enter and supersede CT rules) and `ct:prepare`, both company scope, granted to owner, admin, partner and accountant;
+  * verification uses the existing `tax:rule-verify`.
+* **The flag** `corporation.tax` gates the routes.
+* **Records:**
+  * the three tables are classified (RLS+APP), with no DELETE or TRUNCATE;
+  * retention: ACCOUNTING_RECORDS for the rules and the periods, WHILE_ACTIVE for the profile;
+  * every change is audited.
+* **Acceptance:**
+  * unit tests of the period split and the parameter checks;
+  * API and database tests;
+  * the OpenAPI contract;
   * CI green.
