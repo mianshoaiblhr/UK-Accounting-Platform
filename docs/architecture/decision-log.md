@@ -298,6 +298,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-091 | How V5-M2 is built: the VAT filing record (delegated, DEC-019; recorded before code) | An approved return becomes a filing package (boxes 6 to 9 in whole pounds by a verified presentation rule). A filing made outside the platform is recorded with HMRC's receipt and evidence: it posts the liability journal and marks the obligation done. A simulated submission through the HMRC port (fake adapter only, refused in production) exercises the seam and changes nothing else. New permission `vat:file` |
 | DEC-092 | How V5-M3 is built: the VAT return screens (delegated, DEC-019; recorded before code) | A Tax group in the client workspace with VAT returns: the list, opening a return, and the return screen of the prototype (nine boxes with drill-down, checks and flags, sign-off, the client's approval, the filing package and the filing record). Events carry the person's name from the API. Behind `vat.returns` |
 | DEC-093 | V3 plan and how V3-M1 is built: the taxonomy and its mapping (delegated, DEC-019; recorded before code) | V3 in four milestones (`docs/architecture/v3-plan.md`). V3-M1 holds taxonomy versions and their concept maps as versioned organisation data, verified by a second person; nothing of the taxonomy is in code. A draft pack lands UNVERIFIED. Behind the new flag `ixbrl.filing` and two new permissions |
+| DEC-094 | How V3-M2 is built: the iXBRL document and its validation (delegated, DEC-019; recorded before code) | From the year's approved accounts package and the verified taxonomy version for its standard and year end, the platform builds the contexts, units and facts and renders an inline XBRL (XHTML) document of the accounts. The in-platform checks are stored with it; a document with an error is INVALID. Full taxonomy validation by an external validator is a go-live step |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -1450,5 +1451,37 @@ V3 follows V5 (DEC-086). `docs/architecture/v3-plan.md` splits it into four mile
 * **Records:** both tables are classified (RLS+APP), with no DELETE or TRUNCATE (entries of an UNVERIFIED version may be removed through the service, by a guarded delete); retention ACCOUNTING_RECORDS; every change is audited.
 * **Acceptance:**
   * API and database tests (versions, entries, verification by a second person, the freeze, supersession by copy, the import);
+  * the OpenAPI contract;
+  * CI green.
+
+### DEC-094 - How V3-M2 is built: the iXBRL document and its validation (delegated, DEC-019; recorded before code)
+The second V3 milestone (`docs/architecture/v3-plan.md`). It reads the approved accounts package (DEC-070) and the verified mapping (DEC-093), and it changes no accounting record.
+* **Which mapping:** the VERIFIED taxonomy version whose standard is the package's and whose dates cover the year end. It is refused when there is none (`taxonomy_unverified`) or more than one (`taxonomy_ambiguous`).
+* **The entity identifier scheme** becomes data of the taxonomy version (a new column, `entity_scheme`, edited while UNVERIFIED). A version without it cannot generate (`entity_scheme_missing`); a verified one is superseded to add it.
+* **Facts:**
+  * a statutory line gives a fact for the year (its amount) and, when the package has a comparative, one for the prior year;
+  * the prior period starts at the start of the company's previous reporting-framework year, and comparatives are left out (with a warning) when there is no such year;
+  * a DURATION concept takes the period's context and an INSTANT one its end;
+  * an amount is the package's on the line's natural side, negated when the entry says so, with the entry's decimals, in the package currency's ISO 4217 unit;
+  * a line with no amount gives no fact;
+  * the company details come from the package; a preparer's fact comes from the year's facts (the year is locked once approved);
+  * dimensions become explicit members in the context.
+* **Contexts and units** are generated once per distinct period and dimension set, and once per currency.
+* **The document:**
+  * an XHTML file with the inline XBRL header: the schema reference to the version's entry point, the contexts and units, and the hidden facts;
+  * the body shows the company, the year, the statements with each amount tagged (a negative amount is shown without its sign and tagged with `sign="-"`) and the accounts' text sections untagged;
+  * the namespaces of the inline XBRL specification are fixed; those of the taxonomy come only from the version.
+* **Checks,** stored with the document:
+  * errors: a mandatory entry with no value; the package's balance sheet not balanced; a context with its start after its end; two facts of the same concept and context with different values; a fact whose context or unit is missing;
+  * warnings: a line with an amount that no entry maps; comparatives left out.
+
+  A document with an error is INVALID; otherwise it is VALID. Full schema and taxonomy validation, with the FRC taxonomy files and an external validator, is not run in the platform: it is a go-live step (DEC-085).
+* **Storage** (`ixbrl_document`, append-only):
+  * the package, the taxonomy version, the content, its SHA-256, the counts of facts and contexts, the errors and warnings, the status, who generated it and when;
+  * generating again makes a new document. The latest is the current one, and the same content gives the same SHA-256.
+* **Permissions:** generating needs `accounts:prepare`; reading needs `ledger:read`. The routes sit behind `ixbrl.filing`.
+* **Acceptance:**
+  * API tests of a synthetic approved year through generation, the facts and contexts in the document, each check, and the SHA-256;
+  * golden workings of the tagged figures;
   * the OpenAPI contract;
   * CI green.
