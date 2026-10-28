@@ -2900,3 +2900,51 @@ model VatFiling {
   @@index([organisationId, vatReturnId, at], map: "vat_filing_return_idx")
   @@map("vat_filing")
 }
+
+/// V3-M1 (DEC-093): a taxonomy version (entry point, namespaces, dates, source); verified by a second person, then frozen; superseded by a copy.
+model XbrlTaxonomyVersion {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId    String    @map("organisation_id") @db.Uuid
+  label             String
+  standardCode      String    @map("standard_code")
+  entryPoint        String    @map("entry_point")
+  namespaces        Json
+  effectiveFrom     DateTime  @map("effective_from") @db.Date
+  effectiveTo       DateTime? @map("effective_to") @db.Date
+  sourceUrl         String    @map("source_url")
+  sourceReference   String    @map("source_reference")
+  sourceRetrievedOn DateTime  @map("source_retrieved_on") @db.Date
+  notes             String?
+  status            String    @default("UNVERIFIED")
+  copiedFromId      String?   @map("copied_from_id") @db.Uuid
+  createdByUserId   String    @map("created_by_user_id") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  verifiedByUserId  String?   @map("verified_by_user_id") @db.Uuid
+  verifiedAt        DateTime? @map("verified_at") @db.Timestamptz(3)
+  verificationNotes String?   @map("verification_notes")
+  supersededById    String?   @map("superseded_by_id") @db.Uuid
+
+  @@unique([organisationId, id])
+  @@index([organisationId, standardCode, effectiveFrom], map: "xtv_standard_idx")
+  @@map("xbrl_taxonomy_version")
+}
+
+/// V3-M1 (DEC-093): which concept tags a statutory line, preparer's fact or company detail, in a taxonomy version; frozen with its version.
+model XbrlConceptMap {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId String   @map("organisation_id") @db.Uuid
+  versionId      String   @map("version_id") @db.Uuid
+  sourceKind     String   @map("source_kind")
+  sourceKey      String   @map("source_key")
+  concept        String
+  dataType       String   @map("data_type")
+  periodType     String   @map("period_type")
+  negate         Boolean  @default(false)
+  decimals       Int?     @db.SmallInt
+  dimensions     Json     @default("[]")
+  mandatory      Boolean  @default(false)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, versionId, sourceKind, sourceKey], map: "xbrl_concept_map_source_key")
+  @@map("xbrl_concept_map")
+}

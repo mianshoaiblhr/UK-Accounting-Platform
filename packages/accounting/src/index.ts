@@ -31,3 +31,4 @@ export * from './accounts-approval';
 export * from './compliance';
 export * from './vat-return';
 export * from './vat-filing';
+export * from './ixbrl';

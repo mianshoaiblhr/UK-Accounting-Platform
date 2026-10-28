@@ -29836,6 +29836,670 @@
         }
       }
     },
+    "/api/v1/organisations/{organisationId}/ixbrl/taxonomy-versions": {
+      "get": {
+        "operationId": "Taxonomy_list",
+        "parameters": [
+          {
+            "name": "standardCode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 40
+            }
+          },
+          {
+            "name": "includeSuperseded",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Versions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxonomyVersionList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "iXBRL"
+        ],
+        "x-required-feature": "ixbrl.filing",
+        "x-required-permissions": [
+          "org:read"
+        ],
+        "summary": "Taxonomy versions (organisation data), without superseded ones unless asked",
+        "description": "**Requires permission:** `org:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "Taxonomy_create",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxonomyVersion"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "iXBRL"
+        ],
+        "x-required-feature": "ixbrl.filing",
+        "x-required-permissions": [
+          "ixbrl:rules-manage"
+        ],
+        "summary": "Create a taxonomy version with its entry point, namespaces and source (ixbrl:rules-manage), optionally copying another version's entries; it starts UNVERIFIED",
+        "description": "**Requires permission:** `ixbrl:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaxonomyVersionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/ixbrl/taxonomy-versions/{versionId}": {
+      "get": {
+        "operationId": "Taxonomy_get",
+        "parameters": [
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxonomyVersion"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "tags": [
+          "iXBRL"
+        ],
+        "x-required-feature": "ixbrl.filing",
+        "x-required-permissions": [
+          "org:read"
+        ],
+        "summary": "A taxonomy version, its concept map and what stops its verification",
+        "description": "**Requires permission:** `org:read`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "Taxonomy_update",
+        "parameters": [
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxonomyVersion"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "iXBRL"
+        ],
+        "x-required-feature": "ixbrl.filing",
+        "x-required-permissions": [
+          "ixbrl:rules-manage"
+        ],
+        "summary": "Change an UNVERIFIED version (ixbrl:rules-manage)",
+        "description": "**Requires permission:** `ixbrl:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTaxonomyVersionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/ixbrl/taxonomy-versions/{versionId}/entries": {
+      "post": {
+        "operationId": "Taxonomy_addEntry",
+        "parameters": [
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Mapped",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConceptEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "iXBRL"
+        ],
+        "x-required-feature": "ixbrl.filing",
+        "x-required-permissions": [
+          "ixbrl:rules-manage"
+        ],
+        "summary": "Map a source to a concept in an UNVERIFIED version (ixbrl:rules-manage)",
+        "description": "**Requires permission:** `ixbrl:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConceptEntryRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/ixbrl/taxonomy-versions/{versionId}/entries/{entryId}": {
+      "put": {
+        "operationId": "Taxonomy_replaceEntry",
+        "parameters": [
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "entryId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Replaced",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConceptEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "iXBRL"
+        ],
+        "x-required-feature": "ixbrl.filing",
+        "x-required-permissions": [
+          "ixbrl:rules-manage"
+        ],
+        "summary": "Replace a mapping entry of an UNVERIFIED version (ixbrl:rules-manage)",
+        "description": "**Requires permission:** `ixbrl:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConceptEntryRequest"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "Taxonomy_removeEntry",
+        "parameters": [
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "entryId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxonomyVersion"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "tags": [
+          "iXBRL"
+        ],
+        "x-required-feature": "ixbrl.filing",
+        "x-required-permissions": [
+          "ixbrl:rules-manage"
+        ],
+        "summary": "Remove a mapping entry of an UNVERIFIED version (ixbrl:rules-manage)",
+        "description": "**Requires permission:** `ixbrl:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisationId}/ixbrl/taxonomy-versions/{versionId}/verify": {
+      "post": {
+        "operationId": "Taxonomy_verify",
+        "parameters": [
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxonomyVersion"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "iXBRL"
+        ],
+        "x-required-feature": "ixbrl.filing",
+        "x-required-permissions": [
+          "ixbrl:rule-verify"
+        ],
+        "summary": "Verify a consistent version (ixbrl:rule-verify), by someone other than its creator; it is then frozen",
+        "description": "**Requires permission:** `ixbrl:rule-verify`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyTaxonomyVersionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organisations/{organisationId}/ixbrl/taxonomy-versions/{versionId}/supersede": {
+      "post": {
+        "operationId": "Taxonomy_supersede",
+        "parameters": [
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes retries safe: a repeated request with the same key and body replays the first response (24h).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "New version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxonomyVersion"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "422": {
+            "$ref": "#/components/responses/422"
+          }
+        },
+        "tags": [
+          "iXBRL"
+        ],
+        "x-required-feature": "ixbrl.filing",
+        "x-required-permissions": [
+          "ixbrl:rules-manage"
+        ],
+        "summary": "Supersede a verified version with an UNVERIFIED copy of its entries (ixbrl:rules-manage)",
+        "description": "**Requires permission:** `ixbrl:rules-manage`",
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupersedeTaxonomyVersionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organisations/{organisationId}/audit-events": {
       "get": {
         "operationId": "Audit_list",
@@ -30833,6 +31497,9 @@
     },
     {
       "name": "VAT returns"
+    },
+    {
+      "name": "iXBRL"
     },
     {
       "name": "AI"
@@ -48857,6 +49524,438 @@
         ],
         "additionalProperties": false
       },
+      "ConceptEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceKind": {
+            "type": "string",
+            "enum": [
+              "LINE",
+              "FACT",
+              "COMPANY"
+            ]
+          },
+          "sourceKey": {
+            "type": "string",
+            "description": "A statutory line key, a preparer's fact key or a company detail"
+          },
+          "concept": {
+            "type": "string",
+            "description": "prefix:LocalName; the prefix is one the version declares"
+          },
+          "dataType": {
+            "type": "string",
+            "enum": [
+              "MONETARY",
+              "TEXT",
+              "DATE"
+            ]
+          },
+          "periodType": {
+            "type": "string",
+            "enum": [
+              "INSTANT",
+              "DURATION"
+            ]
+          },
+          "negate": {
+            "type": "boolean"
+          },
+          "decimals": {
+            "type": "integer",
+            "nullable": true
+          },
+          "dimensions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "axis": {
+                  "type": "string",
+                  "description": "prefix:LocalName; the prefix is one the version declares"
+                },
+                "member": {
+                  "type": "string",
+                  "description": "prefix:LocalName; the prefix is one the version declares"
+                }
+              },
+              "required": [
+                "axis",
+                "member"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "mandatory": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "sourceKind",
+          "sourceKey",
+          "concept",
+          "dataType",
+          "periodType",
+          "negate",
+          "decimals",
+          "dimensions",
+          "mandatory"
+        ],
+        "additionalProperties": false
+      },
+      "TaxonomyVersion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string"
+          },
+          "standardCode": {
+            "type": "string"
+          },
+          "entryPoint": {
+            "type": "string",
+            "description": "The schema reference of the taxonomy entry point"
+          },
+          "namespaces": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Prefix to namespace URI"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string"
+              },
+              "provision": {
+                "type": "string"
+              },
+              "retrievedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url",
+              "provision",
+              "retrievedOn"
+            ],
+            "additionalProperties": false
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "UNVERIFIED",
+              "VERIFIED",
+              "SUPERSEDED"
+            ]
+          },
+          "copiedFromId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "verifiedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "verifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "verificationNotes": {
+            "type": "string",
+            "nullable": true
+          },
+          "supersededById": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "sourceKind": {
+                  "type": "string",
+                  "enum": [
+                    "LINE",
+                    "FACT",
+                    "COMPANY"
+                  ]
+                },
+                "sourceKey": {
+                  "type": "string",
+                  "description": "A statutory line key, a preparer's fact key or a company detail"
+                },
+                "concept": {
+                  "type": "string",
+                  "description": "prefix:LocalName; the prefix is one the version declares"
+                },
+                "dataType": {
+                  "type": "string",
+                  "enum": [
+                    "MONETARY",
+                    "TEXT",
+                    "DATE"
+                  ]
+                },
+                "periodType": {
+                  "type": "string",
+                  "enum": [
+                    "INSTANT",
+                    "DURATION"
+                  ]
+                },
+                "negate": {
+                  "type": "boolean"
+                },
+                "decimals": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "dimensions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "axis": {
+                        "type": "string",
+                        "description": "prefix:LocalName; the prefix is one the version declares"
+                      },
+                      "member": {
+                        "type": "string",
+                        "description": "prefix:LocalName; the prefix is one the version declares"
+                      }
+                    },
+                    "required": [
+                      "axis",
+                      "member"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "mandatory": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "sourceKind",
+                "sourceKey",
+                "concept",
+                "dataType",
+                "periodType",
+                "negate",
+                "decimals",
+                "dimensions",
+                "mandatory"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What stops verification; empty when it may be verified"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "standardCode",
+          "entryPoint",
+          "namespaces",
+          "effectiveFrom",
+          "effectiveTo",
+          "source",
+          "notes",
+          "status",
+          "copiedFromId",
+          "createdByUserId",
+          "createdAt",
+          "verifiedByUserId",
+          "verifiedAt",
+          "verificationNotes",
+          "supersededById",
+          "entries",
+          "problems"
+        ],
+        "additionalProperties": false
+      },
+      "TaxonomyVersionList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "standardCode": {
+                  "type": "string"
+                },
+                "entryPoint": {
+                  "type": "string",
+                  "description": "The schema reference of the taxonomy entry point"
+                },
+                "namespaces": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "Prefix to namespace URI"
+                },
+                "effectiveFrom": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "effectiveTo": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "nullable": true
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "provision": {
+                      "type": "string"
+                    },
+                    "retrievedOn": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    }
+                  },
+                  "required": [
+                    "url",
+                    "provision",
+                    "retrievedOn"
+                  ],
+                  "additionalProperties": false
+                },
+                "notes": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "UNVERIFIED",
+                    "VERIFIED",
+                    "SUPERSEDED"
+                  ]
+                },
+                "copiedFromId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "createdByUserId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "verifiedByUserId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                },
+                "verifiedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "verificationNotes": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "supersededById": {
+                  "type": "string",
+                  "format": "uuid",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "id",
+                "label",
+                "standardCode",
+                "entryPoint",
+                "namespaces",
+                "effectiveFrom",
+                "effectiveTo",
+                "source",
+                "notes",
+                "status",
+                "copiedFromId",
+                "createdByUserId",
+                "createdAt",
+                "verifiedByUserId",
+                "verifiedAt",
+                "verificationNotes",
+                "supersededById"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
       "VatPresentationRule": {
         "type": "object",
         "properties": {
@@ -59086,7 +60185,9 @@
                 "compliance:rule-verify",
                 "vat:prepare",
                 "vat:review",
-                "vat:file"
+                "vat:file",
+                "ixbrl:rules-manage",
+                "ixbrl:rule-verify"
               ]
             },
             "minItems": 1
@@ -66504,6 +67605,303 @@
         },
         "required": [
           "declarationConfirmed"
+        ],
+        "additionalProperties": false
+      },
+      "CreateTaxonomyVersionRequest": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 200
+          },
+          "standardCode": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 40
+          },
+          "entryPoint": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 500
+          },
+          "namespaces": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "format": "uri",
+              "maxLength": 500
+            }
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 500
+              },
+              "provision": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 300
+              },
+              "retrievedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url",
+              "provision",
+              "retrievedOn"
+            ],
+            "additionalProperties": false
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "copyFromVersionId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "label",
+          "standardCode",
+          "entryPoint",
+          "namespaces",
+          "effectiveFrom",
+          "source"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateTaxonomyVersionRequest": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 200
+          },
+          "entryPoint": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 500
+          },
+          "namespaces": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "format": "uri",
+              "maxLength": 500
+            }
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "nullable": true
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 500
+              },
+              "provision": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 300
+              },
+              "retrievedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url",
+              "provision",
+              "retrievedOn"
+            ],
+            "additionalProperties": false
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 4000,
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ConceptEntryRequest": {
+        "type": "object",
+        "properties": {
+          "sourceKind": {
+            "type": "string",
+            "enum": [
+              "LINE",
+              "FACT",
+              "COMPANY"
+            ]
+          },
+          "sourceKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "concept": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,19}:[A-Za-z_][A-Za-z0-9_.-]{0,199}$"
+          },
+          "dataType": {
+            "type": "string",
+            "enum": [
+              "MONETARY",
+              "TEXT",
+              "DATE"
+            ]
+          },
+          "periodType": {
+            "type": "string",
+            "enum": [
+              "INSTANT",
+              "DURATION"
+            ]
+          },
+          "negate": {
+            "type": "boolean",
+            "default": false
+          },
+          "decimals": {
+            "type": "integer",
+            "minimum": -6,
+            "maximum": 6,
+            "nullable": true,
+            "default": null
+          },
+          "dimensions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "axis": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{0,19}:[A-Za-z_][A-Za-z0-9_.-]{0,199}$"
+                },
+                "member": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{0,19}:[A-Za-z_][A-Za-z0-9_.-]{0,199}$"
+                }
+              },
+              "required": [
+                "axis",
+                "member"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 5,
+            "default": []
+          },
+          "mandatory": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "sourceKind",
+          "sourceKey",
+          "concept",
+          "dataType",
+          "periodType"
+        ],
+        "additionalProperties": false
+      },
+      "VerifyTaxonomyVersionRequest": {
+        "type": "object",
+        "properties": {
+          "notes": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "notes"
+        ],
+        "additionalProperties": false
+      },
+      "SupersedeTaxonomyVersionRequest": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 200
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 500
+              },
+              "provision": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 300
+              },
+              "retrievedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "url",
+              "provision",
+              "retrievedOn"
+            ],
+            "additionalProperties": false
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "label",
+          "effectiveFrom",
+          "source",
+          "reason"
         ],
         "additionalProperties": false
       },

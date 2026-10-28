@@ -99,6 +99,8 @@ probes.push(
   { name: 'open a VAT return', perm: 'vat:prepare', run: (u) => call('post', `/companies/${company.id}/vat-returns`, {})(u) },
   { name: 'review a VAT return', perm: 'vat:review', run: (u) => call('post', `/companies/${company.id}/vat-returns/${GHOST}/review`, {})(u) },
   { name: 'record a VAT filing', perm: 'vat:file', run: (u) => call('post', `/companies/${company.id}/vat-returns/${GHOST}/filings`, {})(u) },
+  { name: 'create a taxonomy version', perm: 'ixbrl:rules-manage', run: call('post', '/ixbrl/taxonomy-versions', {}) },
+  { name: 'verify a taxonomy version', perm: 'ixbrl:rule-verify', run: call('post', `/ixbrl/taxonomy-versions/${GHOST}/verify`, {}) },
 );
 probes.find((p) => p.name === 'create company')!.run = (u) => call('post', '/companies', { name: `Perm ${Math.random()}` })(u);
 probes.push({ name: 'create period', perm: 'period:manage', run: (u) => call('post', `/companies/${company.id}/periods`, { startDate: `${2000 + Math.floor(Math.random() * 90)}-01-01`, endDate: `${2000 + Math.floor(Math.random() * 90)}-12-31` })(u) });

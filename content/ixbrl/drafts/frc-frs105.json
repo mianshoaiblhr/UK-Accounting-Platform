@@ -1,0 +1,407 @@
+{
+  "pack": "FRC-FRS105-MAPPING-DRAFT",
+  "status": "UNVERIFIED engineering draft (DEC-093): every concept, namespace and entry point is a proposal to check against the FRC taxonomy before use",
+  "version": {
+    "label": "FRC taxonomy for FRS 105 micro-entity accounts - engineering draft 0.1 (unverified)",
+    "standardCode": "FRS105",
+    "entryPoint": "https://xbrl.frc.org.uk/FRS-102/2023-01-01/FRS-102-2023-01-01.xsd",
+    "namespaces": {
+      "core": "http://xbrl.frc.org.uk/fr/2023-01-01/core",
+      "bus": "http://xbrl.frc.org.uk/cd/2023-01-01/business"
+    },
+    "effectiveFrom": "2026-01-01",
+    "source": {
+      "url": "https://www.frc.org.uk/accountants/frc-taxonomies/",
+      "provision": "FRC Taxonomies (FRS 102 taxonomy, used for FRS 105 accounts); drafted, not retrieved: check the current suite and entry point",
+      "retrievedOn": "2026-10-28"
+    },
+    "notes": "Engineering draft (DEC-093). Maps the FRS 105 micro-entity pack (content/standards/drafts/frs105-micro.json) and the company details. Directors other than the approving director are not mapped yet: the officer dimension needs one member per director (V3-M2). Amounts carry pence (decimals 2): check whether the filed accounts round to whole pounds."
+  },
+  "entries": [
+    {
+      "sourceKind": "COMPANY",
+      "sourceKey": "company.name",
+      "concept": "bus:EntityCurrentLegalOrRegisteredName",
+      "dataType": "TEXT",
+      "periodType": "DURATION",
+      "negate": false,
+      "decimals": null,
+      "dimensions": [],
+      "mandatory": true,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "COMPANY",
+      "sourceKey": "company.number",
+      "concept": "bus:UKCompaniesHouseRegisteredNumber",
+      "dataType": "TEXT",
+      "periodType": "DURATION",
+      "negate": false,
+      "decimals": null,
+      "dimensions": [],
+      "mandatory": true,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "COMPANY",
+      "sourceKey": "period.start",
+      "concept": "bus:StartDateForPeriodCoveredByReport",
+      "dataType": "DATE",
+      "periodType": "DURATION",
+      "negate": false,
+      "decimals": null,
+      "dimensions": [],
+      "mandatory": true,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "COMPANY",
+      "sourceKey": "period.end",
+      "concept": "bus:EndDateForPeriodCoveredByReport",
+      "dataType": "DATE",
+      "periodType": "DURATION",
+      "negate": false,
+      "decimals": null,
+      "dimensions": [],
+      "mandatory": true,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "COMPANY",
+      "sourceKey": "balanceSheetDate",
+      "concept": "bus:BalanceSheetDate",
+      "dataType": "DATE",
+      "periodType": "INSTANT",
+      "negate": false,
+      "decimals": null,
+      "dimensions": [],
+      "mandatory": true,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "COMPANY",
+      "sourceKey": "approval.director",
+      "concept": "core:DirectorSigningFinancialStatements",
+      "dataType": "TEXT",
+      "periodType": "DURATION",
+      "negate": false,
+      "decimals": null,
+      "dimensions": [],
+      "mandatory": true,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "COMPANY",
+      "sourceKey": "approval.date",
+      "concept": "core:DateAuthorisationFinancialStatementsForIssue",
+      "dataType": "DATE",
+      "periodType": "DURATION",
+      "negate": false,
+      "decimals": null,
+      "dimensions": [],
+      "mandatory": true,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "P.T",
+      "concept": "core:TurnoverRevenue",
+      "dataType": "MONETARY",
+      "periodType": "DURATION",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [],
+      "mandatory": false,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "P.OI",
+      "concept": "core:OtherOperatingIncomeFormat2",
+      "dataType": "MONETARY",
+      "periodType": "DURATION",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [],
+      "mandatory": false,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "P.RM",
+      "concept": "core:RawMaterialsConsumablesUsed",
+      "dataType": "MONETARY",
+      "periodType": "DURATION",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [],
+      "mandatory": false,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "P.STAFF",
+      "concept": "core:StaffCostsEmployeeBenefitsExpense",
+      "dataType": "MONETARY",
+      "periodType": "DURATION",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [],
+      "mandatory": false,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "P.DEP",
+      "concept": "core:DepreciationAmortisationImpairmentExpense",
+      "dataType": "MONETARY",
+      "periodType": "DURATION",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [],
+      "mandatory": false,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "P.OC",
+      "concept": "core:OtherOperatingExpensesFormat2",
+      "dataType": "MONETARY",
+      "periodType": "DURATION",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [],
+      "mandatory": false,
+      "verifierNote": "Proposal: check which concept the micro-entity format's 'other charges' takes"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "P.TAX",
+      "concept": "core:TaxTaxCreditOnProfitOrLossOnOrdinaryActivities",
+      "dataType": "MONETARY",
+      "periodType": "DURATION",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [],
+      "mandatory": false,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "P.PROFIT",
+      "concept": "core:ProfitLoss",
+      "dataType": "MONETARY",
+      "periodType": "DURATION",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [],
+      "mandatory": true,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "B.CSU",
+      "concept": "core:CalledUpShareCapitalNotPaidNotExpressedAsCurrentAsset",
+      "dataType": "MONETARY",
+      "periodType": "INSTANT",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [],
+      "mandatory": false,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "B.FA",
+      "concept": "core:FixedAssets",
+      "dataType": "MONETARY",
+      "periodType": "INSTANT",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [],
+      "mandatory": false,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "B.CA",
+      "concept": "core:CurrentAssets",
+      "dataType": "MONETARY",
+      "periodType": "INSTANT",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [],
+      "mandatory": false,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "B.PREPAY",
+      "concept": "core:PrepaymentsAccruedIncomeNotExpressedWithinCurrentAssetSubtotal",
+      "dataType": "MONETARY",
+      "periodType": "INSTANT",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [],
+      "mandatory": false,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "B.CW",
+      "concept": "core:Creditors",
+      "dataType": "MONETARY",
+      "periodType": "INSTANT",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [
+        {
+          "axis": "core:MaturitiesOrExpirationPeriodsAxis",
+          "member": "core:WithinOneYear"
+        }
+      ],
+      "mandatory": false,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "B.NCA",
+      "concept": "core:NetCurrentAssetsLiabilities",
+      "dataType": "MONETARY",
+      "periodType": "INSTANT",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [],
+      "mandatory": false,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "B.TALCL",
+      "concept": "core:TotalAssetsLessCurrentLiabilities",
+      "dataType": "MONETARY",
+      "periodType": "INSTANT",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [],
+      "mandatory": false,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "B.CA1",
+      "concept": "core:Creditors",
+      "dataType": "MONETARY",
+      "periodType": "INSTANT",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [
+        {
+          "axis": "core:MaturitiesOrExpirationPeriodsAxis",
+          "member": "core:AfterOneYear"
+        }
+      ],
+      "mandatory": false,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "B.PROV",
+      "concept": "core:ProvisionsForLiabilitiesBalanceSheetSubtotal",
+      "dataType": "MONETARY",
+      "periodType": "INSTANT",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [],
+      "mandatory": false,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "B.ACCR",
+      "concept": "core:AccruedLiabilitiesDeferredIncome",
+      "dataType": "MONETARY",
+      "periodType": "INSTANT",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [],
+      "mandatory": false,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "B.NA",
+      "concept": "core:NetAssetsLiabilities",
+      "dataType": "MONETARY",
+      "periodType": "INSTANT",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [],
+      "mandatory": true,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "B.SC",
+      "concept": "core:Equity",
+      "dataType": "MONETARY",
+      "periodType": "INSTANT",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [
+        {
+          "axis": "core:EquityClassesOfEquityAxis",
+          "member": "core:ShareCapital"
+        }
+      ],
+      "mandatory": false,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "B.RES",
+      "concept": "core:Equity",
+      "dataType": "MONETARY",
+      "periodType": "INSTANT",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [
+        {
+          "axis": "core:EquityClassesOfEquityAxis",
+          "member": "core:OtherMiscellaneousReserve"
+        }
+      ],
+      "mandatory": false,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "B.PLR",
+      "concept": "core:Equity",
+      "dataType": "MONETARY",
+      "periodType": "INSTANT",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [
+        {
+          "axis": "core:EquityClassesOfEquityAxis",
+          "member": "core:RetainedEarningsAccumulatedLosses"
+        }
+      ],
+      "mandatory": false,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    },
+    {
+      "sourceKind": "LINE",
+      "sourceKey": "B.CR",
+      "concept": "core:Equity",
+      "dataType": "MONETARY",
+      "periodType": "INSTANT",
+      "negate": false,
+      "decimals": 2,
+      "dimensions": [],
+      "mandatory": true,
+      "verifierNote": "Proposal written without reading the taxonomy: check the concept, its period type and balance against the FRC taxonomy files"
+    }
+  ]
+}

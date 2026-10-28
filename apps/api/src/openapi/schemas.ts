@@ -703,3 +703,19 @@ export const VatFiling = z.object({
   submittedOn: day, receiptReference: z.string(), receipt: z.record(z.unknown()).nullable(), adapter: z.string().nullable(), evidenceDocumentId: uuid.nullable(),
   journalId: uuid.nullable().describe('The liability journal of a recorded filing'), note: z.string().nullable(), package: filingPackage, packageSha256: z.string(), presentationRuleId: uuid, byUserId: uuid, at: ts, notice: z.string(),
 });
+
+// ───────────── V3-M1 the taxonomy and its mapping (DEC-093) ─────────────
+const qname = z.string().describe('prefix:LocalName; the prefix is one the version declares');
+export const ConceptEntry = z.object({
+  id: uuid, sourceKind: z.enum(['LINE', 'FACT', 'COMPANY']), sourceKey: z.string().describe('A statutory line key, a preparer\'s fact key or a company detail'),
+  concept: qname, dataType: z.enum(['MONETARY', 'TEXT', 'DATE']), periodType: z.enum(['INSTANT', 'DURATION']), negate: z.boolean(), decimals: z.number().int().nullable(),
+  dimensions: z.array(z.object({ axis: qname, member: qname })), mandatory: z.boolean(),
+});
+const taxonomyVersionFields = {
+  id: uuid, label: z.string(), standardCode: z.string(), entryPoint: z.string().describe('The schema reference of the taxonomy entry point'), namespaces: z.record(z.string()).describe('Prefix to namespace URI'),
+  effectiveFrom: day, effectiveTo: day.nullable(), source: z.object({ url: z.string(), provision: z.string(), retrievedOn: day }), notes: z.string().nullable(),
+  status: z.enum(['UNVERIFIED', 'VERIFIED', 'SUPERSEDED']), copiedFromId: uuid.nullable(), createdByUserId: uuid, createdAt: ts,
+  verifiedByUserId: uuid.nullable(), verifiedAt: ts.nullable(), verificationNotes: z.string().nullable(), supersededById: uuid.nullable(),
+};
+export const TaxonomyVersionSummary = z.object(taxonomyVersionFields);
+export const TaxonomyVersion = z.object({ ...taxonomyVersionFields, entries: z.array(ConceptEntry), problems: z.array(z.string()).describe('What stops verification; empty when it may be verified') });

@@ -16,6 +16,7 @@ import { ContactRolesService } from './master-data/contact-roles.service';
 import { createHmrcVat } from '@uk/adapters';
 import { VatApiService, VatController } from './ledger/vat.controller';
 import { VatFilingController, VatReturnController } from './ledger/vat-return.controller';
+import { IxbrlApiService, TaxonomyController } from './ixbrl/ixbrl.controller';
 import { CompanyComplianceController, ComplianceApiService, ComplianceController } from './compliance/compliance.controller';
 import { SalesApiService, SalesController } from './sales/sales.controller';
 import { PurchasesApiService, PurchasesController } from './purchases/purchases.controller';
@@ -56,7 +57,7 @@ import { OrganisationsController } from './organisations/organisations.controlle
 import { OrganisationsService } from './organisations/organisations.service';
 import { LedgerController } from './ledger/ledger.controller';
 import { LedgerApiService } from './ledger/ledger.service';
-import { VatFilingService, VatReturnService, ComplianceService, AccountsApprovalService, AccountsDocumentService, CashFlowService, ReviewService, YearEndWorkflowService, SizeTestService, SizeThresholdService, DirectorService, YearEndCloseService, YearEndService, DepreciationService, FixedAssetService, FrameworkService, StandardsService, StatutoryReportService, AlertService, DrillDownService, ReportService, BankService, CashService, ReconciliationService, PurchasesService, SalesService, VatService, AccountService, FxSettingsService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, RateService, RevaluationService } from '@uk/accounting';
+import { TaxonomyService, VatFilingService, VatReturnService, ComplianceService, AccountsApprovalService, AccountsDocumentService, CashFlowService, ReviewService, YearEndWorkflowService, SizeTestService, SizeThresholdService, DirectorService, YearEndCloseService, YearEndService, DepreciationService, FixedAssetService, FrameworkService, StandardsService, StatutoryReportService, AlertService, DrillDownService, ReportService, BankService, CashService, ReconciliationService, PurchasesService, SalesService, VatService, AccountService, FxSettingsService, JournalRequestService, LedgerPolicyService, LedgerQueries, PeriodService, PostingService, RateService, RevaluationService } from '@uk/accounting';
 
 @Module({})
 export class AppModule {
@@ -65,12 +66,13 @@ export class AppModule {
       module: AppModule,
       imports: [InfraModule.forRoot(config), AuditModule, AuthModule],
       controllers: [HealthController, OrganisationsController, CompaniesController, DocumentsController, FoldersController, EvidenceController, JobsController,
-        TasksController, PracticesController, FeatureFlagsController, MasterDataController, ReferenceController, WorkflowsController, NotificationsController, IntegrationsController, AiController, LedgerController, ContactRolesController, VatController, SalesController, PurchasesController, CashController, BankController, ReportsController, StandardsController, FixedAssetsController, YearEndController, YearEndCloseController, DirectorsController, AccountsDocumentController, SizeTestController, ReviewController, YearEndWorkflowController, AccountsApprovalController, ComplianceController, CompanyComplianceController, VatReturnController, VatFilingController],
+        TasksController, PracticesController, FeatureFlagsController, MasterDataController, ReferenceController, WorkflowsController, NotificationsController, IntegrationsController, AiController, LedgerController, ContactRolesController, VatController, SalesController, PurchasesController, CashController, BankController, ReportsController, StandardsController, FixedAssetsController, YearEndController, YearEndCloseController, DirectorsController, AccountsDocumentController, SizeTestController, ReviewController, YearEndWorkflowController, AccountsApprovalController, ComplianceController, CompanyComplianceController, VatReturnController, VatFilingController, TaxonomyController],
       providers: [
         { provide: PostingService, useFactory: () => new PostingService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: AccountService, useFactory: () => new AccountService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: VatService, useFactory: () => new VatService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: VatReturnService, inject: [VatService], useFactory: (v: VatService) => new VatReturnService(v, { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
+        { provide: TaxonomyService, useFactory: () => new TaxonomyService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) }, IxbrlApiService,
         { provide: VatFilingService, inject: [VatService, PostingService], useFactory: (v: VatService, p: PostingService) => new VatFilingService(v, p, createHmrcVat(config), { captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: ComplianceService, useFactory: () => new ComplianceService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },
         { provide: SalesService, useFactory: () => new SalesService({ captureDeviceMetadata: config.AUDIT_CAPTURE_DEVICE_METADATA }) },

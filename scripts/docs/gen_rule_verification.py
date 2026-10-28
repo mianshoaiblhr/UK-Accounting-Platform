@@ -40,7 +40,8 @@ STEPS = [
     ("5", "Check every line, map entry, rule and threshold against the standard and the Companies Act provisions, using docs/architecture/v2-draft-wording-review.xlsx; correct or remove rules, then verify each version.", "Shoaib, with accounts:rule-verify", "The platform refuses a verifier who imported the version (DEC-052)"),
     ("6", "Import content/compliance/drafts/uk-deadline-rules.json with scripts/compliance/import-deadline-rules.mjs, then check each rule on the 'Deadline rules' sheet and verify it, or supersede it with a corrected version first.", "Import: a person with compliance:rules-manage; verify: Shoaib, with compliance:rule-verify", "The platform refuses a verifier who entered the rule (DEC-088)"),
     ("7", "Enter the presentation rule for boxes 6 to 9 on the 'VAT presentation' sheet (Settings > VAT presentation rules, or POST vat-presentation-rules), then check it against Notice 700/12 and verify it.", "Enter: a person with vat:manage; verify: Shoaib, with tax:rule-verify", "Without a verified rule no VAT return can be filed or recorded (DEC-091)"),
-    ("8", "Fill in the 'Sign-off' sheet with the platform's record of each verification.", "Shoaib", "Evidence for the go-live checklist (DEC-085, item 3)"),
+    ("8", "Import content/ixbrl/drafts/frc-frs105.json with scripts/ixbrl/import-taxonomy.mjs, then check the entry point, the namespaces and every entry on the 'iXBRL mapping' sheet against the FRC taxonomy files; correct entries while UNVERIFIED, then verify the version.", "Import: a person with ixbrl:rules-manage; verify: Shoaib, with ixbrl:rule-verify", "The platform refuses a verifier who created the version (DEC-093)"),
+    ("9", "Fill in the 'Sign-off' sheet with the platform's record of each verification.", "Shoaib", "Evidence for the go-live checklist (DEC-085, item 3)"),
 ]
 LAW = [
     ("Value Added Tax Act 1994, ss.1, 2, 4, 8, 24-26, 29A, 30, 31 and 55A", "The charge, the rates, input tax, reverse charges", LEG + "contents"),
@@ -48,6 +49,9 @@ LAW = [
     ("Value Added Tax (Input Tax) Order 1992, SI 1992/3222", "Input tax blocks: business entertainment, cars", "https://www.legislation.gov.uk/uksi/1992/3222/contents"),
     ("VAT Notice 700/12", "How each box of the return is filled", "https://www.gov.uk/guidance/how-to-fill-in-and-submit-your-vat-return-vat-notice-70012"),
     ("Making Tax Digital for VAT: VAT (MTD) API, submit VAT return", "The value of each box as HMRC's API receives it; boxes 6 to 9 in whole pounds", "https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/vat-api/1.0"),
+    ("FRC Taxonomies (FRS 102 suite)", "The concepts, entry point and namespaces of tagged UK accounts", "https://www.frc.org.uk/accountants/frc-taxonomies/"),
+    ("Companies House: filing accounts as iXBRL (software filing)", "What Companies House accepts electronically", "https://www.gov.uk/government/publications/technical-interface-specifications-for-companies-house-software"),
+    ("Companies Act 2006, ss.441-444 and 1068", "Duty to file accounts; the registrar's power to require electronic form", "https://www.legislation.gov.uk/ukpga/2006/46/section/441"),
     ("VAT Notice 700 (the VAT guide)", "Rounding of VAT (the platform rounds each line half-up, DEC-025)", "https://www.gov.uk/guidance/vat-guide-notice-700"),
     ("Companies Act 2006, ss.382-384 and 384A-384B", "Small companies and micro-entities: the size tests", "https://www.legislation.gov.uk/ukpga/2006/46/section/382"),
     ("Companies Act 2006, ss.442-443 and 853A", "Deadlines: filing accounts, the month-end rule, the confirmation statement", "https://www.legislation.gov.uk/ukpga/2006/46/section/442"),
@@ -138,9 +142,19 @@ table(pres, "Presentation rule for boxes 6 to 9 (V5-M2, DEC-091)",
       ["Method", "What it does", "Effective from", "Provision to check", "Source", "What to check", "Verified (yes / corrected)", "Verified on", "Verifier's notes"],
       PRES, [18, 60, 14, 40, 60, 60, 18, 14, 40], link_cols=(5,), input_cols=(7, 8, 9))
 
+# V3-M1 (DEC-093): the draft taxonomy mapping, read from the pack itself so the sheet cannot drift from it
+xpack = json.loads((root / "content/ixbrl/drafts/frc-frs105.json").read_text())
+xrows = [(e["sourceKind"], e["sourceKey"], e["concept"], e["dataType"], e["periodType"], "yes" if e["negate"] else "no", "" if e["decimals"] is None else e["decimals"],
+          "; ".join(f'{d["axis"]} = {d["member"]}' for d in e["dimensions"]), "yes" if e["mandatory"] else "no", e["verifierNote"], "", "", "") for e in xpack["entries"]]
+xs = wb.create_sheet("iXBRL mapping")
+table(xs, "Draft taxonomy mapping for FRS 105 accounts (V3-M1, DEC-093)",
+      f"Entry point {xpack['version']['entryPoint']}; namespaces " + ", ".join(f"{k} = {v}" for k, v in xpack['version']['namespaces'].items()) + ". Every concept is a proposal written without reading the taxonomy.",
+      ["Source kind", "Source", "Concept", "Data type", "Period", "Negate", "Decimals", "Dimensions", "Mandatory", "What to check", "Verified (yes / corrected)", "Verified on", "Verifier's notes"],
+      xrows, [12, 18, 52, 12, 10, 8, 9, 50, 10, 60, 18, 14, 40], input_cols=(11, 12, 13))
+
 sign = wb.create_sheet("Sign-off")
 sign_rows = ([(r[0], "Rate version", "", "", "") for r in VAT_CODES] + [(r[0], "Standard version", "", "", "") for r in srows]
-             + [(r["kind"], "Deadline rule", "", "", "") for r in pack["rules"]] + [("Boxes 6 to 9", "Presentation rule", "", "", "")])
+             + [(r["kind"], "Deadline rule", "", "", "") for r in pack["rules"]] + [("Boxes 6 to 9", "Presentation rule", "", "", ""), ("FRS 105 taxonomy mapping", "Taxonomy version", "", "", "")])
 table(sign, "Sign-off", "Filled in by the verifier from the platform's records.", ["Item", "Kind", "Platform record id", "Verified by", "Date"],
       sign_rows, [40, 18, 40, 20, 14], input_cols=(3, 4, 5))
 

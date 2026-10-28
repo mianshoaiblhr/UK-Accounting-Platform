@@ -104,7 +104,9 @@ export const RETENTION_RULES: readonly RetentionRule[] = [
     // V5-M1: the VAT return as approved and how it was prepared, reviewed and approved (DEC-090)
     'vat_return', 'vat_return_event',
     // V5-M2: the presentation rule explains boxes 6 to 9 of a filing (DEC-091)
-    'vat_presentation_rule']),
+    'vat_presentation_rule',
+    // V3-M1: the taxonomy mapping explains how filed accounts were tagged (DEC-093)
+    'xbrl_taxonomy_version', 'xbrl_concept_map']),
   // V7-M1: an obligation is the record of a filing or payment and its evidence (DEC-088)
   ...tableRules('FILING_EVIDENCE', ['compliance_obligation',
     // V5-M2: a VAT filing and its receipt (DEC-091)
