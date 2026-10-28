@@ -675,7 +675,7 @@ export const VatReturnFlag = z.object({
 });
 export const VatReturnEvent = z.object({
   id: uuid, kind: z.enum(['PREPARED', 'FLAG_EXPLAINED', 'REVIEWED', 'CLIENT_APPROVED']), fingerprint: z.string(), live: z.boolean().describe('False once the ledger changed after it (lapsed)'),
-  flagKey: z.string().nullable(), note: z.string().nullable(), byUserId: uuid, at: ts, approverContactId: uuid.nullable(), approvedOn: day.nullable(), evidenceDocumentId: uuid.nullable(),
+  flagKey: z.string().nullable(), note: z.string().nullable(), byUserId: uuid, byName: z.string().nullable().describe('V5-M3: the person\'s display name'), at: ts, approverContactId: uuid.nullable(), approvedOn: day.nullable(), evidenceDocumentId: uuid.nullable(),
 });
 export const VatReturn = z.object({
   id: uuid, companyId: uuid, periodFrom: day, periodTo: day, obligationId: uuid.nullable().describe('The client\'s VAT obligation for the period (V7-M1), when there is one'),

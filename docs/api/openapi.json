@@ -48730,6 +48730,11 @@
                   "type": "string",
                   "format": "uuid"
                 },
+                "byName": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "V5-M3: the person's display name"
+                },
                 "at": {
                   "type": "string",
                   "format": "date-time"
@@ -48758,6 +48763,7 @@
                 "flagKey",
                 "note",
                 "byUserId",
+                "byName",
                 "at",
                 "approverContactId",
                 "approvedOn",

@@ -88,7 +88,7 @@ describe('the VAT return of a synthetic quarter', () => {
   it('preparing records the fingerprint; it cannot be prepared twice as it stands; the accountant cannot review', async () => {
     const r = ok(await as(accountant, 'post', c(`/vat-returns/${q1}/prepare`), { note: 'Prepared from the synthetic ledger' }));
     expect(r.status).toBe('PREPARED');
-    expect(r.events).toEqual([expect.objectContaining({ kind: 'PREPARED', live: true, byUserId: accountant.userId, fingerprint: r.fingerprint })]);
+    expect(r.events).toEqual([expect.objectContaining({ kind: 'PREPARED', live: true, byUserId: accountant.userId, byName: accountant.displayName, fingerprint: r.fingerprint })]);
     expect((await as(accountant, 'post', c(`/vat-returns/${q1}/prepare`), {})).body.code).toBe('already_prepared');
     expect((await as(accountant, 'post', c(`/vat-returns/${q1}/review`), {})).status).toBe(403);
   });

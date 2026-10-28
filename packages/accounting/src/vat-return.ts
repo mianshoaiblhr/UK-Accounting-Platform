@@ -73,16 +73,19 @@ export class VatReturnService {
       return { ...f, explanation: e ? { note: e.note!, byUserId: e.byUserId, at: e.at } : null };
     });
     const status = vatReturnStatus({ locked: !!r.lockedAt, fingerprint: live.fingerprint, events });
-    return { events, wp, fingerprint: live.fingerprint, flags, status };
+    // the person's name on each event, as the organisation knows them (V5-M3, DEC-092): the screen shows it and computes nothing
+    const names = new Map((await tx.organisationMembership.findMany({ where: { userId: { in: [...new Set(events.map((e) => e.byUserId))] } }, select: { userId: true, user: { select: { displayName: true } } } }))
+      .map((m) => [m.userId, m.user.displayName]));
+    return { events, wp, fingerprint: live.fingerprint, flags, status, names };
   }
   private view(r: ReturnRow, s: Awaited<ReturnType<VatReturnService['state']>>) {
-    const ev = (e: EventRow) => ({ id: e.id, kind: e.kind, fingerprint: e.fingerprint, live: !!r.lockedAt || e.fingerprint === s.fingerprint, flagKey: e.flagKey, note: e.note, byUserId: e.byUserId, at: e.at,
+    const ev = (e: EventRow) => ({ id: e.id, kind: e.kind, fingerprint: e.fingerprint, live: !!r.lockedAt || e.fingerprint === s.fingerprint, flagKey: e.flagKey, note: e.note, byUserId: e.byUserId, byName: s.names.get(e.byUserId) ?? null, at: e.at,
       approverContactId: e.approverContactId, approvedOn: e.approvedOn ? isoDay(e.approvedOn) : null, evidenceDocumentId: e.evidenceDocumentId });
     return {
       id: r.id, companyId: r.companyId, periodFrom: isoDay(r.periodFrom), periodTo: isoDay(r.periodTo), obligationId: r.obligationId, status: s.status, fingerprint: s.fingerprint,
       locked: !!r.lockedAt, lockedAt: r.lockedAt, lockedByUserId: r.lockedByUserId, createdByUserId: r.createdByUserId, createdAt: r.createdAt,
       workpaper: s.wp, flags: s.flags, unexplainedFlags: s.flags.filter((f) => !f.explanation).length, events: s.events.map(ev),
-      notice: 'VAT return for review and approval: not a submission. Nothing is sent to HMRC (DEC-082, DEC-086). Boxes 6 to 9 are exact here; whole-pound presentation is applied when the filing record is built (V5-M2).',
+      notice: 'For review and approval: not a submission. Nothing is sent to HMRC from the platform. Boxes 6 to 9 are shown here in pounds and pence, and in whole pounds when the return is filed.',
     };
   }
 

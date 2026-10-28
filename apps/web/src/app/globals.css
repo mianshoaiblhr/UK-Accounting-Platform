@@ -174,3 +174,9 @@ tr.current td:first-child, tr.current td:nth-child(2) { color: var(--signal); fo
   nav.top { padding: 10px 16px; }
   nav.top .who .muted { max-width: 160px; }
 }
+/* V5-M3 (DEC-092): the VAT return's review flags */
+.flags { list-style: none; margin: 0; padding: 0; }
+.flags li { border-top: 1px solid var(--edge); padding: 8px 0; }
+.flags li p { margin: 0 0 6px; }
+details summary { cursor: pointer; }
+td.date { white-space: nowrap; font-variant-numeric: tabular-nums; }

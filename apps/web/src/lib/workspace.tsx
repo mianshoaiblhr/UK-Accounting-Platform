@@ -35,9 +35,11 @@ const SECTIONS: { href: string; label: string; permission: string; group: string
   { href: '/registers', label: 'Registers', permission: 'ledger:read', group: 'Accounts production', feature: 'accounts.production' },
   // V7-M1 (DEC-088): the client's deadlines, shown only while practice management is on
   { href: '/compliance', label: 'Deadlines', permission: 'compliance:read', group: 'Compliance', feature: 'practice.management' },
+  // V5-M3 (DEC-092): VAT returns
+  { href: '/vat-returns', label: 'VAT returns', permission: 'ledger:read', group: 'Tax', feature: 'vat.returns' },
 ];
 /** How a feature that gates a page is named when it is off. */
-const FEATURE_NAMES: Record<string, string> = { 'accounts.production': 'Accounts production', 'practice.management': 'Practice management' };
+const FEATURE_NAMES: Record<string, string> = { 'accounts.production': 'Accounts production', 'practice.management': 'Practice management', 'vat.returns': 'VAT returns' };
 
 /** `feature`: a further feature the page needs besides bookkeeping (V2 screens: `accounts.production`); while it is off the page says so and renders nothing that calls the API. */
 export function WorkspaceShell({ children, need, feature }: { children: ReactNode; need?: string; feature?: string }) {
