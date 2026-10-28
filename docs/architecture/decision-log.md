@@ -303,6 +303,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-096 | How V3-M4 is built: the iXBRL and filing screens (delegated, DEC-019; recorded before code) | An "Accounts filing" page in the client workspace (the year's iXBRL documents and their checks, the document itself, and the Companies House filing step by step with its evidence) and a "Taxonomy mapping" page for the practice (versions, entries, problems, verification). Screens compute nothing. Behind `ixbrl.filing` |
 | DEC-097 | V4 plan and how V4-M1 is built: Corporation Tax rules, tax periods and the tax profile (delegated, DEC-019; recorded before code) | V4 in six milestones (`docs/architecture/v4-plan.md`). V4-M1: CT rules (rates and limits by financial year, the maximum length of a CT accounting period) as sourced, effective-dated, verified organisation data; the company's tax profile; CT accounting periods derived from the accounts year and split by the verified maximum, each with its associated companies. Behind the new flag `corporation.tax` and two new permissions |
 | DEC-098 | V4-M1 details settled while building (delegated, DEC-019) | Any current CT rule version, verified or not, is changed by superseding it (a version is never edited); a new version keeps its kind. Deriving periods answers 200 with `created`. If the accounts year changed after its periods were derived, deriving refuses with `ct_periods_stale` instead of re-splitting |
+| DEC-099 | How V4-M2 is built: tax adjustments and the profit of each CT period (delegated, DEC-019; recorded before code) | Account adjustment rules (an account, a category and the share of its movement that is added back or deducted) as company data, verified by a second person; manual adjustments with evidence, withdrawn but never removed; the profit of a CT period from the ledger (profit before tax), each adjustment and the adjusted profit, each adjustment drilling to its ledger lines or its evidence, with what still needs attention. Nothing is stored as a result |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -1586,3 +1587,43 @@ These refine DEC-097. None of them is a tax rule.
 * **Superseding.** A CT rule version is never edited, so a wrong UNVERIFIED version is corrected the same way as a verified one: by a new version that supersedes it. The new version keeps the kind of the one it replaces (`kind_mismatch` otherwise). A superseded version cannot be verified.
 * **Deriving.** Deriving the periods of a year answers 200 with `created` (true the first time, false when the periods already exist), so a client can call it again safely. Two derivations at the same moment cannot both write: the second is refused by the unique start date (`ct_period_exists`).
 * **A changed accounts year.** The accounts year can still be changed until it is approved, but a period's dates never change (DEC-097). If the year's end no longer matches its last period, deriving refuses with `ct_periods_stale` and returns the periods it holds. How such periods are corrected (a superseding period set) is left to the computation milestone (V4-M4), before any computation relies on them.
+
+### DEC-099 - How V4-M2 is built: tax adjustments and the profit of each CT period (delegated, DEC-019; recorded before code)
+V4-M2 of `docs/architecture/v4-plan.md`. It produces the profit of a CT accounting period adjusted for tax, **before** capital allowances (V4-M3) and losses (V4-M4). It computes no tax.
+* **Accounting profit** of a period is the profit before tax from the ledger, the same figure as the profit and loss account:
+  * the net of every INCOME and EXPENSE account for journals dated in the period;
+  * leaving out the closing journals (`YEAR_END_CLOSE` and its reversal) and accounts mapped to the tax line (`PL.TAXATION`).
+* **Account adjustment rules** (`ct_adjustment_rule`, company data):
+  * a rule names an INCOME or EXPENSE account of the company, a category, a percentage (above 0, at most 100), the journal dates it covers, a reason and, optionally, the provision relied on;
+  * categories: `DISALLOWABLE`, `DEPRECIATION`, `ENTERTAINING`, `PROVISION`, `LEGAL_PROFESSIONAL`, `NON_TAXABLE_INCOME`, `OTHER`;
+  * entered with `ct:prepare`, verified once by a holder of `tax:rule-verify` who did not enter it, changed only by a new version that supersedes it;
+  * two current rules of one account may not cover the same date (database guard).
+
+  Classifying an account is the firm's judgement about its contents, not a figure of law, so a rule is company data rather than a rule of the DEC-021 kind. It is still verified by a second person, because it moves the taxable profit.
+* **The adjustment a rule makes** for a period: the account's debits less its credits for journals dated in the period and inside the rule's dates (closing journals left out), times the percentage, rounded half-up to the currency's minor units.
+  * A positive result is added to profit: an expense disallowed.
+  * A negative result is deducted: income that is not taxable.
+* **Manual adjustments** (`ct_adjustment`):
+  * belong to one CT period, with a category, a direction (`ADD` or `DEDUCT`), a positive amount, a description and an evidence document of the company that the person can read; the evidence is required;
+  * entered with `ct:prepare`;
+  * withdrawn once with a reason by a holder of `ct:prepare`, and never changed or removed (database guard).
+* **The statement** (`GET ct-periods/{id}/adjusted-profit`, `ledger:read`) shows:
+  * the accounting profit;
+  * every adjustment: rule-made ones with the account, the movement, the percentage and a drill-down to the account's lines for the dates; manual ones with the evidence document;
+  * the totals added and deducted, and the adjusted profit;
+  * `problems`: unverified rules that made an adjustment, and associated companies not yet set with a reason. The computation (V4-M4) will refuse while there are problems;
+  * a SHA-256 fingerprint of the statement.
+
+  Nothing is stored: the statement is read from the ledger each time. V4-M4 stores the computation it approves.
+* **Rules for the whole milestone:**
+  * screens compute nothing (DEC-048);
+  * AI may not write any of this (`ai_cannot_write`);
+  * every change is audited;
+  * the two tables are classified (RLS+APP), with no DELETE or TRUNCATE;
+  * retention is ACCOUNTING_RECORDS for both.
+* **Acceptance:**
+  * unit tests of the arithmetic;
+  * API and database tests;
+  * a golden workbook of a synthetic period worked by hand;
+  * the OpenAPI contract;
+  * CI green.
