@@ -118,7 +118,7 @@ export class VatFilingService {
   }
   async getPackage(tx: Tx, companyId: string, returnId: string) {
     const p = await this.package(tx, companyId, returnId);
-    return { package: p.package, sha256: p.sha256, notice: 'The filing package of the approved return. Nothing is sent to HMRC from the platform (DEC-082, DEC-086).' };
+    return { package: p.package, sha256: p.sha256, notice: 'The filing package of the approved return. Nothing is sent to HMRC from the platform.' };
   }
   async listFilings(tx: Tx, companyId: string, returnId: string) {
     if (!(await tx.vatReturn.findFirst({ where: { id: returnId, companyId }, select: { id: true } }))) throw notFound('VAT return not found');

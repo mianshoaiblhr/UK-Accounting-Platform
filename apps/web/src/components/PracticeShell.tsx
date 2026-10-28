@@ -13,6 +13,8 @@ const SECTIONS: { href: string; label: string }[] = [
   { href: '/overview', label: 'Overview' },
   { href: '/clients', label: 'Clients' },
   { href: '/deadlines', label: 'Deadlines' },
+  // V3-M4 (DEC-096)
+  { href: '/taxonomy', label: 'Taxonomy mapping' },
 ];
 
 export function PracticeShell({ children }: { children: (me: Me) => ReactNode }) {

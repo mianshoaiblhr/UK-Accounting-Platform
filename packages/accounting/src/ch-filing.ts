@@ -29,7 +29,7 @@ const filingView = (f: FilingRow, events: EventRow[] = []) => ({
   submissionId: f.submissionId, chReference: f.chReference, acceptedOn: f.acceptedOn ? isoDay(f.acceptedOn) : null, acceptanceEvidenceId: f.acceptanceEvidenceId,
   rejectionReasons: (f.rejectionReasons as string[] | null) ?? [], updatedAt: f.updatedAt,
   events: events.map((e) => ({ id: e.id, fromStatus: e.fromStatus, toStatus: e.toStatus, payloadSha256: e.payloadSha256, submissionId: e.submissionId, request: e.request, response: e.response, note: e.note, byUserId: e.byUserId, at: e.at })),
-  notice: f.mode === 'RECORDED' ? 'Filed outside the platform and recorded with its evidence.' : 'Through the Companies House port. The only adapter is a fake: nothing reaches Companies House (DEC-095).',
+  notice: f.mode === 'RECORDED' ? 'Filed outside the platform and recorded with its evidence.' : 'Through the Companies House connection, which in this version is a test stand-in: nothing reaches Companies House.',
 });
 
 export class ChFilingService {

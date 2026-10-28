@@ -33,13 +33,15 @@ const SECTIONS: { href: string; label: string; permission: string; group: string
   // V2-M7 (DEC-071): accounts production, shown only while its feature is on
   { href: '/year-end', label: 'Year end', permission: 'ledger:read', group: 'Accounts production', feature: 'accounts.production' },
   { href: '/registers', label: 'Registers', permission: 'ledger:read', group: 'Accounts production', feature: 'accounts.production' },
+  // V3-M4 (DEC-096): the iXBRL document and the Companies House filing
+  { href: '/filing', label: 'Accounts filing', permission: 'ledger:read', group: 'Accounts production', feature: 'ixbrl.filing' },
   // V7-M1 (DEC-088): the client's deadlines, shown only while practice management is on
   { href: '/compliance', label: 'Deadlines', permission: 'compliance:read', group: 'Compliance', feature: 'practice.management' },
   // V5-M3 (DEC-092): VAT returns
   { href: '/vat-returns', label: 'VAT returns', permission: 'ledger:read', group: 'Tax', feature: 'vat.returns' },
 ];
 /** How a feature that gates a page is named when it is off. */
-const FEATURE_NAMES: Record<string, string> = { 'accounts.production': 'Accounts production', 'practice.management': 'Practice management', 'vat.returns': 'VAT returns' };
+const FEATURE_NAMES: Record<string, string> = { 'accounts.production': 'Accounts production', 'practice.management': 'Practice management', 'vat.returns': 'VAT returns', 'ixbrl.filing': 'Accounts filing' };
 
 /** `feature`: a further feature the page needs besides bookkeeping (V2 screens: `accounts.production`); while it is off the page says so and renders nothing that calls the API. */
 export function WorkspaceShell({ children, need, feature }: { children: ReactNode; need?: string; feature?: string }) {

@@ -180,3 +180,9 @@ tr.current td:first-child, tr.current td:nth-child(2) { color: var(--signal); fo
 .flags li p { margin: 0 0 6px; }
 details summary { cursor: pointer; }
 td.date { white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* V3-M4 (DEC-096): the steps of a Companies House filing */
+.steps { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 8px 0 12px; padding: 0; counter-reset: step; }
+.steps li { counter-increment: step; padding: 4px 10px; border-radius: 999px; font-size: 12px; line-height: 16px; background: var(--pill-bg); color: var(--pencil); }
+.steps li::before { content: counter(step) ". "; }
+.steps li.done { background: var(--pill-pos-bg); color: var(--pill-pos-ink); }
+.steps li.current { background: var(--ink); color: var(--sheet); font-weight: 500; }

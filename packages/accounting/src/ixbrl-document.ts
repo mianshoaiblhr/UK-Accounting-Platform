@@ -170,7 +170,7 @@ export class IxbrlDocumentService {
   private view(d: Awaited<ReturnType<Tx['ixbrlDocument']['findUniqueOrThrow']>>, withContent = false) {
     return { id: d.id, companyId: d.companyId, packageId: d.packageId, taxonomyVersionId: d.taxonomyVersionId, status: d.status, sha256: d.sha256, factCount: d.factCount, contextCount: d.contextCount,
       errors: d.errors as string[], warnings: d.warnings as string[], byUserId: d.byUserId, at: d.at, ...(withContent ? { content: d.content } : {}),
-      notice: 'Checked in the platform only: full schema and taxonomy validation with an external validator is a go-live step. Nothing is filed (DEC-082, DEC-086).' };
+      notice: 'Checked in the platform only. Full schema and taxonomy validation with an external validator is still needed before real filing. Nothing is filed from this page.' };
   }
 
   /** Builds and stores the document of the year's approved package (accounts:prepare). */
