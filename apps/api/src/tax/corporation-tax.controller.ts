@@ -2,10 +2,11 @@ import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Query
 import { z } from 'zod';
 import {
   associatedCompaniesSchema, createCtAdjustmentRuleSchema, createCtAdjustmentSchema, createCtRuleSchema, ctAdjustmentRuleListQuerySchema, ctRuleListQuerySchema, deriveCtPeriodsSchema, supersedeCtAdjustmentRuleSchema,
+  approveCtComputationSchema, createLossOpeningSchema, ctComputationQuerySchema, prepareCtComputationSchema, supersedeLossOpeningSchema, verifyLossOpeningSchema,
   createPoolOpeningSchema, poolOpeningListQuerySchema, storeCapitalAllowancesSchema, supersedePoolOpeningSchema, verifyPoolOpeningSchema,
   supersedeCtRuleSchema, taxProfileSchema, verifyCtAdjustmentRuleSchema, verifyCtRuleSchema, withdrawCtAdjustmentSchema,
 } from '@uk/contracts';
-import { CapitalAllowanceService, CorporationTaxService, ctPeriodView } from '@uk/accounting';
+import { CapitalAllowanceService, CorporationTaxService, CtComputationService, ctPeriodView } from '@uk/accounting';
 import { Idempotent, Org, RequireFeature, RequirePermissions } from '../common/decorators';
 import type { OrgAccess } from '../common/types';
 import { ZodPipe } from '../common/zod.pipe';
@@ -17,7 +18,7 @@ const ID = (n: string) => Param(n, ParseUUIDPipe);
 @Controller('organisations/:organisationId/companies/:companyId')
 @RequireFeature('corporation.tax')
 export class CorporationTaxController {
-  constructor(private readonly api: VatApiService, private readonly svc: CorporationTaxService, private readonly ca: CapitalAllowanceService) {}
+  constructor(private readonly api: VatApiService, private readonly svc: CorporationTaxService, private readonly ca: CapitalAllowanceService, private readonly comp: CtComputationService) {}
 
   @Get('ct-rules') @RequirePermissions('ledger:read')
   listRules(@Org() org: OrgAccess, @Query(new ZodPipe(ctRuleListQuerySchema)) q: z.output<typeof ctRuleListQuerySchema>) { return this.api.run(org, (tx) => this.svc.listRules(tx, q)); }
@@ -110,4 +111,37 @@ export class CorporationTaxController {
   }
   @Get('ct-periods/:periodId/capital-allowances/computations') @RequirePermissions('ledger:read')
   listCa(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('periodId') id: string) { return this.api.run(org, (tx) => this.ca.list(tx, c, id)); }
+
+  // ───── V4-M4 (DEC-101): losses, the computation and the canonical CT600 ─────
+  @Get('ct-loss-openings') @RequirePermissions('ledger:read')
+  listLossOpenings(@Org() org: OrgAccess, @ID('companyId') c: string) { return this.api.run(org, (tx) => this.comp.listLossOpenings(tx, c)); }
+  @Post('ct-loss-openings') @RequirePermissions('ct:prepare') @Idempotent()
+  addLossOpening(@Org() org: OrgAccess, @ID('companyId') c: string, @Body(new ZodPipe(createLossOpeningSchema)) b: z.output<typeof createLossOpeningSchema>) {
+    return this.api.run(org, (tx, actor) => this.comp.addLossOpening(tx, { organisationId: org.organisationId, companyId: c, actor, ...b }));
+  }
+  @Post('ct-loss-openings/:openingId/supersede') @RequirePermissions('ct:prepare') @Idempotent()
+  supersedeLossOpening(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('openingId') id: string, @Body(new ZodPipe(supersedeLossOpeningSchema)) b: z.output<typeof supersedeLossOpeningSchema>) {
+    return this.api.run(org, (tx, actor) => this.comp.supersedeLossOpening(tx, { organisationId: org.organisationId, companyId: c, actor, id, ...b }));
+  }
+  @Post('ct-loss-openings/:openingId/verify') @HttpCode(200) @RequirePermissions('tax:rule-verify') @Idempotent()
+  verifyLossOpening(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('openingId') id: string, @Body(new ZodPipe(verifyLossOpeningSchema)) b: z.output<typeof verifyLossOpeningSchema>) {
+    return this.api.run(org, (tx, actor) => this.comp.verifyLossOpening(tx, { organisationId: org.organisationId, companyId: c, actor, id, ...b }));
+  }
+  /** Worked live; nothing is written. */
+  @Get('ct-periods/:periodId/computation') @RequirePermissions('ledger:read')
+  previewComputation(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('periodId') id: string, @Query(new ZodPipe(ctComputationQuerySchema)) q: z.output<typeof ctComputationQuerySchema>) {
+    return this.api.run(org, (tx) => this.comp.preview(tx, c, id, q));
+  }
+  @Post('ct-periods/:periodId/computation') @RequirePermissions('ct:prepare') @Idempotent()
+  prepareComputation(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('periodId') id: string, @Body(new ZodPipe(prepareCtComputationSchema)) b: z.output<typeof prepareCtComputationSchema>) {
+    return this.api.run(org, (tx, actor) => this.comp.prepare(tx, { organisationId: org.organisationId, companyId: c, actor, periodId: id, ...b }));
+  }
+  @Get('ct-periods/:periodId/computations') @RequirePermissions('ledger:read')
+  listComputations(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('periodId') id: string) { return this.api.run(org, (tx) => this.comp.list(tx, c, id)); }
+  @Post('ct-periods/:periodId/computations/:computationId/approve') @HttpCode(200) @RequirePermissions('ct:approve') @Idempotent()
+  approveComputation(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('periodId') periodId: string, @ID('computationId') id: string, @Body(new ZodPipe(approveCtComputationSchema)) b: z.output<typeof approveCtComputationSchema>) {
+    return this.api.run(org, (tx, actor) => this.comp.approve(tx, { organisationId: org.organisationId, companyId: c, actor, periodId, id, ...b }));
+  }
+  @Get('ct-periods/:periodId/ct600') @RequirePermissions('ledger:read')
+  ct600(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('periodId') id: string) { return this.api.run(org, (tx) => this.comp.ct600(tx, c, id)); }
 }

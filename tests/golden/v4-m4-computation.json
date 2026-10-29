@@ -1,0 +1,19 @@
+{
+  "about": "V4-M4 (DEC-101) golden: a profitable 12-month CT period across two financial years (2027), then a 182-day loss period (January to June 2028) whose loss is carried back to it. The rates and limits (main 25%, small profits 19%, limits £50,000 and £250,000, fraction 3/200) are fixtures entered and verified in the test, not tax advice. Worked by hand in docs/architecture/v4-m4-golden-workings.xlsx.",
+  "rates": { "mainRate": "25", "smallProfitsRate": "19", "lowerLimit": "50000", "upperLimit": "250000", "marginalReliefFraction": { "numerator": 3, "denominator": 200 } },
+  "periods": [
+    { "yearStart": "2027-01-01", "yearEnd": "2027-12-31", "journals": [["4000", "0", "200000.00"], ["6000", "50000.00", "0"]], "lossOpening": "10000.00", "mainPoolOpening": "111111.11" },
+    { "yearStart": "2028-01-01", "yearEnd": "2028-06-30", "journals": [["4000", "0", "10000.00"], ["6000", "40000.00", "0"]] }
+  ],
+  "expected": {
+    "A1": { "adjustedProfit": "150000.00", "allowances": "20000.00", "tradingProfit": "130000.00", "lossesBroughtForwardUsed": "10000.00", "taxableTotalProfits": "120000.00", "lossesCarriedForward": "0.00",
+      "financialYears": [[2026, 90, "29589.04", "12328.77", "61643.84", "MARGINAL_RELIEF", "7397.26", "480.82", "6916.44"], [2027, 275, "90410.96", "37671.23", "188356.16", "MARGINAL_RELIEF", "22602.74", "1469.18", "21133.56"]],
+      "corporationTax": "28050.00" },
+    "B": { "adjustedProfit": "-30000.00", "allowances": "8177.53", "tradingLoss": "38177.53", "carryBack": "38177.53", "taxableTotalProfits": "0.00", "lossesCarriedForward": "0.00",
+      "financialYears": [[2027, 91, "0.00", "12465.75", "62328.77", "SMALL_PROFITS_RATE", "0.00", "0.00", "0.00"], [2028, 91, "0.00", "12465.75", "62328.77", "SMALL_PROFITS_RATE", "0.00", "0.00", "0.00"]],
+      "corporationTax": "0.00" },
+    "A2": { "lossCarriedBackFromFollowing": "38177.53", "taxableTotalProfits": "81822.47",
+      "financialYears": [[2026, 90, "20175.40", "12328.77", "61643.84", "MARGINAL_RELIEF", "5043.85", "622.03", "4421.82"], [2027, 275, "61647.07", "37671.23", "188356.16", "MARGINAL_RELIEF", "15411.77", "1900.64", "13511.13"]],
+      "corporationTax": "17932.95" }
+  }
+}

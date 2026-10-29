@@ -796,3 +796,33 @@ export const CapitalAllowances = z.object({
 });
 export const CaComputation = z.object({ id: uuid, periodId: uuid, priorComputationId: uuid.nullable(), fingerprint: z.string(), preparedByUserId: uuid, preparedAt: ts, supersededById: uuid.nullable(),
   stale: z.boolean().describe('The prior period\'s current computation is no longer the one this opened from'), snapshot: z.record(z.unknown()) });
+
+// ───────────── V4-M4 losses, the computation and the canonical CT600 (DEC-101) ─────────────
+export const LossOpening = z.object({
+  id: uuid, companyId: uuid, asOf: day, amount: z.string().describe('Trading losses brought forward at the date'), evidenceDocumentId: uuid, reason: z.string(), enteredByUserId: uuid, createdAt: ts,
+  verificationStatus: z.enum(['UNVERIFIED', 'VERIFIED']), verifiedByUserId: uuid.nullable(), verifiedAt: ts.nullable(), verificationNotes: z.string().nullable(), supersededById: uuid.nullable(),
+});
+const fyPart = z.object({ financialYear: z.number().int(), from: day, to: day, days: z.number().int(), ruleId: uuid, profit: z.string(), lowerLimit: z.string(), upperLimit: z.string(),
+  basis: z.enum(['SMALL_PROFITS_RATE', 'MAIN_RATE', 'MARGINAL_RELIEF']), rate: z.string(), taxAtRate: z.string(), marginalRelief: z.string(), tax: z.string() });
+const ctResult = z.object({
+  adjustedProfit: z.string(), allowances: z.string(), balancingCharges: z.string(), tradingProfit: z.string(), tradingLoss: z.string(), lossesBroughtForward: z.string(), lossesBroughtForwardUsed: z.string(),
+  profitsBeforeCarryBack: z.string(), lossCarriedBackFromFollowing: z.string(), taxableTotalProfits: z.string(), carryBack: z.string(), lossesCarriedForward: z.string(), associatedCompanies: z.number().int(),
+  financialYears: z.array(fyPart), corporationTax: z.string(),
+});
+const neighbours = z.object({ previous: z.object({ periodId: uuid, computationId: uuid, lossesCarriedForward: z.string(), profitsBeforeCarryBack: z.string() }).nullable(),
+  following: z.object({ periodId: uuid, computationId: uuid, carryBack: z.string() }).nullable(), lossOpeningId: uuid.nullable() });
+export const CtComputationPreview = z.object({
+  periodId: uuid, companyId: uuid, startDate: day, endDate: day, turnover: z.string(), inputs: z.object({ adjustedProfitFingerprint: z.string(), capitalAllowancesComputationId: uuid.nullable() }),
+  neighbours, result: ctResult, problems: z.array(z.string()).describe('What stops the computation from being prepared'), fingerprint: z.string(), notice: z.string(),
+});
+export const CtComputation = z.object({
+  id: uuid, periodId: uuid, status: z.enum(['PREPARED', 'APPROVED']), fingerprint: z.string(), carryBack: z.string(), neighbours, preparedByUserId: uuid, preparedAt: ts,
+  approval: z.object({ byUserId: uuid, at: ts, notes: z.string() }).nullable(), supersededById: uuid.nullable(), stale: z.boolean().describe('A neighbouring period\'s approved figures have changed since this was prepared'), snapshot: z.record(z.unknown()),
+});
+export const Ct600 = z.object({
+  format: z.literal('uk-ct600-canonical/1'), computationId: uuid, fingerprint: z.string(), company: z.object({ name: z.string(), registrationNumber: z.string().nullable(), utr: z.string() }), period: z.object({ from: day, to: day }),
+  turnover: z.string(), tradingProfits: z.string(), tradingLossesBroughtForwardUsed: z.string(), netTradingProfits: z.string(), nonTradingLoanRelationships: z.string(), propertyIncome: z.string(), chargeableGains: z.string(),
+  lossCarriedBackFromLaterPeriod: z.string(), taxableTotalProfits: z.string(), associatedCompanies: z.number().int(),
+  financialYears: z.array(z.object({ financialYear: z.number().int(), profit: z.string(), rate: z.string(), taxAtRate: z.string(), marginalRelief: z.string(), basis: z.string() })),
+  corporationTaxChargeable: z.string(), taxPayable: z.string(), losses: z.object({ tradingLossOfPeriod: z.string(), carriedBack: z.string(), carriedForward: z.string() }), approval: z.object({ byUserId: uuid.nullable(), at: ts.nullable() }),
+});

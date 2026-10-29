@@ -36,3 +36,4 @@ export * from './ixbrl-document';
 export * from './ch-filing';
 export * from './corporation-tax';
 export * from './capital-allowances';
+export * from './ct-computation';

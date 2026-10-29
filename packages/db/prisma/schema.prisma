@@ -3167,3 +3167,46 @@ model CaComputation {
   @@unique([organisationId, id])
   @@map("ca_computation")
 }
+
+/// V4-M4 (DEC-101): trading losses brought forward at a date, with evidence; verified by a second person, immutable.
+model CtLossOpening {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId     String    @map("organisation_id") @db.Uuid
+  companyId          String    @map("company_id") @db.Uuid
+  asOf               DateTime  @map("as_of") @db.Date
+  amount             Decimal   @db.Decimal(18, 2)
+  evidenceDocumentId String    @map("evidence_document_id") @db.Uuid
+  reason             String
+  enteredByUserId    String    @map("entered_by_user_id") @db.Uuid
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  verificationStatus String    @default("UNVERIFIED") @map("verification_status")
+  verifiedByUserId   String?   @map("verified_by_user_id") @db.Uuid
+  verifiedAt         DateTime? @map("verified_at") @db.Timestamptz(3)
+  verificationNotes  String?   @map("verification_notes")
+  supersededById     String?   @map("superseded_by_id") @db.Uuid
+
+  @@unique([organisationId, id])
+  @@map("ct_loss_opening")
+}
+
+/// V4-M4 (DEC-101): a Corporation Tax computation of a CT period; prepared by one person, approved by another; never changed, superseded once.
+model CtComputation {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId   String    @map("organisation_id") @db.Uuid
+  companyId        String    @map("company_id") @db.Uuid
+  periodId         String    @map("period_id") @db.Uuid
+  status           String    @default("PREPARED")
+  snapshot         Json
+  fingerprint      String
+  carryBack        Decimal   @default(0) @map("carry_back") @db.Decimal(18, 2)
+  neighbours       Json
+  preparedByUserId String    @map("prepared_by_user_id") @db.Uuid
+  preparedAt       DateTime  @default(now()) @map("prepared_at") @db.Timestamptz(3)
+  approvedByUserId String?   @map("approved_by_user_id") @db.Uuid
+  approvedAt       DateTime? @map("approved_at") @db.Timestamptz(3)
+  approvalNotes    String?   @map("approval_notes")
+  supersededById   String?   @map("superseded_by_id") @db.Uuid
+
+  @@unique([organisationId, id])
+  @@map("ct_computation")
+}

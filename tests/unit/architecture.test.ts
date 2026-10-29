@@ -330,6 +330,7 @@ describe('database access paths that carry security meaning', () => {
       'packages/accounting/src/ch-filing.ts',      // the filing's authority and acceptance evidence use the actor's canReadDocument (DEC-095)
       'packages/accounting/src/compliance.ts',     // rule-verification and filing evidence use the actor's canReadDocument (DEC-088)
       'packages/accounting/src/corporation-tax.ts', // CT-rule verification and adjustment evidence use the actor's canReadDocument (DEC-097, DEC-099)
+      'packages/accounting/src/ct-computation.ts', // loss-opening evidence uses the preparer's canReadDocument (DEC-101)
       'packages/accounting/src/requests.ts',       // request evidence check uses the requester's canReadDocument
       'packages/accounting/src/vat-filing.ts',     // the filing receipt and rule-verification evidence use the actor's canReadDocument (DEC-091)
       'packages/accounting/src/vat-return.ts',     // the client's approval evidence uses the actor's canReadDocument (DEC-090)

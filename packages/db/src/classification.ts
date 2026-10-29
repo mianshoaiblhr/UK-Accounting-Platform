@@ -123,6 +123,8 @@ export const TABLE_PROTECTION: Record<string, { protection: Protection; why: str
   ct_adjustment: { protection: 'RLS+APP', why: 'V4-M2 a manual tax adjustment of a CT period with its evidence; withdrawn once, never changed or removed (trigger).' },
   ca_pool_opening: { protection: 'RLS+APP', why: 'V4-M3 a capital allowances pool\'s written-down value at a date, with evidence; verified by a second person, immutable (trigger).' },
   ca_computation: { protection: 'RLS+APP', why: 'V4-M3 a stored capital allowances computation of a CT period; never changed, superseded once (trigger).' },
+  ct_loss_opening: { protection: 'RLS+APP', why: 'V4-M4 trading losses brought forward at a date, with evidence; verified by a second person, immutable (trigger).' },
+  ct_computation: { protection: 'RLS+APP', why: 'V4-M4 a Corporation Tax computation of a CT period; prepared by one person, approved by another; never changed, superseded once (trigger).' },
   ct_period: { protection: 'RLS+APP', why: 'V4-M1 a CT accounting period derived from an accounts year; dates fixed, associated companies versioned; never deleted (trigger).' },
   review_setting: { protection: 'RLS+APP', why: 'V2-M6a the firm\'s review settings per company, versioned rows (DEC-068); written once.' },
   review_flag_response: { protection: 'RLS+APP', why: 'V2-M6a responses to review flags: explained, signed off by a second person, reopened (DEC-068); written once (trigger checks the second person).' },

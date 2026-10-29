@@ -273,6 +273,12 @@ export class CorporationTaxService {
          AND (${accountId ?? null}::uuid IS NULL OR l.account_id = ${accountId ?? null}::uuid)
        GROUP BY l.account_id, a.code, a.name, a.type, a.reporting_mapping ORDER BY a.code`;
   }
+  /** V4-M4 (DEC-101): turnover for the CT600, the net credit of accounts on the turnover line for journals dated in the range (closing journals left out). */
+  async turnover(tx: Tx, companyId: string, from: string, to: string) {
+    let t = '0.00';
+    for (const m of await this.movements(tx, companyId, from, to)) if (m.reporting_mapping === 'PL.TURNOVER') t = addMoney(t, addMoney(m.c, negate(m.d), 2), 2);
+    return t;
+  }
   async adjustedProfit(tx: Tx, companyId: string, periodId: string) {
     const p = await this.getPeriod(tx, companyId, periodId);
     const from = isoDay(p.startDate), to = isoDay(p.endDate);

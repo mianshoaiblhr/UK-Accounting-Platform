@@ -31,3 +31,4 @@ export * from './vat-return';
 export * from './ixbrl';
 export * from './corporation-tax';
 export * from './capital-allowances';
+export * from './ct-computation';
