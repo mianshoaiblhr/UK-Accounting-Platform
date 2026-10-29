@@ -122,7 +122,9 @@ export const RETENTION_RULES: readonly RetentionRule[] = [
     // V3-M2: the iXBRL document of filed accounts (DEC-094)
     'ixbrl_document',
     // V3-M3: the Companies House filing and its evidence (DEC-095)
-    'ch_filing', 'ch_filing_event']),
+    'ch_filing', 'ch_filing_event',
+    // V4-M5: the CT return and its evidence (DEC-102)
+    'ct_return', 'ct_return_event']),
   ...tableRules('WHILE_ACTIVE', [
     'user', 'user_identity', 'mfa_factor', 'mfa_recovery_code', 'organisation', 'role', 'organisation_membership', 'practice', 'practice_membership', 'company_membership', 'invitation',
     'company', 'company_officer', 'contact', 'contact_role', 'customer_profile', 'supplier_profile', 'address', 'feature_flag_override', 'task', 'task_attachment', 'task_comment', 'workflow_instance', 'workflow_transition',

@@ -99,7 +99,7 @@ describe('adapter boundary: no S3 / ClamAV specifics outside packages/adapters',
     expect(offenders).toEqual([]);
   });
   it('application code imports only the PORTS from @uk/adapters (+ the factory functions)', () => {
-    const allowed = new Set(['StoragePort', 'AntivirusPort', 'EmailPort', 'sniffMatches', 'createStorage', 'createAntivirus', 'createEmail', 'createHmrcVat', 'createCompaniesHouse', 'PresignedUpload', 'ScanResult', 'OutboundEmail']);
+    const allowed = new Set(['StoragePort', 'AntivirusPort', 'EmailPort', 'sniffMatches', 'createStorage', 'createAntivirus', 'createEmail', 'createHmrcVat', 'createCompaniesHouse', 'createHmrcCt', 'PresignedUpload', 'ScanResult', 'OutboundEmail']);
     const bad: string[] = [];
     for (const f of SRC.filter((x) => !rel(x).startsWith('packages/adapters/'))) {
       for (const m of read(f).matchAll(/import (?:type )?\{([^}]+)\} from '@uk\/adapters'/g)) {
@@ -331,6 +331,7 @@ describe('database access paths that carry security meaning', () => {
       'packages/accounting/src/compliance.ts',     // rule-verification and filing evidence use the actor's canReadDocument (DEC-088)
       'packages/accounting/src/corporation-tax.ts', // CT-rule verification and adjustment evidence use the actor's canReadDocument (DEC-097, DEC-099)
       'packages/accounting/src/ct-computation.ts', // loss-opening evidence uses the preparer's canReadDocument (DEC-101)
+      'packages/accounting/src/ct-return.ts',     // the declaration's and acceptance evidence use the actor's canReadDocument (DEC-102)
       'packages/accounting/src/requests.ts',       // request evidence check uses the requester's canReadDocument
       'packages/accounting/src/vat-filing.ts',     // the filing receipt and rule-verification evidence use the actor's canReadDocument (DEC-091)
       'packages/accounting/src/vat-return.ts',     // the client's approval evidence uses the actor's canReadDocument (DEC-090)

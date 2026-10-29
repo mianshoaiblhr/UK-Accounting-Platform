@@ -104,6 +104,7 @@ probes.push(
   { name: 'start a Companies House filing', perm: 'ixbrl:file', run: (u) => call('post', `/companies/${company.id}/ch-filings`, {})(u) },
   { name: 'enter a Corporation Tax rule', perm: 'ct:manage', run: (u) => call('post', `/companies/${company.id}/ct-rules`, {})(u) },
   { name: 'derive CT accounting periods', perm: 'ct:prepare', run: (u) => call('post', `/companies/${company.id}/ct-periods/derive`, {})(u) },
+  { name: 'start a CT return', perm: 'ct:file', run: (u) => call('post', `/companies/${company.id}/ct-returns`, {})(u) },
   { name: 'approve a CT computation', perm: 'ct:approve', run: (u) => call('post', `/companies/${company.id}/ct-periods/${GHOST}/computations/${GHOST}/approve`, {})(u) },
 );
 probes.find((p) => p.name === 'create company')!.run = (u) => call('post', '/companies', { name: `Perm ${Math.random()}` })(u);

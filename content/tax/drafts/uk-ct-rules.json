@@ -75,6 +75,42 @@
         "retrievedOn": "2026-10-28"
       },
       "verifierNote": "Check the £1,000 small pools limit (main and special rate pools only) and its reduction for a period shorter than 12 months. The platform claims it whenever it applies; a claim is optional in law and disclaiming is not modelled."
+    },
+    {
+      "kind": "CT600_FORM",
+      "effectiveFrom": "2015-04-01",
+      "parameters": {
+        "formVersion": "CT600 (2015) version 3 (draft map)",
+        "boxes": {
+          "turnover": 145,
+          "tradingProfits": 155,
+          "tradingLossesBroughtForwardUsed": 160,
+          "netTradingProfits": 165,
+          "nonTradingLoanRelationships": 170,
+          "propertyIncome": 190,
+          "chargeableGains": 210,
+          "taxableTotalProfits": 315,
+          "associatedCompanies": 326,
+          "fy1.financialYear": 330,
+          "fy1.profit": 335,
+          "fy1.rate": 340,
+          "fy1.taxAtRate": 345,
+          "fy2.financialYear": 380,
+          "fy2.profit": 385,
+          "fy2.rate": 390,
+          "fy2.taxAtRate": 395,
+          "corporationTaxAtRates": 430,
+          "marginalReliefTotal": 435,
+          "corporationTaxChargeable": 440,
+          "taxPayable": 525
+        }
+      },
+      "source": {
+        "url": "https://www.gov.uk/government/publications/corporation-tax-company-tax-return-ct600-2015-version-3",
+        "provision": "HMRC form CT600 (2015) version 3 and its guide (CT600 Guide)",
+        "retrievedOn": "2026-10-28"
+      },
+      "verifierNote": "Engineering's draft box map, written from memory and not checked against the form. Check every box against the current CT600 and its guide, including the version in use for the period. Fields with no box here (the loss carried back from a later period, the trading loss of the period, losses carried back and forward, and the marginal relief and associated-company boxes per financial year) make a return with a value in them refuse to start until you map them: losses are on the supplementary pages and the loss boxes of the form. Correct the map by superseding it before verifying."
     }
   ]
 }

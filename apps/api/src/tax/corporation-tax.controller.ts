@@ -1,12 +1,12 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Get, Header, HttpCode, Param, ParseUUIDPipe, Post, Put, Query } from '@nestjs/common';
 import { z } from 'zod';
 import {
   associatedCompaniesSchema, createCtAdjustmentRuleSchema, createCtAdjustmentSchema, createCtRuleSchema, ctAdjustmentRuleListQuerySchema, ctRuleListQuerySchema, deriveCtPeriodsSchema, supersedeCtAdjustmentRuleSchema,
-  approveCtComputationSchema, createLossOpeningSchema, ctComputationQuerySchema, prepareCtComputationSchema, supersedeLossOpeningSchema, verifyLossOpeningSchema,
+  approveCtComputationSchema, authoriseCtReturnSchema, createCtReturnSchema, ctReturnStepSchema, recordCtReturnSchema, createLossOpeningSchema, ctComputationQuerySchema, prepareCtComputationSchema, supersedeLossOpeningSchema, verifyLossOpeningSchema,
   createPoolOpeningSchema, poolOpeningListQuerySchema, storeCapitalAllowancesSchema, supersedePoolOpeningSchema, verifyPoolOpeningSchema,
   supersedeCtRuleSchema, taxProfileSchema, verifyCtAdjustmentRuleSchema, verifyCtRuleSchema, withdrawCtAdjustmentSchema,
 } from '@uk/contracts';
-import { CapitalAllowanceService, CorporationTaxService, CtComputationService, ctPeriodView } from '@uk/accounting';
+import { CapitalAllowanceService, CorporationTaxService, CtComputationService, CtReturnService, ctPeriodView } from '@uk/accounting';
 import { Idempotent, Org, RequireFeature, RequirePermissions } from '../common/decorators';
 import type { OrgAccess } from '../common/types';
 import { ZodPipe } from '../common/zod.pipe';
@@ -144,4 +144,43 @@ export class CorporationTaxController {
   }
   @Get('ct-periods/:periodId/ct600') @RequirePermissions('ledger:read')
   ct600(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('periodId') id: string) { return this.api.run(org, (tx) => this.comp.ct600(tx, c, id)); }
+}
+
+/** V4-M5 (DEC-102): CT returns: DRAFT -> VALIDATED -> AUTHORISED -> SUBMITTED -> ACCEPTED / REJECTED, or recorded when filed elsewhere. Nothing reaches HMRC. */
+@Controller('organisations/:organisationId/companies/:companyId/ct-returns')
+@RequireFeature('corporation.tax')
+export class CtReturnController {
+  constructor(private readonly api: VatApiService, private readonly svc: CtReturnService) {}
+
+  @Get() @RequirePermissions('ledger:read')
+  list(@Org() org: OrgAccess, @ID('companyId') c: string) { return this.api.run(org, (tx) => this.svc.list(tx, c)); }
+  @Post() @RequirePermissions('ct:file') @Idempotent()
+  create(@Org() org: OrgAccess, @ID('companyId') c: string, @Body(new ZodPipe(createCtReturnSchema)) b: z.output<typeof createCtReturnSchema>) {
+    return this.api.run(org, (tx, actor) => this.svc.create(tx, { organisationId: org.organisationId, companyId: c, actor, ...b }));
+  }
+  @Get(':returnId') @RequirePermissions('ledger:read')
+  get(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('returnId') id: string) { return this.api.run(org, (tx) => this.svc.get(tx, c, id)); }
+  /** The computation as inline XBRL, as filed. */
+  @Get(':returnId/computation-ixbrl') @RequirePermissions('ledger:read') @Header('Content-Type', 'application/xhtml+xml; charset=utf-8')
+  async computationIxbrl(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('returnId') id: string) { return (await this.api.run(org, (tx) => this.svc.get(tx, c, id, true))).computationIxbrl; }
+  @Post(':returnId/validate') @HttpCode(200) @RequirePermissions('ct:file') @Idempotent()
+  validate(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('returnId') id: string, @Body(new ZodPipe(ctReturnStepSchema)) b: z.output<typeof ctReturnStepSchema>) {
+    return this.api.run(org, (tx, actor) => this.svc.validate(tx, { organisationId: org.organisationId, companyId: c, actor, id, ...b }));
+  }
+  @Post(':returnId/authorise') @HttpCode(200) @RequirePermissions('ct:file') @Idempotent()
+  authorise(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('returnId') id: string, @Body(new ZodPipe(authoriseCtReturnSchema)) b: z.output<typeof authoriseCtReturnSchema>) {
+    return this.api.run(org, (tx, actor) => this.svc.authorise(tx, { organisationId: org.organisationId, companyId: c, actor, id, ...b }));
+  }
+  @Post(':returnId/submit') @HttpCode(200) @RequirePermissions('ct:file') @Idempotent()
+  submit(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('returnId') id: string, @Body(new ZodPipe(ctReturnStepSchema)) b: z.output<typeof ctReturnStepSchema>) {
+    return this.api.run(org, (tx, actor) => this.svc.submit(tx, { organisationId: org.organisationId, companyId: c, actor, id, ...b }));
+  }
+  @Post(':returnId/status') @HttpCode(200) @RequirePermissions('ct:file') @Idempotent()
+  refresh(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('returnId') id: string) {
+    return this.api.run(org, (tx, actor) => this.svc.refresh(tx, { organisationId: org.organisationId, companyId: c, actor, id }));
+  }
+  @Post(':returnId/record') @HttpCode(200) @RequirePermissions('ct:file') @Idempotent()
+  record(@Org() org: OrgAccess, @ID('companyId') c: string, @ID('returnId') id: string, @Body(new ZodPipe(recordCtReturnSchema)) b: z.output<typeof recordCtReturnSchema>) {
+    return this.api.run(org, (tx, actor) => this.svc.record(tx, { organisationId: org.organisationId, companyId: c, actor, id, ...b }));
+  }
 }

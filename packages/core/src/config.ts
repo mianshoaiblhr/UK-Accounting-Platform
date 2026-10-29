@@ -25,6 +25,8 @@ const schema = z.object({
   HMRC_VAT_ADAPTER: z.enum(['none', 'fake']).default('none'),
   /** V3-M3 (DEC-095): the Companies House port. No real adapter exists; `fake` simulates filing and is refused in production. */
   CH_ADAPTER: z.enum(['none', 'fake']).default('none'),
+  /** V4-M5 (DEC-102): the HMRC Corporation Tax port; only a fake exists, refused in production. */
+  HMRC_CT_ADAPTER: z.enum(['none', 'fake']).default('none'),
   CLAMAV_HOST: z.string().default('localhost'),
   CLAMAV_PORT: z.coerce.number().default(3310),
   FIELD_ENCRYPTION_KEY: z.string().min(1),
@@ -89,6 +91,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     if (c.AV_DRIVER === 'noop') throw new Error('Invalid configuration: production requires AV_DRIVER=clamav');
     if (c.HMRC_VAT_ADAPTER === 'fake') throw new Error('Invalid configuration: HMRC_VAT_ADAPTER=fake is not allowed in production');
     if (c.CH_ADAPTER === 'fake') throw new Error('Invalid configuration: CH_ADAPTER=fake is not allowed in production');
+    if (c.HMRC_CT_ADAPTER === 'fake') throw new Error('Invalid configuration: HMRC_CT_ADAPTER=fake is not allowed in production');
     if (!c.RATE_LIMIT_ENABLED) throw new Error('Invalid configuration: rate limiting cannot be disabled in production');
   }
   return { ...c, allowedRegions, corsOrigins: c.CORS_ORIGINS.split(',').map((s) => s.trim()), isProduction, apiDocsEnabled: c.API_DOCS_ENABLED ? c.API_DOCS_ENABLED === 'true' : !isProduction };

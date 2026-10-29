@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createCtAdjustmentRuleSchema, createCtAdjustmentSchema, createCtRuleSchema, ruleAdjustment, splitCtPeriods } from './corporation-tax';
+import { CT_RULE_PARAMETERS, createCtAdjustmentRuleSchema, createCtAdjustmentSchema, createCtRuleSchema, ruleAdjustment, splitCtPeriods } from './corporation-tax';
 
 describe('CT accounting periods from an accounts year (V4-M1, DEC-097)', () => {
   it('a year no longer than the maximum is one period', () => {
@@ -49,5 +49,14 @@ describe('ruleAdjustment (DEC-099)', () => {
     expect(createCtAdjustmentSchema.safeParse(adj).success).toBe(true);
     expect(createCtAdjustmentSchema.safeParse({ ...adj, amount: '0' }).success).toBe(false);
     expect(createCtAdjustmentSchema.safeParse({ ...adj, evidenceDocumentId: undefined }).success).toBe(false);
+  });
+});
+
+describe('the CT600 box map (V4-M5, DEC-102)', () => {
+  it('maps canonical fields only, each box once', () => {
+    const P = CT_RULE_PARAMETERS.CT600_FORM;
+    expect(P.safeParse({ formVersion: 'CT600 (synthetic)', boxes: { turnover: 145, taxableTotalProfits: 315, 'fy1.profit': 335 } }).success).toBe(true);
+    expect(P.safeParse({ formVersion: 'CT600 (synthetic)', boxes: { notAField: 1 } }).success).toBe(false);
+    expect(P.safeParse({ formVersion: 'CT600 (synthetic)', boxes: { turnover: 145, tradingProfits: 145 } }).success).toBe(false);
   });
 });

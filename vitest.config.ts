@@ -25,6 +25,7 @@ const testEnv = {
   AV_DRIVER: 'noop',
   HMRC_VAT_ADAPTER: 'fake',
   CH_ADAPTER: 'fake', // V3-M3 (DEC-095): the simulated Companies House filing
+  HMRC_CT_ADAPTER: 'fake', // V4-M5 (DEC-102): the simulated CT return submission
  // V5-M2 (DEC-091): the simulated submission; tests/api/vat-filing.test.ts also starts a stack with 'none'
   STORAGE_DRIVER: 'local',
   STORAGE_LOCAL_DIR: '.tmp/test-storage',

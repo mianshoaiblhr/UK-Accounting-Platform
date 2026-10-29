@@ -824,5 +824,18 @@ export const Ct600 = z.object({
   turnover: z.string(), tradingProfits: z.string(), tradingLossesBroughtForwardUsed: z.string(), netTradingProfits: z.string(), nonTradingLoanRelationships: z.string(), propertyIncome: z.string(), chargeableGains: z.string(),
   lossCarriedBackFromLaterPeriod: z.string(), taxableTotalProfits: z.string(), associatedCompanies: z.number().int(),
   financialYears: z.array(z.object({ financialYear: z.number().int(), profit: z.string(), rate: z.string(), taxAtRate: z.string(), marginalRelief: z.string(), basis: z.string() })),
-  corporationTaxChargeable: z.string(), taxPayable: z.string(), losses: z.object({ tradingLossOfPeriod: z.string(), carriedBack: z.string(), carriedForward: z.string() }), approval: z.object({ byUserId: uuid.nullable(), at: ts.nullable() }),
+  corporationTaxAtRates: z.string(), marginalReliefTotal: z.string(), corporationTaxChargeable: z.string(), taxPayable: z.string(), losses: z.object({ tradingLossOfPeriod: z.string(), carriedBack: z.string(), carriedForward: z.string() }), approval: z.object({ byUserId: uuid.nullable(), at: ts.nullable() }),
+});
+
+// ───────────── V4-M5 the CT return (DEC-102) ─────────────
+export const CtReturn = z.object({
+  id: uuid, companyId: uuid, periodId: uuid, computationId: uuid, accountsIxbrlDocumentId: uuid, status: z.enum(['DRAFT', 'VALIDATED', 'AUTHORISED', 'SUBMITTED', 'ACCEPTED', 'REJECTED']), mode: z.enum(['PORT', 'RECORDED']),
+  payloadSha256: z.string(), computationIxbrlSha256: z.string(),
+  package: z.record(z.unknown()).describe('The canonical CT600 with its boxes, the computation iXBRL\'s taxonomy version and SHA-256, and the accounts iXBRL document\'s id and SHA-256'),
+  createdByUserId: uuid, createdAt: ts, validatedByUserId: uuid.nullable(),
+  authority: z.object({ byUserId: uuid, directorContactId: uuid.nullable(), declaredOn: day, evidenceDocumentId: uuid.nullable() }).nullable(),
+  submissionId: z.string().nullable(), hmrcReference: z.string().nullable(), acceptedOn: day.nullable(), acceptanceEvidenceId: uuid.nullable(), rejectionReasons: z.array(z.string()), updatedAt: ts,
+  events: z.array(z.object({ id: uuid, fromStatus: z.string().nullable(), toStatus: z.string(), payloadSha256: z.string(), submissionId: z.string().nullable(), request: z.unknown(), response: z.unknown(),
+    note: z.string().nullable(), byUserId: uuid, at: ts })).describe('Every move, append-only; empty in lists'),
+  notice: z.string(),
 });

@@ -37,3 +37,4 @@ export * from './ch-filing';
 export * from './corporation-tax';
 export * from './capital-allowances';
 export * from './ct-computation';
+export * from './ct-return';

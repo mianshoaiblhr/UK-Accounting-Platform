@@ -4,12 +4,14 @@ import { ConsoleEmail, FileEmail, MemoryEmail, SesEmail, type EmailPort } from '
 import { LocalStorage, S3Storage, type StoragePort } from './storage';
 import { FakeHmrcVatAdapter, type HmrcVatPort } from './hmrc-vat';
 import { FakeCompaniesHouseAdapter, type CompaniesHousePort } from './companies-house';
+import { FakeHmrcCtAdapter, type HmrcCtPort } from './hmrc-ct';
 
 export * from './storage';
 export * from './antivirus';
 export * from './email';
 export * from './hmrc-vat';
 export * from './companies-house';
+export * from './hmrc-ct';
 
 /** Driver selection lives here (and only here) so no other code knows which cloud it runs on. */
 export function createStorage(c: AppConfig): StoragePort {
@@ -35,5 +37,9 @@ export function createHmrcVat(c: AppConfig): HmrcVatPort | null {
 /** V3-M3 (DEC-095): null when no Companies House adapter is configured (the default); the fake one only outside production. */
 export function createCompaniesHouse(c: AppConfig): CompaniesHousePort | null {
   return c.CH_ADAPTER === 'fake' ? new FakeCompaniesHouseAdapter() : null;
+}
+/** V4-M5 (DEC-102): null when no HMRC Corporation Tax adapter is configured (the default); the fake one only outside production. */
+export function createHmrcCt(c: AppConfig): HmrcCtPort | null {
+  return c.HMRC_CT_ADAPTER === 'fake' ? new FakeHmrcCtAdapter() : null;
 }
 export * from './sniff';

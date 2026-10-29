@@ -224,6 +224,9 @@ export class CtComputationService {
       nonTradingLoanRelationships: '0.00', propertyIncome: '0.00', chargeableGains: '0.00', lossCarriedBackFromLaterPeriod: r.lossCarriedBackFromFollowing,
       taxableTotalProfits: r.taxableTotalProfits, associatedCompanies: r.associatedCompanies,
       financialYears: r.financialYears.map((y) => ({ financialYear: y.financialYear, profit: y.profit, rate: y.rate, taxAtRate: y.taxAtRate, marginalRelief: y.marginalRelief, basis: y.basis })),
+      // V4-M5 (DEC-102): the form's totals of tax at the rates and of marginal relief
+      corporationTaxAtRates: r.financialYears.reduce((t, y) => t.plus(y.taxAtRate), new Prisma.Decimal(0)).toFixed(2),
+      marginalReliefTotal: r.financialYears.reduce((t, y) => t.plus(y.marginalRelief), new Prisma.Decimal(0)).toFixed(2),
       corporationTaxChargeable: r.corporationTax, taxPayable: r.corporationTax,
       losses: { tradingLossOfPeriod: r.tradingLoss, carriedBack: r.carryBack, carriedForward: r.lossesCarriedForward },
       approval: { byUserId: c.approvedByUserId, at: c.approvedAt },

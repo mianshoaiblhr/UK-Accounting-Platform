@@ -29,7 +29,7 @@ export const PERMISSIONS = [
   'compliance:read', 'compliance:manage', 'compliance:rules-manage', 'compliance:rule-verify',
   'vat:prepare', 'vat:review', 'vat:file',
   'ixbrl:rules-manage', 'ixbrl:rule-verify', 'ixbrl:file',
-  'ct:manage', 'ct:prepare', 'ct:approve',
+  'ct:manage', 'ct:prepare', 'ct:approve', 'ct:file',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -77,6 +77,8 @@ export const PERMISSION_SCOPE: Record<Permission, PermissionScope> = {
   'ct:manage': 'COMPANY', 'ct:prepare': 'COMPANY',
   // V4-M4 (DEC-101): approving a Corporation Tax computation prepared by someone else
   'ct:approve': 'COMPANY',
+  // V4-M5 (DEC-102): filing a client's Company Tax Return with HMRC
+  'ct:file': 'COMPANY',
 };
 export const permissionsOfScope = (...scopes: PermissionScope[]): Permission[] => PERMISSIONS.filter((p) => scopes.includes(PERMISSION_SCOPE[p]));
 

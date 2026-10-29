@@ -65,6 +65,7 @@ LAW = [
     ("Capital Allowances Act 2001, ss.56, 56A and 104D", "Writing-down allowances (main 18%, special rate 6%), the small pools allowance", "https://www.legislation.gov.uk/ukpga/2001/2/section/56"),
     ("Capital Allowances Act 2001, ss.61-62", "Disposal values, capped at the qualifying expenditure", "https://www.legislation.gov.uk/ukpga/2001/2/section/62"),
     ("HMRC Capital Allowances Manual CA23000 onwards (plant and machinery)", "HMRC's guidance on pools, AIA and writing-down allowances", "https://www.gov.uk/hmrc-internal-manuals/capital-allowances-manual/ca23000"),
+    ("HMRC form CT600 (2015) version 3 and the CT600 Guide", "The boxes of the Company Tax Return that the CT600_FORM rule maps", "https://www.gov.uk/government/publications/corporation-tax-company-tax-return-ct600-2015-version-3"),
     ("Taxes Management Act 1970, s.59D; Finance Act 1998, Sch 18 para 14", "Deadlines: Corporation Tax payment and the Company Tax Return", "https://www.legislation.gov.uk/ukpga/1970/9/section/59D"),
     ("Small Companies and Groups (Accounts and Directors' Report) Regulations 2008, SI 2008/409", "Formats and notes for small and micro-entity accounts", "https://www.legislation.gov.uk/uksi/2008/409/contents"),
     ("FRS 105 and FRS 102 Section 1A (Financial Reporting Council)", "The standards the draft packs follow", "https://www.frc.org.uk/accountants/accounting-and-reporting-policy/uk-accounting-standards"),
@@ -164,7 +165,10 @@ table(xs, "Draft taxonomy mapping for FRS 105 accounts (V3-M1, DEC-093)",
 
 # V4-M1 (DEC-097): the draft Corporation Tax rules, read from the pack itself so the sheet cannot drift from it
 cpack = json.loads((root / "content/tax/drafts/uk-ct-rules.json").read_text())
-crows = [(r["kind"], r["effectiveFrom"], r.get("effectiveTo", ""), "; ".join(f"{k} = {v['numerator']}/{v['denominator']}" if isinstance(v, dict) else f"{k} = {v}" for k, v in r["parameters"].items()),
+def params(p):
+    if "boxes" in p: return f"{p['formVersion']}: " + ", ".join(f"{k} -> box {v}" for k, v in p["boxes"].items())
+    return "; ".join(f"{k} = {v['numerator']}/{v['denominator']}" if isinstance(v, dict) else f"{k} = {v}" for k, v in p.items())
+crows = [(r["kind"], r["effectiveFrom"], r.get("effectiveTo", ""), params(r["parameters"]),
           r["source"]["provision"], r["source"]["url"], r["verifierNote"], "", "", "") for r in cpack["rules"]]
 cts = wb.create_sheet("Corporation Tax rules")
 table(cts, "Draft Corporation Tax rules (V4-M1, DEC-097)",

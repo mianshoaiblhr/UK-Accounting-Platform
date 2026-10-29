@@ -112,6 +112,8 @@ const FORBIDDEN: Record<string, string[]> = {
   ca_computation: ['DELETE', 'TRUNCATE'],            // never changed; superseded once (trigger)
   ct_loss_opening: ['DELETE', 'TRUNCATE'],           // immutable; verified once, superseded once (trigger)
   ct_computation: ['DELETE', 'TRUNCATE'],            // never changed; approved once, superseded once (trigger)
+  ct_return: ['DELETE', 'TRUNCATE'],                 // never deleted; moves only along its path (trigger)
+  ct_return_event: ['UPDATE', 'DELETE', 'TRUNCATE'],  // append-only
 };
 const has = (table: string, priv: string) => adminSql(`SELECT has_table_privilege('uk_app', '${table}', '${priv}')`) === 't';
 const hasAnyColumn = (table: string, priv: string) => adminSql(`SELECT has_any_column_privilege('uk_app', '${table}', '${priv}')`) === 't';

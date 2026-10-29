@@ -3210,3 +3210,57 @@ model CtComputation {
   @@unique([organisationId, id])
   @@map("ct_computation")
 }
+
+/// V4-M5 (DEC-102): a CT return of an approved computation; moves DRAFT -> VALIDATED -> AUTHORISED -> SUBMITTED -> ACCEPTED / REJECTED (trigger).
+model CtReturn {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId          String    @map("organisation_id") @db.Uuid
+  companyId               String    @map("company_id") @db.Uuid
+  periodId                String    @map("period_id") @db.Uuid
+  computationId           String    @map("computation_id") @db.Uuid
+  accountsIxbrlDocumentId String    @map("accounts_ixbrl_document_id") @db.Uuid
+  package                 Json
+  computationIxbrl        String    @map("computation_ixbrl")
+  computationIxbrlSha256  String    @map("computation_ixbrl_sha256")
+  status                  String    @default("DRAFT")
+  mode                    String    @default("PORT")
+  payloadSha256           String    @map("payload_sha256")
+  createdByUserId         String    @map("created_by_user_id") @db.Uuid
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  validatedByUserId       String?   @map("validated_by_user_id") @db.Uuid
+  authorisedByUserId      String?   @map("authorised_by_user_id") @db.Uuid
+  directorContactId       String?   @map("director_contact_id") @db.Uuid
+  declaredOn              DateTime? @map("declared_on") @db.Date
+  authorityEvidenceId     String?   @map("authority_evidence_id") @db.Uuid
+  submissionId            String?   @map("submission_id")
+  hmrcReference           String?   @map("hmrc_reference")
+  acceptedOn              DateTime? @map("accepted_on") @db.Date
+  acceptanceEvidenceId    String?   @map("acceptance_evidence_id") @db.Uuid
+  rejectionReasons        Json?     @map("rejection_reasons")
+  updatedAt               DateTime  @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([organisationId, id])
+  @@index([organisationId, companyId, createdAt], map: "ct_return_company_idx")
+  @@map("ct_return")
+}
+
+/// V4-M5 (DEC-102): the evidence of one move of a CT return; append-only.
+model CtReturnEvent {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  seq            Int      @unique(map: "ct_return_event_seq_key") @default(autoincrement())
+  organisationId String   @map("organisation_id") @db.Uuid
+  companyId      String   @map("company_id") @db.Uuid
+  returnId       String   @map("return_id") @db.Uuid
+  fromStatus     String?  @map("from_status")
+  toStatus       String   @map("to_status")
+  payloadSha256  String   @map("payload_sha256")
+  submissionId   String?  @map("submission_id")
+  request        Json?
+  response       Json?
+  note           String?
+  byUserId       String   @map("by_user_id") @db.Uuid
+  at             DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(3)
+
+  @@index([organisationId, returnId, seq], map: "ct_return_event_return_idx")
+  @@map("ct_return_event")
+}
