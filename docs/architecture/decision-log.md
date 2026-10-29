@@ -306,6 +306,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-099 | How V4-M2 is built: tax adjustments and the profit of each CT period (delegated, DEC-019; recorded before code) | Account adjustment rules (an account, a category and the share of its movement that is added back or deducted) as company data, verified by a second person; manual adjustments with evidence, withdrawn but never removed; the profit of a CT period from the ledger (profit before tax), each adjustment and the adjusted profit, each adjustment drilling to its ledger lines or its evidence, with what still needs attention. Nothing is stored as a result |
 | DEC-100 | How V4-M3 is built: capital allowances (delegated, DEC-019; recorded before code) | Three new CT rule kinds (the AIA limit, the writing-down rates, the small pools limit) as verified data; pool opening balances entered with evidence and verified by a second person; the capital allowances of a CT period worked from the fixed-asset register's tax category and cost (AIA in date order, main and special rate pools, single asset pools, disposal values capped at cost, balancing charges and allowances, small pools), shown live and stored as a computation that the next period starts from. First-year allowances (full expensing) are left for a later milestone |
 | DEC-101 | How V4-M4 is built: losses, the computation and the canonical CT600 (delegated, DEC-019; recorded before code) | The tax computation of a CT period from the adjusted profit (V4-M2) and the stored capital allowances (V4-M3): trading losses brought forward and carried back one period, taxable total profits, tax by financial year with the small profits rate and marginal relief from verified rules, associated companies and short periods. Prepared and approved by two people (new permission `ct:approve`); the canonical CT600 is built from the approved computation. Non-trading income, group relief and instalments are not modelled |
+| DEC-102 | How V4-M5 is built: CT iXBRL and the HMRC submission (delegated, DEC-019; recorded before code) | The CT600 box map as a verified CT rule kind; the tax computation tagged as inline XBRL from a verified taxonomy version of the V3 kind; a CT return of an approved computation, with the accounts' iXBRL, moving DRAFT, VALIDATED, AUTHORISED (a director's declaration recorded by a second person), SUBMITTED, then ACCEPTED or REJECTED, through an HMRC port whose only adapter is a fake refused in production; acceptance closes the CT return deadline. New permission `ct:file` |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -1780,5 +1781,68 @@ It refuses when there is no approved computation (`computation_not_approved`) or
 * unit tests of the arithmetic (financial-year split, marginal relief, associated companies, short periods, losses);
 * API and database tests;
 * a golden of a profitable 12-month period across two financial years and a following short loss period carried back, worked by hand with formulas;
+* the OpenAPI contract;
+* CI green.
+
+### DEC-102 - How V4-M5 is built: CT iXBRL and the HMRC submission (delegated, DEC-019; recorded before code)
+V4-M5 of `docs/architecture/v4-plan.md`. There is no HMRC connection: the port's only adapter is a fake, refused in production (DEC-082, DEC-086), as for VAT (DEC-091) and Companies House (DEC-095).
+
+**The CT600 box map** is a new `ct_rule` kind, `CT600_FORM`:
+* `formVersion` (text) and `boxes`, a map from each canonical CT600 field (DEC-101) to its box number;
+* fields not in the canonical list are refused;
+* it is effective-dated and verified by a second person (DEC-097 pattern), and the draft pack gains one UNVERIFIED version with a note for the verifier;
+* a return uses the version in force on its period's last day.
+
+**The computation's iXBRL:**
+* the computation is tagged from a taxonomy version of the V3-M1 kind (`xbrl_taxonomy_version`), verified, whose standard code is `CT-COMP`;
+* its entries are FACT entries keyed `ct.<field>` for the canonical fields, and `ct.fy1.<field>` / `ct.fy2.<field>` for the financial-year parts;
+* the document is an XHTML page of the computation:
+  * contexts for the CT period (and each financial-year part);
+  * the entity identified by the company's UTR under the version's scheme;
+  * GBP;
+* checks, which make it INVALID:
+  * a mandatory entry without a value;
+  * a key the platform does not know;
+  * a missing UTR or scheme.
+
+The concepts are the firm's verified data. Nothing of HMRC's computation taxonomy is in code, and no draft mapping is shipped (the taxonomy files were not read from this environment); the verifier enters it.
+
+**The CT return (`ct_return`, `ct_return_event`):**
+* one live return per approved computation;
+* the package holds:
+  * the canonical CT600 with its boxes;
+  * the computation's iXBRL (stored with its SHA-256);
+  * the id and SHA-256 of the accounts' latest VALID iXBRL document (V3-M2) for the accounts year that contains the CT period;
+
+  A return needs all three.
+* the path:
+  * DRAFT (`ct:file`);
+  * VALIDATED, re-checking that the computation is still the current approved one;
+  * AUTHORISED: the declaration of a serving director, with its date (not in the future) and evidence of the company, recorded by someone other than the validator;
+  * SUBMITTED through the port, with the payload SHA-256 and the return id as the idempotency key; a retry returns the same submission;
+  * ACCEPTED (with HMRC's reference) or REJECTED (final, with reasons), when a person reads the status;
+
+  or RECORDED as filed elsewhere, with the reference, the date and evidence.
+* every move is an append-only event. The database keeps the path and the second-person authority;
+* on acceptance (or recording), the company's `CT_RETURN` obligation whose period end is the CT period's end becomes DONE with the reference (V7-M1);
+* the fake adapter rejects a UTR starting `99`, so rejection can be tested;
+* `HMRC_CT_ADAPTER` is `none` (the default, which answers `filing_not_available`) or `fake`.
+
+**New permission** `ct:file`, granted to owner, admin and partner.
+
+**Not in V4-M5:**
+* the GovTalk envelope and HMRC's XML schema;
+* real HMRC credentials;
+* amendments;
+* payment.
+
+**Rules for the whole milestone:**
+* every change audited;
+* the new tables classified (RLS+APP), with no DELETE or TRUNCATE;
+* retention FILING_EVIDENCE.
+
+**Acceptance:**
+* unit tests of the document builder;
+* API and database tests, including a well-formedness check of the computation document with xmllint;
 * the OpenAPI contract;
 * CI green.
