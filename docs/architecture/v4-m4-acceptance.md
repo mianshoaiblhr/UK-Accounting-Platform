@@ -1,14 +1,14 @@
 # V4 milestone V4-M4 - acceptance package (losses, the computation and the canonical CT600)
 
-**Status:** PREPARED; acceptance under the delegation (DEC-019, DEC-086) follows a green CI run on the code baseline (section 1). The golden workings wait for the named accountant's review (DEC-056).
+**Status:** CI GREEN (section 1); acceptance under the delegation (DEC-019, DEC-086) follows the named accountant's review of the golden workings (DEC-056).
 
 The design is in DEC-101, recorded and pushed before code (`a108998`). This is milestone evidence only, **not production approval** (DEC-085). All data is synthetic. The rates and limits in the tests are fixtures entered and verified in the test, not tax advice. **Nothing is filed**: the canonical CT600 is an internal model.
 
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | recorded when CI has run |
-| CI | recorded when CI has run |
+| Code baseline commit | `ac8bcfb` |
+| CI | [ci run 210](https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/40792191263) on `a962d8c`, which contains it: every job green, including the real-browser tests and the image scans |
 | Local runs | see section 6 |
 
 ## 2. What was built
