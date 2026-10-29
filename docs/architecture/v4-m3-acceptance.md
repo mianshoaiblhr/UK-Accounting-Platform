@@ -1,14 +1,14 @@
 # V4 milestone V4-M3 - acceptance package (capital allowances)
 
-**Status:** PREPARED; acceptance under the delegation (DEC-019, DEC-086) follows a green CI run on the code baseline (section 1). The draft rules wait for the named verifier, and the golden workings for the named accountant (DEC-056).
+**Status:** CI GREEN (section 1); acceptance under the delegation (DEC-019, DEC-086) follows the named accountant's review of the golden workings (DEC-056), and the verifier's check of the draft rules.
 
 The design is in DEC-100, recorded and pushed before code (`3b8dde9`). This is milestone evidence only, **not production approval** (DEC-085). All data is synthetic. The rates and limits in the tests are fixtures entered and verified in the test, not tax advice. **No rule is seeded:** the draft pack is imported through the API and lands UNVERIFIED.
 
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | recorded when CI has run |
-| CI | recorded when CI has run |
+| Code baseline commit | `fd6f869` |
+| CI | [ci run 207](https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/40789404387) on `a108998`, which contains it: every job green, including the real-browser tests and the image scans |
 | Local runs | see section 6 |
 
 ## 2. What was built
