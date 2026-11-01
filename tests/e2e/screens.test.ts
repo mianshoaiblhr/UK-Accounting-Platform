@@ -55,6 +55,9 @@ describe.skipIf(!OUT)('UI-1 screenshots', () => {
     const shots: [string, string][] = [
       ['companies', '/'], ['dashboard', `${base}?asOf=2026-06-30`], ['trial-balance', `${base}/trial-balance`], ['balance-sheet', `${base}/reports/balance-sheet`],
       ['journals', `${base}/journals`], ['year-end', `${base}/year-end?year=2026-01-01`], ['fixed-assets', `${base}/registers`],
+      ['practice-overview', `/org/${owner.organisationId}/overview`], ['clients', `/org/${owner.organisationId}/clients`], ['deadlines', `/org/${owner.organisationId}/deadlines`],
+      ['profit-and-loss', `${base}/reports/profit-and-loss`], ['sales', `${base}/sales`], ['purchases', `${base}/purchases`], ['bank', `${base}/bank`], ['ledger', `${base}/ledger`],
+      ['vat-returns', `${base}/vat-returns`], ['compliance', `${base}/compliance`],
     ];
     for (const [width, height, tag] of [[1440, 900, 'desktop'], [390, 844, 'phone']] as const) {
       const page = await signIn(browser, owner.email);
