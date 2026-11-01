@@ -1,14 +1,14 @@
 # V4 milestone V4-M5 - acceptance package (CT iXBRL and the HMRC submission)
 
-**Status:** PREPARED; acceptance under the delegation (DEC-019, DEC-086) follows a green CI run on the code baseline (section 1). The draft CT600 box map waits for the named verifier, and the CT computation taxonomy mapping is entered by the verifier (DEC-102).
+**Status:** ACCEPTED under the delegation (DEC-019, DEC-086) on 2026-11-01, on the green CI run recorded in section 1. The draft CT600 box map waits for the named verifier, and the CT computation taxonomy mapping is entered by the verifier (DEC-102).
 
 The design is in DEC-102, recorded and pushed before code (`a962d8c`). This is milestone evidence only, **not production approval** (DEC-085). All data is synthetic. The box numbers and concepts in the tests are fixtures. **Nothing reaches HMRC:** the port's only adapter is a fake, refused in production.
 
 ## 1. Commit and CI
 | Item | Result |
 |---|---|
-| Code baseline commit | recorded when CI has run |
-| CI | recorded when CI has run |
+| Code baseline commit | `8164d66` |
+| CI | [ci run 212](https://github.com/mianshoaiblhr/UK-Accounting-Platform/actions/runs/40795120134) on `52b8fa2`, which contains it: every job green, including the real-browser tests and the image scans |
 | Local runs | see section 6 |
 
 ## 2. What was built
