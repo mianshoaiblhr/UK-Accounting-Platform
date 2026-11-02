@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { api, errorText } from '@/lib/api';
 import { qs, useApi, useWorkspace } from '@/lib/workspace';
 import { Card, Input, ReasonAction, RegistersNav, today } from './common';
+import { showAmount } from '@/lib/format';
 
 /** V2-M7b (DEC-074): depreciation runs (DEC-058) - the preview the API computes as at a date, posting it, the runs and their reversal. */
 interface Preview { asAt: string; total: string; lines: { assetId: string; number: number; description: string; classCode: string; amount: string; accumulatedAfter: string; carryingAfter: string }[] }
@@ -27,9 +28,9 @@ export function DepreciationScreen() {
         {preview.error && <p className="error" role="alert">{preview.error}</p>}
         {p && (
           <div data-testid="dep-preview">
-            <p>Charge to {p.asAt}: <strong data-testid="dep-total">{p.total}</strong></p>
+            <p>Charge to {p.asAt}: <strong data-testid="dep-total">{showAmount(p.total)}</strong></p>
             <table><thead><tr><th>#</th><th>Asset</th><th>Class</th><th className="num">Charge</th><th className="num">Accumulated after</th><th className="num">Carrying after</th></tr></thead>
-              <tbody>{p.lines.map((l) => <tr key={l.assetId}><td>{l.number}</td><td>{l.description}</td><td>{l.classCode}</td><td className="num">{l.amount}</td><td className="num">{l.accumulatedAfter}</td><td className="num">{l.carryingAfter}</td></tr>)}</tbody>
+              <tbody>{p.lines.map((l) => <tr key={l.assetId}><td>{l.number}</td><td>{l.description}</td><td>{l.classCode}</td><td className="num">{showAmount(l.amount)}</td><td className="num">{showAmount(l.accumulatedAfter)}</td><td className="num">{showAmount(l.carryingAfter)}</td></tr>)}</tbody>
             </table>
             {manage && p.lines.length > 0 && <button disabled={busy} onClick={async () => {
               setBusy(true); setError('');
@@ -43,7 +44,7 @@ export function DepreciationScreen() {
         {runs.error && <p className="error" role="alert">{runs.error}</p>}
         <table><thead><tr><th>As at</th><th className="num">Total</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody>{(runs.data?.items ?? []).map((r) => (
-            <tr key={r.id} data-run={r.asAt}><td>{r.asAt}</td><td className="num">{r.total}</td><td data-testid="run-status">{r.status}{r.reversedReason ? `: ${r.reversedReason}` : ''}</td>
+            <tr key={r.id} data-run={r.asAt}><td>{r.asAt}</td><td className="num">{showAmount(r.total)}</td><td data-testid="run-status">{r.status}{r.reversedReason ? `: ${r.reversedReason}` : ''}</td>
               <td>{manage && r.status === 'POSTED' && <ReasonAction label="Reverse" path={`/depreciation-runs/${r.id}/reverse`} onDone={reload} />}</td></tr>
           ))}</tbody>
         </table>

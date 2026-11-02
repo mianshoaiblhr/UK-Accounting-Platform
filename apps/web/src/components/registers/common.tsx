@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import { api, errorText } from '@/lib/api';
 import { qs, useApi, useWorkspace } from '@/lib/workspace';
+import { showAmount } from '@/lib/format';
 
 /**
  * V2-M7b (DEC-074): shared parts of the register screens. Lists, figures, schedules, previews and reconciliations are the API's; these
@@ -102,7 +103,7 @@ export function Reconciliation({ rows, reconciled }: { rows: { code: string; kin
       <p data-testid="reconciled" className={reconciled ? 'ok' : 'error'}>{reconciled ? 'The register reconciles to the ledger.' : 'The register does not reconcile to the ledger.'}</p>
       <table>
         <thead><tr><th>Account</th><th className="num">Register</th><th className="num">Ledger</th><th className="num">Difference</th></tr></thead>
-        <tbody>{rows.map((r) => <tr key={`${r.code}-${r.kind ?? ''}`}><td>{r.code}{r.kind ? ` (${r.kind.toLowerCase()})` : ''}</td><td className="num">{r.register}</td><td className="num">{r.ledger}</td><td className="num">{r.difference}</td></tr>)}</tbody>
+        <tbody>{rows.map((r) => <tr key={`${r.code}-${r.kind ?? ''}`}><td>{r.code}{r.kind ? ` (${r.kind.toLowerCase()})` : ''}</td><td className="num">{showAmount(r.register)}</td><td className="num">{showAmount(r.ledger)}</td><td className="num">{showAmount(r.difference)}</td></tr>)}</tbody>
       </table>
     </>
   );

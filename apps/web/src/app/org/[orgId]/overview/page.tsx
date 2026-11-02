@@ -3,35 +3,44 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { PracticeShell } from '@/components/PracticeShell';
-import { KIND_NAMES, STATUS_NAMES, StatusPill, periodText, workName, type Obligation } from '@/components/compliance/common';
+import { StatusPill, periodText, workName, type Obligation } from '@/components/compliance/common';
 import { ApiError, api, errorText } from '@/lib/api';
+import { showAmount } from '@/lib/format';
 
 /**
  * V7-M2 (DEC-089): the practice overview of the prototype (DEC-079). The counts, the deadlines due soon and the open work are the API's, over the
- * clients the person may read; nothing is counted here. The connections say what the decisions say: none is built yet (DEC-082, DEC-086).
+ * clients the person may read; nothing is counted here. UI-2 (DEC-103): the date, "Add client" and the work by stage, as in the approved design;
+ * the connections say what is true everywhere: no live connection exists (DEC-082, DEC-086).
  */
 interface Summary { overdue: number; dueNext14: number; waitingOnClient: number; ready: number }
-interface Work { byStatus: Record<string, number>; byKind: Record<string, number>; total: number }
+interface Work { byStatus: Record<string, number>; byKind: Record<string, number>; total: number; byStage: Record<string, number> }
+const STAGE_NAMES: [string, string][] = [['BOOKKEEPING', 'Bookkeeping'], ['ACCOUNTS_PREPARATION', 'Accounts preparation'], ['MANAGER_REVIEW', 'Manager review'],
+  ['PARTNER_REVIEW', 'Partner review'], ['CLIENT_APPROVAL', 'Client approval'], ['READY_TO_FILE', 'Ready to file']];
+const today = () => new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/London' }).format(new Date()).replace(',', '');
 
 function Overview() {
   const { orgId } = useParams<{ orgId: string }>();
-  const [data, setData] = useState<{ summary: Summary; soon: Obligation[]; work: Work }>();
+  const [data, setData] = useState<{ summary: Summary; soon: Obligation[]; work: Work; mayAdd: boolean }>();
   const [error, setError] = useState<{ text: string; off: boolean }>();
   const load = useCallback(async () => {
     try {
-      const [summary, soon, work] = await Promise.all([
+      const [summary, soon, work, me] = await Promise.all([
         api<Summary>(`/organisations/${orgId}/compliance/summary`),
         api<{ items: Obligation[] }>(`/organisations/${orgId}/compliance/obligations?due=soon&limit=10`),
         api<Work>(`/organisations/${orgId}/compliance/work`),
+        api<{ permissions: string[] }>(`/organisations/${orgId}/me`),
       ]);
-      setData({ summary, soon: soon.items, work });
+      setData({ summary, soon: soon.items, work, mayAdd: me.permissions.includes('company:create') });
     } catch (e) { setError({ text: errorText(e), off: e instanceof ApiError && e.code === 'feature_disabled' }); }
   }, [orgId]);
   useEffect(() => { void load(); }, [load]);
 
   return (
     <>
-      <h1>Practice overview</h1>
+      <div className="page-head">
+        <div><h1>Practice overview</h1><p className="muted" data-testid="today">{today()}</p></div>
+        {data?.mayAdd && <Link className="button" href="/#add-company">Add client</Link>}
+      </div>
       {error && (error.off ? (
         <div className="card" role="status" data-testid="feature-off">
           <h2>Practice management is not enabled</h2>
@@ -62,22 +71,16 @@ function Overview() {
             <div>
               <div className="card">
                 <h2>Work in progress</h2>
-                <table data-testid="work-by-status">
-                  <tbody>{Object.entries(STATUS_NAMES).filter(([k]) => k !== 'DONE' && k !== 'NOT_REQUIRED').map(([k, l]) => (
-                    <tr key={k}><td>{l}</td><td className="num">{data.work.byStatus[k] ?? 0}</td></tr>
-                  ))}</tbody>
-                </table>
-                <h3>By kind</h3>
-                <table data-testid="work-by-kind">
-                  <tbody>{Object.entries(KIND_NAMES).filter(([k]) => data.work.byKind[k]).map(([k, l]) => (
-                    <tr key={k}><td>{l}</td><td className="num">{data.work.byKind[k]}</td></tr>
+                <table data-testid="work-by-stage">
+                  <tbody>{STAGE_NAMES.map(([k, l]) => (
+                    <tr key={k}><td>{l}</td><td className="num">{showAmount(data.work.byStage[k] ?? 0)}</td></tr>
                   ))}</tbody>
                 </table>
               </div>
               <div className="card" data-testid="connections">
                 <h2>Connections</h2>
-                <p><strong>HMRC</strong><br /><span className="muted">Not connected. The HMRC connection is not built yet.</span></p>
-                <p><strong>Companies House</strong><br /><span className="muted">Not connected. Filing at Companies House is not built yet.</span></p>
+                <p><strong>HMRC</strong><br /><span className="muted">No live connection. VAT and Corporation Tax returns filed elsewhere are recorded here; where a test stand-in is set up, nothing reaches HMRC.</span></p>
+                <p><strong>Companies House</strong><br /><span className="muted">No live connection. Accounts filed elsewhere are recorded here; where a test stand-in is set up, nothing reaches Companies House.</span></p>
               </div>
             </div>
           </div>

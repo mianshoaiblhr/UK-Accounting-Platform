@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { WorkspaceShell, qs, useApi, useWorkspace } from '@/lib/workspace';
+import { showAmount } from '@/lib/format';
 
 interface TrialBalance {
   currency: string; asOf: string; period: { startDate: string; endDate: string; status: string } | null;
@@ -28,10 +29,10 @@ function TrialBalancePage() {
               {data.rows.map((r) => (
                 <tr key={r.accountId}>
                   <td><Link href={`${w.base}/ledger${qs({ accountId: r.accountId, from: r.drilldown.from ?? undefined, to: r.drilldown.to })}`}>{r.code}</Link></td>
-                  <td>{r.name}</td><td className="num">{r.debit}</td><td className="num">{r.credit}</td>
+                  <td>{r.name}</td><td className="num">{showAmount(r.debit)}</td><td className="num">{showAmount(r.credit)}</td>
                 </tr>
               ))}
-              <tr className="total"><td /><td>Total</td><td className="num">{data.totalDebit}</td><td className="num">{data.totalCredit}</td></tr>
+              <tr className="total"><td /><td>Total</td><td className="num">{showAmount(data.totalDebit)}</td><td className="num">{showAmount(data.totalCredit)}</td></tr>
             </tbody>
           </table>
           <p className={data.balanced ? 'ok' : 'error'} role="status">{data.balanced ? 'Balanced' : 'Not balanced'}</p>

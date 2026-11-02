@@ -4,6 +4,7 @@ import { useParams, usePathname, useRouter } from 'next/navigation';
 import { Fragment, createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Product, SignOut } from '@/components/Nav';
 import { ApiError, api, errorText, type Company, type CompanyAccess, type Me } from '@/lib/api';
+import { showAmount } from '@/lib/format';
 
 /**
  * The company workspace (M9a, DEC-048/049). It loads who the person is, the company and what they may do there (`my-access`), and shows only the
@@ -144,4 +145,4 @@ export const qs = (o: Record<string, string | undefined>) => {
 };
 
 /** Money as the API returned it, right-aligned; never re-computed here (DEC-048). */
-export const Money = ({ v }: { v: string | null | undefined }) => <td className="num">{v ?? ''}</td>;
+export const Money = ({ v }: { v: string | null | undefined }) => <td className="num">{showAmount(v ?? '')}</td>;

@@ -6,6 +6,7 @@ import { Form } from '@/components/Form';
 import { BOX_NAMES, EVENT_NAMES, ReturnStatus, type Filing, type VatReturn } from '@/components/vat/common';
 import { ApiError, api, errorText } from '@/lib/api';
 import { WorkspaceShell, qs, useApi, useWorkspace } from '@/lib/workspace';
+import { showAmount } from '@/lib/format';
 
 /**
  * V5-M3 (DEC-092): one VAT return, laid out as the prototype (DEC-079). The boxes, the reconciliation, the flags, the status, the sign-off and
@@ -31,15 +32,15 @@ function Boxes({ r, pkg }: { r: VatReturn; pkg?: Package }) {
                   <table data-testid={`box-${b.box}-lines`}>
                     <thead><tr><th>Journal</th><th>Line</th><th>Account</th><th>Code</th><th>Tax point</th><th className="num">Amount</th></tr></thead>
                     <tbody>{b.lines.map((l) => (
-                      <tr key={`${l.journalId}-${l.lineNo}`}><td>{l.journalNumber}</td><td>{l.lineNo}</td><td>{l.accountCode}</td><td>{l.taxCode}</td><td className="date">{l.taxPoint}</td><td className="num">{l.amount}</td></tr>
+                      <tr key={`${l.journalId}-${l.lineNo}`}><td>{l.journalNumber}</td><td>{l.lineNo}</td><td>{l.accountCode}</td><td>{l.taxCode}</td><td className="date">{l.taxPoint}</td><td className="num">{showAmount(l.amount)}</td></tr>
                     ))}</tbody>
                   </table>
                 </details>
               ) : BOX_NAMES[b.box]}
               {b.box === 5 && b.direction && <span className="muted"> ({b.direction === 'REPAYABLE' ? 'to reclaim' : 'to pay'})</span>}
             </td>
-            <td className="num" data-testid={`box-${b.box}`}>{b.amount}</td>
-            {pkg && <td className="num" data-testid={`filed-${b.box}`}>{pkg.package.boxes[String(b.box)]}</td>}
+            <td className="num" data-testid={`box-${b.box}`}>{showAmount(b.amount)}</td>
+            {pkg && <td className="num" data-testid={`filed-${b.box}`}>{showAmount(pkg.package.boxes[String(b.box)])}</td>}
           </tr>
         ))}</tbody>
       </table>
@@ -58,15 +59,15 @@ function Checks({ r, reload }: { r: VatReturn; reload: () => Promise<void> }) {
       <h2>Checks against the ledger</h2>
       <table>
         <tbody>
-          <tr><td>Movement on the VAT accounts in the period</td><td className="num">{rec.vatAccountMovement}</td></tr>
-          <tr><td>VAT on the lines by tax point</td><td className="num">{rec.vatLinesByTaxPoint}</td></tr>
-          <tr className="total"><td>Difference</td><td className="num" data-testid="reconciliation-difference">{rec.difference}</td></tr>
+          <tr><td>Movement on the VAT accounts in the period</td><td className="num">{showAmount(rec.vatAccountMovement)}</td></tr>
+          <tr><td>VAT on the lines by tax point</td><td className="num">{showAmount(rec.vatLinesByTaxPoint)}</td></tr>
+          <tr className="total"><td>Difference</td><td className="num" data-testid="reconciliation-difference">{showAmount(rec.difference)}</td></tr>
         </tbody>
       </table>
       {rec.explainedBy.length > 0 && (
         <table data-testid="reconciliation-entries">
           <thead><tr><th>Journal</th><th>Line</th><th>Dated</th><th>Tax point</th><th className="num">Amount</th><th>Why it differs</th></tr></thead>
-          <tbody>{rec.explainedBy.map((e) => <tr key={`${e.journalId}-${e.lineNo}`}><td>{e.journalNumber}</td><td>{e.lineNo}</td><td className="date">{e.journalDate}</td><td className="date">{e.taxPoint ?? ''}</td><td className="num">{e.amount}</td><td>{e.reason}</td></tr>)}</tbody>
+          <tbody>{rec.explainedBy.map((e) => <tr key={`${e.journalId}-${e.lineNo}`}><td>{e.journalNumber}</td><td>{e.lineNo}</td><td className="date">{e.journalDate}</td><td className="date">{e.taxPoint ?? ''}</td><td className="num">{showAmount(e.amount)}</td><td>{e.reason}</td></tr>)}</tbody>
         </table>
       )}
       <h3>Review flags</h3>

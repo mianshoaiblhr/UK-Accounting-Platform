@@ -142,3 +142,7 @@ export const clientListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
   cursor: z.string().max(400).optional(),
 }).strict();
+
+/** UI-2 (DEC-103): the stages of a client's accounts work, in order, as the overview shows them. */
+export const WORK_STAGES = ['BOOKKEEPING', 'ACCOUNTS_PREPARATION', 'MANAGER_REVIEW', 'PARTNER_REVIEW', 'CLIENT_APPROVAL', 'READY_TO_FILE'] as const;
+export type WorkStage = (typeof WORK_STAGES)[number];

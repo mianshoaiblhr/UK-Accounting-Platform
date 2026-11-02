@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Form } from '@/components/Form';
 import { PracticeShell } from '@/components/PracticeShell';
 import { ApiError, api, errorText } from '@/lib/api';
+import { showAmount } from '@/lib/format';
 
 /**
  * V3-M4 (DEC-096): the practice's taxonomy versions and their concept maps (DEC-093), as the API returns them, with verification for a holder
@@ -31,7 +32,7 @@ function VersionView({ orgId, id, mayVerify, onChange }: { orgId: string; id: st
       <table data-testid="version-entries">
         <thead><tr><th>Source</th><th>Concept</th><th>Type</th><th>Period</th><th>Decimals</th><th>Dimensions</th><th>Mandatory</th></tr></thead>
         <tbody>{v.entries.map((e) => (
-          <tr key={e.id}><td>{e.sourceKind} {e.sourceKey}</td><td><code>{e.concept}</code>{e.negate ? ' (negated)' : ''}</td><td>{e.dataType}</td><td>{e.periodType}</td><td className="num">{e.decimals ?? ''}</td>
+          <tr key={e.id}><td>{e.sourceKind} {e.sourceKey}</td><td><code>{e.concept}</code>{e.negate ? ' (negated)' : ''}</td><td>{e.dataType}</td><td>{e.periodType}</td><td className="num">{showAmount(e.decimals ?? '')}</td>
             <td>{e.dimensions.map((d) => `${d.axis} = ${d.member}`).join('; ')}</td><td>{e.mandatory ? 'yes' : ''}</td></tr>
         ))}</tbody>
       </table>

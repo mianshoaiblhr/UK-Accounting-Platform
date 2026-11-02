@@ -5,6 +5,7 @@ import { api, errorText } from '@/lib/api';
 import { qs, useApi, useWorkspace } from '@/lib/workspace';
 import { useOverrides } from '../subledger/Overrides';
 import { BankNav, type BankAccount } from './BankAccounts';
+import { showAmount } from '@/lib/format';
 
 interface Candidate { journalLineId: string; journalId: string; journalNumber: number; date: string; sourceType: string; reference: string | null; description: string | null; amount: string; score: number; reasons: string[] }
 interface Suggestion { statementLineId: string; date: string; description: string; reference: string | null; unmatched: string; ambiguous: boolean; candidates: Candidate[]; proposal: { kind: 'CHARGE' | 'INTEREST'; accountId: string | null } | null }
@@ -52,10 +53,10 @@ export function Reconcile() {
         {proof.data && (
           <table data-testid="proof">
             <tbody>
-              <tr><td>Statement balance</td><td className="num">{proof.data.statementBalance}</td><td>Ledger balance</td><td className="num">{proof.data.ledgerBalance}</td></tr>
-              <tr><td>Statement lines not yet matched</td><td className="num">{proof.data.unmatchedStatement}</td><td>Ledger entries not yet matched</td><td className="num">{proof.data.unmatchedLedger}</td></tr>
-              <tr className="total"><td>Adjusted statement</td><td className="num">{proof.data.adjustedStatement}</td><td>Adjusted ledger</td><td className="num">{proof.data.adjustedLedger}</td></tr>
-              <tr className="total"><td colSpan={3}>Difference</td><td className="num" data-testid="proof-difference">{proof.data.difference}</td></tr>
+              <tr><td>Statement balance</td><td className="num">{showAmount(proof.data.statementBalance)}</td><td>Ledger balance</td><td className="num">{showAmount(proof.data.ledgerBalance)}</td></tr>
+              <tr><td>Statement lines not yet matched</td><td className="num">{showAmount(proof.data.unmatchedStatement)}</td><td>Ledger entries not yet matched</td><td className="num">{showAmount(proof.data.unmatchedLedger)}</td></tr>
+              <tr className="total"><td>Adjusted statement</td><td className="num">{showAmount(proof.data.adjustedStatement)}</td><td>Adjusted ledger</td><td className="num">{showAmount(proof.data.adjustedLedger)}</td></tr>
+              <tr className="total"><td colSpan={3}>Difference</td><td className="num" data-testid="proof-difference">{showAmount(proof.data.difference)}</td></tr>
             </tbody>
           </table>
         )}
@@ -80,7 +81,7 @@ export function Reconcile() {
             <tbody>{sugg.data.items.map((s) => (
               <tr key={s.statementLineId} data-line={s.description}>
                 <td>{s.date} {s.description}{s.reference ? ` (${s.reference})` : ''}{s.ambiguous ? <span className="badge MEDIUM"> more than one candidate</span> : null}</td>
-                <td className="num">{s.unmatched}</td>
+                <td className="num">{showAmount(s.unmatched)}</td>
                 <td>
                   {s.candidates.map((c) => (
                     <div key={c.journalLineId}>journal {c.journalNumber} · {c.date} · {c.sourceType} · {c.amount} <span className="muted">({c.reasons.join(', ')})</span>
@@ -101,14 +102,14 @@ export function Reconcile() {
               <h2>Statement ({open.data.statement.count}, {open.data.statement.total})</h2>
               <table data-testid="open-statement"><tbody>{open.data.statement.items.map((i) => (
                 <tr key={i.id}><td>{canRec && <input type="radio" name="line" aria-label={`Statement line ${i.description}`} style={{ width: 'auto' }} checked={pick.line === i.id} onChange={() => setPick({ ...pick, line: i.id })} />}</td>
-                  <td>{i.date} {i.description}</td><td className="num">{i.unmatched}</td><td className="muted">{i.ageDays} d</td></tr>
+                  <td>{i.date} {i.description}</td><td className="num">{showAmount(i.unmatched)}</td><td className="muted">{i.ageDays} d</td></tr>
               ))}</tbody></table>
             </div>
             <div>
               <h2>Ledger ({open.data.ledger.count}, {open.data.ledger.total})</h2>
               <table data-testid="open-ledger"><tbody>{open.data.ledger.items.map((i) => (
                 <tr key={i.id}><td>{canRec && <input type="radio" name="ledger" aria-label={`Ledger entry ${i.journalNumber}`} style={{ width: 'auto' }} checked={pick.ledger === i.id} onChange={() => setPick({ ...pick, ledger: i.id })} />}</td>
-                  <td>{i.date} journal {i.journalNumber} {i.sourceType}</td><td className="num">{i.unmatched}</td></tr>
+                  <td>{i.date} journal {i.journalNumber} {i.sourceType}</td><td className="num">{showAmount(i.unmatched)}</td></tr>
               ))}</tbody></table>
             </div>
           </div>
@@ -129,7 +130,7 @@ function MatchedLines({ lines, canRec, detail, showMatches, reason, setReason, u
     <div className="card">
       <h2>Matched lines</h2>
       <table data-testid="matched-lines"><tbody>{lines.map((l) => (
-        <tr key={l.id}><td>{l.date} {l.description}</td><td className="num">{l.amount}</td>
+        <tr key={l.id}><td>{l.date} {l.description}</td><td className="num">{showAmount(l.amount)}</td>
           <td>{!detail[l.id] ? <button className="secondary" style={{ margin: 0, padding: '2px 8px' }} onClick={() => showMatches(l.id)}>Show matches</button> : detail[l.id]!.matches.filter((m) => m.status === 'ACTIVE').map((m) => (
             <div key={m.id} className="inline-actions">journal {m.journalNumber} · {m.amount} · {m.kind.toLowerCase().replace(/_/g, ' ')}
               {canRec && <><input aria-label="Reason to undo the match" placeholder="Reason to undo" value={reason[m.id] ?? ''} onChange={(e) => setReason({ ...reason, [m.id]: e.target.value })} />

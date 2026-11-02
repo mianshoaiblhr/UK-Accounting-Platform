@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { qs, useApi, useWorkspace } from '@/lib/workspace';
 import { SideNav } from './SideNav';
 import type { Side } from './side';
+import { showAmount } from '@/lib/format';
 
 type Row = { notDue: string; days1to30: string; days31to60: string; days61to90: string; over90: string; total: string; currency: string; unallocatedCredits?: string; unallocatedDebits?: string };
 type PartyRow = Row & { customerRoleId?: string; supplierRoleId?: string; accountCode: string | null; name: string | null };
@@ -29,12 +30,12 @@ export function AgedPage({ side }: { side: Side }) {
               return (
                 <tr key={`${id}-${r.currency}`} data-party={id}>
                   <td><Link href={`${w.base}/${side.key}/parties/${id}`}>{r.name}{r.accountCode ? ` (${r.accountCode})` : ''}</Link></td><td>{r.currency}</td>
-                  {COLS.map(([k]) => <td key={k} className="num">{r[k]}</td>)}<td className="num">{r[side.aged.unallocated]}</td><td className="num">{r.total}</td>
+                  {COLS.map(([k]) => <td key={k} className="num">{r[k]}</td>)}<td className="num">{showAmount(r[side.aged.unallocated])}</td><td className="num">{showAmount(r.total)}</td>
                 </tr>
               );
             })}
             {data.totals.map((t) => (
-              <tr key={t.currency} className="total"><td>Total</td><td>{t.currency}</td>{COLS.map(([k]) => <td key={k} className="num">{t[k]}</td>)}<td className="num">{t[side.aged.unallocated]}</td><td className="num" data-testid="aged-total">{t.total}</td></tr>
+              <tr key={t.currency} className="total"><td>Total</td><td>{t.currency}</td>{COLS.map(([k]) => <td key={k} className="num">{t[k]}</td>)}<td className="num">{showAmount(t[side.aged.unallocated])}</td><td className="num" data-testid="aged-total">{showAmount(t.total)}</td></tr>
             ))}
           </tbody>
         </table>

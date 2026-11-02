@@ -52,7 +52,7 @@ export default function Dashboard() {
             </table>
           )}
         </div>
-        <div className="card">
+        <div className="card" id="add-company">
           <h2>Add a company</h2>
           <Form submit="Add company" success="Company added." onSubmit={async () => {
             await api(`/organisations/${orgId}/companies`, { body: { name, legalForm, ...(number ? { companyNumber: number } : {}) }, idempotencyKey: crypto.randomUUID() });

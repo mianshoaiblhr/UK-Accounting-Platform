@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { Form } from '@/components/Form';
 import { qs, useApi, useWorkspace } from '@/lib/workspace';
 import { Notices, YearBar, useYear } from './year';
+import { showAmount } from '@/lib/format';
 
 /**
  * V2-M7a (DEC-071): the accounts document (DEC-063) as the API renders it - statements, wording, tables, omitted items, problems and notices -
@@ -31,7 +32,7 @@ function Lines({ title, lines, d }: { title: string; lines: Line[]; d: Doc }) {
         <thead><tr><th>{d.currency}</th><th className="num">{d.year.end}</th><th className="num">{d.year.priorEnd}</th></tr></thead>
         <tbody>{lines.map((l) => (
           <tr key={l.key} data-key={l.key} className={l.kind === 'ACCOUNTS' ? undefined : 'total'}>
-            <td style={{ paddingLeft: 8 + l.depth * 16 }}>{l.name}</td><td className="num">{l.amount}</td><td className="num">{l.comparative ?? ''}</td>
+            <td style={{ paddingLeft: 8 + l.depth * 16 }}>{l.name}</td><td className="num">{showAmount(l.amount)}</td><td className="num">{showAmount(l.comparative ?? '')}</td>
           </tr>
         ))}</tbody>
       </table>
@@ -101,8 +102,8 @@ export function AccountsScreen() {
               <>
                 <h2>Cash flow statement</h2>
                 <table data-testid="statement-cf"><tbody>{d.statements.cashFlow.sections.flatMap((s) => [
-                  ...s.lines.map((l) => <tr key={`${s.section}-${l.key}`}><td>{l.name}</td><td className="num">{l.amount}</td><td className="num">{l.comparative ?? ''}</td></tr>),
-                  <tr key={`${s.section}-total`} className="total"><td>{s.total.name}</td><td className="num">{s.total.amount}</td><td className="num">{s.total.comparative ?? ''}</td></tr>,
+                  ...s.lines.map((l) => <tr key={`${s.section}-${l.key}`}><td>{l.name}</td><td className="num">{showAmount(l.amount)}</td><td className="num">{showAmount(l.comparative ?? '')}</td></tr>),
+                  <tr key={`${s.section}-total`} className="total"><td>{s.total.name}</td><td className="num">{showAmount(s.total.amount)}</td><td className="num">{showAmount(s.total.comparative ?? '')}</td></tr>,
                 ])}</tbody></table>
               </>
             )}

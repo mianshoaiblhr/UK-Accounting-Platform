@@ -186,3 +186,10 @@ td.date { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .steps li::before { content: counter(step) ". "; }
 .steps li.done { background: var(--pill-pos-bg); color: var(--pill-pos-ink); }
 .steps li.current { background: var(--ink); color: var(--sheet); font-weight: 500; }
+
+/* UI-2 (DEC-103): a page title with its date and an action beside it, as in the approved design */
+.page-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.page-head h1 { margin-bottom: 4px; }
+.page-head p { margin: 0; }
+a.button { display: inline-flex; align-items: center; height: 40px; padding: 0 16px; border-radius: var(--radius-control); background: var(--ink); color: var(--sheet); font: 500 14px/1 var(--font); text-decoration: none; white-space: nowrap; }
+a.button:hover { opacity: .9; color: var(--sheet); }

@@ -5,6 +5,7 @@ import { qs, useApi, useWorkspace } from '@/lib/workspace';
 import { useOverrides } from '../subledger/Overrides';
 import type { Account, TaxCode } from '../subledger/side';
 import { BankNav } from './BankAccounts';
+import { showAmount } from '@/lib/format';
 
 interface Cash { id: string; direction: 'PAYMENT' | 'RECEIPT'; transactionDate: string; bankAccountId: string; reference: string | null; description: string; counterparty: string | null; net: string; vat: string; gross: string; status: string }
 interface Line { description: string; accountId: string; amount: string; taxCodeId: string }
@@ -53,7 +54,7 @@ export function CashPage() {
             <thead><tr><th>Date</th><th>In / out</th><th>Account</th><th>Description</th><th className="num">Net</th><th className="num">VAT</th><th className="num">Gross</th><th>Status</th><th /></tr></thead>
             <tbody>{list.data.items.map((c) => (
               <tr key={c.id}><td>{c.transactionDate}</td><td>{c.direction === 'RECEIPT' ? 'money in' : 'money out'}</td><td>{name(c.bankAccountId)}</td><td>{c.description}{c.counterparty ? ` · ${c.counterparty}` : ''}</td>
-                <td className="num">{c.net}</td><td className="num">{c.vat}</td><td className="num">{c.gross}</td><td>{c.status}</td>
+                <td className="num">{showAmount(c.net)}</td><td className="num">{showAmount(c.vat)}</td><td className="num">{showAmount(c.gross)}</td><td>{c.status}</td>
                 <td>{c.status === 'POSTED' && w.can('cash:record') && <div className="inline-actions"><input aria-label={`Reason to reverse ${c.description}`} placeholder="Reason to reverse" value={revReason[c.id] ?? ''} onChange={(e) => setRevReason({ ...revReason, [c.id]: e.target.value })} />
                   <button className="secondary" onClick={() => reverse(c)}>Reverse</button></div>}</td></tr>
             ))}</tbody>

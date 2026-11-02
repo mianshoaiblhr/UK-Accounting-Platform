@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { api, errorText } from '@/lib/api';
 import { qs, useApi, useWorkspace } from '@/lib/workspace';
 import { Card, Input, ReasonAction, RegistersNav } from './common';
+import { showAmount } from '@/lib/format';
 
 /** V2-M7b (DEC-074): the year-end closing journal (DEC-060) - the API's preview for a year, posting it, the closes and their reversal. */
 interface Preview { yearStart: string; yearEnd: string; journalDate: string; profit: string; lines: { accountId: string; code: string; name: string; debit: string; credit: string }[];
@@ -34,7 +35,7 @@ export function CloseScreen() {
           <div data-testid="close-preview">
             <p>Profit for the year transferred to retained earnings on {p.journalDate}: <strong data-testid="close-profit">{p.profit}</strong></p>
             <table><thead><tr><th>Account</th><th className="num">Debit</th><th className="num">Credit</th></tr></thead>
-              <tbody>{p.lines.map((l) => <tr key={l.accountId}><td>{l.code} {l.name}</td><td className="num">{l.debit}</td><td className="num">{l.credit}</td></tr>)}</tbody>
+              <tbody>{p.lines.map((l) => <tr key={l.accountId}><td>{l.code} {l.name}</td><td className="num">{showAmount(l.debit)}</td><td className="num">{showAmount(l.credit)}</td></tr>)}</tbody>
             </table>
             {p.warnings.map((x) => <p key={x} className="muted">Warning: {x.replace(/_/g, ' ')}</p>)}
             {p.blockers.map((b) => <p key={b.code} className="error" data-testid="close-blocker">{b.message}</p>)}
@@ -47,7 +48,7 @@ export function CloseScreen() {
       <Card title="Closes" testId="closes">
         {closes.error && <p className="error" role="alert">{closes.error}</p>}
         <table><thead><tr><th>Year</th><th className="num">Profit</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>{(closes.data?.items ?? []).map((c) => <tr key={c.id} data-close={c.yearStart}><td>{c.yearStart} to {c.yearEnd}</td><td className="num">{c.profit}</td><td data-testid="close-status">{c.status}{c.reversedReason ? `: ${c.reversedReason}` : ''}</td>
+          <tbody>{(closes.data?.items ?? []).map((c) => <tr key={c.id} data-close={c.yearStart}><td>{c.yearStart} to {c.yearEnd}</td><td className="num">{showAmount(c.profit)}</td><td data-testid="close-status">{c.status}{c.reversedReason ? `: ${c.reversedReason}` : ''}</td>
             <td>{prepare && c.status === 'POSTED' && <ReasonAction label="Reverse" path={`/year-end-closes/${c.id}/reverse`} onDone={reload} />}</td></tr>)}</tbody>
         </table>
       </Card>

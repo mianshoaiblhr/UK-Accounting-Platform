@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { api, errorText } from '@/lib/api';
 import { useApi, useWorkspace } from '@/lib/workspace';
+import { showAmount } from '@/lib/format';
 
 export interface BankAccount { id: string; accountId: string; accountCode: string; accountName: string; name: string; bankName: string | null; currency: string; detailsMasked: string | null;
   statementOpeningDate: string; statementOpeningBalance: string; ledgerBalance: string; statement: { lines: number; balance: string; lastDate: string | null; unmatchedLines: number }; status: string }
@@ -53,7 +54,7 @@ export function BankAccounts() {
             <thead><tr><th>Name</th><th>Ledger account</th><th>Details</th><th className="num">Ledger balance</th><th className="num">Statement balance</th><th className="num">Unmatched lines</th></tr></thead>
             <tbody>{data.items.map((b) => (
               <tr key={b.id}><td><Link href={`${w.base}/bank/${b.id}`}>{b.name}</Link>{b.bankName ? <span className="muted"> {b.bankName}</span> : null}{b.status !== 'ACTIVE' ? ` (${b.status.toLowerCase()})` : ''}</td>
-                <td>{b.accountCode} {b.accountName}</td><td>{b.detailsMasked ?? ''}</td><td className="num">{b.ledgerBalance} {b.currency}</td><td className="num">{b.statement.balance}</td><td className="num">{b.statement.unmatchedLines}</td></tr>
+                <td>{b.accountCode} {b.accountName}</td><td>{b.detailsMasked ?? ''}</td><td className="num">{showAmount(b.ledgerBalance)} {b.currency}</td><td className="num">{showAmount(b.statement.balance)}</td><td className="num">{showAmount(b.statement.unmatchedLines)}</td></tr>
             ))}</tbody>
           </table>
         ))}

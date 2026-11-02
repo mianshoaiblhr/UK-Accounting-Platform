@@ -5,6 +5,7 @@ import { qs, useApi, useWorkspace } from '@/lib/workspace';
 import { useOverrides } from '../subledger/Overrides';
 import type { Account } from '../subledger/side';
 import { BankNav } from './BankAccounts';
+import { showAmount } from '@/lib/format';
 
 interface Transfer { id: string; fromAccountId: string; toAccountId: string; transferDate: string; currency: string; amount: string; reference: string | null; description: string; status: string }
 const isMoney = (a: Account) => a.subtype === 'CURRENT_ASSET_BANK' || a.subtype === 'CURRENT_ASSET_CASH';
@@ -46,7 +47,7 @@ export function TransfersPage() {
           <table data-testid="transfers">
             <thead><tr><th>Date</th><th>From</th><th>To</th><th>Description</th><th className="num">Amount</th><th>Status</th><th /></tr></thead>
             <tbody>{list.data.items.map((t) => (
-              <tr key={t.id}><td>{t.transferDate}</td><td>{name(t.fromAccountId)}</td><td>{name(t.toAccountId)}</td><td>{t.description}</td><td className="num">{t.amount} {t.currency}</td><td>{t.status}</td>
+              <tr key={t.id}><td>{t.transferDate}</td><td>{name(t.fromAccountId)}</td><td>{name(t.toAccountId)}</td><td>{t.description}</td><td className="num">{showAmount(t.amount)} {t.currency}</td><td>{t.status}</td>
                 <td>{t.status === 'POSTED' && w.can('bank:transfer') && <div className="inline-actions"><input aria-label={`Reason to reverse ${t.description}`} placeholder="Reason to reverse" value={revReason[t.id] ?? ''} onChange={(e) => setRevReason({ ...revReason, [t.id]: e.target.value })} />
                   <button className="secondary" onClick={() => reverse(t)}>Reverse</button></div>}</td></tr>
             ))}</tbody>

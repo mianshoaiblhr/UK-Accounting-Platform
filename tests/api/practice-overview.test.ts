@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { approvedYear } from '../helpers/approved-year';
 import { addMember, bearer, createUser, makeCompany, orgPath, startStack, type Stack, type TestUser } from '../helpers/stack';
 
 /**
@@ -84,4 +85,14 @@ describe('the client list', () => {
     expect(p2.body.nextCursor).toBeNull();
     expect((await as(owner, 'get', '/compliance/clients?cursor=nonsense')).body.code).toBe('invalid_cursor');
   });
+});
+
+describe('work in progress by stage (UI-2, DEC-103)', () => {
+  it('puts each readable active client in one stage, read from its accounts year', async () => {
+    const zero = { BOOKKEEPING: 0, ACCOUNTS_PREPARATION: 0, MANAGER_REVIEW: 0, PARTNER_REVIEW: 0, CLIENT_APPROVAL: 0, READY_TO_FILE: 0 };
+    expect((await as(owner, 'get', '/compliance/work')).body.byStage).toEqual({ ...zero, BOOKKEEPING: 4 });
+    expect((await as(assigned, 'get', '/compliance/work')).body.byStage).toEqual({ ...zero, BOOKKEEPING: 2 });
+    await approvedYear(s, owner, { name: 'Elm Ltd', companyNumber: '04567890', standardCode: 'SYN-UI2' });
+    expect((await as(owner, 'get', '/compliance/work')).body.byStage).toEqual({ ...zero, BOOKKEEPING: 4, READY_TO_FILE: 1 });
+  }, 120_000);
 });

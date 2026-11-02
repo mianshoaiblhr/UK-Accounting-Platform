@@ -8,6 +8,7 @@ import type { DocHeader } from './DocumentList';
 import { useOverrides } from './Overrides';
 import { SideNav } from './SideNav';
 import type { Account, Side, TaxCode } from './side';
+import { showAmount } from '@/lib/format';
 
 interface Doc extends DocHeader {
   journalId: string | null; warnings: string[]; creditReason?: string | null; debitReason?: string | null; discardedReason: string | null;
@@ -64,12 +65,12 @@ export function DocumentPage({ side }: { side: Side }) {
           <tbody>
             {d.lines.map((l) => (
               <tr key={l.lineNo}>
-                <td>{l.lineNo}</td><td>{l.description}</td><td className="num">{l.quantity}</td><td className="num">{l.unitPrice}</td>
+                <td>{l.lineNo}</td><td>{l.description}</td><td className="num">{showAmount(l.quantity)}</td><td className="num">{showAmount(l.unitPrice)}</td>
                 <td>{acc(l.accountId) ? `${acc(l.accountId)!.code} ${acc(l.accountId)!.name}` : ''}</td><td data-testid="line-vat">{code(l.taxCodeId)}</td>
-                <td className="num">{l.net}</td><td className="num">{l.vat}</td><td className="num">{l.gross}</td>
+                <td className="num">{showAmount(l.net)}</td><td className="num">{showAmount(l.vat)}</td><td className="num">{showAmount(l.gross)}</td>
               </tr>
             ))}
-            <tr className="total"><td colSpan={6}>Total</td><td className="num">{d.totals.net}</td><td className="num">{d.totals.vat}</td><td className="num" data-testid="doc-gross">{d.totals.gross}</td></tr>
+            <tr className="total"><td colSpan={6}>Total</td><td className="num">{showAmount(d.totals.net)}</td><td className="num">{showAmount(d.totals.vat)}</td><td className="num" data-testid="doc-gross">{showAmount(d.totals.gross)}</td></tr>
           </tbody>
         </table>
         {d.status === 'APPROVED' && <p>Outstanding <strong data-testid="doc-outstanding">{d.outstanding}</strong></p>}

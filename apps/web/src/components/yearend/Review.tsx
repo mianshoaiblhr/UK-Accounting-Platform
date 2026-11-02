@@ -4,6 +4,7 @@ import { api, errorText } from '@/lib/api';
 import { Form } from '@/components/Form';
 import { qs, useApi, useWorkspace } from '@/lib/workspace';
 import { Figures, Notices, YearBar, useYear } from './year';
+import { showAmount } from '@/lib/format';
 
 /** V2-M7a (DEC-071): the review checklist (DEC-068) and the firm's review settings, as the API returns them. */
 interface Response { action: 'EXPLAIN' | 'SIGN_OFF' | 'REOPEN'; note: string | null; byUserId: string; at: string }
@@ -67,7 +68,7 @@ function Settings() {
         <>
           <p className="muted">{data.notice}</p>
           <table>
-            <tbody>{SETTING_FIELDS.map((f) => <tr key={f.key}><td>{f.label}</td><td className="num">{data.current?.[f.key] ?? 'not set'}</td></tr>)}</tbody>
+            <tbody>{SETTING_FIELDS.map((f) => <tr key={f.key}><td>{f.label}</td><td className="num">{showAmount(data.current?.[f.key] ?? 'not set')}</td></tr>)}</tbody>
           </table>
           {w.can('accounts:prepare') && (
             <Form submit="Save settings" success="Settings saved" onSubmit={async () => {

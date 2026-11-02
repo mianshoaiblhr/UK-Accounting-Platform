@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { Form } from '@/components/Form';
 import { qs, useApi, useWorkspace } from '@/lib/workspace';
 import { AccountSelect, Card, Input, ReasonAction, RegistersNav, useAccounts } from './common';
+import { showAmount } from '@/lib/format';
 
 /** V2-M7b (DEC-074): provisions (DEC-059) with their movements, and the movements report for a range, as the API returns them. */
 interface Movement { id: string; kind: 'MADE' | 'USED' | 'RELEASED'; date: string; amount: string; reason: string; status: 'POSTED' | 'REVERSED'; reversedReason: string | null }
@@ -50,7 +51,7 @@ export function ProvisionsScreen() {
             <h2>{p.name} <span className="muted">balance</span> <span data-testid="provision-balance">{p.balance}</span></h2>
             <p className="muted">{label(p.accountId)}; expense {label(p.expenseAccountId)}. Basis: {p.basis}</p>
             <table><thead><tr><th>Date</th><th>Movement</th><th className="num">Amount</th><th>Reason</th><th>Status</th><th>Actions</th></tr></thead>
-              <tbody>{p.movements.map((m) => <tr key={m.id}><td>{m.date}</td><td>{m.kind}</td><td className="num">{m.amount}</td><td>{m.reason}</td><td>{m.status}{m.reversedReason ? `: ${m.reversedReason}` : ''}</td>
+              <tbody>{p.movements.map((m) => <tr key={m.id}><td>{m.date}</td><td>{m.kind}</td><td className="num">{showAmount(m.amount)}</td><td>{m.reason}</td><td>{m.status}{m.reversedReason ? `: ${m.reversedReason}` : ''}</td>
                 <td>{prepare && m.status === 'POSTED' && <ReasonAction label="Reverse" path={`/provision-movements/${m.id}/reverse`} onDone={reload} />}</td></tr>)}</tbody>
             </table>
             {prepare && <MovementForm p={p} onDone={reload} />}
@@ -77,7 +78,7 @@ export function ProvisionsScreen() {
         <div className="row"><Input id="pr-from" label="From" type="date" value={range.from} onChange={(x) => setRange({ ...range, from: x })} /><Input id="pr-to" label="To" type="date" value={range.to} onChange={(x) => setRange({ ...range, to: x })} /></div>
         {report.error && <p className="error" role="alert">{report.error}</p>}
         <table><thead><tr><th>Provision</th><th className="num">Opening</th><th className="num">Made</th><th className="num">Used</th><th className="num">Released</th><th className="num">Closing</th></tr></thead>
-          <tbody>{(report.data?.provisions ?? []).map((p) => <tr key={p.provisionId}><td>{p.name}</td><td className="num">{p.opening}</td><td className="num">{p.made}</td><td className="num">{p.used}</td><td className="num">{p.released}</td><td className="num">{p.closing}</td></tr>)}</tbody>
+          <tbody>{(report.data?.provisions ?? []).map((p) => <tr key={p.provisionId}><td>{p.name}</td><td className="num">{showAmount(p.opening)}</td><td className="num">{showAmount(p.made)}</td><td className="num">{showAmount(p.used)}</td><td className="num">{showAmount(p.released)}</td><td className="num">{showAmount(p.closing)}</td></tr>)}</tbody>
         </table>
       </Card>
     </>

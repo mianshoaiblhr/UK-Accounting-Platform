@@ -53261,12 +53261,20 @@
           },
           "total": {
             "type": "integer"
+          },
+          "byStage": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "UI-2 (DEC-103): active clients by the stage of their accounts work (BOOKKEEPING to READY_TO_FILE)"
           }
         },
         "required": [
           "byStatus",
           "byKind",
-          "total"
+          "total",
+          "byStage"
         ],
         "additionalProperties": false
       },

@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { Form } from '@/components/Form';
 import { qs, useApi, useWorkspace } from '@/lib/workspace';
 import { AccountSelect, Card, Input, Reconciliation, RegistersNav, today, useAccounts } from './common';
+import { showAmount } from '@/lib/format';
 
 /** V2-M7b (DEC-074): the fixed-asset register (DEC-058), its classes and assets, as the API returns them. */
 interface AssetClass { id: string; code: string; name: string; method: string; lifeMonths: number | null; ratePercent: string | null; residualPercent: string; convention: string; costAccountId: string; depreciationAccountId: string }
@@ -107,8 +108,8 @@ export function FixedAssetsScreen() {
               <table>
                 <thead><tr><th>Class / asset</th><th className="num">Cost</th><th className="num">Accumulated depreciation</th><th className="num">Carrying amount</th></tr></thead>
                 <tbody>{r.classes.flatMap((c) => [
-                  <tr key={c.classId} className="total"><td>{c.code} {c.name}</td><td className="num">{c.cost}</td><td className="num">{c.accumulatedDepreciation}</td><td className="num">{c.carryingAmount}</td></tr>,
-                  ...c.assets.map((a) => <tr key={a.id}><td className="indent"><Link href={`${w.base}/registers/assets/${a.id}`}>#{a.number} {a.description}</Link> {a.status === 'DISPOSED' ? '(disposed)' : ''}</td><td className="num">{a.cost}</td><td className="num">{a.accumulatedDepreciation}</td><td className="num">{a.carryingAmount}</td></tr>),
+                  <tr key={c.classId} className="total"><td>{c.code} {c.name}</td><td className="num">{showAmount(c.cost)}</td><td className="num">{showAmount(c.accumulatedDepreciation)}</td><td className="num">{showAmount(c.carryingAmount)}</td></tr>,
+                  ...c.assets.map((a) => <tr key={a.id}><td className="indent"><Link href={`${w.base}/registers/assets/${a.id}`}>#{a.number} {a.description}</Link> {a.status === 'DISPOSED' ? '(disposed)' : ''}</td><td className="num">{showAmount(a.cost)}</td><td className="num">{showAmount(a.accumulatedDepreciation)}</td><td className="num">{showAmount(a.carryingAmount)}</td></tr>),
                 ])}</tbody>
               </table>
             )}
@@ -126,7 +127,7 @@ export function FixedAssetsScreen() {
       <Card title="Assets" testId="fa-assets">
         {assets.error && <p className="error" role="alert">{assets.error}</p>}
         <table><thead><tr><th>#</th><th>Description</th><th>Acquired</th><th className="num">Cost</th><th>Added</th><th>Status</th></tr></thead>
-          <tbody>{(assets.data?.items ?? []).map((a) => <tr key={a.id} data-asset={a.number}><td>{a.number}</td><td><Link href={`${w.base}/registers/assets/${a.id}`}>{a.description}</Link></td><td>{a.acquiredOn}</td><td className="num">{a.cost}</td><td>{a.additionKind}</td><td>{a.status}</td></tr>)}</tbody>
+          <tbody>{(assets.data?.items ?? []).map((a) => <tr key={a.id} data-asset={a.number}><td>{a.number}</td><td><Link href={`${w.base}/registers/assets/${a.id}`}>{a.description}</Link></td><td>{a.acquiredOn}</td><td className="num">{showAmount(a.cost)}</td><td>{a.additionKind}</td><td>{a.status}</td></tr>)}</tbody>
         </table>
         {manage && (classes.data?.items.length ? <><h3>Add an asset</h3><AssetForm classes={classes.data.items} onDone={reload} /></> : <p className="muted">Create a class first.</p>)}
       </Card>

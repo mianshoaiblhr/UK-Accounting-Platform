@@ -92,7 +92,7 @@ describe('V2-M7a year-end workspace in the browser', () => {
     const f2 = page.locator('section[data-control="RC-08"] tr[data-flag]');
     await f2.getByRole('button', { name: 'Sign off' }).click();
     await pw(f2.getByTestId('flag-state')).toContainText('SIGNED_OFF');
-    await pw(page.getByTestId('review-settings')).toContainText('1000000.00');
+    await pw(page.getByTestId('review-settings')).toContainText('1,000,000.00');
     await page.context().close();
   });
 

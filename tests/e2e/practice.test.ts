@@ -44,9 +44,11 @@ describe('V7-M2 practice overview and client list in the browser', () => {
     const deadlines = p.getByTestId('overview-deadlines');
     await pw(deadlines.locator('tr', { hasText: 'Alder board pack' })).toContainText('Overdue');
     await pw(deadlines.locator('tr', { hasText: 'Birch records' }).getByTestId('obligation-status')).toHaveText('Waiting on the client');
-    await pw(p.getByTestId('work-by-status').locator('tr', { hasText: 'In progress' })).toContainText('1');
-    await pw(p.getByTestId('work-by-status').locator('tr', { hasText: 'Waiting on the client' })).toContainText('1');
-    await pw(p.getByTestId('connections')).toContainText('Not connected');
+    // UI-2 (DEC-103): the date, "Add client" for a holder of company:create, the work by stage (no client has an accounts year yet) and the connections
+    await pw(p.getByTestId('today')).toHaveText(/^[A-Z][a-z]+day \d{1,2} [A-Z][a-z]+ \d{4}$/);
+    await pw(p.getByRole('link', { name: 'Add client' })).toHaveAttribute('href', '/#add-company');
+    await pw(p.getByTestId('work-by-stage').locator('tr', { hasText: 'Ready to file' })).toContainText('0');
+    await pw(p.getByTestId('connections')).toContainText('No live connection');
     await p.context().close();
   });
 

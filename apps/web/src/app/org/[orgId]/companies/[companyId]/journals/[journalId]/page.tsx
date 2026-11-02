@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { WorkspaceShell, qs, useApi, useWorkspace } from '@/lib/workspace';
+import { showAmount } from '@/lib/format';
 
 interface Source {
   journal: { id: string; journalNumber: number; journalDate: string; sourceType: string; sourceReference: string | null; description: string; total: string; reversesJournalId: string | null };
@@ -35,8 +36,8 @@ function JournalPage() {
                 <td>{l.lineNo}</td>
                 <td><Link href={`${w.base}/ledger${qs({ accountId: l.accountId, to: j.journalDate })}`}>{l.accountCode} {l.accountName}</Link></td>
                 <td>{l.description ?? ''}</td>
-                <td className="num">{l.debit}</td>
-                <td className="num">{l.credit}</td>
+                <td className="num">{showAmount(l.debit)}</td>
+                <td className="num">{showAmount(l.credit)}</td>
               </tr>
             ))}
           </tbody>

@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { Form } from '@/components/Form';
 import { useApi, useWorkspace } from '@/lib/workspace';
 import { AccountSelect, Card, Input, ReasonAction, RegistersNav } from './common';
+import { showAmount } from '@/lib/format';
 
 /** V2-M7b (DEC-074): one fixed asset - its cost, bases, charges and events - with the changes the API allows (DEC-058). */
 interface Detail {
@@ -38,11 +39,11 @@ export function AssetScreen() {
             <tr><td>Acquired / in use from</td><td>{a.acquiredOn} / {a.inUseFrom}</td></tr>
             <tr><td>Added</td><td>{a.additionKind}</td></tr>
             <tr><td>Status</td><td data-testid="asset-status">{a.status}{a.disposedOn ? ` on ${a.disposedOn}` : ''}</td></tr>
-            <tr><td>Cost</td><td className="num">{a.cost}</td></tr>
-            <tr><td>Accumulated depreciation</td><td className="num">{a.accumulatedDepreciation}</td></tr>
-            <tr><td>Carrying amount</td><td className="num" data-testid="carrying-amount">{a.carryingAmount}</td></tr>
+            <tr><td>Cost</td><td className="num">{showAmount(a.cost)}</td></tr>
+            <tr><td>Accumulated depreciation</td><td className="num">{showAmount(a.accumulatedDepreciation)}</td></tr>
+            <tr><td>Carrying amount</td><td className="num" data-testid="carrying-amount">{showAmount(a.carryingAmount)}</td></tr>
             <tr><td>Last charged</td><td>{a.lastChargedOn ?? 'never'}</td></tr>
-            {a.status === 'DISPOSED' && <tr><td>Proceeds / gain or loss</td><td className="num">{a.proceeds} / {a.gainOrLoss}</td></tr>}
+            {a.status === 'DISPOSED' && <tr><td>Proceeds / gain or loss</td><td className="num">{showAmount(a.proceeds)} / {showAmount(a.gainOrLoss)}</td></tr>}
             <tr><td>Tax (kept for capital allowances, V4; never read by depreciation)</td><td>{a.tax.category}{a.tax.cost ? `, ${a.tax.cost}` : ''}</td></tr>
           </tbody></table>
         )}
@@ -51,10 +52,10 @@ export function AssetScreen() {
         <>
           <Card title="Depreciation bases and charges">
             <table><thead><tr><th>From</th><th>Basis</th><th className="num">Carrying amount</th><th>Reason</th></tr></thead>
-              <tbody>{a.bases.map((b) => <tr key={b.id}><td>{b.effectiveFrom}</td><td>{b.method === 'STRAIGHT_LINE' ? `Straight line, ${b.lifeMonths} months` : `Reducing balance, ${b.ratePercent}%`}; residual {b.residual}; {b.convention.toLowerCase()}</td><td className="num">{b.carryingAmount}</td><td>{b.reason}</td></tr>)}</tbody>
+              <tbody>{a.bases.map((b) => <tr key={b.id}><td>{b.effectiveFrom}</td><td>{b.method === 'STRAIGHT_LINE' ? `Straight line, ${b.lifeMonths} months` : `Reducing balance, ${b.ratePercent}%`}; residual {b.residual}; {b.convention.toLowerCase()}</td><td className="num">{showAmount(b.carryingAmount)}</td><td>{b.reason}</td></tr>)}</tbody>
             </table>
             <table data-testid="charges"><thead><tr><th>Run as at</th><th className="num">Charge</th></tr></thead>
-              <tbody>{a.charges.map((c) => <tr key={c.runId}><td>{c.asAt}</td><td className="num">{c.amount}</td></tr>)}</tbody>
+              <tbody>{a.charges.map((c) => <tr key={c.runId}><td>{c.asAt}</td><td className="num">{showAmount(c.amount)}</td></tr>)}</tbody>
             </table>
           </Card>
           {manage && a.status === 'ACTIVE' && (

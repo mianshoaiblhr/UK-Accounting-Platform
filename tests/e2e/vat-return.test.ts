@@ -58,7 +58,7 @@ describe('V5-M3 the VAT return in the browser', () => {
     returnPath = new URL(p.url()).pathname;
     await pw(p.getByTestId('return-status')).toHaveText('Draft');
     await pw(p.getByTestId('box-1')).toHaveText('220.00');
-    await pw(p.getByTestId('box-6')).toHaveText('1100.00');
+    await pw(p.getByTestId('box-6')).toHaveText('1,100.00');
     await p.locator('tr[data-box="1"] summary').click();
     await pw(p.getByTestId('box-1-lines').locator('tbody tr')).toHaveCount(2);
     await pw(p.getByTestId('reconciliation-difference')).toHaveText('-20.00');
@@ -90,7 +90,7 @@ describe('V5-M3 the VAT return in the browser', () => {
     await p.getByLabel('Approved on').fill('2026-04-20');
     await p.getByRole('button', { name: 'Record the approval and lock the period' }).click();
     await pw(p.getByTestId('return-status')).toHaveText('Approved by the client');
-    await pw(p.getByTestId('filed-6')).toHaveText('1100');
+    await pw(p.getByTestId('filed-6')).toHaveText('1,100');
     await p.getByLabel('Submitted on').fill('2026-05-02');
     await p.getByLabel('HMRC receipt reference (form bundle number)').fill('123456789012');
     await p.getByLabel('Evidence (HMRC\'s receipt)').selectOption({ label: 'client-approval-and-hmrc-receipt.pdf' });

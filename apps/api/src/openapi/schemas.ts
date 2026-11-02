@@ -656,7 +656,8 @@ export const GenerationResult = z.object({
 });
 
 // ───────────── V7-M2 practice overview and client list (DEC-089) ─────────────
-export const ComplianceWork = z.object({ byStatus: z.record(z.number().int()).describe('Open obligations by status'), byKind: z.record(z.number().int()).describe('Open obligations by kind'), total: z.number().int() });
+export const ComplianceWork = z.object({ byStatus: z.record(z.number().int()).describe('Open obligations by status'), byKind: z.record(z.number().int()).describe('Open obligations by kind'), total: z.number().int(),
+  byStage: z.record(z.number().int()).describe('UI-2 (DEC-103): active clients by the stage of their accounts work (BOOKKEEPING to READY_TO_FILE)') });
 export const ClientSummary = z.object({
   id: uuid, name: z.string(), companyNumber: z.string().nullable(), legalForm: z.string(), yearEnd: z.object({ month: z.number().int(), day: z.number().int() }).nullable(),
   vat: z.object({ registered: z.boolean(), periodMonths: z.number().int().nullable() }),

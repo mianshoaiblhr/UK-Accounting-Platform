@@ -2,13 +2,15 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Browser } from 'playwright';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { approvedYear } from '../helpers/approved-year';
 import { bearer, createUser, makeCompany, orgPath, type Stack, type TestUser } from '../helpers/stack';
 import { WEB, signIn, startWeb, stopWeb, type WebStack } from '../helpers/web';
 
 /**
  * UI-1 (DEC-076): screenshots of the main screens over the real stack, at desktop (1440x900) and phone (390x844) widths, for the
  * design record in docs/design/screens/. Runs only when SCREENS_OUT names the folder to write (for example
- * SCREENS_OUT=docs/design/screens/after); otherwise it is skipped, so CI does not write files. Synthetic data only.
+ * SCREENS_OUT=docs/design/screens/after); otherwise it is skipped, so CI does not write files. Synthetic data only. UI-2 (DEC-103): a named firm
+ * with several clients, deadlines in each state and a client ready to file, so the screens can be compared with the approved design.
  */
 const OUT = process.env.SCREENS_OUT;
 const G = JSON.parse(readFileSync(resolve(__dirname, '../golden/v2-m1-micro-synthetic.json'), 'utf8')).version as { lines: Record<string, unknown>[]; mapEntries: [string, string | null, string][] };
@@ -23,7 +25,7 @@ describe.skipIf(!OUT)('UI-1 screenshots', () => {
   beforeAll(async () => {
     w = await startWeb();
     ({ stack, browser } = w);
-    owner = await createUser(stack, { type: 'PRACTICE' });
+    owner = await createUser(stack, { type: 'PRACTICE', orgName: 'Hartley & Webb' });
     const { addMember } = await import('../helpers/stack');
     author = await addMember(stack, owner, 'admin');
     company = await makeCompany(stack, owner, 'Northwind Joinery Ltd');
@@ -46,7 +48,24 @@ describe.skipIf(!OUT)('UI-1 screenshots', () => {
     for (const [sourceLine, accountSubtype, targetKey] of G.mapEntries) await ok(call(author, 'post', `${v}/map-entries`, { sourceLine, accountSubtype, targetKey }), 201);
     await ok(call(owner, 'post', `${v}/verify`, { notes: 'Synthetic version for the screenshots' }));
     await ok(call(owner, 'put', co('/reporting-frameworks'), { yearStart: '2026-01-01', yearEnd: '2026-12-31', versionId: ver, entitySize: 'MICRO', reason: 'Synthetic' }));
-  });
+    // UI-2 (DEC-103): more clients, deadlines in each state, one client ready to file (all synthetic)
+    const ukToday = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    const shift = (days: number) => { const d = new Date(`${ukToday}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); };
+    const clients: Record<string, { id: string }> = { 'Northwind Joinery Ltd': company };
+    for (const [n, form] of [['Brightwater Cafe Ltd', 'LTD'], ['Oakfield Lettings LLP', 'LLP'], ['Kestrel Joinery Ltd', 'LTD'], ['Tom Fairley', 'SOLE_TRADER']] as const) {
+      clients[n] = await makeCompany(stack, owner, n);
+      if (form !== 'LTD') await ok(call(owner, 'patch', `/companies/${clients[n]!.id}`, { legalForm: form }));
+    }
+    clients['Marlow Dental Ltd'] = (await approvedYear(stack, owner, { name: 'Marlow Dental Ltd', companyNumber: '05678901', standardCode: 'SYN-UI2' })).company;
+    const deadlines: [string, string, number, string, string?][] = [
+      ['Tom Fairley', 'VAT_RETURN', -81, 'NOT_STARTED'], ['Brightwater Cafe Ltd', 'ACCOUNTS_FILING', 4, 'WAITING_ON_CLIENT'], ['Marlow Dental Ltd', 'CT_PAYMENT', 5, 'IN_PROGRESS'],
+      ['Oakfield Lettings LLP', 'CONFIRMATION_STATEMENT', 7, 'NOT_STARTED'], ['Northwind Joinery Ltd', 'VAT_RETURN', 11, 'READY'], ['Kestrel Joinery Ltd', 'VAT_RETURN', 11, 'WAITING_ON_CLIENT'],
+    ];
+    for (const [n, kind, days, status] of deadlines) {
+      const o = await ok(call(owner, 'post', `/companies/${clients[n]!.id}/compliance/obligations`, { kind, dueDate: shift(days), reason: 'Synthetic deadline for the screenshots' }), 201);
+      if (status !== 'NOT_STARTED') await ok(call(owner, 'patch', `/companies/${clients[n]!.id}/compliance/obligations/${o.id}`, { version: 1, status }));
+    }
+  }, 300_000);
   afterAll(async () => { await stopWeb(w ?? {}); });
 
   it('captures the main screens at desktop and phone widths', async () => {

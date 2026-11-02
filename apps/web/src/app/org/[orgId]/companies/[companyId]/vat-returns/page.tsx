@@ -6,6 +6,7 @@ import { Form } from '@/components/Form';
 import { ReturnStatus, type ReturnSummary, type VatReturn } from '@/components/vat/common';
 import { api } from '@/lib/api';
 import { WorkspaceShell, useApi, useWorkspace } from '@/lib/workspace';
+import { showAmount } from '@/lib/format';
 
 /** V5-M3 (DEC-092): the client's VAT returns, latest period first, as the API lists them. The period of a new return comes from the VAT settings (API). */
 function Returns() {
@@ -26,7 +27,7 @@ function Returns() {
               <tr key={r.id}>
                 <td><Link href={`${w.base}/vat-returns/${r.id}`}>{r.periodFrom} to {r.periodTo}</Link></td>
                 <td><ReturnStatus status={r.status} />{r.locked && <span className="muted"> period locked</span>}</td>
-                <td className="num">{r.unexplainedFlags}</td>
+                <td className="num">{showAmount(r.unexplainedFlags)}</td>
               </tr>
             ))}</tbody>
           </table>

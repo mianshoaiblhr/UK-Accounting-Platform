@@ -3,6 +3,7 @@ import type { Browser, Page } from 'playwright';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { addMember, bearer, createUser, makeCompany, orgPath, type Stack, type TestUser } from '../helpers/stack';
 import { WEB, signIn, startWeb, stopWeb, type WebStack } from '../helpers/web';
+import { showAmount } from '../../apps/web/src/lib/format';
 
 /**
  * M9a (DEC-048..050) in a real browser over the real stack, on synthetic books built through the API:
@@ -80,14 +81,14 @@ describe('M9a workspace in the browser', () => {
     await page.goto(ws('/reports/profit-and-loss'));
     await page.getByLabel('From', { exact: true }).fill('2026-01-01');
     await page.getByLabel('To', { exact: true }).fill('2026-06-30');
-    for (const l of pl.lines as { key: string; amount: string }[]) await pw(page.locator(`tr[data-key="${l.key}"]`)).toContainText(l.amount);
+    for (const l of pl.lines as { key: string; amount: string }[]) await pw(page.locator(`tr[data-key="${l.key}"]`)).toContainText(String(showAmount(l.amount)));
     await pw(page.getByTestId('reconciliation')).toContainText('Profit for the period 330.00');
     await pw(page.getByTestId('reconciliation')).toContainText('(reconciled)');
     await page.locator('tr[data-key="PL.ADMIN_EXPENSES"]').getByRole('button').click();
     await pw(page.getByTestId('statement')).toContainText('6100');
     await page.goto(ws('/reports/balance-sheet'));
     await page.getByLabel('As at').fill('2026-06-30');
-    for (const l of bs.lines as { key: string; amount: string }[]) await pw(page.locator(`tr[data-key="${l.key}"]`)).toContainText(l.amount);
+    for (const l of bs.lines as { key: string; amount: string }[]) await pw(page.locator(`tr[data-key="${l.key}"]`)).toContainText(String(showAmount(l.amount)));
     await pw(page.getByTestId('reconciliation')).toContainText('(balanced; trial balance balanced)');
     await tab(page, 'Trial balance');
     await page.getByLabel('As at').fill('2026-06-30');

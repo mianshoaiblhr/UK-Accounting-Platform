@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { Form } from '@/components/Form';
 import { qs, useApi, useWorkspace } from '@/lib/workspace';
 import { AccountSelect, Card, ContactSelect, Input, ReasonAction, RegistersNav } from './common';
+import { showAmount } from '@/lib/format';
 
 /**
  * V2-M7b (DEC-074): director and shareholder loan accounts (DEC-062) - the accounts, a statement for a range, the report with its review
@@ -34,7 +35,7 @@ function StatementView({ id, range }: { id: string; range: { from: string; to: s
       {s.flags.length > 0 && <p className="error">Review prompts: {s.flags.join(', ')}</p>}
       {s.notEvaluated.length > 0 && <p className="muted">Not evaluated (no threshold set): {s.notEvaluated.join(', ')}</p>}
       <table><thead><tr><th>Date</th><th>Journal</th><th>Description</th><th>Category</th><th className="num">Amount</th><th className="num">Balance</th></tr></thead>
-        <tbody>{s.movements.map((m) => <tr key={m.journalId}><td>{m.date}</td><td>#{m.journalNumber}</td><td>{m.description}</td><td>{m.category}</td><td className="num">{m.amount}</td><td className="num">{m.balance}</td></tr>)}</tbody>
+        <tbody>{s.movements.map((m) => <tr key={m.journalId}><td>{m.date}</td><td>#{m.journalNumber}</td><td>{m.description}</td><td>{m.category}</td><td className="num">{showAmount(m.amount)}</td><td className="num">{showAmount(m.balance)}</td></tr>)}</tbody>
       </table>
       <p className="muted">{s.notice}</p>
     </div>
@@ -89,7 +90,7 @@ export function DirectorsScreen() {
           <>
             <p>{report.data.flagged} account(s) flagged for review from {report.data.from} to {report.data.to}.</p>
             <table><thead><tr><th>Person</th><th className="num">Opening</th><th className="num">Closing</th><th className="num">Most overdrawn</th><th>Prompts</th></tr></thead>
-              <tbody>{report.data.items.map((r) => <tr key={r.id}><td>{r.contactName}</td><td className="num">{r.opening}</td><td className="num">{r.closing}</td><td className="num">{r.lowest}</td><td>{r.flags.join(', ') || '-'}</td></tr>)}</tbody>
+              <tbody>{report.data.items.map((r) => <tr key={r.id}><td>{r.contactName}</td><td className="num">{showAmount(r.opening)}</td><td className="num">{showAmount(r.closing)}</td><td className="num">{showAmount(r.lowest)}</td><td>{r.flags.join(', ') || '-'}</td></tr>)}</tbody>
             </table>
           </>
         )}

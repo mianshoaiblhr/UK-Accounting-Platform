@@ -4,6 +4,7 @@ import { api, errorText } from '@/lib/api';
 import { Form } from '@/components/Form';
 import { qs, useApi, useWorkspace } from '@/lib/workspace';
 import { AccountSelect, Card, Input, ReasonAction, Reconciliation, RegistersNav, today, useAccounts } from './common';
+import { showAmount } from '@/lib/format';
 
 /**
  * V2-M7b (DEC-074): year-end adjustments (DEC-059) - accruals, accrued income, prepayments, deferred income - their release runs and the
@@ -71,7 +72,7 @@ export function AdjustmentsScreen() {
         {items.error && <p className="error" role="alert">{items.error}</p>}
         <table data-testid="ye-items"><thead><tr><th>Kind</th><th>Description</th><th>Date / period</th><th className="num">Amount</th><th className="num">Released</th><th>Accounts</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody>{(items.data?.items ?? []).map((i) => (
-            <tr key={i.id} data-item={i.description}><td>{i.kind}</td><td>{i.description}</td><td>{i.date}{i.periodStart ? ` (${i.periodStart} to ${i.periodEnd})` : ''}</td><td className="num">{i.amount}</td><td className="num">{i.released ?? ''}</td>
+            <tr key={i.id} data-item={i.description}><td>{i.kind}</td><td>{i.description}</td><td>{i.date}{i.periodStart ? ` (${i.periodStart} to ${i.periodEnd})` : ''}</td><td className="num">{showAmount(i.amount)}</td><td className="num">{showAmount(i.released ?? '')}</td>
               <td>{label(i.plAccountId)} / {label(i.balanceAccountId)}</td><td>{i.status}</td>
               <td>{prepare && i.status === 'ACTIVE' && <ReasonAction label="Cancel" path={`/year-end-items/${i.id}/cancel`} onDone={reload} />}</td></tr>
           ))}</tbody>
@@ -85,14 +86,14 @@ export function AdjustmentsScreen() {
           <>
             <p>To release to {preview.data.asAt}: <strong data-testid="release-total">{preview.data.total}</strong></p>
             <table><thead><tr><th>Item</th><th className="num">This run</th><th className="num">Released after</th><th className="num">Unreleased after</th></tr></thead>
-              <tbody>{preview.data.lines.map((l) => <tr key={l.itemId}><td>{l.description}</td><td className="num">{l.amount}</td><td className="num">{l.releasedAfter}</td><td className="num">{l.unreleasedAfter}</td></tr>)}</tbody>
+              <tbody>{preview.data.lines.map((l) => <tr key={l.itemId}><td>{l.description}</td><td className="num">{showAmount(l.amount)}</td><td className="num">{showAmount(l.releasedAfter)}</td><td className="num">{showAmount(l.unreleasedAfter)}</td></tr>)}</tbody>
             </table>
             {prepare && preview.data.lines.length > 0 && <button onClick={async () => { setError(''); try { await api(w.path('/release-runs'), { body: { asAt: preview.data!.asAt } }); await reload(); } catch (e) { setError(errorText(e)); } }}>Post the release run</button>}
             {error && <p className="error" role="alert">{error}</p>}
           </>
         )}
         <table data-testid="release-runs"><thead><tr><th>As at</th><th className="num">Total</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>{(runs.data?.items ?? []).map((r) => <tr key={r.id} data-run={r.asAt}><td>{r.asAt}</td><td className="num">{r.total}</td><td>{r.status}{r.reversedReason ? `: ${r.reversedReason}` : ''}</td>
+          <tbody>{(runs.data?.items ?? []).map((r) => <tr key={r.id} data-run={r.asAt}><td>{r.asAt}</td><td className="num">{showAmount(r.total)}</td><td>{r.status}{r.reversedReason ? `: ${r.reversedReason}` : ''}</td>
             <td>{prepare && r.status === 'POSTED' && <ReasonAction label="Reverse" path={`/release-runs/${r.id}/reverse`} onDone={reload} />}</td></tr>)}</tbody>
         </table>
       </Card>
@@ -102,8 +103,8 @@ export function AdjustmentsScreen() {
           <>
             <table><thead><tr><th>Item or provision</th><th className="num">Balance at {register.data.asAt}</th></tr></thead>
               <tbody>
-                {register.data.items.map((i) => <tr key={i.id}><td>{i.kind}: {i.description}</td><td className="num">{i.balance}</td></tr>)}
-                {register.data.provisions.map((p) => <tr key={p.id}><td>Provision: {p.name}</td><td className="num">{p.balance}</td></tr>)}
+                {register.data.items.map((i) => <tr key={i.id}><td>{i.kind}: {i.description}</td><td className="num">{showAmount(i.balance)}</td></tr>)}
+                {register.data.provisions.map((p) => <tr key={p.id}><td>Provision: {p.name}</td><td className="num">{showAmount(p.balance)}</td></tr>)}
               </tbody>
             </table>
             <Reconciliation rows={register.data.reconciliation} reconciled={register.data.reconciled} />

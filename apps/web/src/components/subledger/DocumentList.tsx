@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { qs, useApi, useWorkspace } from '@/lib/workspace';
 import { SideNav } from './SideNav';
 import { partyName, type Party, type Side } from './side';
+import { showAmount } from '@/lib/format';
 
 export interface DocHeader { id: string; kind: string; status: string; paymentStatus: string | null; documentNumber: string | null; supplierReference?: string | null; customerReference?: string | null;
   customerRoleId?: string; supplierRoleId?: string; issueDate: string; dueDate: string; currency: string; totals: { net: string; vat: string; gross: string }; outstanding: string }
@@ -41,8 +42,8 @@ export function DocumentList({ side }: { side: Side }) {
                 <td>{name(d[side.partyField])}</td>
                 <td>{d.issueDate}</td>
                 <td>{d.status}{d.paymentStatus ? ` · ${d.paymentStatus}` : ''}</td>
-                <td className="num">{d.totals.gross} {d.currency}</td>
-                <td className="num">{d.status === 'APPROVED' ? d.outstanding : ''}</td>
+                <td className="num">{showAmount(d.totals.gross)} {d.currency}</td>
+                <td className="num">{showAmount(d.status === 'APPROVED' ? d.outstanding : '')}</td>
               </tr>
             ))}
           </tbody>

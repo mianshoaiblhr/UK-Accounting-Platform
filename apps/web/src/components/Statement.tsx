@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { Fragment, useState } from 'react';
 import { qs } from '@/lib/workspace';
+import { showAmount } from '@/lib/format';
 
 export interface ReportLine { key: string; name: string; amount: string; comparative?: string; total?: boolean; accounts?: { accountId: string; code: string; name: string; amount: string; drilldown: { accountId: string; from: string | null; to: string; excludeClosing?: boolean } }[] }
 
@@ -16,13 +17,13 @@ export function Statement({ lines, base, currency, compareLabel, label }: { line
           <Fragment key={l.key}>
             <tr className={l.total ? 'total' : undefined} data-key={l.key}>
               <td>{l.accounts?.length ? <button className="secondary disclose" aria-expanded={!!open[l.key]} onClick={() => setOpen({ ...open, [l.key]: !open[l.key] })}>{open[l.key] ? '−' : '+'}</button> : null} {l.name}</td>
-              <td className="num">{l.amount}</td>
-              {compareLabel ? <td className="num">{l.comparative ?? ''}</td> : null}
+              <td className="num">{showAmount(l.amount)}</td>
+              {compareLabel ? <td className="num">{showAmount(l.comparative ?? '')}</td> : null}
             </tr>
             {open[l.key] && l.accounts?.map((a) => (
               <tr key={`${l.key}-${a.accountId}`}>
                 <td className="indent"><Link href={`${base}/ledger${qs({ accountId: a.accountId, from: a.drilldown.from ?? undefined, to: a.drilldown.to, excludeClosing: a.drilldown.excludeClosing ? 'true' : undefined })}`}>{a.code} {a.name}</Link></td>
-                <td className="num">{a.amount}</td>
+                <td className="num">{showAmount(a.amount)}</td>
                 {compareLabel ? <td /> : null}
               </tr>
             ))}

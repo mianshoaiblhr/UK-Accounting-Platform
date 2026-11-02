@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { WorkspaceShell, qs, useApi, useWorkspace } from '@/lib/workspace';
+import { showAmount } from '@/lib/format';
 
 interface Alert { code: string; severity: 'HIGH' | 'MEDIUM' | 'LOW'; title: string; count: number; total?: string; oldestDate?: string | null; items: Record<string, unknown>[] }
 interface AlertList { asOf: string; count: number; high: number; alerts: Alert[] }
@@ -39,8 +40,8 @@ function Dashboard() {
                 return (
                   <tr key={k.label}>
                     <td>{k.label}</td>
-                    {w.can(k.module) ? <td className="num">{hits.reduce((n, a) => n + a.count, 0)}</td> : <td className="num muted">not visible to you</td>}
-                    <td className="num">{hits.map((a) => a.total).filter(Boolean).join(' / ')}</td>
+                    {w.can(k.module) ? <td className="num">{showAmount(hits.reduce((n, a) => n + a.count, 0))}</td> : <td className="num muted">not visible to you</td>}
+                    <td className="num">{hits.map((a) => a.total).filter(Boolean).map(showAmount).join(' / ')}</td>
                   </tr>
                 );
               })}
@@ -59,7 +60,7 @@ function Dashboard() {
                   <tr key={a.code} data-code={a.code}>
                     <td><span className={`badge ${a.severity}`}>{a.severity}</span></td>
                     <td>{a.title}{a.total ? <span className="muted"> ({a.total})</span> : null}</td>
-                    <td className="num">{a.count}</td>
+                    <td className="num">{showAmount(a.count)}</td>
                     <td>{a.oldestDate ?? ''}</td>
                     <td>
                       {a.items.slice(0, 5).map((it, i) => {

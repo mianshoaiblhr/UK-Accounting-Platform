@@ -1,6 +1,6 @@
 import {
   FINAL_STATUSES, RULE_ANCHORS, RULE_KINDS, addDaysIso, addMonthsIso, dueDateFor, isOverdue,
-  type DueWindow, type ObligationKind, type ObligationStatus, type RuleKind,
+  type DueWindow, type ObligationKind, type ObligationStatus, type RuleKind, WORK_STAGES, type WorkStage,
 } from '@uk/contracts';
 import { conflict, forbidden, notFound, unprocessable, uuidv7 } from '@uk/core';
 import { Prisma, type Tx } from '@uk/db';
@@ -302,7 +302,7 @@ export class ComplianceService {
 
   // ───── V7-M2 (DEC-089): open work and the client list, over the readable clients only ─────
   async work(tx: Tx, companyIds: string[] | 'ALL') {
-    const zero = { byStatus: {} as Record<string, number>, byKind: {} as Record<string, number>, total: 0 };
+    const zero = { byStatus: {} as Record<string, number>, byKind: {} as Record<string, number>, total: 0, byStage: Object.fromEntries(WORK_STAGES.map((k) => [k, 0])) as Record<WorkStage, number> };
     if (companyIds !== 'ALL' && companyIds.length === 0) return zero;
     const where: Prisma.ComplianceObligationWhereInput = { ...(companyIds === 'ALL' ? {} : { companyId: { in: companyIds } }), status: { notIn: [...FINAL_STATUSES] } };
     const [byStatus, byKind] = await Promise.all([
@@ -313,7 +313,46 @@ export class ComplianceService {
       byStatus: Object.fromEntries(byStatus.map((r) => [r.status, r._count._all])),
       byKind: Object.fromEntries(byKind.map((r) => [r.kind, r._count._all])),
       total: byStatus.reduce((s, r) => s + r._count._all, 0),
+      byStage: await this.workByStage(tx, companyIds),
     };
+  }
+  /**
+   * UI-2 (DEC-103): each active client in one stage, read from its latest accounts year that Companies House has not accepted: no year or no
+   * step signed off (BOOKKEEPING); steps 1 to 9 not all done (ACCOUNTS_PREPARATION); step 11 not done (MANAGER_REVIEW); no partner review
+   * (PARTNER_REVIEW); no client approval (CLIENT_APPROVAL); the filing-ready package exists (READY_TO_FILE). A step is done when its latest
+   * record is a sign-off (DEC-069).
+   */
+  private async workByStage(tx: Tx, companyIds: string[] | 'ALL') {
+    const out = Object.fromEntries(WORK_STAGES.map((k) => [k, 0])) as Record<WorkStage, number>;
+    const companies = await tx.company.findMany({ where: { status: 'ACTIVE', ...(companyIds === 'ALL' ? {} : { id: { in: companyIds } }) }, select: { id: true } });
+    const ids = companies.map((c) => c.id);
+    const years = await tx.companyReportingFramework.findMany({ where: { companyId: { in: ids } }, orderBy: { yearStart: 'desc' }, select: { id: true, companyId: true } });
+    const fwIds = years.map((y) => y.id);
+    const [packages, signoffs, approvals] = await Promise.all([
+      tx.accountsPackage.findMany({ where: { frameworkId: { in: fwIds } }, select: { id: true, frameworkId: true } }),
+      tx.yearEndStepSignoff.findMany({ where: { frameworkId: { in: fwIds } }, orderBy: { at: 'asc' }, select: { frameworkId: true, step: true, action: true } }),
+      tx.accountsApproval.findMany({ where: { frameworkId: { in: fwIds } }, select: { frameworkId: true, stage: true } }),
+    ]);
+    const docs = await tx.ixbrlDocument.findMany({ where: { packageId: { in: packages.map((p) => p.id) } }, select: { id: true, packageId: true } });
+    const accepted = new Set((await tx.chFiling.findMany({ where: { documentId: { in: docs.map((d) => d.id) }, status: 'ACCEPTED' }, select: { documentId: true } })).map((f) => f.documentId));
+    const filedPackages = new Set(docs.filter((d) => accepted.has(d.id)).map((d) => d.packageId));
+    const filedYears = new Set(packages.filter((p) => filedPackages.has(p.id)).map((p) => p.frameworkId));
+    const latest = new Map<string, string>();
+    for (const y of years) if (!latest.has(y.companyId) && !filedYears.has(y.id)) latest.set(y.companyId, y.id);
+    const done = new Map<string, Set<number>>();
+    for (const r of signoffs) { const d = done.get(r.frameworkId) ?? new Set<number>(); if (r.action === 'SIGN_OFF') d.add(r.step); else d.delete(r.step); done.set(r.frameworkId, d); }
+    for (const id of ids) {
+      const fw = latest.get(id);
+      const d = fw ? done.get(fw) ?? new Set<number>() : new Set<number>();
+      const has = (stage: string) => approvals.some((a) => a.frameworkId === fw && a.stage === stage);
+      const stage: WorkStage = !fw || d.size === 0 ? 'BOOKKEEPING'
+        : packages.some((p) => p.frameworkId === fw) || has('CLIENT_APPROVAL') ? 'READY_TO_FILE'   // the package follows the client's approval at once
+        : has('PARTNER_REVIEW') ? 'CLIENT_APPROVAL'
+        : d.has(11) ? 'PARTNER_REVIEW'
+        : [1, 2, 3, 4, 5, 6, 7, 8, 9].every((n) => d.has(n)) ? 'MANAGER_REVIEW' : 'ACCOUNTS_PREPARATION';
+      out[stage] += 1;
+    }
+    return out;
   }
 
   async clients(tx: Tx, companyIds: string[] | 'ALL', q: { q?: string; legalForm?: string; managerUserId?: string; limit: number; cursor?: string }, today = ukToday()) {

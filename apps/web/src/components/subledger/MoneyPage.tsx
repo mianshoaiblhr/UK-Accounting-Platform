@@ -6,6 +6,7 @@ import type { DocHeader } from './DocumentList';
 import { useOverrides } from './Overrides';
 import { SideNav } from './SideNav';
 import { partyName, type Account, type Party, type Side } from './side';
+import { showAmount } from '@/lib/format';
 
 interface Money { id: string; receiptDate?: string; paymentDate?: string; currency: string; amount: string; unallocated: string; reference: string | null; status: string;
   customerRoleId?: string; supplierRoleId?: string; bankDetailsUnverified?: boolean }
@@ -62,7 +63,7 @@ export function MoneyPage({ side }: { side: Side }) {
               {list.data.items.map((m) => (
                 <tr key={m.id}>
                   <td>{m.receiptDate ?? m.paymentDate}</td><td>{name(m[side.partyField])}</td><td>{m.reference ?? ''}{m.bankDetailsUnverified ? <span className="badge HIGH"> unverified bank details</span> : null}</td>
-                  <td>{m.status}</td><td className="num">{m.amount} {m.currency}</td><td className="num">{m.unallocated}</td>
+                  <td>{m.status}</td><td className="num">{showAmount(m.amount)} {m.currency}</td><td className="num">{showAmount(m.unallocated)}</td>
                   <td>{m.status === 'POSTED' && m.unallocated === m.amount && w.can(side.approve) && (
                     <div className="inline-actions">
                       <input aria-label={`Reason to reverse ${m.reference ?? m.id}`} placeholder="Reason to reverse" value={revReason[m.id] ?? ''} onChange={(e) => setRevReason({ ...revReason, [m.id]: e.target.value })} />
@@ -97,7 +98,7 @@ export function MoneyPage({ side }: { side: Side }) {
               <table data-testid="allocate">
                 <thead><tr><th>{side.doc.label}</th><th>Due</th><th className="num">Outstanding</th><th className="num">Allocate</th></tr></thead>
                 <tbody>{openDocs.map((d) => (
-                  <tr key={d.id}><td>{d.documentNumber}{d.supplierReference ? ` · ${d.supplierReference}` : ''}</td><td>{d.dueDate}</td><td className="num">{d.outstanding}</td>
+                  <tr key={d.id}><td>{d.documentNumber}{d.supplierReference ? ` · ${d.supplierReference}` : ''}</td><td>{d.dueDate}</td><td className="num">{showAmount(d.outstanding)}</td>
                     <td><input aria-label={`Allocate to ${d.documentNumber}`} value={alloc[d.id] ?? ''} onChange={(e) => setAlloc({ ...alloc, [d.id]: e.target.value })} /></td></tr>
                 ))}</tbody>
               </table>

@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { WorkspaceShell, qs, useApi, useWorkspace } from '@/lib/workspace';
+import { showAmount } from '@/lib/format';
 
 interface JournalHeader { id: string; journalNumber: number; journalDate: string; sourceType: string; sourceReference: string | null; description: string; total: string; reversedByJournalNumber: number | null; reversesJournalId: string | null }
 
@@ -31,7 +32,7 @@ function Journals() {
                 <td>{j.journalDate}</td>
                 <td>{j.sourceType}{j.sourceReference ? <span className="muted"> {j.sourceReference}</span> : null}</td>
                 <td>{j.description}{j.reversedByJournalNumber ? <span className="muted"> (reversed by {j.reversedByJournalNumber})</span> : null}</td>
-                <td className="num">{j.total}</td>
+                <td className="num">{showAmount(j.total)}</td>
               </tr>
             ))}
           </tbody>

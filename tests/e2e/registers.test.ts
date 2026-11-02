@@ -70,7 +70,7 @@ describe('V2-M7b registers in the browser', () => {
     await page.getByRole('button', { name: 'Add asset' }).click();
     await pw(page.getByTestId('fa-assets').locator('tr[data-asset="1"]')).toContainText('LINKED');
     await page.getByLabel('Register as at').fill('2026-12-31');
-    await pw(page.getByTestId('fa-register')).toContainText('3600.00');
+    await pw(page.getByTestId('fa-register')).toContainText('3,600.00');
     await pw(page.getByTestId('reconciled')).toHaveText('The register reconciles to the ledger.');
     // the asset: a disposal dated before the laptops were in use is refused, in the API's words
     await page.getByTestId('fa-assets').getByRole('link', { name: 'Laptops' }).click();
@@ -85,12 +85,12 @@ describe('V2-M7b registers in the browser', () => {
   it('depreciation: the API\'s preview to 31.12.2026 posted as a run', async () => {
     const page = await open(accountant, '/registers/depreciation');
     await page.getByLabel('Depreciate to').fill('2026-12-31');
-    await pw(page.getByTestId('dep-total')).toHaveText('1200.00');
+    await pw(page.getByTestId('dep-total')).toHaveText('1,200.00');
     await page.getByRole('button', { name: 'Post the run' }).click();
     await pw(page.getByTestId('dep-runs').locator('tr[data-run="2026-12-31"]').getByTestId('run-status')).toHaveText('POSTED');
     await page.goto(`${WEB}${ws('/registers')}`);
     await page.getByTestId('fa-assets').getByRole('link', { name: 'Laptops' }).click();
-    await pw(page.getByTestId('carrying-amount')).toHaveText('2400.00');
+    await pw(page.getByTestId('carrying-amount')).toHaveText('2,400.00');
     await page.context().close();
   });
 

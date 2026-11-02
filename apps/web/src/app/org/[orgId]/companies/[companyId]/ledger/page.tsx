@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import { WorkspaceShell, qs, useApi, useWorkspace } from '@/lib/workspace';
+import { showAmount } from '@/lib/format';
 
 interface Ledger {
   currency: string; account: { id: string; code: string; name: string; type: string }; from: string | null; to: string | null; excludeClosing?: boolean; openingBalance: string;
@@ -34,13 +35,13 @@ function LedgerPage() {
         <table data-testid="ledger">
           <thead><tr><th>Date</th><th>Journal</th><th>Description</th><th>Source</th><th className="num">Debit</th><th className="num">Credit</th><th className="num">Balance ({data.currency})</th></tr></thead>
           <tbody>
-            <tr><td colSpan={6}>Opening balance</td><td className="num">{data.openingBalance}</td></tr>
+            <tr><td colSpan={6}>Opening balance</td><td className="num">{showAmount(data.openingBalance)}</td></tr>
             {data.items.map((l) => (
               <tr key={`${l.journalId}-${l.lineNo}`}>
                 <td>{l.journalDate}</td>
                 <td><Link href={`${w.base}/journals/${l.journalId}`}>{l.journalNumber}</Link></td>
                 <td>{l.description}</td><td>{l.sourceType}</td>
-                <td className="num">{l.debit}</td><td className="num">{l.credit}</td><td className="num">{l.balance}</td>
+                <td className="num">{showAmount(l.debit)}</td><td className="num">{showAmount(l.credit)}</td><td className="num">{showAmount(l.balance)}</td>
               </tr>
             ))}
           </tbody>

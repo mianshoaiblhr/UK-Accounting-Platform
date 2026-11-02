@@ -6,6 +6,7 @@ import { PracticeShell } from '@/components/PracticeShell';
 import { KIND_NAMES } from '@/components/compliance/common';
 import { ApiError, api, errorText } from '@/lib/api';
 import { qs } from '@/lib/workspace';
+import { showAmount } from '@/lib/format';
 
 /**
  * V7-M2 (DEC-089): the clients the person may read, with what the API says about each: year end, VAT, the next deadline, open and overdue
@@ -64,8 +65,8 @@ function Clients() {
                 <td>{c.yearEnd ? `${c.yearEnd.day} ${MONTHS[c.yearEnd.month - 1]}` : <span className="muted">Not set</span>}</td>
                 <td>{c.vat.registered ? (c.vat.periodMonths === 1 ? 'Monthly' : 'Quarterly') : <span className="muted">Not registered</span>}</td>
                 <td>{c.nextDeadline ? <><Link href={`/org/${orgId}/companies/${c.id}/compliance`}>{c.nextDeadline.title ?? KIND_NAMES[c.nextDeadline.kind]}</Link><div className="muted">{c.nextDeadline.dueDate}{c.nextDeadline.overdue && <> <span className="badge HIGH">Overdue</span></>}</div></> : <span className="muted">None open</span>}</td>
-                <td className="num">{c.openCount}</td>
-                <td className="num">{c.overdueCount}</td>
+                <td className="num">{showAmount(c.openCount)}</td>
+                <td className="num">{showAmount(c.overdueCount)}</td>
                 <td>{c.clientManager?.displayName ?? <span className="muted">Not set</span>}</td>
               </tr>
             ))}</tbody>

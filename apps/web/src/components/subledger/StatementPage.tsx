@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { qs, useApi, useWorkspace } from '@/lib/workspace';
 import { SideNav } from './SideNav';
 import type { Side } from './side';
+import { showAmount } from '@/lib/format';
 
 interface Statement { from: string; to: string; customer?: { name: string }; supplier?: { name: string };
   currencies: { currency: string; opening: string; closing: string; lines: { date: string; type: string; reference: string | null; documentNumber?: string | null; documentId: string; dueDate: string | null; debit: string; credit: string; balance: string }[] }[] }
@@ -30,15 +31,15 @@ export function StatementPage({ side }: { side: Side }) {
         <table key={c.currency} data-testid="statement-lines">
           <thead><tr><th>Date</th><th>Type</th><th>Reference</th><th>Due</th><th className="num">Debit</th><th className="num">Credit</th><th className="num">Balance ({c.currency})</th></tr></thead>
           <tbody>
-            <tr><td colSpan={6}>Opening balance</td><td className="num">{c.opening}</td></tr>
+            <tr><td colSpan={6}>Opening balance</td><td className="num">{showAmount(c.opening)}</td></tr>
             {c.lines.map((l, i) => (
               <tr key={i}>
                 <td>{l.date}</td><td>{l.type.replace(/_/g, ' ').toLowerCase()}</td>
                 <td>{['INVOICE', 'CREDIT_NOTE', 'BILL', 'DEBIT_NOTE'].includes(l.type) ? <Link href={`${w.base}/${side.key}/${l.documentId}`}>{l.documentNumber ?? l.reference}</Link> : l.reference ?? ''}</td>
-                <td>{l.dueDate ?? ''}</td><td className="num">{l.debit}</td><td className="num">{l.credit}</td><td className="num">{l.balance}</td>
+                <td>{l.dueDate ?? ''}</td><td className="num">{showAmount(l.debit)}</td><td className="num">{showAmount(l.credit)}</td><td className="num">{showAmount(l.balance)}</td>
               </tr>
             ))}
-            <tr className="total"><td colSpan={6}>Closing balance</td><td className="num" data-testid="statement-closing">{c.closing}</td></tr>
+            <tr className="total"><td colSpan={6}>Closing balance</td><td className="num" data-testid="statement-closing">{showAmount(c.closing)}</td></tr>
           </tbody>
         </table>
       ))}

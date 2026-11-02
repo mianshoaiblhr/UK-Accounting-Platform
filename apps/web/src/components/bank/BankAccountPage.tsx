@@ -6,6 +6,7 @@ import { api, errorText } from '@/lib/api';
 import { qs, useApi, useWorkspace } from '@/lib/workspace';
 import { useOverrides } from '../subledger/Overrides';
 import { BankNav, type BankAccount } from './BankAccounts';
+import { showAmount } from '@/lib/format';
 
 export interface StatementLine { id: string; lineNo: number; date: string; description: string; reference: string | null; amount: string; balance: string | null; matched: string; unmatched: string; status: string }
 interface Import { id: string; status: string; rowsRead: number | null; rowsImported: number | null; rowsDuplicate: number | null; errors: { row: number; message: string }[]; firstDate: string | null; lastDate: string | null; requestedAt: string; voidReason: string | null }
@@ -100,7 +101,7 @@ export function BankAccountPage() {
         {lines.data && (lines.data.items.length === 0 ? <p className="muted">No statement lines.</p> : (
           <table data-testid="statement-lines">
             <thead><tr><th>Date</th><th>Description</th><th>Reference</th><th className="num">Amount</th><th className="num">Unmatched</th><th>Status</th></tr></thead>
-            <tbody>{lines.data.items.map((l) => <tr key={l.id}><td>{l.date}</td><td>{l.description}</td><td>{l.reference ?? ''}</td><td className="num">{l.amount}</td><td className="num">{l.unmatched}</td><td>{l.status}</td></tr>)}</tbody>
+            <tbody>{lines.data.items.map((l) => <tr key={l.id}><td>{l.date}</td><td>{l.description}</td><td>{l.reference ?? ''}</td><td className="num">{showAmount(l.amount)}</td><td className="num">{showAmount(l.unmatched)}</td><td>{l.status}</td></tr>)}</tbody>
           </table>
         ))}
       </div>
