@@ -307,6 +307,7 @@ Recorded before any M6 code. Statements about VAT law remain **UNVERIFIED** (DEC
 | DEC-100 | How V4-M3 is built: capital allowances (delegated, DEC-019; recorded before code) | Three new CT rule kinds (the AIA limit, the writing-down rates, the small pools limit) as verified data; pool opening balances entered with evidence and verified by a second person; the capital allowances of a CT period worked from the fixed-asset register's tax category and cost (AIA in date order, main and special rate pools, single asset pools, disposal values capped at cost, balancing charges and allowances, small pools), shown live and stored as a computation that the next period starts from. First-year allowances (full expensing) are left for a later milestone |
 | DEC-101 | How V4-M4 is built: losses, the computation and the canonical CT600 (delegated, DEC-019; recorded before code) | The tax computation of a CT period from the adjusted profit (V4-M2) and the stored capital allowances (V4-M3): trading losses brought forward and carried back one period, taxable total profits, tax by financial year with the small profits rate and marginal relief from verified rules, associated companies and short periods. Prepared and approved by two people (new permission `ct:approve`); the canonical CT600 is built from the approved computation. Non-trading income, group relief and instalments are not modelled |
 | DEC-102 | How V4-M5 is built: CT iXBRL and the HMRC submission (delegated, DEC-019; recorded before code) | The CT600 box map as a verified CT rule kind; the tax computation tagged as inline XBRL from a verified taxonomy version of the V3 kind; a CT return of an approved computation, with the accounts' iXBRL, moving DRAFT, VALIDATED, AUTHORISED (a director's declaration recorded by a second person), SUBMITTED, then ACCEPTED or REJECTED, through an HMRC port whose only adapter is a fake refused in production; acceptance closes the CT return deadline. New permission `ct:file` |
+| DEC-103 | UI-2: closing the gaps between the screens and the approved design (owner request 2026-11-02; recorded before code) | Amounts shown with thousands separators by one display helper; the overview gets today's date, an "Add client" link and work in progress by stage (supplied by the API, never counted on the screen); the Connections card says truthfully that only test stand-ins exist; the screenshot run uses a realistic synthetic practice. Nothing else in the design is added without its own decision |
 | DEC-058 | V2-M2 scope and design (delegated, DEC-019; recorded before code) | A fixed-asset register per company, with classes, additions (posted, linked to an existing posting, or taken on with accumulated depreciation), straight-line and reducing-balance depreciation under a daily or monthly convention, prospective changes of estimate, depreciation runs, and disposals with gain or loss. Each posting goes through the PostingService under its own journal source with a mirror reversal. Tax treatment is stored apart and never read by depreciation. The register reconciles to the ledger by account |
 | DEC-056 | V2 qualified accountant named | The product owner named **Shoaib** (2026-10-18) as the firm's qualified accountant for V2: reviews the golden expected outputs and verifies standard versions with `accounts:rule-verify`. Naming verifies nothing; DEC-052 applies unchanged |
 | DEC-055 | How V2-M1 is built (delegated, DEC-019) | Totals are a list of signed line references; only a verified version is superseded; an account lands on exactly one line by construction (override, else the most specific map entry), proved by a reconciliation in every preview; the V2 API is gated by a new `accounts.production` flag; content is removed by a flag while unverified, never deleted |
@@ -1845,4 +1846,45 @@ The concepts are the firm's verified data. Nothing of HMRC's computation taxonom
 * unit tests of the document builder;
 * API and database tests, including a well-formedness check of the computation document with xmllint;
 * the OpenAPI contract;
+* CI green.
+
+### DEC-103 - UI-2: closing the gaps between the screens and the approved design (owner request 2026-11-02; recorded before code)
+After comparing fresh screenshots with the approved design artifact (DEC-079), the owner asked for the gaps to be closed before the Corporation Tax screens.
+
+**Amounts:**
+* every amount in a numeric table cell is shown with thousands separators (11,070.00) by one display helper (`apps/web/src/lib/format.ts`);
+* the helper only inserts separators into the API's decimal string. It does no arithmetic and no rounding, so DEC-048 and DEC-071 (screens compute nothing) are unchanged;
+* anything that is not a plain decimal is shown as it came.
+
+**The practice overview:**
+* under the title, today's date in UK form, from the viewer's clock (display only);
+* an "Add client" link to the existing "Add a company" form, shown only to a holder of `company:create`;
+* "New task" is not added: there is no task screen yet, and a button that does nothing is not shown;
+* **Work in progress by stage:** `GET compliance/work` also returns `byStage`, counted by the API over the clients the person may read. Each client is in one stage, read from its latest accounts year that Companies House has not yet accepted:
+  * `BOOKKEEPING`: no accounts year, or no year-end step signed off;
+  * `ACCOUNTS_PREPARATION`: steps 1 to 9 not all signed off;
+  * `MANAGER_REVIEW`: steps 1 to 9 signed off and step 11 (generate accounts) not yet;
+  * `PARTNER_REVIEW`: step 11 signed off, no partner review recorded;
+  * `CLIENT_APPROVAL`: partner review recorded, no client approval;
+  * `READY_TO_FILE`: the filing-ready package exists.
+
+  A step counts as done when its latest sign-off record is a sign-off, not a reopening (DEC-069). The overview shows the stages in place of the status table; the status counts stay in the tiles and on the deadlines page.
+* **Connections:** the card says what is true in every environment. There is no live connection; returns and accounts filed elsewhere are recorded; where a test stand-in is set up, nothing reaches HMRC or Companies House.
+
+**The screenshot run** (UI-1, DEC-076) builds a realistic synthetic practice:
+* a named firm;
+* several clients with deadlines in each state;
+* clients at different stages.
+
+So the screens can be compared with the design. All of it is synthetic (DEC-014).
+
+**Not in UI-2** (each needs its own decision):
+* the practice-level Tax and Firm sections (VAT across clients, Self Assessment, HMRC connection, team and roles);
+* tasks;
+* the deadline range tabs on the overview.
+
+**Acceptance:**
+* the API test of the stages;
+* the real-browser tests updated (amounts with separators, the overview);
+* fresh screenshots;
 * CI green.
