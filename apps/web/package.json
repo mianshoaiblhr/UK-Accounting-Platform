@@ -9,10 +9,10 @@
     "start": "next start -p 3000"
   },
   "dependencies": {
-    "geist": "1.8.2",
+    "geist": "1.9.0",
     "next": "^15.5.28",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
